@@ -1,4 +1,6 @@
-# tryce
+<p align="center">
+  <img src="docs/assets/tryce-logo.png" alt="TRYCE" width="720" />
+</p>
 
 제품을 만드는 대화가 요구사항과 결정의 기록으로 이어지도록 돕는 도구입니다.
 
