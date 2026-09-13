@@ -1,0 +1,13 @@
+{
+  "kind": "tryce-note",
+  "format": "note-1",
+  "id": "N-be6e2bab-7a14-46d7-91b4-9b7109f4b5ea",
+  "type": "constraint",
+  "text": "기록 정책을 프로젝트 단계와 분리해 자동모드(auto)와 승인모드(approval)로 정한다. 신규 도입 기본 auto, 모호한 제품 동작 질문, 모드 변경 이후 적용과 승인 비소급은 사용자 동의 사항이다. note는 두 모드에서 사용한다. 명시적 커밋 정책을 우선하고 정책이 없으면 관련 작업 단위 자동 커밋을 기본으로 채택한다. 무관한 변경 혼입, 사용자 staging 임의 변경, 자동 푸시는 하지 않는다. 이전 묶음 확인 기본안은 approval에 적용한다. 기존 prototype/normal 설정은 자동 치환하지 않고 명시적 전환으로 보존한다. docs/specs/recording-policy.md에 동작을 명세했으며 CLI 구현과 실제 프로젝트 전환은 아직 수행하지 않았다.",
+  "author": "Codex",
+  "recordedAt": "2026-09-13T12:13:15.131Z",
+  "references": [
+    "N-534d3739-4e71-48ae-89b3-ce149697d0b7"
+  ],
+  "supersedes": "N-ded2791a-ecf8-45a2-9649-7a2cc89e4a8d"
+}
