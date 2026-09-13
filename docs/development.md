@@ -191,4 +191,4 @@ brief의 정렬·Unicode 발췌·생략 집계·목록 밖 정정 관계, 초기
 
 2026-09-13 공개 이름 tryce와 MIT 라이선스를 반영한 pnpm check가 통과했다. core 9개, contracts 6개, CLI 70개, Chromium 6개, 개발 동기화 5개로 총 96개 테스트와 workspace 밖 오프라인 설치·실행 검증을 수행했다. 고정 lockfile 설치도 통과했다.
 
-프로젝트 사용 빌드를 CLI 0.1.0, SHA-256 d55b21a1a9deaf8c5147b4ad619bc0334a2b61a3486c460e30450f9e7f9ce74f로 갱신한다. 이전 지정 빌드의 기능 범위를 유지한다. .tmp/releases/0.1.0/tryce-0.1.0.tgz의 파일 목록과 npm publish dry-run을 확인했다. 게시 여부는 배포 절차 문서의 결과 기록을 따른다.
+프로젝트 사용 빌드를 CLI 0.1.0, SHA-256 d55b21a1a9deaf8c5147b4ad619bc0334a2b61a3486c460e30450f9e7f9ce74f로 갱신한다. 이전 지정 빌드의 기능 범위를 유지한다. 당시 .tmp/releases/0.1.0/tryce-0.1.0.tgz의 파일 목록과 npm publish dry-run을 확인했다. 이후 게시 방식은 apps/cli 패키지 폴더에서 pnpm publish를 실행하도록 바꿨다. 준비 명령과 게시 여부는 [배포 절차](releases.md)를 따른다.
