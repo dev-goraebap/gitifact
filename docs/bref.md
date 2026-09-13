@@ -8,6 +8,8 @@ tryce는 에이전트와 함께 개발하는 프로젝트에서 요구사항, �
 
 현재 실행 방법과 검증 범위는 [개발 환경](development.md)에 기록한다.
 
+공개 npm 패키지의 준비·게시·설치 확인은 [배포 절차](releases.md)를 따른다.
+
 첫 조회 기능의 명세와 지원 범위는 [저장소 상태 조회](specs/repository-status.md)다. 현재 `status`가 Git 상태를 관측하며 brief·요구사항 검사를 구현한 것으로 취급하지 않는다.
 
 같은 조회를 화면에서 제공하는 `browser`의 HTTP·세션·새로고침 계약은 [로컬 브라우저 서버](specs/browser-server.md)에 기록한다.

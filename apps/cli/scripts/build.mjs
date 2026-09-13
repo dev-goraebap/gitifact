@@ -2,6 +2,7 @@ import { readFile, cp, rm, mkdir, writeFile } from 'node:fs/promises';
 import { relative, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { build, context } from 'esbuild';
+import { writeNotices } from './notices.mjs';
 
 const packageRoot = fileURLToPath(new URL('../', import.meta.url));
 const { version } = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
@@ -16,6 +17,7 @@ const skillSource = new URL('../../../.agents/skills/tryce-workflow/SKILL.md', i
 const skillDestination = new URL('../dist/skills/tryce-workflow/', import.meta.url);
 await mkdir(skillDestination, { recursive: true });
 await writeFile(new URL('SKILL.md', skillDestination), await readFile(skillSource));
+await writeNotices();
 const options = {
   absWorkingDir: packageRoot,
   entryPoints: ['src/main.ts'],

@@ -8,7 +8,7 @@
 
 demo에는 `.tmp/skills-package/tryce-cli-0.0.0.tgz`를 npm으로 오프라인 설치했다. demo에서 `npm run tryce -- brief --format text`처럼 설치한 CLI를 실행한다. 개발 빌드 직접 실행과 구분한다. 중첩 저장소에서 상위 workspace의 의존성이 보일 수 있으므로 운영체제 임시 폴더의 오프라인 패키지 설치 검증도 유지한다.
 
-사용자가 요청한 공개 npm 패키지 이름은 `tryce`다. 스킬 설치·갱신·제거와 demo 사용, workspace 밖 설치 검증을 마친 뒤 첫 배포를 진행한다. 배포 직전에 이름 사용 가능 여부와 계정 게시 권한, 패키지 내용·라이선스·버전·문서를 확인한다. 현재 `@tryce/cli`는 private 개발 패키지이며 이름을 확보하거나 npm에 게시한 상태가 아니다. 공개 이름 전환과 첫 배포는 후속 배포 작업에서 함께 수행한다.
+사용자가 요청한 공개 npm 패키지 이름은 `tryce`다. 스킬 설치·갱신·제거와 demo 사용, workspace 밖 설치 검증을 마친 뒤 첫 배포를 진행한다. 배포 직전에 이름 사용 가능 여부와 계정 게시 권한, 패키지 내용·라이선스·버전·문서를 확인한다. 공개 CLI 이름을 `tryce`, 첫 버전을 `0.1.0`, 라이선스를 MIT로 지정했다. 실제 게시·설치 확인은 [배포 절차](releases.md)에 따라 수행하고 결과를 별도로 기록한다.
 
 ## 개발 에이전트 사용
 
@@ -18,7 +18,7 @@ Codex는 `.agents/skills/tryce-workflow/SKILL.md`를 원본으로 사용한다. 
 
 ## 준비와 실행
 
-개발 기준은 Node.js 24.17.0과 pnpm 10.33.0이다. `.node-version`과 루트 `packageManager`에 고정했다. 현재 패키지는 private이며 Node.js 24 계열만 개발 대상으로 선언한다. 공개 CLI의 이름과 지원 런타임은 배포 단계에서 다시 정한다.
+개발 기준은 Node.js 24.17.0과 pnpm 10.33.0이다. `.node-version`과 루트 `packageManager`에 고정했다. 공개 CLI는 tryce이며 나머지 workspace 패키지는 private이다. 0.1.0은 Node.js 24 계열을 지원 범위로 선언한다.
 
 pnpm이 없는 환경에서는 `npx pnpm@10.33.0`을 아래 명령의 `pnpm` 대신 사용할 수 있다. 전역 도구나 사용자 설정을 바꿀 필요는 없다.
 
@@ -186,3 +186,9 @@ brief의 정렬·Unicode 발췌·생략 집계·목록 밖 정정 관계, 초기
 프로젝트 사용 빌드는 apps/cli/dist/main.js (CLI 0.0.0, SHA-256 167e607bae031fa561c9bd3f0f292ce9eeed430a249cbba5dd9fb7aea777c6cc)로 갱신한다. 검증한 기존 init·note·brief·Git 관측과 skills install/sync/remove를 지원한다. 같은 해시의 설치 패키지를 .tmp/demo 시험에 사용한다. 상세 규약과 실패 복구는 [프로젝트 스킬 배포](specs/skill-distribution.md)를 따른다.
 
 현재 개발 저장소의 Claude 복사본은 기존 개발 스크립트가 관리한다. CLI 매니페스트로 자동 채택하지 않으며 pnpm skills:sync 절차를 유지한다. DEV-04는 이 이전 연결과 미지원 upgrade·전체 eject·훅에 남는다. 새 사용자 프로젝트에는 CLI 명령을 사용한다. 실제 에이전트의 자동 선택과 macOS·Linux 실행은 미검증이다.
+
+## 0.1.0 배포 후보 검증
+
+2026-09-13 공개 이름 tryce와 MIT 라이선스를 반영한 pnpm check가 통과했다. core 9개, contracts 6개, CLI 70개, Chromium 6개, 개발 동기화 5개로 총 96개 테스트와 workspace 밖 오프라인 설치·실행 검증을 수행했다. 고정 lockfile 설치도 통과했다.
+
+프로젝트 사용 빌드를 CLI 0.1.0, SHA-256 d55b21a1a9deaf8c5147b4ad619bc0334a2b61a3486c460e30450f9e7f9ce74f로 갱신한다. 이전 지정 빌드의 기능 범위를 유지한다. .tmp/releases/0.1.0/tryce-0.1.0.tgz의 파일 목록과 npm publish dry-run을 확인했다. 게시 여부는 배포 절차 문서의 결과 기록을 따른다.

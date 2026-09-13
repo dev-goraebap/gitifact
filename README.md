@@ -4,7 +4,27 @@
 
 tryce는 Claude Code, Codex 등 기존 개발 에이전트와 함께 사용하는 CLI를 지향합니다. 요구사항, 변경 이유, 구현 기록을 연결하고, 새 세션이 프로젝트의 맥락을 이어받을 수 있도록 돕습니다.
 
-> 개발 초기 단계입니다. CLI와 브라우저의 실행 골격을 마련했으며, 아래 제품 기능과 흐름은 개발 목표입니다. 공개 배포판은 아직 제공하지 않습니다.
+> 0.1.0은 초기 프로토타입입니다. 현재 지원 범위는 아래 프로젝트 상태를 참고하세요. 요구사항·승인·이력 검사 전체를 구현한 버전은 아닙니다.
+
+## 설치와 시작
+
+Node.js 24.x와 Git이 필요합니다. 현재 실행 검증 환경은 Windows입니다.
+
+```sh
+npm install -g tryce
+```
+
+사용할 Git 프로젝트에서 실행합니다.
+
+```sh
+tryce init --mode prototype
+tryce note enable
+tryce skills install --agent claude
+tryce brief --format text
+tryce browser
+```
+
+Codex를 사용하면 `--agent codex`를 지정합니다. browser가 출력한 로컬 URL을 열어 확인합니다. 자세한 동작과 제한은 [CLI 안내](apps/cli/README.md)를 참고하세요.
 
 ## 왜 tryce인가요?
 
@@ -70,3 +90,7 @@ CLI 실행과 검증 범위는 [개발 환경](docs/development.md), 코드 구�
 개발용 `tryce-workflow` 스킬은 작업 시작의 brief 조회와 중요한 판단의 note 작성을 안내합니다. Codex는 원본을 읽고, Claude Code용 로컬 복사본은 `pnpm skills:sync`로 생성합니다. [스킬 연결](docs/specs/agent-skills.md)에서 사용·갱신 절차를 확인할 수 있습니다.
 
 다른 프로젝트에 설치한 CLI에서는 `tryce skills install --agent claude`로 연결합니다. 이후 `tryce skills sync`로 복사본을 갱신하고 `tryce skills remove`로 로컬 복사본을 제거합니다. 원본과 사용자 수정 보존 범위는 [프로젝트 스킬 배포](docs/specs/skill-distribution.md)를 참고하세요.
+
+## 라이선스
+
+[MIT](LICENSE). 배포물에 포함된 의존성의 라이선스 고지는 `dist/THIRD_PARTY_NOTICES.txt`에 제공합니다.
