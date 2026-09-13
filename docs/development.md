@@ -4,7 +4,7 @@
 
 ## 사용자 프로젝트 시험과 첫 npm 배포
 
-현재 demo는 2026-09-14 auto/approval 시나리오 시험을 마친 approval 모드다. 설치 CLI는 0.2.1이고 스킬은 `64125cb`의 개선본을 별도 적용했다. 실행은 `node node_modules/@tryce/cli/dist/main.js`, demo 기능 테스트는 `node --test`다. 실제 결과와 미검증 범위는 [자체 도입 기록](adoption.md#2026-09-14-로컬-demo-시나리오)을 따른다. 아래는 최초 설치 당시 기록이다.
+현재 demo는 2026-09-14 auto/approval 시나리오 시험을 마친 approval 모드다. 설치 CLI는 0.3.0이고 스킬은 `64125cb`의 개선본을 별도 적용했다. 실행은 `node node_modules/@tryce/cli/dist/main.js`, demo 기능 테스트는 `node --test`다. 실제 결과와 미검증 범위는 [자체 도입 기록](adoption.md#2026-09-14-로컬-demo-시나리오)을 따른다. 아래는 최초 설치 당시 기록이다.
 
 2026-09-13 사용자 지정으로 `.tmp/demo`에 독립 Git 저장소를 두고 prototype 모드의 도입·사용 흐름을 시험한다. 상위 저장소에서는 `.tmp/`를 ignore한다. 이곳은 지속해서 살펴볼 데모이며 자동 테스트의 매번 새로 만드는 임시 저장소를 대체하지 않는다. 기존 데모는 자동 삭제·재초기화하지 않는다.
 
