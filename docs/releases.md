@@ -70,3 +70,11 @@ apps/cli에서 모의 게시한 결과는 `@tryce/cli@0.1.0`, 파일 15개, inte
 최종 모의 실행 중 pnpm 10.33.0이 배포 매니페스트의 @tryce/core와 @tryce/contracts 키를 서로 다른 순서로 기록해 압축 파일 해시가 달라지는 것을 확인했다. 두 패키지의 매니페스트 값은 같고 나머지 14개 파일은 바이트 단위로 일치했다. 실제 게시 결과와 레지스트리의 integrity는 모두 `sha512-oiGZ2zgcZ2R9JNBrJhS6cJPBwKBP9z36lJYiWPvsI7IiVRoY8LkFbMJ1HtFHMJr5Q4owdAs6XzpjAJEddWR1kg==`로, 앞서 검증한 값과 일치했다.
 
 게시 직후 일반 이름 조회가 잠시 404를 반환했으나 이후 npm view로 버전·MIT·latest·integrity를 확인했다. workspace 밖 새 임시 Git 프로젝트에 레지스트리 배포 파일을 설치해 무결성, version/help, init·note·brief·status·skills와 브라우저 정적 자산을 검증했다. .tmp/demo는 npm install --save-exact @tryce/cli@0.1.0으로 갱신하고 버전·brief를 확인했다. 기존 .tryce 파일의 SHA-256은 설치 전후 일치했다.
+
+## 0.2.0 배포 준비
+
+2026-09-13 사용자 배포 요청으로 검증된 0.2.0-dev.0을 0.2.0으로 준비했다. 신규 auto 기본값, approval 묶음 확인, 요구사항 원문·수정본 보존, 커밋 계획·실행을 포함한다. 기존 프로젝트의 모드·기준선은 자동 전환하지 않는다. README의 도입 프롬프트와 패키지 안내를 새 버전에 맞췄다.
+
+구현 커밋 65179f8의 전체 테스트 109개 통과 결과를 기준으로 버전·안내만 변경하고 CLI를 다시 빌드했다. `pnpm test:package`로 workspace 밖 오프라인 설치, legacy 전환·요구사항 승인·note·brief·스킬·브라우저를 재검증했다. 별도 패키지 검증용 스크립트 항목을 루트에 추가했다.
+
+apps/cli의 모의 게시 결과는 파일 15개, integrity `sha512-0ep8EQ1Y/ACY1qlWpfIekRU66bUsi/QzbHBv9UP5ZtJKDJhuFKckgvPRtZXzrRLbUAcVtAKXyftYyJVqyW0jHg==`다. 패키지·README·LICENSE·dist 외의 소스, 프로젝트 기록, 인증 파일이 포함되지 않음을 확인했다. 모의 실행에만 `--no-git-checks`를 사용했고 실제 게시에는 Git 검사를 유지한다.

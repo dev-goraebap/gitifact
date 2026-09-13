@@ -1,8 +1,8 @@
 # tryce
 
-Development version: **0.2.0-dev.0**, not published to npm. The install instructions below describe the published 0.1.0. For a validated local development build, use the workflow commands in the next section; existing configurations are never migrated implicitly.
+Version **0.2.0** supports auto and approval modes, requirement capture and grouped confirmation, and guarded Git commits. Existing configurations are never migrated implicitly.
 
-## Agent workflow in the development build
+## Agent workflow
 
 Load the project's `tryce-workflow/SKILL.md` in the current session. Users describe their product; the agent runs these commands, observes existing instructions, and records actual decisions.
 
@@ -27,7 +27,7 @@ On a Git execution failure, inspect HEAD, the original index, `index.lock` and `
 
 Git-backed project context and decision notes for coding agents.
 
-This is an early prototype. It supports project initialization, append-only
+This is an early prototype. It also supports project initialization, append-only
 discovery/constraint/rejection notes, session briefings, Git status, a read-only
 local browser, and project skill installation for Codex and Claude Code.
 
@@ -44,8 +44,7 @@ tryce --version
 Run inside the Git project you want to use:
 
 ```sh
-tryce init --mode prototype
-tryce note enable
+tryce init
 tryce skills install --agent claude
 tryce brief --format text
 tryce browser
@@ -78,15 +77,16 @@ do not automatically stage or commit changes.
 
 ## Limits and data
 
-Requirements tracking, approvals, history checks, source-template upgrades, full
-eject, and Git hooks are not implemented. `brief` reports checks as not run.
+Requirement GUI views, completion inference, full history checks, source-template
+upgrades, full eject, and Git hooks are not implemented. `brief` reports checks as not run.
 Default brief output may be truncated; inspect omission counts and use `--all` or
 `note show` to read the original records. Failed commands exit with code 1 and
 write diagnostic JSON to stderr, including partial brief results when available.
 
 Project settings and notes are stored under `.tryce` and can be committed with
 your project. Existing settings, baselines, notes, and user skill modifications
-are preserved. Initialization and note-format activation are separate commands.
+are preserved. New projects use workflow-1 with notes enabled; legacy prototype
+projects can continue using `note enable` without changing their recording mode.
 
 See the [project documentation](https://github.com/dev-goraebap/tryce) for detailed
 contracts and supported recovery procedures.

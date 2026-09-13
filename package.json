@@ -18,6 +18,7 @@
     "cli": "node apps/cli/dist/main.js",
     "test": "pnpm build && pnpm test:built",
     "test:built": "pnpm -r --if-present test:built && pnpm skills:test && node scripts/test-package.mjs",
+    "test:package": "node scripts/test-package.mjs",
     "check": "pnpm typecheck && pnpm test",
     "browser:install": "pnpm --filter @tryce/browser exec playwright install chromium"
   },
