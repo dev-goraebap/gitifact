@@ -30,7 +30,7 @@ pnpm publish --access public --tag latest --publish-branch main
 ## 게시 확인
 
 ```sh
-npm view @tryce/cli@0.1.0 version license dist.integrity
+npm view @tryce/cli@0.2.0 version license dist.integrity
 ```
 
 레지스트리 integrity를 실제 게시 결과와 비교하고, 새 시험 폴더에 레지스트리에서 설치해 버전·help와 실제 Git 프로젝트 명령을 실행한다. 모의 실행과 해시가 다르면 게시 전에 파일 내용과 배포 매니페스트를 비교해 원인을 확인한다. `.tmp/demo`의 기존 기록을 보존하며 의존 패키지를 갱신한다. 로컬 검증·원격 게시·설치 확인의 성공 여부를 각각 기록한다.
@@ -78,3 +78,11 @@ apps/cli에서 모의 게시한 결과는 `@tryce/cli@0.1.0`, 파일 15개, inte
 구현 커밋 65179f8의 전체 테스트 109개 통과 결과를 기준으로 버전·안내만 변경하고 CLI를 다시 빌드했다. `pnpm test:package`로 workspace 밖 오프라인 설치, legacy 전환·요구사항 승인·note·brief·스킬·브라우저를 재검증했다. 별도 패키지 검증용 스크립트 항목을 루트에 추가했다.
 
 apps/cli의 모의 게시 결과는 파일 15개, integrity `sha512-0ep8EQ1Y/ACY1qlWpfIekRU66bUsi/QzbHBv9UP5ZtJKDJhuFKckgvPRtZXzrRLbUAcVtAKXyftYyJVqyW0jHg==`다. 패키지·README·LICENSE·dist 외의 소스, 프로젝트 기록, 인증 파일이 포함되지 않음을 확인했다. 모의 실행에만 `--no-git-checks`를 사용했고 실제 게시에는 Git 검사를 유지한다.
+
+## 0.2.0 게시 완료
+
+2026-09-13 릴리스 준비 커밋 `8f3ac1b`까지 main을 푸시하고 apps/cli에서 Git 검사를 유지한 `pnpm publish --access public --tag latest --publish-branch main --json`을 실행했다. `@tryce/cli@0.2.0` 공개 게시가 성공했으며 레지스트리의 latest는 0.2.0, 라이선스는 MIT다. 실제 게시와 레지스트리의 integrity는 위 모의 실행 값과 일치했다. 기존 인증 세션을 사용했고 인증 설정은 변경하지 않았다.
+
+레지스트리에서 새 시험 프로젝트에 설치한 CLI가 검증 빌드와 바이트 단위로 같음을 확인했다. 설치 버전, 신규 auto 초기화, note, 요구사항 초안·자동 확정, approval 전환·묶음 승인, brief를 실행해 통과했다. 이 기록은 자동화 시험용 확인이며 실제 제품 요구사항의 사용자 승인으로 해석하지 않는다.
+
+`.tmp/demo`도 레지스트리의 0.2.0으로 갱신했다. 설치 전후 `.tryce` 파일의 SHA-256 목록이 일치했고 기존 prototype / prototype-1 상태의 brief를 확인했다. 모드·기준선·note·스킬 원본을 새 형식으로 자동 전환하지 않았다. 검증 로그와 별도 시험 프로젝트는 `.tmp/validation-archive/2026-09-13/`에 보존한다.
