@@ -66,3 +66,5 @@ pnpm cli browser
 ```
 
 CLI 실행과 검증 범위는 [개발 환경](docs/development.md), 코드 구조는 [아키텍처 기준](docs/architecture/README.md)을 참고하세요.
+
+개발용 `tryce-workflow` 스킬은 작업 시작의 brief 조회와 중요한 판단의 note 작성을 안내합니다. Codex는 원본을 읽고, Claude Code용 로컬 복사본은 `pnpm skills:sync`로 생성합니다. [스킬 연결](docs/specs/agent-skills.md)에서 사용·갱신 절차를 확인할 수 있습니다.

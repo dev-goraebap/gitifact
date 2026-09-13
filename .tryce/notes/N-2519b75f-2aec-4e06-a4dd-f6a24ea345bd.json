@@ -1,0 +1,11 @@
+{
+  "kind": "tryce-note",
+  "format": "note-1",
+  "id": "N-2519b75f-2aec-4e06-a4dd-f6a24ea345bd",
+  "type": "constraint",
+  "text": "스킬 편집 원본은 .agents/skills에 커밋하고 Claude용 복사본은 로컬에서 생성한다. 복사본과 배포 지문은 Git에서 제외하며 사용자 수정본을 자동으로 덮어쓰지 않는다. 근거: 2026-09-13 사용자의 원본만 커밋 선택과 docs/specs/agent-skills.md, scripts/sync-skills.test.mjs.",
+  "author": "Codex",
+  "recordedAt": "2026-09-13T09:27:10.724Z",
+  "references": [],
+  "supersedes": null
+}

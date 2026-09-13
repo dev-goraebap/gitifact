@@ -7,3 +7,7 @@ test-results/
 playwright-report/
 *.tgz
 apps/browser/src/app/routeTree.gen.ts
+.claude/skills/tryce-workflow/
+.agents/tryce-local-skills.json
+.agents/tryce-local-skills.lock
+**/.tryce-skill-*.tmp
