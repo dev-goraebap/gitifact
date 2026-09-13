@@ -10,7 +10,7 @@ test('init format preserves empty and full commit baselines without inventing ID
     const config = initialConfig('normal', 'a'.repeat(length), format);
     assert.deepEqual(parseProjectConfig(JSON.stringify(config)), config);
   }
-  assert.throws(() => initialConfig(undefined, null, 'sha1'), { code: 'MODE_REQUIRED' });
+  assert.deepEqual(initialConfig(undefined, null, 'sha1'), { kind: 'tryce-project', format: 'workflow-1', mode: 'auto', baseline: { kind: 'empty' } });
 });
 
 test('unknown formats and malformed configuration cannot be interpreted as supported', () => {

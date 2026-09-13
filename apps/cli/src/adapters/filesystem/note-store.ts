@@ -12,7 +12,7 @@ export async function regularDirectory(path: string) {
   if (info && (!info.isDirectory() || info.isSymbolicLink())) throw new InitError('PATH_CONFLICT', '일반 디렉터리가 아닙니다: ' + path);
   return info;
 }
-async function guard(path: string) {
+export async function guard(path: string) {
   const initial = await regularDirectory(path);
   if (!initial) throw changed();
   const canonical = await realpath(path);

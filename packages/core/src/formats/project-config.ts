@@ -1,8 +1,8 @@
-export type ProjectMode = 'normal' | 'prototype';
+export type ProjectMode = 'normal' | 'prototype' | 'auto' | 'approval';
 export type Baseline = { kind: 'empty' } | { kind: 'commit'; objectFormat: 'sha1' | 'sha256'; commit: string };
 export interface ProjectConfig {
   kind: 'tryce-project';
-  format: 'init-1' | 'prototype-1';
+  format: 'init-1' | 'prototype-1' | 'workflow-1';
   mode: ProjectMode;
   baseline: Baseline;
 }
@@ -17,13 +17,13 @@ const keys = (value: Record<string, unknown>, expected: string[]) =>
 export function parseProjectConfig(text: string): ProjectConfig {
   let value: unknown;
   try { value = JSON.parse(text); } catch { throw new InitError('INVALID_CONFIG', '설정 JSON을 읽지 못했습니다. 원문을 보존하세요.'); }
-  if (object(value) && value.kind === 'tryce-project' && typeof value.format === 'string' && !['init-1', 'prototype-1'].includes(value.format)) {
+  if (object(value) && value.kind === 'tryce-project' && typeof value.format === 'string' && !['init-1', 'prototype-1', 'workflow-1'].includes(value.format)) {
     throw new InitError('UNSUPPORTED_FORMAT', '지원하지 않는 프로젝트 형식입니다. 호환 CLI가 필요합니다.');
   }
   const invalid = () => new InitError('INVALID_CONFIG', '프로젝트 설정의 필드나 값이 올바르지 않습니다.');
   if (!object(value) || !keys(value, ['kind', 'format', 'mode', 'baseline']) || value.kind !== 'tryce-project'
-    || !['init-1', 'prototype-1'].includes(String(value.format)) || typeof value.format !== 'string'
-    || typeof value.mode !== 'string' || !['normal', 'prototype'].includes(value.mode) || !object(value.baseline)) throw invalid();
+    || !['init-1', 'prototype-1', 'workflow-1'].includes(String(value.format)) || typeof value.format !== 'string'
+    || typeof value.mode !== 'string' || !(value.format === 'workflow-1' ? ['auto', 'approval'] : ['normal', 'prototype']).includes(value.mode) || !object(value.baseline)) throw invalid();
   const b = value.baseline;
   if (b.kind === 'empty') { if (!keys(b, ['kind'])) throw invalid(); }
   else if (b.kind === 'commit') {
@@ -35,7 +35,8 @@ export function parseProjectConfig(text: string): ProjectConfig {
 }
 
 export function initialConfig(mode: ProjectMode | undefined, commit: string | null, objectFormat: 'sha1' | 'sha256'): ProjectConfig {
-  if (!mode || !['normal', 'prototype'].includes(mode)) throw new InitError('MODE_REQUIRED', '최초 초기화에는 --mode normal 또는 --mode prototype을 지정하세요.');
-  return parseProjectConfig(JSON.stringify({ kind: 'tryce-project', format: 'init-1', mode,
+  mode ??= 'auto';
+  if (!['normal', 'prototype', 'auto', 'approval'].includes(mode)) throw new InitError('INVALID_MODE', 'auto 또는 approval 모드를 지정하세요.');
+  return parseProjectConfig(JSON.stringify({ kind: 'tryce-project', format: ['auto', 'approval'].includes(mode) ? 'workflow-1' : 'init-1', mode,
     baseline: commit ? { kind: 'commit', objectFormat, commit } : { kind: 'empty' } }));
 }

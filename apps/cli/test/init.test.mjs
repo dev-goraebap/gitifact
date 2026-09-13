@@ -45,9 +45,9 @@ test('SHA-1 and SHA-256 baselines survive new commits and detached subdirectory 
   }
 });
 
-test('missing mode, ignore rules, tracked deletion and malformed files never overwrite data', async t => {
+test('default mode dry run, ignore rules, tracked deletion and malformed files never overwrite data', async t => {
   const f = fixture(t);
-  await assert.rejects(init(f, {}), { code: 'MODE_REQUIRED' });
+  assert.equal((await init(f, { dryRun: true })).mode, 'auto');
   assert.equal(existsSync(join(f.repo, '.tryce')), false);
   f.write('.gitignore', '.tryce/\n');
   await assert.rejects(init(f), { code: 'CONFIG_IGNORED' });
@@ -121,7 +121,7 @@ test('built command has versioned output and rejects options before writing', t 
   const entry = fileURLToPath(new URL('../dist/main.js', import.meta.url));
   const cli = args => spawnSync(process.execPath, [entry, 'init', ...args], { cwd: f.repo, env: f.env, encoding: 'utf8', timeout: 35000 });
   const bad = cli(['--mode', 'wrong']); assert.equal(bad.status, 1); assert.equal(existsSync(join(f.repo, '.tryce')), false);
-  const missing = cli([]); assert.equal(missing.status, 1); assert.equal(projectInitV1.parse(JSON.parse(missing.stderr)).error.code, 'MODE_REQUIRED');
+  const missing = cli(['--dry-run']); assert.equal(missing.status, 0); assert.equal(JSON.parse(missing.stdout).mode, 'auto');
   const good = cli(['--mode', 'prototype']); assert.equal(good.status, 0, good.stderr);
   assert.equal(projectInitV1.parse(JSON.parse(good.stdout)).outcome, 'created');
 });

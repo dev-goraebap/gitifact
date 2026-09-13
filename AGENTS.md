@@ -2,7 +2,7 @@
 
 이 저장소는 tryce를 개발하면서 프로젝트 자체에도 적용한다. 제품의 기록 원칙을 따르되, 아직 구현되지 않은 기능은 아래 대체 절차로 수행한다. 이 예외는 tryce 개발 저장소에만 적용하며 제품의 기본 동작으로 확장하지 않는다.
 
-현재 이 프로젝트는 사용자가 선택한 `prototype` 모드이며 기록 형식은 `prototype-1`이다. [.tryce/config.json](.tryce/config.json)의 도입 기준선을 보존하고, [프로토타입 기록](docs/specs/prototype-notes.md)을 CLI로 작성한다. 검증·지정한 빌드와 실행 범위는 [개발 환경](docs/development.md)을 따른다. 설정을 직접 덮어쓰거나 재초기화로 기준선·모드를 바꾸지 않는다. 요구사항 기록·검사와 훅은 아직 미지원이다.
+현재 이 프로젝트는 사용자가 선택한 `prototype` 모드이며 기록 형식은 `prototype-1`이다. [.tryce/config.json](.tryce/config.json)의 도입 기준선을 보존하고, [프로토타입 기록](docs/specs/prototype-notes.md)을 CLI로 작성한다. 검증·지정한 빌드와 실행 범위는 [개발 환경](docs/development.md)을 따른다. 설정을 직접 덮어쓰거나 재초기화로 기준선·모드를 바꾸지 않는다. 개발 CLI의 요구사항·확인·커밋 기능은 [workflow-1](docs/specs/workflow-format.md)에서 지원하며 이 프로젝트의 모드를 자동 전환하지 않는다. 전체 이력 검사와 훅은 미지원이다.
 
 개발 작업에는 [tryce-workflow](.agents/skills/tryce-workflow/SKILL.md)를 읽고 적용한다. 원본만 커밋하고 이 저장소의 기존 Claude 복사본은 `pnpm skills:sync`로 로컬 생성한다. 복사본의 직접 수정은 원본과 비교해 보존한다. 새 프로젝트에는 [CLI 스킬 배포](docs/specs/skill-distribution.md)를 사용한다. DEV-04는 검증한 install·sync·로컬 복사본 remove 범위에서 축소한다. 이전 개발 매니페스트 연결, 미지원 원본 upgrade·전체 eject·훅에는 유지한다.
 

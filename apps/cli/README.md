@@ -1,5 +1,30 @@
 # tryce
 
+Development version: **0.2.0-dev.0**, not published to npm. The install instructions below describe the published 0.1.0. For a validated local development build, use the workflow commands in the next section; existing configurations are never migrated implicitly.
+
+## Agent workflow in the development build
+
+Load the project's `tryce-workflow/SKILL.md` in the current session. Users describe their product; the agent runs these commands, observes existing instructions, and records actual decisions.
+
+New `tryce init` defaults to auto mode. Use `init --mode approval` for confirmation before implementation, or explicitly migrate an existing project with `mode set approval --reason "User requested confirmation"`. Notes work in both modes.
+
+```sh
+tryce req draft --spec search --title "Search" --file ./requirement.txt --author Codex --reason "User request"
+tryce req list
+tryce req review ACTUAL_REQUIREMENT_ID
+tryce req activate ACTUAL_REVIEW_ID --by Codex --evidence "Clear user intent in the current conversation"
+tryce req approve ACTUAL_REVIEW_ID --by ACTUAL_USER --evidence "Actual confirmation and context"
+tryce brief --format text
+```
+
+`activate` is for automatic confirmation in auto mode; `approve` records an actual user confirmation. These are separate alternatives. For approval after automatic activation, prepare a new review. A changed revision invalidates a pending review. `req revise ID --expected REVISION_ID` adds a revision and requires title, body, author and reason; confirmed requirements additionally require `--amend` for changes that preserve meaning. New meaning gets a new ID.
+
+For a permitted commit, inspect exact related files and prepare `commit plan --path FILE --path RELATED_RECORD --message MESSAGE --policy no-policy|permitted --evidence CONTEXT`. Use `--policy-file PATH` for additional repository instructions. Save only the returned `data.plan` object to a UTF-8 temporary JSON file, then run `commit apply --file PLAN_FILE` after checking current authority. Existing staging, changed inputs and omitted pending records stop automatic construction. Never discard unrelated work to make a plan succeed. Hooks and signing remain enabled; no push is performed.
+
+The CLI writes `Tryce-Format: workflow-1` and validated requirement/spec references. For implementation commits, explicitly pass `--req ACTIVE_REQUIREMENT_ID --implement`; these references do not claim completion or passing tests. Other event trailer semantics and full history validation are not implemented in this development format.
+
+On a Git execution failure, inspect HEAD, the original index, `index.lock` and `tryce-index-*` recovery files before removing anything. The CLI intentionally preserves recovery artifacts when commit success is uncertain. See [workflow format and limits](../../docs/specs/workflow-format.md) for the full storage, contract and recovery rules. GUI requirement views, completion inference and full history checks remain unavailable.
+
 Git-backed project context and decision notes for coding agents.
 
 This is an early prototype. It supports project initialization, append-only

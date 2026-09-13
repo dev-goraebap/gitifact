@@ -24,7 +24,7 @@ tryce는 에이전트와 함께 개발하는 프로젝트에서 요구사항, �
 
 다른 프로젝트의 CLI 설치·동기화·로컬 복사본 제거는 [프로젝트 스킬 배포](specs/skill-distribution.md)를 따른다.
 
-자동모드와 승인모드, note와 Git 연결의 기준은 [기록 정책](specs/recording-policy.md)을 따른다. 대화에서 초안을 수집하고 모드에 따라 확정·확인하는 흐름은 [요구사항 수집 설계](specs/requirement-capture.md)에 정리한다. 아직 구현된 CLI 기능은 아니다.
+자동모드와 승인모드, note와 Git 연결의 기준은 [기록 정책](specs/recording-policy.md)을 따른다. 대화에서 초안을 수집하고 모드에 따라 확정·확인하는 흐름은 [요구사항 수집 설계](specs/requirement-capture.md)에 정리한다. 개발 버전의 저장 구조·명령·보존 범위와 제한은 [workflow-1 실행 형식](specs/workflow-format.md)을 따른다.
 
 ## 1. 제품 목적
 

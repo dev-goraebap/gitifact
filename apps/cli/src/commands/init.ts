@@ -1,16 +1,18 @@
 import { InitError, RepositoryReadError, initialConfig, parseProjectConfig } from '@tryce/core';
 import type { ProjectConfig, ProjectMode } from '@tryce/core';
-import { projectInitV1 } from '@tryce/contracts';
+import { projectInitV1, projectInitV2 } from '@tryce/contracts';
 import { initRepository } from '../adapters/git/init-repository.js';
 import { publishConfig, readConfigFile } from '../adapters/filesystem/config-file.js';
+import { readRequirementSets } from '../adapters/filesystem/workflow-store.js';
+import { readNotes } from '../adapters/filesystem/note-store.js';
 
 export interface InitOptions { mode?: ProjectMode; dryRun?: boolean; format?: 'json' | 'text' }
 export async function initializeProject(cwd: string, options: InitOptions, env = process.env, beforePublish?: () => Promise<void>) {
   const repository = initRepository(cwd, env);
   const first = await repository.inspect();
   const root = first.state.repository.rootPath;
-  const result = (config: ProjectConfig, outcome: 'created' | 'planned' | 'already-initialized') => projectInitV1.parse({
-    contract: 'project-init', version: 1, ok: true, outcome, rootPath: root, configPath: '.tryce/config.json',
+  const result = (config: ProjectConfig, outcome: 'created' | 'planned' | 'already-initialized') => (config.format === 'workflow-1' ? projectInitV2 : projectInitV1).parse({
+    contract: 'project-init', version: config.format === 'workflow-1' ? 2 : 1, ok: true, outcome, rootPath: root, configPath: '.tryce/config.json',
     projectFormat: config.format, mode: config.mode, baseline: config.baseline,
     hasUncommittedChanges: first.state.changes.length > 0,
     configChanged: outcome !== 'already-initialized' || first.state.changes.some(change => change.path === '.tryce/config.json'),
@@ -28,7 +30,12 @@ export async function initializeProject(cwd: string, options: InitOptions, env =
   if (first.trackedConfig) throw new InitError('CONFIG_DELETED', 'HEAD 또는 index의 설정이 작업 폴더에서 삭제됐습니다. 재생성하지 않습니다.');
   await repository.checkIgnore(root);
   const config = initialConfig(options.mode, first.state.head.commit, first.state.repository.objectFormat);
+  const verifyEmptyRecords = async () => {
+    if (config.format === 'workflow-1' && ((await readRequirementSets(root)).sets.length || (await readNotes(root)).notes.length)) throw new InitError('EXISTING_RECORDS', '설정 없는 기존 기록을 자동 채택하지 않습니다. 기존 설정과 이력을 확인하세요.');
+  };
+  await verifyEmptyRecords();
   const recheck = async () => {
+    await verifyEmptyRecords();
     if ((await repository.inspect()).stamp !== first.stamp) throw new InitError('INPUT_CHANGED', 'HEAD·index 또는 저장소가 변경됐습니다. 다시 실행하세요.');
     await repository.checkIgnore(root);
     if (await readConfigFile(root) !== undefined) throw new InitError('CONFIG_APPEARED', '다른 실행이 설정을 생성했습니다. 다시 확인합니다.');

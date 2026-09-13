@@ -194,3 +194,17 @@ brief의 정렬·Unicode 발췌·생략 집계·목록 밖 정정 관계, 초기
 프로젝트 사용 빌드를 CLI 0.1.0, SHA-256 d55b21a1a9deaf8c5147b4ad619bc0334a2b61a3486c460e30450f9e7f9ce74f로 갱신한다. 이전 지정 빌드의 기능 범위를 유지한다. 당시 .tmp/releases/0.1.0/tryce-0.1.0.tgz의 파일 목록과 npm publish dry-run을 확인했다. 이후 게시 방식은 apps/cli 패키지 폴더에서 pnpm publish를 실행하도록 바꿨다. 준비 명령과 게시 여부는 [배포 절차](releases.md)를 따른다.
 
 같은 날 공개 패키지 이름을 @tryce/cli로 변경한 뒤 고정 lockfile 설치와 pnpm check를 다시 통과했다. 테스트 96개 및 workspace 밖 오프라인 설치·실행을 확인했고, 지정한 CLI 빌드의 해시는 유지됐다. 패키지 이름과 README가 달라져 배포 integrity는 갱신했다. 새 값과 미확인 조직 권한은 [배포 절차](releases.md)에 기록한다.
+
+## 자동모드·승인모드와 요구사항 기록 검증
+
+2026-09-13 개발 버전 `0.2.0-dev.0`에서 `pnpm check`가 통과했다. core 11개, contracts 7개, CLI 80개, Chromium 6개, 스킬 동기화 5개로 총 109개 테스트와 workspace 밖 오프라인 패키지 설치·실행을 확인했다. 최종 패키지에는 검증한 CLI 바이트와 최신 스킬 원본이 그대로 포함된다. 스킬 형식 검사, 로컬 복사본 일치, 변경 문서 링크도 확인했다. npm 게시와 원격 푸시는 수행하지 않았다.
+
+검증 범위는 신규 auto 기본값, 두 모드의 note, legacy 전환 원문·기준선·note 보존, 반복 모드 변경과 승인 비소급, 묶음 확인·수정 후 재확인, 과거 승인 원문 보존, HEAD·index에 보존된 기록의 변경 거부다. 오래된 계획과 지침 변경, 기존 staging 보존, 무관한 작업 파일 제외, 훅 실패 후 복구 자료 보존, Git 필터의 기록 변경 거부, linked SHA-256 worktree에서 다른 checkout의 index 보존도 확인했다. 배포된 0.1.0 바이너리가 workflow-1을 거부하고 설정 바이트를 보존하는 별도 호환성 시험도 통과했다.
+
+초기 통합 실행에서 발견한 기존 brief 한국어 표시 회귀와 commit 계획의 읽기 명령이 index를 갱신하는 문제를 수정한 뒤 전체 검증을 다시 통과했다. 검증 로그·패키지·호환성 시험 저장소는 `.tmp/validation-archive/2026-09-13/`에 둔다. 이 임시 자료 없이도 추적된 테스트로 검증할 수 있다.
+
+프로젝트 사용 빌드는 `apps/cli/dist/main.js`, CLI `0.2.0-dev.0`, SHA-256 `daeb1e1bf4ac8867eed8ee281bd089c7f1d2f449a1f04976214aa6e46344e92d`로 지정한다. 기존 init·note·brief·Git 관측·스킬 기능과 [workflow-1](specs/workflow-format.md)의 mode·req·commit 기능을 지원한다. 실행은 `node apps/cli/dist/main.js`이며 다시 빌드한 바이너리의 해시가 다르면 이 지정을 자동 승계하지 않는다.
+
+현재 개발 저장소의 config는 prototype-1로 유지한다. 요구사항·승인·커밋 기능은 workflow-1에서 검증됐으며 기존 프로젝트에 적용하려면 사용할 모드를 명시적으로 선택해야 한다. 그래서 이 저장소의 새 기능 설계 문서는 DEV-01로 작성했고, 이번 변경의 Git 커밋에는 DEV-03을 적용한다. 기존 note는 지정된 0.1.0 빌드로 [판단 기록](../.tryce/notes/N-be88a17d-ef33-4923-8120-1853df1c26a0.json)을 추가했다. Claude 복사본의 기존 개발 동기화에는 DEV-04를 유지한다.
+
+실제 에이전트가 새 세션의 대화에서 스킬을 자율적으로 선택하고 적절한 시점에 질문·기록·커밋하는 종단 시험은 아직 수행하지 않았다. 사용자 지침의 자연어 의미와 승인자의 신원은 CLI가 인증하지 않는다. 요구사항 GUI, 구현·검증 완료 판정, superseded·cut 상태 전이, 모든 사건 트레일러와 전체 이력 검사, 장기 기록의 파일 분할, macOS·Linux 실행은 후속 범위다.

@@ -4,9 +4,9 @@ import { projectInitV1 } from './project-init-v1.js';
 import { noteV1 } from './notes-v1.js';
 
 const error = z.strictObject({ code: z.string().min(1), message: z.string().min(1) });
-const page = <T extends z.ZodType>(item: T) => z.strictObject({ total: z.int().nonnegative(), included: z.int().nonnegative(), omitted: z.int().nonnegative(), items: z.array(item) })
+export const page = <T extends z.ZodType>(item: T) => z.strictObject({ total: z.int().nonnegative(), included: z.int().nonnegative(), omitted: z.int().nonnegative(), items: z.array(item) })
   .refine(value => value.included === value.items.length && value.total === value.included + value.omitted, 'Invalid omission counts');
-const component = <T extends z.ZodType>(data: T) => z.discriminatedUnion('state', [
+export const component = <T extends z.ZodType>(data: T) => z.discriminatedUnion('state', [
   z.strictObject({ state: z.literal('available'), data }),
   z.strictObject({ state: z.literal('not-available'), reason: z.string().min(1) }),
   z.strictObject({ state: z.literal('error'), error }),

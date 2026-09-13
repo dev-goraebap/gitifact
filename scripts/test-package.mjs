@@ -70,6 +70,14 @@ try {
   pnpm(['--dir', temporaryRoot, 'exec', 'tryce', 'skills', 'remove'], temporaryRoot);
   await assert.rejects(readFile(skillCopy), { code: 'ENOENT' });
   assert.equal(await readFile(skillSource, 'utf8'), sourceBytes + '\nProject customization\n');
+  const workflow = args => JSON.parse(pnpm(['--dir', temporaryRoot, 'exec', 'tryce', ...args], temporaryRoot));
+  assert.equal(workflow(['mode', 'set', 'approval', '--reason', 'Explicit migration in package fixture']).data.mode, 'approval');
+  const requirement = workflow(['req', 'draft', '--spec', 'package', '--title', 'Packaged workflow', '--message', 'Installed CLI preserves requirements', '--author', 'Fixture', '--reason', 'Package verification']).data.result;
+  const review = workflow(['req', 'review', requirement.id]).data.result;
+  workflow(['req', 'approve', review.id, '--by', 'Fixture', '--evidence', 'Explicit fixture confirmation']);
+  const current = workflow(['brief', '--all']);
+  assert.equal(current.version, 2); assert.equal(current.report.requirements.data.items[0].approval, 'approved');
+  assert.equal(current.report.notes.data.items[0].id, added.notes[0].id);
   const child = spawn(process.execPath, [join(installedRoot, 'dist', 'main.js'), 'browser'], {
     cwd: temporaryRoot, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true,
   });
@@ -104,7 +112,7 @@ try {
     assert.equal(response.status, 200);
     assert.ok((await response.json()).changes.some(change => change.path === 'browser-created.txt'));
   } finally { child.kill(); await exited; }
-  console.log('PASS: packed CLI installs offline; init, note, brief, status and browser run outside the workspace.');
+  console.log('PASS: packed CLI installs offline; legacy migration, requirement approval, notes, brief, skills, status and browser run outside the workspace.');
 } finally {
   // Only removes the exact directory returned by mkdtemp for this check.
   await rm(temporaryRoot, { recursive: true, force: true });

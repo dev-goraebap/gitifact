@@ -1,8 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
-import { InitError, RepositoryReadError, briefList, briefNotes, parseProjectConfig, summarizeChanges } from '@tryce/core';
-import { briefReportV1, briefV1 } from '@tryce/contracts';
-import type { BriefV1 } from '@tryce/contracts';
+import { InitError, RepositoryReadError, briefList, briefNotes, parseProjectConfig, summarizeChanges, requirementViews } from '@tryce/core';
+import { briefReportV1, briefV1, briefReportV2, briefV2 } from '@tryce/contracts';
+import type { BriefV1, BriefV2 } from '@tryce/contracts';
+import { workflowTransaction } from '../adapters/filesystem/workflow-store.js';
 import { createRepositoryReader } from '../adapters/git/repository-reader.js';
 import { initRepository } from '../adapters/git/init-repository.js';
 import { readConfigFile, fileInfo } from '../adapters/filesystem/config-file.js';
@@ -18,7 +19,8 @@ const failed = (error: unknown) => ({ state: 'error' as const, error: describe(e
 const unavailable = (reason: string) => ({ state: 'not-available' as const, reason });
 const available = <T>(data: T) => ({ state: 'available' as const, data });
 
-export async function readBrief(cwd: string, options: Options = {}, env = process.env, beforeVerify?: () => Promise<void>): Promise<BriefV1> {
+export async function readBrief(cwd: string, options: Options = {}, env = process.env, beforeVerify?: () => Promise<void>): Promise<BriefV1 | BriefV2> {
+  let workflow = false;
   try {
     const startedAt = new Date().toISOString();
     const reader = createRepositoryReader(cwd, { env });
@@ -49,7 +51,15 @@ export async function readBrief(cwd: string, options: Options = {}, env = proces
       if (paths.some(path => !result.paths.includes(path))) throw new InitError('NOTE_DELETED', 'HEAD 또는 index의 기록이 작업 폴더에서 삭제됐습니다.');
       return result;
     };
-    const enabled = projectResult.value?.config.format === 'prototype-1';
+    workflow = projectResult.value?.config.format === 'workflow-1';
+    const enabled = projectResult.value?.config.format === 'prototype-1' || workflow;
+    const getRequirements = () => workflowTransaction(root, false, async c => {
+      const items = c.records.sets.flatMap(s => requirementViews(s).map(v => ({ id: v.id, revision: v.revision, title: v.title, state: v.state, approval: v.approval,
+        path: `specs/${s.spec}/tryce.json`, implementation: v.implementation, verification: v.verification })));
+      await c.recheck(); return { data: briefList(items, 30, options.all), stamp: c.records.stamp };
+    }, env);
+    const requirementResult = workflow ? await getRequirements().then(value => ({ value, error: null }), error => ({ value: null, error })) : null;
+    let requirements = requirementResult?.error ? failed(requirementResult.error) : requirementResult?.value ? available(requirementResult.value.data) : unavailable('legacy-format');
     const [noteResult, documentResult] = await Promise.all([
       enabled ? getNotes().then(value => ({ value, error: null }), error => ({ value: null, error })) : Promise.resolve({ value: null, error: null }),
       briefDocuments(root).then(value => ({ value, error: null }), error => ({ value: null, error })),
@@ -59,6 +69,10 @@ export async function readBrief(cwd: string, options: Options = {}, env = proces
     let documents = documentResult.error ? failed(documentResult.error) : available(briefList(documentResult.value ?? [], 30, options.all));
     let checkedProject = projectView;
     await beforeVerify?.();
+    if (requirementResult?.value) {
+      try { if ((await getRequirements()).stamp !== requirementResult.value.stamp) throw new InitError('INPUT_CHANGED', '조회 중 요구사항이 변경됐습니다.'); }
+      catch (error) { requirements = failed(error); }
+    }
     if (!projectResult.error) {
       try {
         if (await readConfigFile(root) !== (projectResult.value?.text ?? undefined)) throw new InitError('INPUT_CHANGED', '조회 중 프로젝트 설정이 변경됐습니다.');
@@ -73,24 +87,30 @@ export async function readBrief(cwd: string, options: Options = {}, env = proces
       catch (error) { documents = failed(error); }
     }
     if (JSON.stringify(await reader.read()) !== JSON.stringify(first)) throw new InitError('REPOSITORY_CHANGED', '조회 중 Git 상태가 변경됐습니다. 다시 실행하세요.');
-    const report = briefReportV1.parse({
+    const reportInput = {
       observation: { id: randomUUID(), startedAt, completedAt: new Date().toISOString(), consistency: 'best-effort' },
       repository: first.repository,
       git: { source: 'head-index-working-tree', head: first.head, summary: summarizeChanges(first.changes), changes: briefList(first.changes, 20, options.all) },
       project: checkedProject, notes, documents,
       scope: { all: !!options.all, notes: 'working-tree', documents: 'root-AGENTS-README-and-docs-markdown' },
       checks: { state: 'not-run', reason: 'brief-is-observation-only' },
-      unsupported: ['requirement-state', 'task-state', 'open-questions', 'history-analysis', 'skill-discovery'],
+      unsupported: [...(workflow ? [] : ['requirement-state']), 'task-state', 'open-questions', 'history-analysis', 'skill-discovery'],
       followUp: { complete: 'tryce brief --all', notes: 'tryce note list', note: 'tryce note show <id>', git: 'tryce status' },
-    });
+    };
+    if (workflow) {
+      const report = briefReportV2.parse({ ...reportInput, requirements });
+      const partial = [checkedProject, notes, documents, requirements].some(item => item.state === 'error');
+      return briefV2.parse(partial ? { contract: 'brief', version: 2, ok: false, report, error: { code: 'INCOMPLETE_BRIEF', message: '자료별 오류와 원문을 확인하세요.' } } : { contract: 'brief', version: 2, ok: true, report });
+    }
+    const report = briefReportV1.parse(reportInput);
     const partial = [checkedProject, notes, documents].some(item => item.state === 'error');
     return briefV1.parse(partial ? { contract: 'brief', version: 1, ok: false, report,
       error: { code: 'INCOMPLETE_BRIEF', message: '일부 자료를 확인하지 못했습니다. 자료별 오류와 원문을 확인하세요.' } }
       : { contract: 'brief', version: 1, ok: true, report });
-  } catch (error) { return briefV1.parse({ contract: 'brief', version: 1, ok: false, report: null, error: describe(error) }); }
+  } catch (error) { return workflow ? briefV2.parse({ contract: 'brief', version: 2, ok: false, report: null, error: describe(error) }) : briefV1.parse({ contract: 'brief', version: 1, ok: false, report: null, error: describe(error) }); }
 }
 
-export function briefText(dto: BriefV1): string {
+export function briefText(dto: BriefV1 | BriefV2): string {
   const lines: string[] = [];
   if (!dto.ok) lines.push(dto.error.code + ': ' + dto.error.message);
   const r = dto.report;
@@ -117,7 +137,12 @@ export function briefText(dto: BriefV1): string {
       '원문: ' + note.path);
   }
   if (r.documents.state === 'available') { counts('문서 위치', r.documents.data); for (const doc of r.documents.data.items) lines.push(doc.kind + ': ' + escapeTerminal(doc.path)); }
-  lines.push('미지원: 요구사항·작업 상태, 미결 질문, 이력 분석, 스킬 탐색',
+  if ('requirements' in r) {
+    const part = r.requirements;
+    if (part.state === 'available') { counts('요구사항', part.data); for (const item of part.data.items) lines.push(`${item.id} [${item.state}/${item.approval}] ${escapeTerminal(item.title)} / ${item.path}`); }
+    else lines.push('요구사항: ' + (part.state === 'error' ? part.error.code : part.reason));
+  }
+  lines.push('미지원: ' + (dto.version === 1 ? '요구사항·작업 상태, 미결 질문, 이력 분석, 스킬 탐색' : '작업 상태, 미결 질문, 이력 분석, 스킬 탐색'),
     '전체 관측: tryce brief --all / 기록 원문: tryce note show <id> / Git 상세: tryce status');
   return lines.join('\n') + '\n';
 }

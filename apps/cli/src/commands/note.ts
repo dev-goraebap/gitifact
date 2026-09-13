@@ -28,8 +28,8 @@ export async function noteCommand(cwd: string, action: 'enable' | 'add' | 'list'
         || (await readNotes(root)).stamp !== initialNotes.stamp) throw new InitError('INPUT_CHANGED', 'HEAD·index·설정·기록이 변경됐습니다. 다시 실행하세요.');
     };
     if (action === 'enable') {
-      if (config.format === 'prototype-1') { await recheck(); return result('already-enabled'); }
-      if (config.mode !== 'prototype') throw new InitError('PROTOTYPE_REQUIRED', '현재 기록 기능은 prototype 모드에서 활성화합니다. 모드는 자동으로 바꾸지 않습니다.');
+      if (['prototype-1', 'workflow-1'].includes(config.format)) { await recheck(); return result('already-enabled'); }
+      if (config.format !== 'workflow-1' && config.mode !== 'prototype') throw new InitError('PROTOTYPE_REQUIRED', '현재 기록 기능은 prototype 모드에서 활성화합니다. 모드는 자동으로 바꾸지 않습니다.');
       if (initialNotes.notes.length) throw new InitError('EXISTING_NOTES', 'init-1 프로젝트에 이미 기록이 있습니다. 자동으로 채택하지 않습니다.');
       const backupPath = '.tryce/config.init-1.' + digest(original) + '.json';
       await repo.checkIgnore(root); await repo.checkIgnore(root, backupPath);
@@ -47,7 +47,7 @@ export async function noteCommand(cwd: string, action: 'enable' | 'add' | 'list'
       if (await readConfigFile(root) !== converted || (await repo.inspect()).stamp !== first.stamp) throw new InitError('INPUT_CHANGED_AFTER_WRITE', '전환 후 입력이 변경됐습니다. 설정과 보존 원본을 확인하세요.');
       return result('enabled', [], backupPath);
     }
-    if (config.format !== 'prototype-1') throw new InitError('NOTES_NOT_ENABLED', 'tryce note enable로 기록 형식을 먼저 활성화하세요.');
+    if (!['prototype-1', 'workflow-1'].includes(config.format)) throw new InitError('NOTES_NOT_ENABLED', 'tryce note enable로 기록 형식을 먼저 활성화하세요.');
     if (action === 'list' || action === 'show') {
       if (action === 'show' && (!id || !noteIdPattern.test(id))) throw new InitError('INVALID_NOTE_ID', '올바른 기록 ID가 필요합니다.');
       const selected = action === 'show' ? initialNotes.notes.filter(note => note.id === id) : initialNotes.notes;
@@ -55,7 +55,7 @@ export async function noteCommand(cwd: string, action: 'enable' | 'add' | 'list'
       await recheck();
       return result(action === 'show' ? 'shown' : 'listed', selected);
     }
-    if (config.mode !== 'prototype') throw new InitError('PROTOTYPE_REQUIRED', 'prototype 모드에서 기록을 추가하세요.');
+    if (config.format !== 'workflow-1' && config.mode !== 'prototype') throw new InitError('PROTOTYPE_REQUIRED', 'prototype 모드에서 기록을 추가하세요.');
     if ((options.message === undefined) === (options.file === undefined)) throw new InitError('NOTE_INPUT_REQUIRED', '--message 또는 --file 중 하나로 본문을 지정하세요.');
     if (initialNotes.notes.length >= 1000) throw new InitError('NOTE_LIMIT', '기록이 1,000개에 도달했습니다.');
     const text = options.file === undefined ? options.message : await safeText(options.file);
