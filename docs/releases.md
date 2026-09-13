@@ -94,3 +94,9 @@ apps/cli의 모의 게시 결과는 파일 15개, integrity `sha512-0ep8EQ1Y/ACY
 공용 스킬의 기본 안내는 자동모드·승인모드 중심으로 정리하고 내부 저장 형식 설명은 이전 버전 호환성 절로 분리했다. 기존 프로젝트의 요구사항 도출은 특정 문서 폴더 이동이 아니라 이용 가능한 프로젝트 맥락을 근거로 하는 흐름임을 제품 기준에 명시했다. AGENTS.md·CLAUDE.md의 자동 생성·연결은 아직 구현 범위에 포함하지 않는다. npm 게시와 원격 푸시는 수행하지 않았다.
 
 `pnpm check`에서 타입 검사, 테스트 111개, workspace 밖 오프라인 패키지 설치·실행을 통과했다. 설치한 패키지의 요구사항 승인·brief가 새 저장 위치를 반환하고 루트 specs를 만들지 않는 것도 확인했다. 검증한 프로젝트 사용 빌드는 [개발 환경](development.md)에 기록했다.
+
+## 0.2.1 게시 완료
+
+2026-09-13 사용자 요청에 따라 `d7058b6`을 main에 푸시하고 `apps/cli`에서 Git 검사를 유지한 pnpm publish로 `@tryce/cli@0.2.1`을 공개 게시했다. latest는 0.2.1, 라이선스는 MIT다. 모의 실행·실제 게시·레지스트리의 integrity는 모두 `sha512-Xlc01hmqYAJQYZczaXwdAFO4y9UuRVWMm8VCNkynv1q4bz2L8c5brTtOLVzhmQB8osbfteu8tjy2DlGIo3jz7Q==`이며 패키지는 15개 파일이다.
+
+레지스트리에서 새 시험 폴더에 설치한 CLI와 스킬의 SHA-256이 검증한 로컬 파일과 일치했다. 별도 Git 프로젝트에서 버전, init, 요구사항 초안·묶음·자동 확정, brief와 `.tryce/spec/` 경로를 확인했다. `.tmp/demo`도 0.2.1로 갱신했고 `.tryce` 전체 파일의 해시가 설치 전후 동일하며 기존 형식의 brief가 정상임을 확인했다. 시험 자료는 `.tmp/validation-archive/2026-09-13/registry-0.2.1/`에 보존한다. 이 개발 저장소는 기존 prototype-1을 유지하므로 이번 커밋은 DEV-03을 적용한 기본 Git 커밋이다.
