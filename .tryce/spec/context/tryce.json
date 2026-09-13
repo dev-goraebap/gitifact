@@ -1,0 +1,63 @@
+{
+  "kind": "tryce-requirements",
+  "format": "requirements-1",
+  "spec": "context",
+  "requirements": [
+    {
+      "id": "R-context-zvk2ihqyuj",
+      "revisions": [
+        {
+          "id": "dfc82297-d306-4ae5-b1b6-321e93ca427b",
+          "title": "출처와 한계를 드러내는 세션 브리핑",
+          "text": "brief는 현재 checkout의 설정·Git 상태·note·요구사항·문서 위치를 읽고 출처·생략을 표시한다. 자료 손상이나 삭제를 빈 정상 결과로 보이지 않게 하고 읽을 수 있는 자료는 부분 보고한다. 미실행 검사·미평가 구현은 완료로 표시하지 않는다.\n\n도입 근거: docs/specs/session-brief.md; docs/specs/workflow-format.md: 상태와 명령; apps/cli/src/commands/brief.ts; apps/cli/test/brief.test.mjs\n도입 시점: 3a83e5c 이후의 프로젝트 맥락과 이번 사용자 요청. 기록 등록은 구현·검증 완료 판정이나 과거 승인 소급이 아니다.",
+          "author": "Codex",
+          "reason": "기존 프로젝트 도입: docs/specs/session-brief.md; docs/specs/workflow-format.md: 상태와 명령; apps/cli/src/commands/brief.ts; apps/cli/test/brief.test.mjs",
+          "at": "2026-09-13T14:04:13.055Z"
+        }
+      ]
+    },
+    {
+      "id": "R-context-f4s5khx2hp",
+      "revisions": [
+        {
+          "id": "27a92d7a-5c1e-4c20-a894-de66f629b0b5",
+          "title": "읽기 전용 로컬 브라우저",
+          "text": "로컬 브라우저는 현재 프로젝트 정보를 사람이 읽고 갱신하는 화면으로 제공한다. 조회로 프로젝트 기록을 수정하지 않는다. 실행 세션과 worktree를 구분하고 다른 세션의 결과를 현재 상태로 섞지 않는다. 브라우저 편집 기능은 제공 범위에서 제외한다.\n\n도입 근거: docs/bref.md: 제품 범위; docs/specs/browser-server.md; apps/browser/test/status.spec.ts\n도입 시점: 3a83e5c 이후의 프로젝트 맥락과 이번 사용자 요청. 기록 등록은 구현·검증 완료 판정이나 과거 승인 소급이 아니다.",
+          "author": "Codex",
+          "reason": "기존 프로젝트 도입: docs/bref.md: 제품 범위; docs/specs/browser-server.md; apps/browser/test/status.spec.ts",
+          "at": "2026-09-13T14:04:23.761Z"
+        }
+      ]
+    }
+  ],
+  "reviews": [
+    {
+      "id": "e07a1379-bbfc-415b-89f4-7d0bc960df43",
+      "at": "2026-09-13T14:05:44.136Z",
+      "items": [
+        {
+          "id": "R-context-zvk2ihqyuj",
+          "revision": "dfc82297-d306-4ae5-b1b6-321e93ca427b",
+          "document": "# R-context-zvk2ihqyuj\n\n출처와 한계를 드러내는 세션 브리핑\n\nbrief는 현재 checkout의 설정·Git 상태·note·요구사항·문서 위치를 읽고 출처·생략을 표시한다. 자료 손상이나 삭제를 빈 정상 결과로 보이지 않게 하고 읽을 수 있는 자료는 부분 보고한다. 미실행 검사·미평가 구현은 완료로 표시하지 않는다.\n\n도입 근거: docs/specs/session-brief.md; docs/specs/workflow-format.md: 상태와 명령; apps/cli/src/commands/brief.ts; apps/cli/test/brief.test.mjs\n도입 시점: 3a83e5c 이후의 프로젝트 맥락과 이번 사용자 요청. 기록 등록은 구현·검증 완료 판정이나 과거 승인 소급이 아니다.\n",
+          "blob": "64c8fe3f58f48141a2380d12beb67d10231bfc92"
+        },
+        {
+          "id": "R-context-f4s5khx2hp",
+          "revision": "27a92d7a-5c1e-4c20-a894-de66f629b0b5",
+          "document": "# R-context-f4s5khx2hp\n\n읽기 전용 로컬 브라우저\n\n로컬 브라우저는 현재 프로젝트 정보를 사람이 읽고 갱신하는 화면으로 제공한다. 조회로 프로젝트 기록을 수정하지 않는다. 실행 세션과 worktree를 구분하고 다른 세션의 결과를 현재 상태로 섞지 않는다. 브라우저 편집 기능은 제공 범위에서 제외한다.\n\n도입 근거: docs/bref.md: 제품 범위; docs/specs/browser-server.md; apps/browser/test/status.spec.ts\n도입 시점: 3a83e5c 이후의 프로젝트 맥락과 이번 사용자 요청. 기록 등록은 구현·검증 완료 판정이나 과거 승인 소급이 아니다.\n",
+          "blob": "7035b417764171214a911fc04c4c1e91852e1a2d"
+        }
+      ]
+    }
+  ],
+  "decisions": [
+    {
+      "review": "e07a1379-bbfc-415b-89f4-7d0bc960df43",
+      "kind": "auto",
+      "actor": "Codex",
+      "evidence": "사용자가 자동모드 자체 도입을 요청했다. 명시된 제품 의도와 현재 문서·코드의 근거가 일치하는 이 묶음을 에이전트가 확정한다. 사용자 승인이나 구현 완료를 소급하지 않는다.",
+      "at": "2026-09-13T14:05:50.025Z",
+      "mode": "auto"
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 {
   "kind": "tryce-project",
-  "format": "workflow-1",
-  "mode": "auto",
+  "format": "prototype-1",
+  "mode": "prototype",
   "baseline": {
     "kind": "commit",
     "objectFormat": "sha1",

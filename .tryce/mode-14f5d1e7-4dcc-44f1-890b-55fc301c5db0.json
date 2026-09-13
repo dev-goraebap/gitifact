@@ -1,0 +1,9 @@
+{
+  "kind": "mode-transition-intent",
+  "at": "2026-09-13T14:01:02.463Z",
+  "fromFormat": "prototype-1",
+  "from": "prototype",
+  "to": "auto",
+  "backup": ".tryce/config.prototype-1.98c3ecbd70bd3115c9bdc962d9511eca04c8663eb6798b911054a70e5753076d.json",
+  "reason": "사용자가 도입 프롬프트·기존 요구사항 도출 절차와 우리 프로젝트의 자동모드 전환·요구사항 등록·Tryce 커밋 적용을 진행하도록 요청했다."
+}
