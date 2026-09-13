@@ -50,7 +50,7 @@ tryce는 개발 과정에서 이런 정보를 남기려 합니다.
 
 ## 프로젝트 상태
 
-제품 기준과 주요 기록 규약을 정리하고 CLI·브라우저의 개발 환경을 구축했습니다. `init`으로 프로젝트 설정과 도입 기준선을 만들고, `note`로 프로토타입의 발견·제약·기각 이유를 남길 수 있습니다. `status`는 Git 변경을 조회하고 `browser`는 같은 정보를 로컬 화면에 표시합니다. 요구사항 기록·검사와 스킬·훅 설치는 아직 지원하지 않습니다. `brief`는 설정·Git 상태·기록·문서 위치를 모아 새 세션에 전달합니다.
+제품 기준과 주요 기록 규약을 정리하고 CLI·브라우저의 개발 환경을 구축했습니다. `init`으로 프로젝트 설정과 도입 기준선을 만들고, `note`로 프로토타입의 발견·제약·기각 이유를 남길 수 있습니다. `status`는 Git 변경을 조회하고 `browser`는 같은 정보를 로컬 화면에 표시합니다. `brief`는 설정·Git 상태·기록·문서 위치를 모아 새 세션에 전달합니다. `skills install/sync/remove`는 스킬 원본 설치와 로컬 복사본 관리를 지원합니다. 요구사항 기록·검사와 훅은 아직 지원하지 않습니다.
 
 확정 사항과 남은 설계 항목은 [제품·설계 기준](docs/bref.md)에서 확인할 수 있습니다.
 
@@ -68,3 +68,5 @@ pnpm cli browser
 CLI 실행과 검증 범위는 [개발 환경](docs/development.md), 코드 구조는 [아키텍처 기준](docs/architecture/README.md)을 참고하세요.
 
 개발용 `tryce-workflow` 스킬은 작업 시작의 brief 조회와 중요한 판단의 note 작성을 안내합니다. Codex는 원본을 읽고, Claude Code용 로컬 복사본은 `pnpm skills:sync`로 생성합니다. [스킬 연결](docs/specs/agent-skills.md)에서 사용·갱신 절차를 확인할 수 있습니다.
+
+다른 프로젝트에 설치한 CLI에서는 `tryce skills install --agent claude`로 연결합니다. 이후 `tryce skills sync`로 복사본을 갱신하고 `tryce skills remove`로 로컬 복사본을 제거합니다. 원본과 사용자 수정 보존 범위는 [프로젝트 스킬 배포](docs/specs/skill-distribution.md)를 참고하세요.

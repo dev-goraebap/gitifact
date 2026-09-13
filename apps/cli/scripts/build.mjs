@@ -1,4 +1,4 @@
-import { readFile, cp, rm } from 'node:fs/promises';
+import { readFile, cp, rm, mkdir, writeFile } from 'node:fs/promises';
 import { relative, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { build, context } from 'esbuild';
@@ -12,6 +12,10 @@ await readFile(join(browserSource, 'index.html'));
 if (relative(packageRoot, browserDestination) !== join('dist', 'browser')) throw new Error('Unexpected browser asset destination');
 await rm(browserDestination, { recursive: true, force: true });
 await cp(browserSource, browserDestination, { recursive: true });
+const skillSource = new URL('../../../.agents/skills/tryce-workflow/SKILL.md', import.meta.url);
+const skillDestination = new URL('../dist/skills/tryce-workflow/', import.meta.url);
+await mkdir(skillDestination, { recursive: true });
+await writeFile(new URL('SKILL.md', skillDestination), await readFile(skillSource));
 const options = {
   absWorkingDir: packageRoot,
   entryPoints: ['src/main.ts'],

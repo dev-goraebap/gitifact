@@ -52,6 +52,19 @@ try {
   assert.equal(brief.report.notes.data.items[0].id, added.notes[0].id);
   assert.equal(brief.report.notes.data.omitted, 0);
   assert.equal(brief.report.checks.state, 'not-run');
+  const skillSource = join(temporaryRoot, '.agents/skills/tryce-workflow/SKILL.md');
+  const skillCopy = join(temporaryRoot, '.claude/skills/tryce-workflow/SKILL.md');
+  const installSkills = JSON.parse(pnpm(['--dir', temporaryRoot, 'exec', 'tryce', 'skills', 'install', '--agent', 'claude'], temporaryRoot));
+  assert.equal(installSkills.outcome, 'installed');
+  const sourceBytes = await readFile(skillSource, 'utf8');
+  assert.match(sourceBytes, /name: tryce-workflow/);
+  assert.equal(await readFile(skillCopy, 'utf8'), sourceBytes);
+  await writeFile(skillSource, sourceBytes + '\nProject customization\n');
+  pnpm(['--dir', temporaryRoot, 'exec', 'tryce', 'skills', 'sync'], temporaryRoot);
+  assert.equal(await readFile(skillCopy, 'utf8'), sourceBytes + '\nProject customization\n');
+  pnpm(['--dir', temporaryRoot, 'exec', 'tryce', 'skills', 'remove'], temporaryRoot);
+  await assert.rejects(readFile(skillCopy), { code: 'ENOENT' });
+  assert.equal(await readFile(skillSource, 'utf8'), sourceBytes + '\nProject customization\n');
   const child = spawn(process.execPath, [join(temporaryRoot, 'node_modules', '@tryce', 'cli', 'dist', 'main.js'), 'browser'], {
     cwd: temporaryRoot, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true,
   });

@@ -20,6 +20,8 @@ tryce는 에이전트와 함께 개발하는 프로젝트에서 요구사항, �
 
 에이전트의 brief·note 사용과 개발용 복사본 생성 절차는 [에이전트 스킬 연결](specs/agent-skills.md)에 기록한다.
 
+다른 프로젝트의 CLI 설치·동기화·로컬 복사본 제거는 [프로젝트 스킬 배포](specs/skill-distribution.md)를 따른다.
+
 ## 1. 제품 목적
 
 코드에는 현재 동작이 남지만, 요구사항을 바꾼 이유나 구현하지 않기로 한 판단은 남지 않을 수 있다. 에이전트 세션이 바뀌면 이러한 맥락을 다시 설명해야 한다.
@@ -302,7 +304,7 @@ CLI 업데이트와 프로젝트 형식 전환은 별개다. 지원 중인 옛 �
 
 초기 구상은 Kiro의 requirements·design·tasks 구성과 스펙 기반 개발, Anthropic의 커밋·PR 기반 기록과 에이전트 개발 흐름을 참고했다. 이 문서는 해당 제품의 현재 동작을 설명하는 문서가 아니다.
 
-- 논의 원문: `.tmp/discussion.md`
+- 논의 원문: `.tmp/discussion-archive/discussion.md`
 - 조사 자료: `.tmp/refs/kiro-spec-architectures/`, `.tmp/refs/anthropic-ai-native-sdlc/`
 - 표준 스킬 형식: [Agent Skills](https://agentskills.io/specification)
 - 외부 스킬 설치 도구: [Vercel skills](https://github.com/vercel-labs/skills)

@@ -4,6 +4,7 @@ import { runBrowser, parsePort } from './commands/browser.js';
 import { runInit } from './commands/init.js';
 import { runNote } from './commands/note.js';
 import { runBrief } from './commands/brief.js';
+import { runSkills } from './commands/skills.js';
 
 declare const __CLI_VERSION__: string;
 
@@ -56,4 +57,10 @@ program.command('brief').description('설정·Git 상태·프로토타입 기록
   .allowExcessArguments(false).option('--all', '지원 범위의 생략 없는 관측 결과')
   .addOption(outputOption()).action(runBrief);
 
+const skills = program.command('skills').description('프로젝트 스킬 원본 설치와 로컬 복사본 관리');
+for (const action of ['install', 'sync', 'remove'] as const) {
+  const command = skills.command(action).allowExcessArguments(false).option('--dry-run', '파일을 쓰지 않고 계획 확인').addOption(outputOption());
+  if (action !== 'remove') command.addOption(new Option('--agent <agent>', '사용할 에이전트').choices(['codex', 'claude']));
+  command.action(options => runSkills(action, options));
+}
 await program.parseAsync();

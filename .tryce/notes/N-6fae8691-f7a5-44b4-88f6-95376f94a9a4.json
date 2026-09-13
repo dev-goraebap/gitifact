@@ -1,0 +1,13 @@
+{
+  "kind": "tryce-note",
+  "format": "note-1",
+  "id": "N-6fae8691-f7a5-44b4-88f6-95376f94a9a4",
+  "type": "constraint",
+  "text": "사용자가 데모 위치를 .tmp/demo로 정정했다. 독립 Git 저장소와 설치 파일을 해시 일치 확인 후 이 위치로 옮겼다. .tmp 루트의 검증 산출물은 validation-archive/2026-09-13, 논의 자료는 discussion-archive에 보존했다. npm tryce 배포 계획은 유지한다. 근거: 사용자 경로 정정과 docs/development.md.",
+  "author": "Codex",
+  "recordedAt": "2026-09-13T09:52:24.554Z",
+  "references": [
+    "N-360bc016-17c6-415a-bb06-808da7a91aa1"
+  ],
+  "supersedes": "N-3e89baea-180d-4e8d-b8c8-9fa25c339a52"
+}
