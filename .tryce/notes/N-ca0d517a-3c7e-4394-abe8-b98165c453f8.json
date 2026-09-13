@@ -1,0 +1,11 @@
+{
+  "kind": "tryce-note",
+  "format": "note-1",
+  "id": "N-ca0d517a-3c7e-4394-abe8-b98165c453f8",
+  "type": "constraint",
+  "text": "공개 npm 이름을 tryce에서 @tryce/cli로 변경한다. 클로드 인계에 따르면 기존 이름은 tracer,brace와 유사하다는 E403으로 거부됐고 사용자가 조직 스코프 이름을 확정했다. 실행 명령 tryce, 버전 0.1.0, MIT, 게시 폴더 apps/cli는 유지한다. 개인 계정 스코프와 다른 일반 이름은 채택하지 않았다. 현재 npm org ls tryce는 E403으로 거부돼 조직 접근은 미확인이다. 게시와 푸시는 요청 시 기존 인증으로 수행하며 인증 오류 또는 OTP 요구 시 중단한다. 토큰과 계정 설정은 수정하지 않는다. 근거: 사용자 승인 인계와 docs/releases.md.",
+  "author": "Codex",
+  "recordedAt": "2026-09-13T11:01:51.625Z",
+  "references": [],
+  "supersedes": "N-370dfa7d-d1c3-4f99-a7d5-b98486aaf418"
+}

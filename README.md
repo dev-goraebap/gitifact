@@ -11,7 +11,7 @@ tryce는 Claude Code, Codex 등 기존 개발 에이전트와 함께 사용하�
 Node.js 24.x와 Git이 필요합니다. 현재 실행 검증 환경은 Windows입니다.
 
 ```sh
-npm install -g tryce
+npm install -g @tryce/cli
 ```
 
 사용할 Git 프로젝트에서 실행합니다.

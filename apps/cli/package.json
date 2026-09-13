@@ -1,5 +1,5 @@
 {
-  "name": "tryce",
+  "name": "@tryce/cli",
   "version": "0.1.0",
   "description": "Git-backed project context and decision notes for coding agents.",
   "license": "MIT",

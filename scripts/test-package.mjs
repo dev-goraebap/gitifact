@@ -15,16 +15,17 @@ const pnpm = (args, cwd) => execFileSync(process.execPath, [packageManager, ...a
 });
 
 try {
-  pnpm(['--filter', 'tryce', 'pack', '--pack-destination', temporaryRoot], workspace);
+  pnpm(['--filter', '@tryce/cli', 'pack', '--pack-destination', temporaryRoot], workspace);
   const archives = (await readdir(temporaryRoot)).filter((name) => name.endsWith('.tgz'));
   assert.equal(archives.length, 1);
   await writeFile(join(temporaryRoot, 'package.json'), JSON.stringify({ private: true }));
   pnpm(['--dir', temporaryRoot, 'add', join(temporaryRoot, archives[0]), '--offline', '--ignore-scripts'], temporaryRoot);
-  const installedPackage = join(temporaryRoot, 'node_modules', 'tryce', 'package.json');
-  const { version, dependencies = {} } = JSON.parse(await readFile(installedPackage, 'utf8'));
-  const installedRoot = join(temporaryRoot, 'node_modules', 'tryce');
+  const installedPackage = join(temporaryRoot, 'node_modules', '@tryce', 'cli', 'package.json');
+  const { name, version, dependencies = {} } = JSON.parse(await readFile(installedPackage, 'utf8'));
+  assert.equal(name, '@tryce/cli');
+  const installedRoot = join(temporaryRoot, 'node_modules', '@tryce', 'cli');
   assert.match(await readFile(join(installedRoot, 'LICENSE'), 'utf8'), /MIT License/);
-  assert.match(await readFile(join(installedRoot, 'README.md'), 'utf8'), /npm install -g tryce/);
+  assert.match(await readFile(join(installedRoot, 'README.md'), 'utf8'), /npm install -g @tryce\/cli/);
   assert.match(await readFile(join(installedRoot, 'dist/THIRD_PARTY_NOTICES.txt'), 'utf8'), /Meta Platforms/);
   assert.deepEqual(dependencies, {}, 'The initial bundled CLI must be self-contained.');
   assert.equal(pnpm(['--dir', temporaryRoot, 'exec', 'tryce', '--version'], temporaryRoot).trim(), version);
@@ -69,7 +70,7 @@ try {
   pnpm(['--dir', temporaryRoot, 'exec', 'tryce', 'skills', 'remove'], temporaryRoot);
   await assert.rejects(readFile(skillCopy), { code: 'ENOENT' });
   assert.equal(await readFile(skillSource, 'utf8'), sourceBytes + '\nProject customization\n');
-  const child = spawn(process.execPath, [join(temporaryRoot, 'node_modules', 'tryce', 'dist', 'main.js'), 'browser'], {
+  const child = spawn(process.execPath, [join(installedRoot, 'dist', 'main.js'), 'browser'], {
     cwd: temporaryRoot, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true,
   });
   const exited = once(child, 'exit');

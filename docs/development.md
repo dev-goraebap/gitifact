@@ -8,7 +8,7 @@
 
 demo에는 `.tmp/skills-package/tryce-cli-0.0.0.tgz`를 npm으로 오프라인 설치했다. demo에서 `npm run tryce -- brief --format text`처럼 설치한 CLI를 실행한다. 개발 빌드 직접 실행과 구분한다. 중첩 저장소에서 상위 workspace의 의존성이 보일 수 있으므로 운영체제 임시 폴더의 오프라인 패키지 설치 검증도 유지한다.
 
-사용자가 요청한 공개 npm 패키지 이름은 `tryce`다. 스킬 설치·갱신·제거와 demo 사용, workspace 밖 설치 검증을 마친 뒤 첫 배포를 진행한다. 배포 직전에 이름 사용 가능 여부와 계정 게시 권한, 패키지 내용·라이선스·버전·문서를 확인한다. 공개 CLI 이름을 `tryce`, 첫 버전을 `0.1.0`, 라이선스를 MIT로 지정했다. 실제 게시·설치 확인은 [배포 절차](releases.md)에 따라 수행하고 결과를 별도로 기록한다.
+사용자가 확정한 공개 npm 패키지 이름은 `@tryce/cli`다. 스킬 설치·갱신·제거와 demo 사용, workspace 밖 설치 검증을 마친 뒤 첫 배포를 진행한다. 배포 직전에 이름 사용 가능 여부와 계정 게시 권한, 패키지 내용·라이선스·버전·문서를 확인한다. 공개 CLI 이름을 `tryce`, 첫 버전을 `0.1.0`, 라이선스를 MIT로 지정했다. 실제 게시·설치 확인은 [배포 절차](releases.md)에 따라 수행하고 결과를 별도로 기록한다.
 
 ## 개발 에이전트 사용
 
@@ -18,7 +18,7 @@ Codex는 `.agents/skills/tryce-workflow/SKILL.md`를 원본으로 사용한다. 
 
 ## 준비와 실행
 
-개발 기준은 Node.js 24.17.0과 pnpm 10.33.0이다. `.node-version`과 루트 `packageManager`에 고정했다. 공개 CLI는 tryce이며 나머지 workspace 패키지는 private이다. 0.1.0은 Node.js 24 계열을 지원 범위로 선언한다.
+개발 기준은 Node.js 24.17.0과 pnpm 10.33.0이다. `.node-version`과 루트 `packageManager`에 고정했다. 공개 패키지는 @tryce/cli이며 실행 명령은 tryce다. 나머지 workspace 패키지는 private이다. 0.1.0은 Node.js 24 계열을 지원 범위로 선언한다.
 
 pnpm이 없는 환경에서는 `npx pnpm@10.33.0`을 아래 명령의 `pnpm` 대신 사용할 수 있다. 전역 도구나 사용자 설정을 바꿀 필요는 없다.
 
@@ -192,3 +192,5 @@ brief의 정렬·Unicode 발췌·생략 집계·목록 밖 정정 관계, 초기
 2026-09-13 공개 이름 tryce와 MIT 라이선스를 반영한 pnpm check가 통과했다. core 9개, contracts 6개, CLI 70개, Chromium 6개, 개발 동기화 5개로 총 96개 테스트와 workspace 밖 오프라인 설치·실행 검증을 수행했다. 고정 lockfile 설치도 통과했다.
 
 프로젝트 사용 빌드를 CLI 0.1.0, SHA-256 d55b21a1a9deaf8c5147b4ad619bc0334a2b61a3486c460e30450f9e7f9ce74f로 갱신한다. 이전 지정 빌드의 기능 범위를 유지한다. 당시 .tmp/releases/0.1.0/tryce-0.1.0.tgz의 파일 목록과 npm publish dry-run을 확인했다. 이후 게시 방식은 apps/cli 패키지 폴더에서 pnpm publish를 실행하도록 바꿨다. 준비 명령과 게시 여부는 [배포 절차](releases.md)를 따른다.
+
+같은 날 공개 패키지 이름을 @tryce/cli로 변경한 뒤 고정 lockfile 설치와 pnpm check를 다시 통과했다. 테스트 96개 및 workspace 밖 오프라인 설치·실행을 확인했고, 지정한 CLI 빌드의 해시는 유지됐다. 패키지 이름과 README가 달라져 배포 integrity는 갱신했다. 새 값과 미확인 조직 권한은 [배포 절차](releases.md)에 기록한다.

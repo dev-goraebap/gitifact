@@ -1,6 +1,6 @@
 # npm 배포
 
-공개 패키지는 `apps/cli`의 `tryce` 하나다. 루트 workspace와 공통 패키지·브라우저는 private으로 유지한다. 첫 배포 버전은 0.1.0, 사용자가 선택한 라이선스는 MIT다. Node.js 24.x와 Git이 필요하며 현재 실행 검증 환경은 Windows다.
+공개 패키지는 `apps/cli`의 `@tryce/cli` 하나다. 설치는 `npm install -g @tryce/cli`, 실행 명령은 `tryce`다. 루트 workspace와 공통 패키지·브라우저는 private으로 유지한다. 첫 배포 버전은 0.1.0, 사용자가 선택한 라이선스는 MIT다. Node.js 24.x와 Git이 필요하며 현재 실행 검증 환경은 Windows다.
 
 ## 준비와 게시
 
@@ -30,12 +30,14 @@ pnpm publish --access public --tag latest --publish-branch main
 ## 게시 확인
 
 ```sh
-npm view tryce@0.1.0 version license dist.integrity
+npm view @tryce/cli@0.1.0 version license dist.integrity
 ```
 
 레지스트리 integrity를 게시 모의 실행 결과와 비교하고, 새 시험 폴더에 레지스트리에서 설치해 버전·help와 실제 Git 프로젝트 명령을 실행한다. `.tmp/demo`의 기존 기록을 보존하며 의존 패키지를 갱신한다. 로컬 검증·원격 게시·설치 확인의 성공 여부를 각각 기록한다.
 
 Git 커밋과 npm 게시를 구분한다. 검증한 변경은 커밋하며, Git 원격 푸시는 별도로 요청받은 범위에서 수행한다.
+
+게시에는 npm의 `tryce` 조직과 해당 계정의 게시 권한이 필요하다. 조직 생성·계정·보안 설정은 사용자가 관리한다. 사용자가 게시나 푸시를 요청하면 기존 인증 세션으로 직접 실행한다. 인증 오류 또는 OTP 입력 요청이 나오면 중단하고 코드·메시지를 사용자에게 전달한다. 토큰 생성·등록·삭제, 인증 파일 편집·토큰 값 조회, 실제 게시의 `--no-git-checks` 사용은 하지 않는다. 조직 이름을 사용할 수 없으면 대체 이름을 임의로 선택하지 않는다.
 
 ## 0.1.0 게시 시도
 
@@ -48,3 +50,15 @@ Git 커밋과 npm 게시를 구분한다. 검증한 변경은 커밋하며, Git 
 다음 토큰 재시도에서는 E_STAGE_REQUIRED가 반환됐다. 서버는 해당 토큰을 stage-only로 판정했으며 아직 존재하지 않는 tryce를 최초 생성하려면 direct publish 권한이 필요하다고 응답했다. 이 시도에서도 게시되지 않았고 임시 인증 설정을 제거했다.
 
 패키지 폴더 방식으로 변경한 뒤 `apps/cli`에서 pnpm publish 모의 실행을 통과했다. 파일 15개와 integrity가 앞서 검증한 압축 파일과 일치했다. 이 확인은 문서 편집·미푸시 상태에서 패키징만 검증하기 위해 `--dry-run --json --publish-branch main --no-git-checks`로 수행했다. 실제 게시 절차의 Git 검사는 유지하며 원격 게시·인증 성공을 검증한 것은 아니다.
+
+## @tryce/cli 이름 변경
+
+2026-09-13 클로드의 인계에 따르면 이후 재시도에서도 E_STAGE_REQUIRED가 발생했다. 사용자가 계정 2FA를 활성화하고 npm login을 수행한 뒤에는 `E403 Package name too similar to existing packages tracer,brace`로 거부됐다. 이 경과는 인계된 결과이며 이번 작업에서 직접 재현하지 않았다. 2FA 우회 토큰의 정책 변경이 이미 시행됐다는 추정은 오류만으로 확정하지 않는다.
+
+사용자는 공개 이름을 `@tryce/cli`로 결정했다. 개인 계정에 종속되는 `@dev.goraebap/tryce`와 유사도 검사를 다시 받을 수 있는 `tryce-cli`는 채택하지 않았다. 실행 명령 `tryce`, 버전 0.1.0, MIT, 게시 폴더 apps/cli는 유지한다. 이전 이름의 게시 시도·무결성 값은 과거 기록으로 보존한다.
+
+현재 인증으로 `npm org ls tryce --json`을 실행했으나 `E403: You may not perform that action with these credentials.`가 반환됐다. 이 응답으로 조직 이름의 사용 가능 여부나 조직 생성 여부를 단정할 수 없다. 인증 관련 작업은 중단했으며 조직·게시 권한 확인은 사용자에게 남긴다. 로컬 패키지 준비와 원격 게시 성공을 구분한다.
+
+이름 변경 후 고정 lockfile 설치와 pnpm check를 통과했다. 테스트 96개와 workspace 밖 오프라인 설치에서 `@tryce/cli` 패키지 이름, `tryce` 실행 명령, init·note·brief·status·스킬·브라우저 동작을 확인했다. 앱 코드와 지정된 CLI 빌드 해시는 바뀌지 않았다.
+
+apps/cli에서 모의 게시한 결과는 `@tryce/cli@0.1.0`, 파일 15개, integrity `sha512-oiGZ2zgcZ2R9JNBrJhS6cJPBwKBP9z36lJYiWPvsI7IiVRoY8LkFbMJ1HtFHMJr5Q4owdAs6XzpjAJEddWR1kg==`다. 이번에도 문서 편집·미푸시 상태의 패키징 확인에만 `--dry-run --json --publish-branch main --no-git-checks`를 사용했다. 실제 npm 게시·Git 푸시·레지스트리 설치 확인은 수행하지 않았다.

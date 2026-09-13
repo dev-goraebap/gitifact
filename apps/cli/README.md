@@ -12,7 +12,7 @@ Requires **Node.js 24.x** and **Git** on PATH. Execution has been tested on Wind
 macOS and Linux are not yet verified.
 
 ```sh
-npm install -g tryce
+npm install -g @tryce/cli
 tryce --version
 ```
 
