@@ -1,0 +1,25 @@
+{
+  "name": "tryce-workspace",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=24 <25",
+    "pnpm": "10.33.0"
+  },
+  "scripts": {
+    "build": "pnpm --filter @tryce/core --filter @tryce/contracts build && pnpm --filter @tryce/browser build && pnpm --filter @tryce/cli build",
+    "typecheck": "pnpm --filter @tryce/core --filter @tryce/contracts build && pnpm -r typecheck",
+    "dev": "pnpm --filter @tryce/browser dev",
+    "dev:cli": "pnpm --filter @tryce/core --filter @tryce/contracts build && pnpm --filter @tryce/browser build && pnpm --parallel --filter @tryce/core --filter @tryce/contracts --filter @tryce/cli dev",
+    "cli": "node apps/cli/dist/main.js",
+    "test": "pnpm build && pnpm test:built",
+    "test:built": "pnpm -r --if-present test:built && node scripts/test-package.mjs",
+    "check": "pnpm typecheck && pnpm test",
+    "browser:install": "pnpm --filter @tryce/browser exec playwright install chromium"
+  },
+  "devDependencies": {
+    "typescript": "7.0.2",
+    "@types/node": "24.13.4"
+  }
+}

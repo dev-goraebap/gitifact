@@ -1,1 +1,9 @@
 .tmp
+node_modules/
+dist/
+*.tsbuildinfo
+.test-build/
+test-results/
+playwright-report/
+*.tgz
+apps/browser/src/app/routeTree.gen.ts

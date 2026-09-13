@@ -1,0 +1,27 @@
+{
+  "name": "@tryce/cli",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "tryce": "dist/main.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "dev": "node scripts/build.mjs --watch",
+    "typecheck": "tsc --noEmit",
+    "test:built": "tsc -p tsconfig.test.json && node --test test/*.test.mjs"
+  },
+  "devDependencies": {
+    "@tryce/core": "workspace:*",
+    "@tryce/contracts": "workspace:*",
+    "commander": "15.0.0",
+    "esbuild": "0.28.2"
+  }
+}

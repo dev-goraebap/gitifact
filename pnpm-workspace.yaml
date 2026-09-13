@@ -1,0 +1,10 @@
+packages:
+  - apps/*
+  - packages/*
+
+strictPeerDependencies: true
+saveExact: true
+onlyBuiltDependencies:
+  - esbuild
+ignoredBuiltDependencies:
+  - '@astryxdesign/core'
