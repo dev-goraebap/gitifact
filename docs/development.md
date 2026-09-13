@@ -1,6 +1,6 @@
 # 개발 환경
 
-현재 프로젝트 사용 CLI는 0.2.1이다. `init`·`mode`로 설정과 정책을 관리하고 `note`·`req`로 판단과 요구사항을 기록한다. `brief`는 현재 자료와 원문 위치를 제공하며 `commit plan/apply`로 관련 기록을 커밋한다. `status`·`browser`는 Git 상태를 조회하고 `skills install/sync/remove`는 스킬 원본 설치와 로컬 복사본 관리를 지원한다. 전체 Git 이력 검사·훅·브라우저 편집은 미지원이다. 이 저장소의 자동모드 전환과 초기 요구사항 범위는 [자체 도입 기록](adoption.md)을 따른다. 아래 날짜별 검증 기록은 당시 상태를 보존한다.
+현재 프로젝트 사용 CLI는 0.3.0이다. `init`·`mode`로 설정과 정책을 관리하고 `note`·`req`로 판단과 요구사항을 기록한다. `brief`는 현재 자료와 원문 위치를 제공하며 `commit plan/apply`로 관련 기록을 커밋한다. `status`·`browser`는 Git 상태를 조회하고 `skills install/sync/remove`는 스킬 원본 설치와 로컬 복사본 관리를 지원한다. 전체 Git 이력 검사·훅·브라우저 편집은 미지원이다. 이 저장소의 자동모드 전환과 초기 요구사항 범위는 [자체 도입 기록](adoption.md)을 따른다. 아래 날짜별 검증 기록은 당시 상태를 보존한다.
 
 ## 사용자 프로젝트 시험과 첫 npm 배포
 
@@ -262,3 +262,7 @@ Windows / Node.js 24.17.0에서 요구사항 16개·note 21개인 Tryce를 측�
 최종 소스에서 `pnpm typecheck`, `pnpm build`, `pnpm test:built`를 순서대로 실행했다(`pnpm check`와 같은 구성). core 11개, contracts 7개, CLI 89개, Chromium 9개, 스킬 5개가 통과했다. 캐시의 동일 입력 재사용·동시 요청 공유, 수정 시각과 크기를 유지한 내용 변경, index에만 다른 원문이 있는 경우, HEAD·note·설정·문서 목록 변경, 잠금·손상과 조회 중 경합을 검사했다. 별도 SHA-1/SHA-256 fixture의 40개 blob으로 배치 경계와 한글·줄바꿈 원문 보존을 확인했다. 실제 4317 서버에서도 새 요구사항의 목록·상세와 자동 확정 표시를 확인했고 페이지 실행 오류는 없었다.
 
 workspace 밖 오프라인 패키지 설치와 형식 전환·승인·note·brief·스킬·status·browser 실행도 통과했다. 이번 루트 기록과 커밋은 이전 지정 빌드(9cf6fc8692e21a765c04f313c8a072e7487c12548d67643572abda848762a845)를 `.tmp/browser-performance/record-cli.mjs`에 보관해 사용했다. 검증을 마친 새 프로젝트 사용 빌드는 `apps/cli/dist/main.js`, CLI 0.2.1, SHA-256 `2d9513ad202a3c7a5533c7e7dafcfcd6779725ff80feaaa006684591bad12b2f`다. npm 게시 버전과 다른 로컬 개발 빌드이며 이번 작업에서 게시하지 않았다.
+
+## 2026-09-14 0.3.0 릴리스 빌드
+
+브라우저와 성능 개선을 포함한 기능 검증은 위 기록을 따른다. 버전·README 변경 후 CLI를 다시 빌드하고 `pnpm test:package`를 통과했다. 프로젝트 사용 빌드는 `apps/cli/dist/main.js`, CLI 0.3.0, SHA-256 `45f28813c9b8020d5949ff19cad8e5d6236781ad891853640674ba117c68297a`로 지정한다. 이번 릴리스 기록과 커밋에는 직전 지정 빌드(2d9513ad202a3c7a5533c7e7dafcfcd6779725ff80feaaa006684591bad12b2f)를 `.tmp/releases/0.3.0/record-cli.mjs`에 보관해 사용한다. 실제 npm 게시·설치 결과는 [배포 기록](releases.md)에 남긴다.

@@ -1,6 +1,6 @@
 # tryce
 
-Version **0.2.0** supports auto and approval modes, requirement capture and grouped confirmation, and guarded Git commits. Existing configurations are never migrated implicitly.
+Version **0.3.0** adds a read-only requirements browser with revision and confirmation history, decision notes, and faster project reads. Auto and approval modes, grouped confirmation, and guarded Git commits remain supported. Existing configurations are never migrated implicitly.
 
 ## Agent workflow
 
@@ -25,7 +25,7 @@ The CLI writes `Tryce-Format: workflow-1` and validated requirement/spec referen
 
 New requirement records use `.tryce/spec/<spec>/tryce.json` starting in 0.2.1. Records created by 0.2.0 under `specs/<spec>/tryce.json` remain readable and writable in place. All agents working with the new location need CLI 0.2.1 or later.
 
-On a Git execution failure, inspect HEAD, the original index, `index.lock` and `tryce-index-*` recovery files before removing anything. The CLI intentionally preserves recovery artifacts when commit success is uncertain. See [workflow format and limits](../../docs/specs/workflow-format.md) for the full storage, contract and recovery rules. GUI requirement views, completion inference and full history checks remain unavailable.
+On a Git execution failure, inspect HEAD, the original index, `index.lock` and `tryce-index-*` recovery files before removing anything. The CLI intentionally preserves recovery artifacts when commit success is uncertain. See [workflow format and limits](https://github.com/dev-goraebap/tryce/blob/main/docs/specs/workflow-format.md) for the full storage, contract and recovery rules. Completion inference and full history checks remain unavailable.
 
 Git-backed project context and decision notes for coding agents.
 
@@ -79,7 +79,7 @@ do not automatically stage or commit changes.
 
 ## Limits and data
 
-Requirement GUI views, completion inference, full history checks, source-template
+Browser editing, completion inference, full history checks, source-template
 upgrades, full eject, and Git hooks are not implemented. `brief` reports checks as not run.
 Default brief output may be truncated; inspect omission counts and use `--all` or
 `note show` to read the original records. Failed commands exit with code 1 and
