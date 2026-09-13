@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { isDeepStrictEqual } from 'node:util';
 import { InitError, parseProjectConfig, parseRequirements, specPattern } from '@tryce/core';
-import type { RequirementSet } from '@tryce/core';
+import type { RequirementSet, RepositoryState } from '@tryce/core';
 import { initRepository } from '../git/init-repository.js';
 import { configDirectory, fileInfo, readConfigFile } from './config-file.js';
 import { digest, guard, publishNoteFile, readNotes, regularDirectory, safeText, withNoteLock } from './note-store.js';
@@ -45,26 +45,24 @@ export async function readRequirementSets(root: string) {
 }
 type WorkflowContext = {
   root: string; repo: ReturnType<typeof initRepository>; first: Awaited<ReturnType<ReturnType<typeof initRepository>['inspect']>>;
-  config: ReturnType<typeof parseProjectConfig>; original: string; records: Awaited<ReturnType<typeof readRequirementSets>>; recheck: () => Promise<void>;
+  config: ReturnType<typeof parseProjectConfig>; original: string; notes: Awaited<ReturnType<typeof readNotes>>; records: Awaited<ReturnType<typeof readRequirementSets>>; recheck: (onRead?: (state: RepositoryState) => void) => Promise<void>;
 };
-export async function workflowTransaction<T>(cwd: string, write: boolean, action: (context: WorkflowContext) => Promise<T>, env = process.env) {
-  const repo = initRepository(cwd, env); const first = await repo.inspect(); const root = first.state.repository.rootPath;
+export async function workflowTransaction<T>(cwd: string, write: boolean, action: (context: WorkflowContext) => Promise<T>, env = process.env, observedState?: RepositoryState) {
+  const repo = initRepository(cwd, env); const first = await repo.inspect(write ? undefined : observedState, false); const root = first.state.repository.rootPath;
   async function context() {
     const original = await readConfigFile(root);
     if (!original) throw new InitError('NOT_INITIALIZED', '먼저 프로젝트를 초기화하세요.');
     const config = parseProjectConfig(original);
     await repo.validateBaseline(config, root, first.state.head.commit, first.state.repository.objectFormat);
     const notes = await readNotes(root); const records = await readRequirementSets(root);
-    for (const prefix of ['.tryce/notes/', '.tryce/spec/', 'specs/']) {
-      const paths = await repo.trackedPaths(root, prefix, first.state.head.commit);
-      const missing = prefix !== '.tryce/notes/' ? paths.filter(p => isRequirementPath(p) && !records.contents.has(p)) : paths.filter(p => !notes.paths.includes(p));
-      if (missing.length) throw new InitError('RECORD_DELETED', 'HEAD 또는 index의 기록이 작업 폴더에서 삭제됐습니다.');
-    }
+    const snapshot = await repo.recordSnapshot(root, first.state.head.commit);
+    const missing = snapshot.paths.filter(p => p.startsWith('.tryce/notes/') ? !notes.paths.includes(p) : isRequirementPath(p) && !records.contents.has(p));
+    if (missing.length) throw new InitError('RECORD_DELETED', 'HEAD 또는 index의 기록이 작업 폴더에서 삭제됐습니다.');
     for (const set of records.sets) for (const review of set.reviews) for (const item of review.items) {
       if (blobHash(item.document, first.state.repository.objectFormat) !== item.blob) throw new InitError('INVALID_REQUIREMENTS', '보존된 문서의 Git blob 해시가 다릅니다.');
     }
     for (const set of records.sets) {
-      for (const text of await repo.recordVersions(root, requirementPath(set.spec, records.contents), first.state.head.commit)) {
+      for (const text of snapshot.versions.get(requirementPath(set.spec, records.contents)) ?? []) {
         let old: RequirementSet;
         try { old = parseRequirements(JSON.parse(text)); } catch { throw new InitError('INVALID_REQUIREMENTS', 'HEAD 또는 index의 요구사항 기록을 해석하지 못했습니다.'); }
         const prefix = <T>(a: T[], b: T[]) => a.length <= b.length && a.every((v, i) => isDeepStrictEqual(v, b[i]));
@@ -74,11 +72,21 @@ export async function workflowTransaction<T>(cwd: string, write: boolean, action
         }
       }
     }
-    const recheck = async () => {
-      if ((await repo.inspect()).stamp !== first.stamp || await readConfigFile(root) !== original
-        || (await readRequirementSets(root)).stamp !== records.stamp || (await readNotes(root)).stamp !== notes.stamp) throw new InitError('INPUT_CHANGED', '설정·기록·HEAD·index가 변경됐습니다.');
+    const recheck = async (onRead?: (state: RepositoryState) => void) => {
+      if (!write && await fileInfo(join(root, '.tryce/.notes.lock'))) throw new InitError('PROJECT_BUSY', '기록 작업 잠금이 있습니다.');
+      const reads = await Promise.allSettled([
+        repo.inspect(undefined, false), readConfigFile(root), readRequirementSets(root), readNotes(root),
+      ] as const);
+      const [latest, configNow, recordsNow, notesNow] = reads.map(result => {
+        if (result.status === 'rejected') throw result.reason;
+        return result.value;
+      }) as [Awaited<ReturnType<typeof repo.inspect>>, string | undefined, typeof records, typeof notes];
+      if (latest.stamp !== first.stamp || configNow !== original
+        || recordsNow.stamp !== records.stamp || notesNow.stamp !== notes.stamp) throw new InitError('INPUT_CHANGED', '설정·기록·HEAD·index가 변경됐습니다.');
+      if (!write && await fileInfo(join(root, '.tryce/.notes.lock'))) throw new InitError('PROJECT_BUSY', '기록 작업 잠금이 있습니다.');
+      onRead?.(latest.state);
     };
-    return { root, repo, first, config, original, records, recheck };
+    return { root, repo, first, config, original, notes, records, recheck };
   }
   const original = await readConfigFile(root);
   if (!original) throw new InitError('NOT_INITIALIZED', '먼저 프로젝트를 초기화하세요.');

@@ -51,17 +51,26 @@ export function createRepositoryReader(cwd: string, options: Options = {}): Repo
         };
         const discover = async (): Promise<Location> => {
           const scalar = async (flag: string) => decodeGitLine(await invoke(['rev-parse', '--path-format=absolute', flag]));
-          const bare = await scalar('--is-bare-repository');
-          const internal = await scalar('--is-inside-git-dir');
-          const inside = await scalar('--is-inside-work-tree');
+          const flags = ['--is-bare-repository', '--is-inside-git-dir', '--is-inside-work-tree'];
+          const paths = ['--show-toplevel', '--absolute-git-dir', '--git-common-dir', '--show-object-format'];
+          let combined: string[];
+          try { combined = decodeGitLine(await invoke(['rev-parse', '--path-format=absolute', ...flags, ...paths])).split('\n'); }
+          catch (error) {
+            // --show-toplevel fails for bare repositories. Preserve their explicit diagnosis.
+            const context = decodeGitLine(await invoke(['rev-parse', ...flags])).split('\n');
+            if (context[0] === 'true' || context[1] === 'true' || context[2] === 'false') throw new RepositoryReadError('UNSUPPORTED_REPOSITORY');
+            throw error;
+          }
+          const [bare, internal, inside] = combined;
           if (![bare, internal, inside].every((v) => v === 'true' || v === 'false')) {
             throw new RepositoryReadError('GIT_UNSUPPORTED');
           }
           if (bare === 'true' || internal === 'true' || inside !== 'true') throw new RepositoryReadError('UNSUPPORTED_REPOSITORY');
-          const rootPath = await scalar('--show-toplevel');
-          const gitDir = await scalar('--absolute-git-dir');
-          const commonDir = await scalar('--git-common-dir');
-          const objectFormat = await scalar('--show-object-format');
+          let values = combined.slice(3);
+          // A legal POSIX path can contain newlines. Fall back to individual reads
+          // instead of guessing field boundaries in that uncommon case.
+          if (values.length !== paths.length) values = await Promise.all(paths.map(scalar));
+          const [rootPath, gitDir, commonDir, objectFormat] = values as [string, string, string, string];
           if (objectFormat !== 'sha1' && objectFormat !== 'sha256') throw new RepositoryReadError('GIT_UNSUPPORTED');
           return { rootPath, gitDir, commonDir, objectFormat };
         };

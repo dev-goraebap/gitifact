@@ -1,0 +1,11 @@
+{
+  "kind": "tryce-note",
+  "format": "note-1",
+  "id": "N-c77b0115-d651-4c2c-8078-bb72fb60b5ea",
+  "type": "discovery",
+  "text": "브라우저 project 조회가 brief의 두 workflow 검증과 상세의 추가 검증, 저장소 위치별 Git 프로세스 때문에 기존 측정 21.6초 걸렸다. 요약·상세의 검증 결과 공유, rev-parse 일괄 조회, HEAD/index 원문의 cat-file 배치와 내용 기반 서버 캐시로 개선했다. Windows/Node 24.17.0, 요구사항 16개·note 21개인 Tryce에서 실제 HTTP 첫 요청 1498ms, 재요청 483~656ms. 독립 복제 시험 저장소에서 note 변경 후 2079ms, HEAD/index 변경 후 1815ms였다. 재요청 300ms·변경 후 1초 목표는 미달이며 현재 규모의 측정값이다. 캐시는 실제 기록 내용·설정·index·Git 상태·잠금·문서 목록이 달라지면 버리고 오류를 이전 성공으로 숨기지 않는다. 전체 Git 객체 무결성 검사와 모든 이력 검증을 제공한다는 뜻은 아니다. 근거: scripts/benchmark-browser.mjs, apps/cli/test/browser-project.test.mjs, docs/specs/browser-server.md.",
+  "author": "Codex",
+  "recordedAt": "2026-09-13T16:45:00.495Z",
+  "references": [],
+  "supersedes": null
+}

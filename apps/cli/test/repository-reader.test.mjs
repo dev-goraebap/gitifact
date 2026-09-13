@@ -22,16 +22,25 @@ function fakeRun(statuses, locations = []) {
       '--show-toplevel': '/repo', '--absolute-git-dir': '/repo/.git', '--git-common-dir': '/repo/.git',
       '--show-object-format': 'sha1',
     };
-    if (args.at(-1) === '--show-toplevel' && locations.length) {
-      return Buffer.from(locations[locationIndex++] + '\n');
-    }
-    return Buffer.from(values[args.at(-1)] + '\n');
+    const fields = args.filter(arg => Object.hasOwn(values, arg));
+    return Buffer.from(fields.map(arg => arg === '--show-toplevel' && locations.length
+      ? locations[locationIndex++] : values[arg]).join('\n') + '\n');
   };
 }
 test('same status count and XY with changed staged content causes a full retry', async () => {
   const reader = createRepositoryReader('/repo', { env: {}, run: fakeRun([status('b'), status('c'), status('d'), status('d')]) });
   const value = await reader.read();
   assert.equal(value.changes[0].xy, 'MM');
+});
+
+test('repository discovery batches flags while retaining newline paths and snapshot retries', async () => {
+  let calls = 0;
+  const run = fakeRun([status('b'), status('b')]);
+  await createRepositoryReader('/repo', { env: {}, run: async (...args) => { calls++; return run(...args); } }).read();
+  assert.equal(calls, 4, 'two identity queries and two status reads');
+  const path = '/repo\nwith-newline';
+  const value = await createRepositoryReader(path, { env: {}, run: fakeRun([status('b'), status('b')], Array(4).fill(path)) }).read();
+  assert.equal(value.repository.rootPath, path);
 });
 test('repeated status or repository identity changes fail rather than return a mix', async () => {
   await assert.rejects(createRepositoryReader('/repo', {

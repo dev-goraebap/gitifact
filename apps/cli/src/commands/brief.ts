@@ -3,7 +3,9 @@ import { join } from 'node:path';
 import { InitError, RepositoryReadError, briefList, briefNotes, parseProjectConfig, summarizeChanges, requirementViews } from '@tryce/core';
 import { briefReportV1, briefV1, briefReportV2, briefV2 } from '@tryce/contracts';
 import type { BriefV1, BriefV2 } from '@tryce/contracts';
+import type { RepositoryState } from '@tryce/core';
 import { requirementPath, workflowTransaction } from '../adapters/filesystem/workflow-store.js';
+import type { readRequirementSets } from '../adapters/filesystem/workflow-store.js';
 import { createRepositoryReader } from '../adapters/git/repository-reader.js';
 import { initRepository } from '../adapters/git/init-repository.js';
 import { readConfigFile, fileInfo } from '../adapters/filesystem/config-file.js';
@@ -19,7 +21,7 @@ const failed = (error: unknown) => ({ state: 'error' as const, error: describe(e
 const unavailable = (reason: string) => ({ state: 'not-available' as const, reason });
 const available = <T>(data: T) => ({ state: 'available' as const, data });
 
-export async function readBrief(cwd: string, options: Options = {}, env = process.env, beforeVerify?: () => Promise<void>): Promise<BriefV1 | BriefV2> {
+export async function readBrief(cwd: string, options: Options = {}, env = process.env, beforeVerify?: () => Promise<void>, onRequirements?: (records: Awaited<ReturnType<typeof readRequirementSets>>, verify: () => Promise<void>) => void): Promise<BriefV1 | BriefV2> {
   let workflow = false;
   try {
     const startedAt = new Date().toISOString();
@@ -44,10 +46,10 @@ export async function readBrief(cwd: string, options: Options = {}, env = proces
     // kind belongs to the stored document, not the brief project view.
     const projectView = project.state === 'available' ? available({ source: project.data.source, path: project.data.path,
       format: project.data.format, mode: project.data.mode, baseline: project.data.baseline, baselineVerified: true as const }) : project;
-    const getNotes = async () => {
+    const getNotes = async (checkTracked = true) => {
       if (await fileInfo(join(root, '.tryce/.notes.lock'))) throw new InitError('PROJECT_BUSY', '기록 작업이 진행 중이거나 잠금이 남아 있습니다.');
       const result = await readNotes(root);
-      const paths = await repo.trackedPaths(root, '.tryce/notes/', first.head.commit);
+      const paths = checkTracked ? await repo.trackedPaths(root, '.tryce/notes/', first.head.commit) : [];
       if (paths.some(path => !result.paths.includes(path))) throw new InitError('NOTE_DELETED', 'HEAD 또는 index의 기록이 작업 폴더에서 삭제됐습니다.');
       return result;
     };
@@ -56,12 +58,13 @@ export async function readBrief(cwd: string, options: Options = {}, env = proces
     const getRequirements = () => workflowTransaction(root, false, async c => {
       const items = c.records.sets.flatMap(s => requirementViews(s).map(v => ({ id: v.id, revision: v.revision, title: v.title, state: v.state, approval: v.approval,
         path: requirementPath(s.spec, c.records.contents), implementation: v.implementation, verification: v.verification })));
-      await c.recheck(); return { data: briefList(items, 30, options.all), stamp: c.records.stamp };
-    }, env);
+      return { data: briefList(items, 30, options.all), records: c.records, notes: c.notes, recheck: c.recheck };
+    }, env, first);
     const requirementResult = workflow ? await getRequirements().then(value => ({ value, error: null }), error => ({ value: null, error })) : null;
     let requirements = requirementResult?.error ? failed(requirementResult.error) : requirementResult?.value ? available(requirementResult.value.data) : unavailable('legacy-format');
     const [noteResult, documentResult] = await Promise.all([
-      enabled ? getNotes().then(value => ({ value, error: null }), error => ({ value: null, error })) : Promise.resolve({ value: null, error: null }),
+      requirementResult?.value ? Promise.resolve({ value: requirementResult.value.notes, error: null })
+        : enabled ? getNotes().then(value => ({ value, error: null }), error => ({ value: null, error })) : Promise.resolve({ value: null, error: null }),
       briefDocuments(root).then(value => ({ value, error: null }), error => ({ value: null, error })),
     ]);
     let notes = noteResult.error ? failed(noteResult.error) : noteResult.value
@@ -69,24 +72,25 @@ export async function readBrief(cwd: string, options: Options = {}, env = proces
     let documents = documentResult.error ? failed(documentResult.error) : available(briefList(documentResult.value ?? [], 30, options.all));
     let checkedProject = projectView;
     await beforeVerify?.();
-    if (requirementResult?.value) {
-      try { if ((await getRequirements()).stamp !== requirementResult.value.stamp) throw new InitError('INPUT_CHANGED', '조회 중 요구사항이 변경됐습니다.'); }
-      catch (error) { requirements = failed(error); }
-    }
     if (!projectResult.error) {
       try {
         if (await readConfigFile(root) !== (projectResult.value?.text ?? undefined)) throw new InitError('INPUT_CHANGED', '조회 중 프로젝트 설정이 변경됐습니다.');
       } catch (error) { checkedProject = failed(error); notes = unavailable('configuration-changed'); }
     }
     if (notes.state === 'available' && noteResult.value) {
-      try { if ((await getNotes()).stamp !== noteResult.value.stamp) throw new InitError('INPUT_CHANGED', '조회 중 기록이 변경됐습니다.'); }
+      try { if ((await getNotes(!requirementResult?.value)).stamp !== noteResult.value.stamp) throw new InitError('INPUT_CHANGED', '조회 중 기록이 변경됐습니다.'); }
       catch (error) { notes = failed(error); }
     }
     if (documents.state === 'available') {
       try { if (JSON.stringify(await briefDocuments(root)) !== JSON.stringify(documentResult.value)) throw new InitError('INPUT_CHANGED', '조회 중 문서 목록이 변경됐습니다.'); }
       catch (error) { documents = failed(error); }
     }
-    if (JSON.stringify(await reader.read()) !== JSON.stringify(first)) throw new InitError('REPOSITORY_CHANGED', '조회 중 Git 상태가 변경됐습니다. 다시 실행하세요.');
+    let checkedRepository: RepositoryState | undefined;
+    if (requirementResult?.value) {
+      try { await requirementResult.value.recheck(state => { checkedRepository = state; }); }
+      catch (error) { requirements = failed(error); }
+    }
+    if (JSON.stringify(checkedRepository ?? await reader.read()) !== JSON.stringify(first)) throw new InitError('REPOSITORY_CHANGED', '조회 중 Git 상태가 변경됐습니다. 다시 실행하세요.');
     const reportInput = {
       observation: { id: randomUUID(), startedAt, completedAt: new Date().toISOString(), consistency: 'best-effort' },
       repository: first.repository,
@@ -100,6 +104,15 @@ export async function readBrief(cwd: string, options: Options = {}, env = proces
     if (workflow) {
       const report = briefReportV2.parse({ ...reportInput, requirements });
       const partial = [checkedProject, notes, documents, requirements].some(item => item.state === 'error');
+      if (requirements.state === 'available' && requirementResult?.value) {
+        const verified = requirementResult.value;
+        onRequirements?.(verified.records, async () => {
+          await verified.recheck(state => {
+            if (JSON.stringify(state) !== JSON.stringify(first)) throw new InitError('INPUT_CHANGED', 'Git 상태가 변경됐습니다.');
+          });
+          if (JSON.stringify(await briefDocuments(root)) !== JSON.stringify(documentResult.value)) throw new InitError('INPUT_CHANGED', '문서 목록이 변경됐습니다.');
+        });
+      }
       return briefV2.parse(partial ? { contract: 'brief', version: 2, ok: false, report, error: { code: 'INCOMPLETE_BRIEF', message: '자료별 오류와 원문을 확인하세요.' } } : { contract: 'brief', version: 2, ok: true, report });
     }
     const report = briefReportV1.parse(reportInput);

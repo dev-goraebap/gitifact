@@ -9,7 +9,7 @@ import { createRepositoryReader } from '../adapters/git/repository-reader.js';
 import { statusDto } from '../output/repository-status.js';
 import { loadBrowserAssets, contentType } from './assets.js';
 import { createStatusSession } from './status-session.js';
-import { readBrowserProject } from './project-reader.js';
+import { createBrowserProjectReader } from './project-reader.js';
 
 interface Options {
   cwd: string;
@@ -45,7 +45,8 @@ export async function startBrowserServer(options: Options) {
   const { session } = store;
   let closing = false;
   let origin = '';
-  let pendingProject: ReturnType<typeof readBrowserProject> | undefined;
+  const readProject = createBrowserProjectReader(initial.repository.rootPath, options.env);
+  let pendingProject: ReturnType<typeof readProject> | undefined;
   function json(response: ServerResponse, status: number, value: unknown) {
     response.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
     response.end(JSON.stringify(value) + '\n');
@@ -91,7 +92,7 @@ export async function startBrowserServer(options: Options) {
       if (path === '/api/v1/session') return json(response, 200, session);
       if (request.headers['x-tryce-session'] !== session.sessionId) return fail(response, 409, 'SESSION_CHANGED', '서버 세션이 변경됐습니다. 다시 연결하세요.');
       if (path === '/api/v1/project') {
-        pendingProject ??= readBrowserProject(initial.repository.rootPath, options.env).finally(() => { pendingProject = undefined; });
+        pendingProject ??= readProject().finally(() => { pendingProject = undefined; });
         const project = await pendingProject;
         const repository = project.brief.report?.repository;
         if (repository && (repository.key !== session.repository.key || repository.worktreeKey !== session.repository.worktreeKey)) {
