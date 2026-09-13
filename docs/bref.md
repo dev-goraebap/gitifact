@@ -338,3 +338,5 @@ CLI 업데이트와 프로젝트 형식 전환은 별개다. 지원 중인 옛 �
 - 외부 스킬 설치 도구: [Vercel skills](https://github.com/vercel-labs/skills)
 
 `.tmp` 자료는 로컬 논의 근거다. 제품의 구현 기준은 이 문서와 이후 작성할 명세에 남긴다.
+
+프론트엔드 구현 규칙은 [프론트엔드 지침](architecture/frontend/README.md)에 정리했다.

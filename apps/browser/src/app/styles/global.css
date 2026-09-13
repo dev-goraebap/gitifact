@@ -1,23 +1,15 @@
 @import '@astryxdesign/core/reset.css';
 @import '@astryxdesign/core/astryx.css';
 @import '@astryxdesign/theme-neutral/theme.css';
-
-body {
+html,
+body,
+#root {
+  height: 100%;
   margin: 0;
+}
+body {
   font-family: var(--font-family-body, system-ui), sans-serif;
 }
-
-h1 {
-  margin-block: 0 1rem;
-  font-size: 1.75rem;
-  font-weight: 600;
-}
-
-p {
-  margin-block: 0 1.25rem;
-  line-height: 1.7;
-}
-
 a {
-  color: inherit;
+  color: var(--color-text-accent, inherit);
 }

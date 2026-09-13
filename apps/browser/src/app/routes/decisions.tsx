@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { WorkspacePage, validateWorkspaceSearch } from '../../pages/workspace';
-export const Route = createFileRoute('/')({
+export const Route = createFileRoute('/decisions')({
   validateSearch: validateWorkspaceSearch,
   component: WorkspaceRoute,
 });
@@ -9,7 +9,7 @@ function WorkspaceRoute() {
   const navigate = Route.useNavigate();
   return (
     <WorkspacePage
-      view="overview"
+      view="decisions"
       search={search}
       onSearch={(next, replace) => {
         void navigate({ search: next, replace: replace ?? false });

@@ -1,6 +1,6 @@
 # 브라우저 아키텍처
 
-브라우저는 CLI가 제공하는 프로젝트 기록과 현재 환경을 살펴보는 React 앱이다. 요구사항과 스킬을 편집하는 기능은 현재 범위에 포함하지 않는다. 전체 코드 경계는 [아키텍처 기준](README.md)을 따른다.
+브라우저는 CLI가 제공하는 프로젝트 기록과 현재 환경을 살펴보는 React 앱이다. 요구사항과 스킬을 편집하는 기능은 현재 범위에 포함하지 않는다. 전체 코드 경계는 [아키텍처 기준](README.md)을 따르고, 실제 작성 규칙은 [프론트엔드 지침](frontend/README.md)을 적용한다.
 
 ## React와 Astryx
 
@@ -34,9 +34,9 @@ apps/browser/src/
     styles/              전역 스타일
     routeTree.gen.ts     라우터 생성물
   pages/
-    project-overview/
-    requirement-detail/
-    skills/
+    workspace/           브리핑·요구사항·판단 기록
+    git-status/          Git 관측 화면
+    about/
   widgets/               여러 화면의 독립적인 UI 블록이 생기면 추가
   features/              재검사 등 재사용되는 사용자 동작이 생기면 추가
   entities/              여러 화면이 공유하는 도메인 표시·조회가 생기면 추가
@@ -91,3 +91,9 @@ Query의 기본 stale·재시도·포커스 재조회 정책은 그대로 두지
 - 초기 번들에 Node.js 파일·프로세스 모듈이 들어오지 않는지
 
 와이어프레임과 mock은 화면 구현을 돕는 자료다. 이를 실제 Git 검사나 에이전트 스킬 로딩의 성공 근거로 사용하지 않는다.
+
+## 읽기 전용 화면 적용
+
+2026-09-14 browser-design-v2의 사이드 메뉴·촘촘한 행·오른쪽 상세 구조를 실제 데이터에 연결했다. 브리핑, 요구사항, 판단 기록, Git 상태를 제공한다. 전체 추적 그래프·건강 검사·스킬 탐색은 실제 계약이 준비되기 전까지 메뉴와 가짜 결과를 만들지 않는다.
+
+공유 session/status/project 조회는 entities/project, 전체 메뉴는 widgets/app-shell, 본문은 pages가 소유한다. workspace의 검색·영역·상태·상세 선택은 검증된 URL search에 둔다. 전체 데이터를 한 번 읽고 로컬에서 필터링하므로 필터마다 별도 Query 캐시를 만들지 않는다. API와 보안 경계는 [로컬 서버 계약](../specs/browser-server.md)을 따른다.

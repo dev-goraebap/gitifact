@@ -9,6 +9,7 @@ import { createRepositoryReader } from '../adapters/git/repository-reader.js';
 import { statusDto } from '../output/repository-status.js';
 import { loadBrowserAssets, contentType } from './assets.js';
 import { createStatusSession } from './status-session.js';
+import { readBrowserProject } from './project-reader.js';
 
 interface Options {
   cwd: string;
@@ -44,6 +45,7 @@ export async function startBrowserServer(options: Options) {
   const { session } = store;
   let closing = false;
   let origin = '';
+  let pendingProject: ReturnType<typeof readBrowserProject> | undefined;
   function json(response: ServerResponse, status: number, value: unknown) {
     response.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
     response.end(JSON.stringify(value) + '\n');
@@ -81,13 +83,23 @@ export async function startBrowserServer(options: Options) {
       if (request.headers['sec-fetch-site'] === 'cross-site' && !allowedOrigin) return fail(response, 403, 'FORBIDDEN', '외부 페이지의 요청을 허용하지 않습니다.');
       if (url.search) return fail(response, 400, 'BAD_REQUEST', '조회 인자를 받지 않습니다.');
       const method = path === '/api/v1/status/refresh' ? 'POST' : 'GET';
-      if (!['/api/v1/session', '/api/v1/status', '/api/v1/status/refresh'].includes(path)) return fail(response, 404, 'NOT_FOUND', 'API를 찾을 수 없습니다.');
+      if (!['/api/v1/session', '/api/v1/status', '/api/v1/status/refresh', '/api/v1/project'].includes(path)) return fail(response, 404, 'NOT_FOUND', 'API를 찾을 수 없습니다.');
       if (request.method !== method) {
         response.setHeader('Allow', method);
         return fail(response, 405, 'METHOD_NOT_ALLOWED', '허용하지 않는 메서드입니다.');
       }
       if (path === '/api/v1/session') return json(response, 200, session);
       if (request.headers['x-tryce-session'] !== session.sessionId) return fail(response, 409, 'SESSION_CHANGED', '서버 세션이 변경됐습니다. 다시 연결하세요.');
+      if (path === '/api/v1/project') {
+        pendingProject ??= readBrowserProject(initial.repository.rootPath, options.env).finally(() => { pendingProject = undefined; });
+        const project = await pendingProject;
+        const repository = project.brief.report?.repository;
+        if (repository && (repository.key !== session.repository.key || repository.worktreeKey !== session.repository.worktreeKey)) {
+          return fail(response, 409, 'SESSION_CHANGED', '다른 checkout이 감지됐습니다. 서버를 다시 시작하세요.');
+        }
+        if (!response.destroyed) json(response, 200, project);
+        return;
+      }
       if (method === 'POST' && !allowedOrigin) return fail(response, 403, 'FORBIDDEN', '새로고침에는 같은 출처의 Origin이 필요합니다.');
       const value = method === 'POST' ? await store.refresh() : store.latest;
       if (!response.destroyed) json(response, value.ok ? 200 : 503, value);
@@ -142,6 +154,7 @@ export async function startBrowserServer(options: Options) {
     shutdown = (async () => {
       await new Promise<void>((resolve) => { server.close(() => resolve()); server.closeAllConnections(); });
       await store.pending;
+      await pendingProject?.catch(() => undefined);
       options.signal?.removeEventListener('abort', onAbort);
       options.signal?.removeEventListener('abort', closeOnAbort);
       resolveClosed!();

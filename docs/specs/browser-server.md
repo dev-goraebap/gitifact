@@ -1,6 +1,6 @@
 # 로컬 브라우저 연결
 
-`tryce browser`는 실행 위치의 checkout을 읽고 로컬 서버와 브라우저 정적 파일을 제공한다. [repository-status 버전 1](repository-status.md)을 그대로 사용하며 요구사항 검사를 추가하지 않는다. 현재 구현한 첫 브라우저 연결의 계약이다.
+`tryce browser`는 실행 위치의 checkout을 읽고 로컬 서버와 브라우저 정적 파일을 제공한다. [repository-status 버전 1](repository-status.md)을 그대로 사용하며 요구사항 검사를 추가하지 않는다. 현재 구현한 브라우저 연결의 계약이다.
 
 ## 실행과 배포
 
@@ -15,10 +15,11 @@
 | 요청 | 응답 |
 | :--- | :--- |
 | GET `/api/v1/session` | browser-session 버전 1: sessionId와 저장소·worktree key |
+| GET `/api/v1/project` | browser-project 버전 1: 전체 brief와 요구사항 본문·수정·확인 이력 |
 | GET `/api/v1/status` | 마지막 조회 결과. Git을 실행하지 않음 |
 | POST `/api/v1/status/refresh` | Git 재조회 후 repository-status 버전 1 결과 |
 
-API에는 query parameter와 body를 받지 않는다. status 요청에는 `X-Tryce-Session` 헤더로 현재 sessionId를 보낸다. 실행마다 UUID가 달라지므로 같은 포트를 재사용한 다른 서버의 결과가 기존 캐시에 들어오지 않는다. 식별자는 외부 인증 수단이나 영속 프로젝트 ID가 아니다.
+API에는 query parameter와 body를 받지 않는다. status와 project 요청에는 `X-Tryce-Session` 헤더로 현재 sessionId를 보낸다. 실행마다 UUID가 달라지므로 같은 포트를 재사용한 다른 서버의 결과가 기존 캐시에 들어오지 않는다. 식별자는 외부 인증 수단이나 영속 프로젝트 ID가 아니다.
 
 Git 조회 성공은 HTTP 200, 실패는 HTTP 503과 기존 실패 DTO다. 마지막 결과가 실패이면 이후 GET도 실패를 반환한다. 서버는 성공처럼 꾸민 빈 목록을 제공하지 않는다. 라우팅·세션 오류는 browser-http-error 버전 1로 구분한다: 잘못된 입력 400, 허용하지 않는 출처 403, 없는 경로 404, 허용하지 않는 메서드 405, 이전 세션 409, 서버 종료 중 503.
 
@@ -32,14 +33,24 @@ API 응답은 no-store다. 자산과 SPA 페이지는 별도로 처리한다. �
 
 ## 브라우저 상태
 
-페이지는 session을 읽은 뒤 해당 세션·저장소·worktree·계약 버전을 포함한 Query key로 status를 조회한다. 상태 GET의 staleTime은 5초, 자동 retry는 끈다. 사용자가 명시적으로 다시 연결하거나 갱신할 수 있다. 필터와 과거 시점 조회는 아직 추가하지 않는다.
+페이지는 session을 읽은 뒤 해당 세션·저장소·worktree·계약 버전을 포함한 Query key로 status를 조회한다. 상태 GET의 staleTime은 5초, 자동 retry는 끈다. 사용자가 명시적으로 다시 연결하거나 갱신할 수 있다. 요구사항 필터와 상세 선택은 URL에서 관리한다. 과거 Git 시점 조회는 아직 제공하지 않는다.
 
 상태 새로고침은 POST mutation이다. 실행 중 버튼 중복 입력을 막고 진행 표시를 제공한다. 성공 후 이전 GET을 취소하고 같은 key의 조회를 무효화한다. 실패하면 기존 데이터와 확인 시각을 유지하고 오류를 표시한다. 다른 세션이나 잘못된 계약의 응답을 기존 데이터로 합치지 않는다.
 
-현재 UI는 Git 연결을 확인하는 최소 화면이다. 저장소·HEAD, 네 변경 집계, 경로 목록, 마지막 관측 시각, 검사 미실행을 표시한다. 초기 로딩·연결 실패·빈 결과·갱신 중·갱신 실패·호환 불가를 구분한다. 별도로 진행하는 와이어프레임의 전체 디자인을 대체하지 않는다.
+Git 화면은 기존 연결 조회를 유지한다. 저장소·HEAD, 네 변경 집계, 경로 목록, 마지막 관측 시각, 검사 미실행을 표시한다. 초기 로딩·연결 실패·빈 결과·갱신 중·갱신 실패·호환 불가를 구분한다. 브리핑·요구사항·판단 화면은 browser-design-v2의 구조를 실제 기록에 연결했다.
 
 ## 검증
 
 서버는 GET의 비실행, refresh·중복 합치기·실패·종료, Host/Origin/세션, 입력·경로 차단, 포트 충돌을 시험한다. 브라우저는 실제 임시 Git 저장소를 읽고 파일 변경 후 갱신을 확인하며, mock으로 로딩·오류·이전 데이터 유지·계약 불일치를 시험한다. mock도 같은 계약 검증을 통과해야 한다.
 
-패키징한 CLI를 workspace 밖에 설치해 HTML·JS·CSS·직접 URL·API를 확인한다. 검증 결과와 제한은 [개발 환경](../development.md)에 기록한다. DEV-01·02는 기록·요구사항 검사 기능이 없으므로 유지한다.
+패키징한 CLI를 workspace 밖에 설치해 HTML·JS·CSS·직접 URL·API를 확인한다. 검증 결과와 제한은 [개발 환경](../development.md)에 기록한다. 현재 개발 예외의 적용 범위는 루트 AGENTS.md를 따른다.
+
+## 프로젝트 기록 조회
+
+GET /api/v1/project는 지정 checkout의 brief --all과 workflow-1 요구사항 본문을 읽는다. JSON의 본문은 화면에서 Markdown으로 표시하며, 수정본과 확인 당시의 정확한 문서·확정 주체·근거를 제공한다. 자동 확정과 사용자 승인은 구분한다. 현재 수정본이 draft로 돌아가도 과거 확인 기록은 그대로 읽을 수 있다. 구현은 미평가, 검증은 미실행으로 표시한다.
+
+동시 요청은 진행 중인 읽기 하나를 공유한다. 조회는 영속 파일·Git index·기록을 수정하지 않는다. 요구사항은 workflow 읽기 검증과 재확인을 거치고, brief 요약의 ID·수정본·상태와 일치해야 한다. Git과 기록 전체를 잠근 원자적 스냅샷은 아니며 조회 시각은 brief 관측 기준이다. 손상·잠금·변경 경합은 자료별 오류로 표시한다. 설정 없음과 구형 형식은 requirements not-available이며 빈 성공 배열로 바꾸지 않는다.
+
+부분 조회 결과도 HTTP 200의 유효한 계약으로 반환하되 brief.ok와 자료별 state가 오류를 드러낸다. 계약 생성 실패는 HTTP 500이다. 다른 저장소·worktree 결과는 SESSION_CHANGED(409)로 거부한다. project도 세션·Host·Origin·메서드·query·body 검증을 통과해야 한다. 종료 시 새 요청과 연결을 닫고 진행 중인 프로젝트 읽기의 정리까지 기다린다.
+
+프론트엔드는 5초 staleTime, 자동 재시도 없음, 사용자의 새로 읽기로 GET을 수행한다. 전송 실패 시 이전 결과임을 표시한다. 계약·세션이 달라지면 이전 자료를 숨기고 재연결을 요구한다. 전체 승인·쓰기·검사·커밋 분석 API는 추가하지 않는다.
