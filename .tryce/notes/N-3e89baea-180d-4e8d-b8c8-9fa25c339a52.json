@@ -1,0 +1,11 @@
+{
+  "kind": "tryce-note",
+  "format": "note-1",
+  "id": "N-3e89baea-180d-4e8d-b8c8-9fa25c339a52",
+  "type": "constraint",
+  "text": "사용자 프로젝트의 지속적인 도입 시험은 별도 Git 저장소 tmp/demo에서 수행한다. 공개 npm 패키지 이름은 tryce로 준비하고 스킬 설치·갱신·제거 및 설치물 검증을 마친 시점에 첫 배포를 진행한다. 근거: 2026-09-13 사용자 요청과 docs/development.md. 이름 사용 가능 여부와 게시 권한은 배포 전에 확인한다.",
+  "author": "Codex",
+  "recordedAt": "2026-09-13T09:33:32.318Z",
+  "references": [],
+  "supersedes": null
+}
