@@ -23,7 +23,7 @@ test('brief validates omission accounting, failure state and source without clai
 test('workflow brief preserves explicit unassessed states and rejects successful partial errors', () => {
   const value = sample(); value.version = 2;
   value.report.project = { state: 'available', data: { source: 'working-tree', path: '.tryce/config.json', format: 'workflow-1', mode: 'approval', baseline: { kind: 'empty' }, baselineVerified: true } };
-  value.report.requirements = { state: 'available', data: { total: 1, included: 1, omitted: 0, items: [{ id: 'R-search-abcdefghij', revision: '11111111-1111-4111-8111-111111111111', title: '검색', state: 'active', approval: 'approved', path: 'specs/search/tryce.json', implementation: 'not-assessed', verification: 'not-run' }] } };
+  value.report.requirements = { state: 'available', data: { total: 1, included: 1, omitted: 0, items: [{ id: 'R-search-abcdefghij', revision: '11111111-1111-4111-8111-111111111111', title: '검색', state: 'active', approval: 'approved', path: '.tryce/spec/search/tryce.json', implementation: 'not-assessed', verification: 'not-run' }] } };
   assert.equal(briefV2.parse(value).report.requirements.data.items[0].verification, 'not-run');
   value.report.requirements = { state: 'error', error: { code: 'INVALID_REQUIREMENTS', message: 'broken' } };
   assert.equal(briefV2.safeParse(value).success, false);

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { readFileSync, writeFileSync, existsSync, readdirSync, mkdirSync, symlinkSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, readdirSync, mkdirSync, symlinkSync, renameSync, unlinkSync } from 'node:fs';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -24,6 +24,8 @@ test('auto defaults, notes in both modes, bundled confirmation, stale revisions 
   const f = await setup(t); assert.equal((await mode(f)).mode, 'auto');
   await noteCommand(f.repo, 'add', { type: 'discovery', message: '양쪽 모드의 발견' }, undefined, f.env);
   const a = await draft(f); const b = await draft(f, '정렬');
+  assert.equal(existsSync(join(f.repo, 'specs')), false);
+  assert.equal((await req(f, 'list')).items[0].path, '.tryce/spec/search/tryce.json');
   const group = await review(f, [a.id, b.id]); await decide(f, 'activate', group.id);
   let items = (await req(f, 'list')).items;
   assert.equal(items[0].id, a.id); assert(items.every(i => i.state === 'active' && i.approval === 'not-approved'));
@@ -32,16 +34,50 @@ test('auto defaults, notes in both modes, bundled confirmation, stale revisions 
   assert((await req(f, 'list')).items.every(i => i.state === 'active' && i.approval === 'not-approved'));
   const confirm = await review(f, [a.id]); await assert.rejects(decide(f, 'activate', confirm.id), { code: 'APPROVAL_REQUIRED' });
   await decide(f, 'approve', confirm.id);
-  const before = JSON.parse(readFileSync(join(f.repo, 'specs/search/tryce.json'), 'utf8'));
+  const before = JSON.parse(readFileSync(join(f.repo, '.tryce/spec/search/tryce.json'), 'utf8'));
   const revised = await req(f, 'revise', [a.id], { title: '검색 설명', message: '검색창의 입력한 단어로 검색한다.', author: 'Codex', reason: '명확한 표현', expected: a.revision, amend: true });
   await assert.rejects(decide(f, 'approve', confirm.id), { code: 'STALE_REVIEW' });
   items = (await req(f, 'list')).items;
   assert.equal(items[0].state, 'draft'); assert.equal(items[0].approval, 'not-approved'); assert.equal(items[1].approval, 'not-approved');
-  const after = JSON.parse(readFileSync(join(f.repo, 'specs/search/tryce.json'), 'utf8'));
+  const after = JSON.parse(readFileSync(join(f.repo, '.tryce/spec/search/tryce.json'), 'utf8'));
   assert.deepEqual(after.reviews, before.reviews); assert.deepEqual(after.decisions, before.decisions);
   assert.deepEqual(after.requirements[0].revisions[0], before.requirements[0].revisions[0]);
   assert.notEqual(revised.result.revision, a.revision);
   const brief = await readBrief(f.repo, {}, f.env); assert.equal(brief.version, 2); assert.equal(brief.ok, true); assert.equal(brief.report.requirements.data.total, 2);
+  assert.equal(brief.report.requirements.data.items[0].path, '.tryce/spec/search/tryce.json');
+});
+
+test('0.2.0 ledgers remain readable and writable at their original paths; new specs use .tryce/spec', async t => {
+  const f = await setup(t); const a = await draft(f);
+  f.git(['config', 'user.name', 'Fixture']); f.git(['config', 'user.email', 'fixture@example.invalid']); f.git(['config', 'commit.gpgsign', 'false']);
+  const oldPath = 'specs/search/tryce.json'; const newPath = '.tryce/spec/search/tryce.json';
+  mkdirSync(join(f.repo, 'specs/search'), { recursive: true });
+  renameSync(join(f.repo, newPath), join(f.repo, oldPath)); f.commit();
+  const original = JSON.parse(readFileSync(join(f.repo, oldPath)));
+  assert.equal((await req(f, 'list')).items[0].path, oldPath);
+  assert.equal((await readBrief(f.repo, {}, f.env)).report.requirements.data.items[0].path, oldPath);
+  const group = await review(f, [a.id]); await decide(f, 'activate', group.id);
+  assert.deepEqual(JSON.parse(readFileSync(join(f.repo, oldPath))).requirements, original.requirements);
+  assert.equal(existsSync(join(f.repo, newPath)), false);
+  const created = await req(f, 'draft', [], { spec: 'export', title: 'Export', message: 'Export records.', author: 'Fixture', reason: 'New scope' });
+  assert.equal(created.path, '.tryce/spec/export/tryce.json');
+  const plan = (await commit(f, 'plan', { path: [oldPath, created.path], message: 'record', policy: 'permitted', evidence: 'Fixture request' })).plan;
+  assert.deepEqual(new Set(plan.requirements), new Set([a.id, created.result.id]));
+  await commit(f, 'apply', { file: savePlan(f, plan) });
+  assert(f.git(['log', '-1', '--format=%B']).stdout.includes('Tryce-Req: ' + a.id));
+  f.write(newPath, readFileSync(join(f.repo, oldPath)));
+  await assert.rejects(req(f, 'list'), { code: 'REQUIREMENT_PATH_CONFLICT' });
+  unlinkSync(join(f.repo, newPath)); unlinkSync(join(f.repo, oldPath));
+  await assert.rejects(req(f, 'list'), { code: 'RECORD_DELETED' });
+});
+
+test('new requirement paths respect ignore rules and detect deleted committed records', async t => {
+  const f = await setup(t); f.write('.gitignore', '.tryce/spec/\n');
+  await assert.rejects(draft(f));
+  assert.equal(existsSync(join(f.repo, '.tryce/spec/search/tryce.json')), false);
+  f.write('.gitignore', ''); await draft(f); f.commit();
+  unlinkSync(join(f.repo, '.tryce/spec/search/tryce.json'));
+  await assert.rejects(req(f, 'list'), { code: 'RECORD_DELETED' });
 });
 
 test('legacy migration preserves exact config, baseline and notes, and can switch repeatedly', async t => {
@@ -56,7 +92,7 @@ test('legacy migration preserves exact config, baseline and notes, and can switc
 });
 
 test('concurrent requirement edits and damaged snapshots fail without overwriting records', async t => {
-  const f = await setup(t); const a = await draft(f); const path = join(f.repo, 'specs/search/tryce.json');
+  const f = await setup(t); const a = await draft(f); const path = join(f.repo, '.tryce/spec/search/tryce.json');
   const external = readFileSync(path, 'utf8') + '\n';
   await assert.rejects(req(f, 'review', [a.id], {}, async () => writeFileSync(path, external)), { code: 'INPUT_CHANGED' });
   assert.equal(readFileSync(path, 'utf8'), external);
@@ -104,7 +140,7 @@ test('built CLI exposes workflow commands and default auto init', t => {
 
 test('committed confirmation history cannot be changed and instruction edits invalidate a commit plan', async t => {
   const f = await setup(t); const a = await draft(f); const group = await review(f, [a.id]); await decide(f, 'activate', group.id); f.commit();
-  const path = join(f.repo, 'specs/search/tryce.json'); const bytes = readFileSync(path); const set = JSON.parse(bytes);
+  const path = join(f.repo, '.tryce/spec/search/tryce.json'); const bytes = readFileSync(path); const set = JSON.parse(bytes);
   set.decisions[0].actor = 'Someone else'; writeFileSync(path, JSON.stringify(set));
   await assert.rejects(req(f, 'list'), { code: 'RECORD_HISTORY_CHANGED' }); writeFileSync(path, bytes);
   f.write('feature.txt', 'feature'); f.write('AGENTS.md', 'Commit the current task.');
@@ -119,11 +155,11 @@ test('committed confirmation history cannot be changed and instruction edits inv
 
 test('requirement storage refuses directory links and oversized ledgers before writing', async t => {
   const f = await setup(t); const outside = join(f.root, 'outside'); mkdirSync(outside);
-  symlinkSync(outside, join(f.repo, 'specs'), process.platform === 'win32' ? 'junction' : 'dir');
+  symlinkSync(outside, join(f.repo, '.tryce/spec'), process.platform === 'win32' ? 'junction' : 'dir');
   await assert.rejects(draft(f), { code: 'PATH_CONFLICT' }); assert.deepEqual(readdirSync(outside), []);
   const g = await setup(t); const a = await req(g, 'draft', [], { spec: 'large', title: '큰 원문', message: 'x'.repeat(16000), author: 'Fixture', reason: '한도 시험' });
   await req(g, 'review', [a.result.id]); await req(g, 'review', [a.result.id]);
-  const path = join(g.repo, 'specs/large/tryce.json'); const before = readFileSync(path);
+  const path = join(g.repo, '.tryce/spec/large/tryce.json'); const before = readFileSync(path);
   await assert.rejects(req(g, 'review', [a.result.id]), { code: 'REQUIREMENT_LIMIT' }); assert.deepEqual(readFileSync(path), before);
 });
 
@@ -133,7 +169,7 @@ test('commit in linked SHA-256 worktree leaves main checkout index untouched', a
   const linked = join(f.root, 'linked'); f.git(['worktree', 'add', '-b', 'linked', linked]);
   const original = readFileSync(join(f.repo, '.git/index')); const g = { ...f, repo: linked };
   await initializeProject(linked, {}, f.env); const a = await draft(g); const r = await review(g, [a.id]); assert.equal(r.items[0].blob.length, 64); await decide(g, 'activate', r.id);
-  const plan = (await commit(g, 'plan', { path: ['.tryce/config.json', 'specs/search/tryce.json'], message: 'record', policy: 'permitted', evidence: 'Fixture request', req: [a.id], implement: true })).plan;
+  const plan = (await commit(g, 'plan', { path: ['.tryce/config.json', '.tryce/spec/search/tryce.json'], message: 'record', policy: 'permitted', evidence: 'Fixture request', req: [a.id], implement: true })).plan;
   const result = await commit(g, 'apply', { file: savePlan(g, plan) }); assert.equal(result.commit.length, 64);
   assert.deepEqual(readFileSync(join(f.repo, '.git/index')), original); assert.equal(f.git(['diff', '--cached'], linked).stdout, '');
   assert.match(f.git(['log', '-1', '--format=%B'], linked).stdout, /Tryce-Change: implement/);
@@ -142,10 +178,10 @@ test('commit in linked SHA-256 worktree leaves main checkout index untouched', a
 
 test('Git clean filters cannot silently rewrite requirement records in the staged snapshot', async t => {
   const f = await setup(t); f.commit(); const original = readFileSync(join(f.repo, '.git/index'));
-  await draft(f); f.write('.gitattributes', 'specs/** filter=record-change\n');
+  await draft(f); f.write('.gitattributes', '.tryce/spec/** filter=record-change\n');
   f.git(['config', 'filter.record-change.clean', 'node -e "let s=\'\';process.stdin.on(\'data\',x=>s+=x);process.stdin.on(\'end\',()=>process.stdout.write(s.replaceAll(\'Codex\',\'Changed\')))"']);
-  const plan = (await commit(f, 'plan', { path: ['specs/search/tryce.json'], message: 'record', policy: 'permitted', evidence: 'Fixture request' })).plan;
+  const plan = (await commit(f, 'plan', { path: ['.tryce/spec/search/tryce.json'], message: 'record', policy: 'permitted', evidence: 'Fixture request' })).plan;
   await assert.rejects(commit(f, 'apply', { file: savePlan(f, plan) }), { code: 'STAGED_RECORD_CHANGED' });
   assert.deepEqual(readFileSync(join(f.repo, '.git/index')), original); assert.equal(existsSync(join(f.repo, '.git/index.lock')), false);
-  assert.equal(JSON.parse(readFileSync(join(f.repo, 'specs/search/tryce.json'))).requirements[0].revisions[0].author, 'Codex');
+  assert.equal(JSON.parse(readFileSync(join(f.repo, '.tryce/spec/search/tryce.json'))).requirements[0].revisions[0].author, 'Codex');
 });

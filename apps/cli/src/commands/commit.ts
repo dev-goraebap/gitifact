@@ -3,7 +3,7 @@ import { readFile, open, rename, unlink, lstat } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
 import { InitError, validText, requirementIdPattern, requirementViews } from '@tryce/core';
-import { workflowTransaction } from '../adapters/filesystem/workflow-store.js';
+import { isRequirementPath, requirementPath, workflowTransaction } from '../adapters/filesystem/workflow-store.js';
 import { createGitRunner } from '../adapters/git/run-git.js';
 import { createRepositoryReader } from '../adapters/git/repository-reader.js';
 import { safeText } from '../adapters/filesystem/note-store.js';
@@ -52,7 +52,7 @@ export async function commitCommand(cwd: string, action: 'plan' | 'apply', optio
     };
     const dependencies = async (paths: string[]) => {
       const changes = (await git(['status', '--porcelain=v1', '-z', '--no-renames', '--untracked-files=all', '--', '.tryce/', 'specs/'])).toString('utf8').split('\0').filter(Boolean).map(line => line.slice(3));
-      const records = changes.filter(p => p === '.tryce/config.json' || p.startsWith('.tryce/notes/') || /^specs\/[^/]+\/tryce\.json$/.test(p) || /^\.tryce\/(config\.|mode-)/.test(p));
+      const records = changes.filter(p => p === '.tryce/config.json' || p.startsWith('.tryce/notes/') || isRequirementPath(p) || /^\.tryce\/(config\.|mode-)/.test(p));
       if (records.some(p => !paths.includes(p))) throw new InitError('UNCOMMITTED_RECORD_DEPENDENCY', '미커밋 기록이 계획에서 빠졌습니다. 관련성을 확인해 기록 단위를 먼저 정리하세요.');
     };
     const validateReferences = (plan: Plan) => {
@@ -72,7 +72,7 @@ export async function commitCommand(cwd: string, action: 'plan' | 'apply', optio
       await dependencies(paths);
       plan = parsePlan({ kind: 'tryce-commit-plan', version: 1, root: c.root, stamp: c.first.stamp,
         message: options.message, policy: options.policy, evidence: options.evidence,
-        requirements: [...new Set([...(options.req ?? []), ...(options.implement ? [] : c.records.sets.filter(s => paths.includes(`specs/${s.spec}/tryce.json`)).flatMap(s => s.requirements.map(r => r.id)))])].sort(), implementation: !!options.implement,
+        requirements: [...new Set([...(options.req ?? []), ...(options.implement ? [] : c.records.sets.filter(s => paths.includes(requirementPath(s.spec, c.records.contents))).flatMap(s => s.requirements.map(r => r.id)))])].sort(), implementation: !!options.implement,
         files: await Promise.all(paths.map(async path => ({ path, hash: await fingerprint(c.root, path) }))),
         context: await Promise.all([...new Set([...contextPaths(paths), ...(options.policyFile ?? [])])].sort().map(async path => ({ path, hash: await fingerprint(c.root, path) }))) });
       for (const f of plan.files) await c.repo.checkIgnore(c.root, f.path);
@@ -104,7 +104,7 @@ export async function commitCommand(cwd: string, action: 'plan' | 'apply', optio
       await git(['add', '--', ...plan.files.map(f => f.path)], temporary);
       const actual = await staged(temporary);
       if (!actual.length || actual.some(p => !plan.files.some(f => f.path === p))) throw new InitError('COMMIT_SCOPE_CHANGED', '계획 밖의 staged 변경 또는 빈 커밋입니다.');
-      for (const f of plan.files.filter(f => f.hash !== null && (/^\.tryce\/.*\.json$/.test(f.path) || /^specs\/[^/]+\/tryce\.json$/.test(f.path)))) {
+      for (const f of plan.files.filter(f => f.hash !== null && (/^\.tryce\/.*\.json$/.test(f.path) || isRequirementPath(f.path)))) {
         try {
           const stagedRecord = JSON.parse((await git(['show', ':' + f.path], temporary)).toString('utf8'));
           if (!isDeepStrictEqual(stagedRecord, JSON.parse(await safeText(join(c.root, f.path))))) throw new Error('filter changed record');

@@ -3,6 +3,7 @@ import { execFileSync, spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
+import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -76,6 +77,8 @@ try {
   const review = workflow(['req', 'review', requirement.id]).data.result;
   workflow(['req', 'approve', review.id, '--by', 'Fixture', '--evidence', 'Explicit fixture confirmation']);
   const current = workflow(['brief', '--all']);
+  assert.equal(current.report.requirements.data.items[0].path, '.tryce/spec/package/tryce.json');
+  assert.equal(existsSync(join(temporaryRoot, 'specs')), false);
   assert.equal(current.version, 2); assert.equal(current.report.requirements.data.items[0].approval, 'approved');
   assert.equal(current.report.notes.data.items[0].id, added.notes[0].id);
   const child = spawn(process.execPath, [join(installedRoot, 'dist', 'main.js'), 'browser'], {

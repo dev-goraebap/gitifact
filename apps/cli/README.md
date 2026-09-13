@@ -23,6 +23,8 @@ For a permitted commit, inspect exact related files and prepare `commit plan --p
 
 The CLI writes `Tryce-Format: workflow-1` and validated requirement/spec references. For implementation commits, explicitly pass `--req ACTIVE_REQUIREMENT_ID --implement`; these references do not claim completion or passing tests. Other event trailer semantics and full history validation are not implemented in this development format.
 
+New requirement records use `.tryce/spec/<spec>/tryce.json` starting in 0.2.1. Records created by 0.2.0 under `specs/<spec>/tryce.json` remain readable and writable in place. All agents working with the new location need CLI 0.2.1 or later.
+
 On a Git execution failure, inspect HEAD, the original index, `index.lock` and `tryce-index-*` recovery files before removing anything. The CLI intentionally preserves recovery artifacts when commit success is uncertain. See [workflow format and limits](../../docs/specs/workflow-format.md) for the full storage, contract and recovery rules. GUI requirement views, completion inference and full history checks remain unavailable.
 
 Git-backed project context and decision notes for coding agents.

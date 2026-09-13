@@ -1,7 +1,7 @@
 import { randomBytes, randomUUID } from 'node:crypto';
 import { InitError, parseRequirements, requirementDocument, requirementIdPattern, requirementViews, specPattern, validText } from '@tryce/core';
 import type { RequirementSet } from '@tryce/core';
-import { blobHash, readRequirementSets, saveRequirementSet, workflowTransaction } from '../adapters/filesystem/workflow-store.js';
+import { blobHash, readRequirementSets, requirementPath, saveRequirementSet, workflowTransaction } from '../adapters/filesystem/workflow-store.js';
 import { safeText } from '../adapters/filesystem/note-store.js';
 import { readConfigFile } from '../adapters/filesystem/config-file.js';
 
@@ -10,7 +10,7 @@ export async function reqCommand(cwd: string, action: 'draft' | 'revise' | 'revi
   const write = !['list', 'show'].includes(action);
   return workflowTransaction(cwd, write, async c => {
     if (c.config.format !== 'workflow-1') throw new InitError('WORKFLOW_REQUIRED', 'mode set auto 또는 approval로 명시적으로 전환하세요.');
-    const views = c.records.sets.flatMap(s => requirementViews(s).map(r => ({ ...r, path: `specs/${s.spec}/tryce.json` })));
+    const views = c.records.sets.flatMap(s => requirementViews(s).map(r => ({ ...r, path: requirementPath(s.spec, c.records.contents) })));
     if (!write) {
       const selected = action === 'show' ? views.filter(r => ids.includes(r.requirementId)) : views;
       if (action === 'show' && !selected.length) throw new InitError('REQUIREMENT_NOT_FOUND', '요구사항을 찾을 수 없습니다.');
@@ -61,14 +61,15 @@ export async function reqCommand(cwd: string, action: 'draft' | 'revise' | 'revi
       }
       set.decisions.push(decision); result = decision;
     }
-    parseRequirements(set); await c.repo.checkIgnore(c.root, `specs/${spec}/tryce.json`);
-    const expected = new Map(c.records.contents); expected.set(`specs/${spec}/tryce.json`, JSON.stringify(set, null, 2) + '\n');
+    const path = requirementPath(spec, c.records.contents);
+    parseRequirements(set); await c.repo.checkIgnore(c.root, path);
+    const expected = new Map(c.records.contents); expected.set(path, JSON.stringify(set, null, 2) + '\n');
     if ([...expected.values()].reduce((n, text) => n + Buffer.byteLength(text), 0) > 16 * 1024 * 1024) throw new InitError('REQUIREMENT_LIMIT', '요구사항 전체 크기 한도를 초과했습니다.');
     await beforeWrite?.();
-    await saveRequirementSet(c.root, set, c.recheck, path => c.repo.checkIgnore(c.root, path), !!existing);
+    await saveRequirementSet(c.root, set, c.recheck, path => c.repo.checkIgnore(c.root, path), !!existing, path);
     if ((await c.repo.inspect()).stamp !== c.first.stamp || await readConfigFile(c.root) !== c.original) throw new InitError('INPUT_CHANGED_AFTER_WRITE', '저장 후 HEAD·index·설정이 변경됐습니다. 기록은 보존했습니다.');
     const saved = (await readRequirementSets(c.root)).contents;
     if (saved.size !== expected.size || [...expected].some(([path, text]) => saved.get(path) !== text)) throw new InitError('INPUT_CHANGED_AFTER_WRITE', '저장 중 다른 요구사항이 변경됐습니다. 현재 기록을 보존했습니다.');
-    return { outcome: action, source: 'working-tree', path: `specs/${spec}/tryce.json`, result, git: 'not-committed' };
+    return { outcome: action, source: 'working-tree', path, result, git: 'not-committed' };
   }, env);
 }

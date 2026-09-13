@@ -48,7 +48,7 @@
 
 첫 구현은 `req draft`, `req revise`, `req review`, `req activate`, `req approve`, `req list/show`로 구성한다. 일반 사용자는 채팅으로 의사를 전달한다. CLI가 내용을 이해한 척하거나 승인자를 추측하지 않도록 한다.
 
-요구사항 ID는 확정된 `R-<spec>-<base32 10자>`를 따른다. 요구사항 원문과 spec 메타는 `specs/<spec>/tryce.json`에 두며, 기존 note의 discovery·constraint·rejected에 요구사항이나 승인을 넣지 않는다. 수정본·묶음·결정의 배열에 추가하고 과거 원문을 보존한다.
+요구사항 ID는 확정된 `R-<spec>-<base32 10자>`를 따른다. 요구사항 원문과 spec 메타는 `.tryce/spec/<spec>/tryce.json`에 두며, 기존 note의 discovery·constraint·rejected에 요구사항이나 승인을 넣지 않는다. 수정본·묶음·결정의 배열에 추가하고 과거 원문을 보존한다.
 
 공개된 init-1·prototype-1의 의미를 몰래 확장하지 않는다. 새 형식 도입은 원본 설정과 기준선을 보존하는 명시적 전환으로 제공한다. 구형 CLI는 새 형식을 지원하는 것처럼 처리하지 않아야 한다. 현재 Tryce 저장소와 .tmp/demo는 이 설계 문서만으로 전환하지 않는다.
 

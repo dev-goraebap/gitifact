@@ -14,7 +14,9 @@ tryce skills remove --dry-run
 tryce skills remove
 ```
 
-실행 위치의 Git checkout에서 init-1·prototype-1 설정과 기준선을 확인한다. 초기화 전 상태, Git 작업·충돌·컨텍스트 덮어쓰기 환경변수는 거부한다. 자동 init·note enable, 전역 설치, AGENTS.md·CLAUDE.md·훅 변경, stage·commit은 수행하지 않는다.
+실행 위치의 Git checkout에서 지원하는 설정(init-1·prototype-1·workflow-1)과 기준선을 확인한다. 초기화 전 상태, Git 작업·충돌·컨텍스트 덮어쓰기 환경변수는 거부한다. 자동 init·note enable, 전역 설치, AGENTS.md·CLAUDE.md·훅 변경, stage·commit은 수행하지 않는다.
+
+공용 스킬은 기존 AGENTS.md·CLAUDE.md의 적용 가능한 지침을 읽고 따른다. 설치 명령은 이 파일들을 생성하거나 스킬 연결 문구를 삽입하지 않는다. 현재 세션은 설치한 스킬을 직접 읽고, 이후 세션은 에이전트의 스킬 인식에 의존한다. 기존 지침을 보존하는 연결 안내의 설치·갱신·제거는 후속 범위다. 이 저장소의 개발 예외는 AGENTS.md에 두며 공용 스킬에 배포하지 않는다.
 
 install은 원본이 없으면 CLI 템플릿을 복사하고 기존 원본은 보존한다. sync는 원본이 있어야 하며 그 내용으로 로컬 복사본만 맞춘다. 새 clone에서도 `sync --agent claude`로 복사본을 만들 수 있다. 옵션이 없으면 저장한 로컬 에이전트 선택을 사용하고, 선택도 없으면 오류다.
 

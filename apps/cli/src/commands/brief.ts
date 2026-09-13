@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { InitError, RepositoryReadError, briefList, briefNotes, parseProjectConfig, summarizeChanges, requirementViews } from '@tryce/core';
 import { briefReportV1, briefV1, briefReportV2, briefV2 } from '@tryce/contracts';
 import type { BriefV1, BriefV2 } from '@tryce/contracts';
-import { workflowTransaction } from '../adapters/filesystem/workflow-store.js';
+import { requirementPath, workflowTransaction } from '../adapters/filesystem/workflow-store.js';
 import { createRepositoryReader } from '../adapters/git/repository-reader.js';
 import { initRepository } from '../adapters/git/init-repository.js';
 import { readConfigFile, fileInfo } from '../adapters/filesystem/config-file.js';
@@ -55,7 +55,7 @@ export async function readBrief(cwd: string, options: Options = {}, env = proces
     const enabled = projectResult.value?.config.format === 'prototype-1' || workflow;
     const getRequirements = () => workflowTransaction(root, false, async c => {
       const items = c.records.sets.flatMap(s => requirementViews(s).map(v => ({ id: v.id, revision: v.revision, title: v.title, state: v.state, approval: v.approval,
-        path: `specs/${s.spec}/tryce.json`, implementation: v.implementation, verification: v.verification })));
+        path: requirementPath(s.spec, c.records.contents), implementation: v.implementation, verification: v.verification })));
       await c.recheck(); return { data: briefList(items, 30, options.all), stamp: c.records.stamp };
     }, env);
     const requirementResult = workflow ? await getRequirements().then(value => ({ value, error: null }), error => ({ value: null, error })) : null;

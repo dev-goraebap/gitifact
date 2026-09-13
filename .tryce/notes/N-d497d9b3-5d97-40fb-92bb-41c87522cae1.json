@@ -1,0 +1,11 @@
+{
+  "kind": "tryce-note",
+  "format": "note-1",
+  "id": "N-d497d9b3-5d97-40fb-92bb-41c87522cae1",
+  "type": "constraint",
+  "text": "사용자가 요구사항 저장 위치를 .tryce/spec/<영역>/tryce.json으로 정정했다. 기존 specs/<영역>/tryce.json 구현은 의도와 달랐다. 기존 프로젝트 도입은 특정 docs 폴더의 이동이 아니라 코드·테스트·문서·Git 이력·대화 등 프로젝트 맥락에서 요구사항을 도출하는 흐름이다. 문서가 없어도 가능해야 하며 사실·추정·승인·검증 상태를 구분한다. 근거: 2026-09-13 사용자 경로 정정과 도입 방식 설명.",
+  "author": "Codex",
+  "recordedAt": "2026-09-13T13:31:58.416Z",
+  "references": [],
+  "supersedes": null
+}
