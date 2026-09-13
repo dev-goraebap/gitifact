@@ -1,0 +1,13 @@
+{
+  "kind": "tryce-note",
+  "format": "note-1",
+  "id": "N-58b74fec-1c93-4de4-8c70-f3e3dd8c77c9",
+  "type": "discovery",
+  "text": "2026-09-13 @tryce/cli@0.1.0을 apps/cli에서 공개 latest로 게시했고 633e6eb까지 main을 푸시했다. 레지스트리 버전, MIT, latest, integrity가 게시 결과와 일치했다. 새 임시 프로젝트의 레지스트리 설치에서 version/help, init, note, brief, status, skills, 브라우저를 검증하고 .tmp/demo를 0.1.0으로 갱신해 기존 기록 해시 보존을 확인했다. pnpm 배포 매니페스트의 내부 의존성 키 순서에 따라 tarball 해시가 달라질 수 있어 값과 파일 내용을 비교해야 한다. 실제 게시와 레지스트리의 integrity는 docs/releases.md에 기록한 검증값과 같다.",
+  "author": "Codex",
+  "recordedAt": "2026-09-13T11:22:54.990Z",
+  "references": [
+    "N-ca0d517a-3c7e-4394-abe8-b98165c453f8"
+  ],
+  "supersedes": null
+}
