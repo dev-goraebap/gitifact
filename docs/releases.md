@@ -126,3 +126,9 @@ apps/cli의 모의 게시 결과는 파일 15개, integrity `sha512-0ep8EQ1Y/ACY
 Markdown 명세·변경 이유·Git 커밋 연결과 요구사항 이력·제품 기능·기여자 브라우저를 배포한다. 새 설정은 schemaVersion 1이며 기존 JSON 프로젝트를 자동 전환하지 않는다. req·note·mode는 deprecated 호환 명령으로 유지한다. 새 형식의 brief와 승인·note, 자동 마이그레이션은 지원하지 않는다.
 
 구현 커밋 8958603에서 pnpm check 전체(172개 테스트와 패키지 설치·실행)를 통과했다. 버전·배포 안내 변경 후 패키징을 다시 검증한다. 실제 게시 결과는 별도로 기록한다.
+
+## 0.4.0 게시 결과
+
+2026-09-14 릴리스 커밋 4fb9c68을 main에 푸시하고 `apps/cli`에서 Git 검사를 유지한 pnpm publish로 공개 게시했다. latest는 0.4.0이다. 모의 게시와 레지스트리 integrity는 `sha512-2+YX7ZBIofy0SdOqKs6QcFvmicaslJacJf/ppJTu/GvIjLlkvngp0brbaYgADaYF6MFA49XbJpq9fKBqI6LTkg==`로 일치한다. 배포물 282개 파일은 dist·README·LICENSE·package.json 범위에 한정됐다.
+
+레지스트리 설치본의 dist 전체가 로컬 검증 빌드와 바이트 단위로 일치했다. 새 Git 시험 프로젝트에서 버전·도움말·schemaVersion 1 초기화·명세 작성·브라우저 API와 정적 기능 경로를 확인했다. `.tmp/demo`도 0.4.0으로 갱신했고 기존 .tryce 파일의 해시는 모두 유지됐다. 기존 인증 세션으로 게시했으며 인증 파일과 토큰은 조회·변경하지 않았다.
