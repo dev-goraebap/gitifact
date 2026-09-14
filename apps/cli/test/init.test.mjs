@@ -121,7 +121,7 @@ test('built command has versioned output and rejects options before writing', t 
   const entry = fileURLToPath(new URL('../dist/main.js', import.meta.url));
   const cli = args => spawnSync(process.execPath, [entry, 'init', ...args], { cwd: f.repo, env: f.env, encoding: 'utf8', timeout: 35000 });
   const bad = cli(['--mode', 'wrong']); assert.equal(bad.status, 1); assert.equal(existsSync(join(f.repo, '.tryce')), false);
-  const missing = cli(['--dry-run']); assert.equal(missing.status, 0); assert.equal(JSON.parse(missing.stdout).mode, 'auto');
+  const missing = cli(['--dry-run']); assert.equal(missing.status, 0); assert.equal(JSON.parse(missing.stdout).projectFormat, 'spec-1'); assert.equal(JSON.parse(missing.stdout).mode, undefined);
   const good = cli(['--mode', 'prototype']); assert.equal(good.status, 0, good.stderr);
   assert.equal(projectInitV1.parse(JSON.parse(good.stdout)).outcome, 'created');
 });

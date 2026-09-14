@@ -95,7 +95,7 @@ export function initRepository(cwd: string, inherited: NodeJS.ProcessEnv = proce
       const fields = output.split('\0');
       if (output && fields[2] && !fields[2].startsWith('!')) throw new InitError('CONFIG_IGNORED', '설정이 ignore 규칙으로 제외됩니다: ' + fields[0] + ':' + fields[1] + ' ' + fields[2]);
     },
-    async validateBaseline(config: ProjectConfig, root: string, commit: string | null, format: string) {
+    async validateBaseline(config: Pick<ProjectConfig, 'baseline'>, root: string, commit: string | null, format: string) {
       if (config.baseline.kind === 'empty') return;
       const baseline = config.baseline;
       if (!commit || baseline.objectFormat !== format) throw new InitError('BASELINE_UNAVAILABLE', '기준선과 현재 저장소가 일치하지 않습니다.');

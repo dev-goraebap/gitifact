@@ -9,6 +9,7 @@ import { modeCommand } from './commands/mode.js';
 import { reqCommand } from './commands/req.js';
 import { runWorkflow } from './commands/workflow-output.js';
 import { commitCommand } from './commands/commit.js';
+import { runSpecPreview } from './commands/spec-preview.js';
 
 declare const __CLI_VERSION__: string;
 
@@ -36,7 +37,7 @@ program.command('browser')
 program.command('init')
   .description('프로젝트 설정과 도입 기준선 생성 (스킬·훅 제외)')
   .allowExcessArguments(false)
-  .addOption(new Option('--mode <mode>', '최초 프로젝트 모드').choices(['auto', 'approval', 'normal', 'prototype']))
+  .addOption(new Option('--mode <mode>', 'Deprecated: 기존 형식의 최초 모드').choices(['auto', 'approval', 'normal', 'prototype']))
   .option('--dry-run', '파일을 만들지 않고 초기화 계획 확인')
   .addOption(new Option('--format <format>', '출력 형식').choices(['json', 'text']).default('json'))
   .action(runInit);
@@ -103,4 +104,31 @@ commit.command('plan').allowExcessArguments(false)
   .action(o => runWorkflow('commit.plan', () => commitCommand(process.cwd(), 'plan', o), o.format));
 commit.command('apply').allowExcessArguments(false).requiredOption('--file <path>', 'plan 객체를 담은 UTF-8 JSON 파일').addOption(outputOption())
   .action(o => runWorkflow('commit.apply', () => commitCommand(process.cwd(), 'apply', o), o.format));
+for (const name of ['spec', 'spec-preview']) {
+const specPreview = program.command(name).description(name === 'spec' ? 'Markdown 명세 작성·조회·Git 기록' : 'Deprecated: spec의 실험용 호환 명령');
+const run = (action: Parameters<typeof runSpecPreview>[0], o: Parameters<typeof runSpecPreview>[1]) => runSpecPreview(action, { ...o, experimental: name === 'spec' || !!o.experimental }, name === 'spec');
+for (const action of ['commit-plan', 'commit-apply'] as const) specPreview.command(action).allowExcessArguments(false)
+  .option('--experimental', '검토 문법을 명시적으로 사용').requiredOption('--file <path>', '커밋 입력 또는 계획 JSON 파일')
+  .action(o => run(action, o));
+specPreview.command('changes').allowExcessArguments(false).option('--experimental', '검토 문법을 명시적으로 사용')
+  .action(o => run('changes', o));
+specPreview.command('prepare').allowExcessArguments(false).option('--experimental', '검토 문법을 명시적으로 사용')
+  .requiredOption('--file <path>', 'expected와 최종 reasons를 담은 JSON 파일').action(o => run('prepare', o));
+specPreview.command('verify').allowExcessArguments(false).option('--experimental', '검토 문법을 명시적으로 사용')
+  .requiredOption('--file <path>', 'prepare의 verification 객체를 담은 JSON 파일').option('--staged', 'index 원문도 비교')
+  .action(o => run('verify', o));
+specPreview.command('working').allowExcessArguments(false).option('--experimental', '검토 문법을 명시적으로 사용')
+  .action(o => run('working', o));
+specPreview.command('save').allowExcessArguments(false).option('--experimental', '검토 문법을 명시적으로 사용')
+  .requiredOption('--file <path>', 'expected와 operations를 담은 UTF-8 JSON 파일').action(o => run('save', o));
+specPreview.command('read').allowExcessArguments(false).option('--experimental', '검토 문법을 명시적으로 사용')
+  .option('--ref <commit>', '읽을 커밋', 'HEAD').action(o => run('read', o));
+specPreview.command('diff').allowExcessArguments(false).option('--experimental', '검토 문법을 명시적으로 사용')
+  .requiredOption('--from <commit>', '이전 커밋').requiredOption('--to <commit>', '이후 커밋')
+  .action(o => run('diff', o));
+}
+for (const name of ['req', 'note', 'mode']) {
+  const command = program.commands.find(c => c.name() === name)!;
+  command.description('Deprecated: 기존 형식 호환용 ' + command.description());
+}
 await program.parseAsync();

@@ -1,0 +1,1 @@
+{"id":"H-tbo327i6ng","requirements":["R-droz5whebf","R-r6sufs7aez","R-w4xotddy7p","R-wpeh3aib32"],"reason":"사용자가 합의한 새 MVP 방향에 따라 유효한 요구사항을 기능별 Markdown으로 정리하고 구형 JSON·승인·note 형식을 제거한다. 단기 초안 변경 대신 Git에 커밋된 최종 명세와 변경 이유를 추적한다."}

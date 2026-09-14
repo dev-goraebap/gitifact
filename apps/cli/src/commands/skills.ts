@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
-import { InitError, parseProjectConfig } from '@tryce/core';
+import { InitError, parseManagedConfig } from '@tryce/core';
 import { skillsV1 } from '@tryce/contracts';
 import { initRepository } from '../adapters/git/init-repository.js';
 import { readConfigFile } from '../adapters/filesystem/config-file.js';
@@ -34,7 +34,7 @@ export async function skillsCommand(cwd: string, action: Action, options: Option
   const root = first.state.repository.rootPath;
   const configText = await readConfigFile(root);
   if (configText === undefined) throw new InitError('NOT_INITIALIZED', '먼저 프로젝트를 초기화하세요.');
-  const config = parseProjectConfig(configText);
+  const config = parseManagedConfig(configText);
   await repo.validateBaseline(config, root, first.state.head.commit, first.state.repository.objectFormat);
   const recheck = async () => {
     if ((await repo.inspect()).stamp !== first.stamp || await readConfigFile(root) !== configText) throw new InitError('INPUT_CHANGED', 'Git 또는 프로젝트 설정이 변경됐습니다.');

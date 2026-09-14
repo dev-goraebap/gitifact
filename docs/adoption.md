@@ -1,5 +1,8 @@
 # Tryce 프로젝트 자체 도입
 
+> 아래는 기존 workflow-1의 도입 기록이다. 현재 상태는 아래 최신 전환 기록을 따른다. 구형 데이터는 사용자 요청으로 작업 폴더에서 제거했고 과거 커밋에서만 확인할 수 있다.
+
+
 2026-09-13 사용자가 도입 프롬프트 정리, 기존 프로젝트 요구사항 도출, 이 저장소의 자동모드 전환과 Tryce 커밋 적용을 요청했다. 지정된 CLI 0.2.1을 사용한다. 기존 prototype-1 설정은 CLI가 백업하고 도입 기준선과 note는 그대로 유지했다. 과거 커밋은 재작성하지 않는다.
 
 ## 조사와 등록 범위
@@ -45,3 +48,22 @@ AGENTS.md가 이미 공용 스킬을 연결하고 CLAUDE.md가 AGENTS.md를 읽�
 로컬 시험 자료는 `.tmp/demo-e2e/`에 있다. CLI 호출 로그, 확인 전 상태, `Codex test operator`의 모의 답변, 최종 조회와 결과를 보존했다. `.tmp/`는 추적하지 않으므로 이 문서에 재현할 시나리오와 결과를 남긴다.
 
 이번 결과는 같은 에이전트가 준비한 시나리오의 실행 검증이다. 독립된 새 에이전트의 스킬 발견·자율 선택, 실제 사람과의 승인 대화, 수정 없는 공개 패키지만으로 최신 스킬을 도입하는 흐름은 검증하지 않았다. CLI 업데이트와 기존 프로젝트 스킬 갱신은 별도 작업이라는 안내가 다음 도입 개선의 확인 대상이다.
+
+## 2026-09-14 Markdown 자체 도입
+
+사용자 요청으로 별도 원본 백업 없이 spec-1으로 전환했다. 기존 JSON 요구사항 7파일, note 26파일, 설정 백업 2파일과 모드 전환 1파일을 제거했다. 미커밋 note 4개에 있던 화면 합의는 브라우저·기여자 요구사항과 전환 계획에 반영했다. 설정의 기존 도입 기준선은 유지했고 Git 이력은 수정하지 않았다.
+
+최신 대화와 제품 기준을 기준으로 다음 명세를 CLI로 생성·검증했다. 과거 JSON ID는 신규 Markdown ID의 과거 이력으로 가장하지 않으며 승인·구현 완료도 소급하지 않는다.
+
+- [agent-workflow](../.tryce/spec/agent-workflow/requirements.md): 3개 요구사항, `S-4snufavmgg`
+- [browser](../.tryce/spec/browser/requirements.md): 4개 요구사항, `S-jqxgddhsdf`
+- [contributors](../.tryce/spec/contributors/requirements.md): 1개 요구사항, `S-b4ubq7ghty`
+- [git-history](../.tryce/spec/git-history/requirements.md): 4개 요구사항, `S-zyro4g3e5f`
+- [onboarding](../.tryce/spec/onboarding/requirements.md): 3개 요구사항, `S-eordsbir6z`
+- [specification](../.tryce/spec/specification/requirements.md): 4개 요구사항, `S-qk6cmgqgmt`
+
+폐기한 내용은 auto/approval·승인 묶음·note 원문 보존·정책 부재 시 자동 커밋·구형 브라우저의 승인 및 note 화면이다. 전체 Git 감사·훅·PR 연동은 확정된 MVP 요구사항으로 등록하지 않았다. 기존 성능 측정·설치 검증·라이선스·패키지 이름 결정은 development.md·releases.md·아키텍처 문서에 이미 남아 있다.
+
+초안은 격리 저장소에서 save로 만들었고 ID·수용 조건·전체 19개를 확인했다. 임시 시험에서 구형 설정·JSON 제거 후 새 명세·이유와 함께 커밋되는 경로를 검증한 뒤 실제 프로젝트에 적용했다. 범용 마이그레이션 CLI가 없어 DEV-01로 검증된 원문을 게시하고 구형 파일을 제거했다. 원본 바이트의 디스크 백업은 만들지 않았다. 실패 시 원상 복원을 위한 메모리만 사용했다.
+
+실제 프로젝트에서는 spec working과 changes로 6개 명세·19개 요구사항을 확인했다. HEAD와 기존 index는 동일하다. 현재 명세는 미커밋이며 history.jsonl은 커밋 준비 때 만든다. 새 브라우저와 brief 연결, 독립 에이전트 행동 시험은 미완료다.

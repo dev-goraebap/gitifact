@@ -5,6 +5,7 @@ import { initRepository } from '../adapters/git/init-repository.js';
 import { publishConfig, readConfigFile } from '../adapters/filesystem/config-file.js';
 import { readRequirementSets } from '../adapters/filesystem/workflow-store.js';
 import { readNotes } from '../adapters/filesystem/note-store.js';
+import { initializeSpecProject } from './spec-init.js';
 
 export interface InitOptions { mode?: ProjectMode; dryRun?: boolean; format?: 'json' | 'text' }
 export async function initializeProject(cwd: string, options: InitOptions, env = process.env, beforePublish?: () => Promise<void>) {
@@ -59,6 +60,11 @@ export async function initializeProject(cwd: string, options: InitOptions, env =
 
 export async function runInit(options: InitOptions) {
   try {
+    if (!options.mode) {
+      const dto = await initializeSpecProject(process.cwd(), options.dryRun);
+      process.stdout.write(options.format === 'text' ? `${dto.outcome}: ${dto.rootPath}/.tryce/config.json\n형식: spec-1\n스킬·훅은 설치하지 않았습니다.\n` : JSON.stringify(dto) + '\n');
+      return;
+    }
     const dto = await initializeProject(process.cwd(), options);
     if (!dto.ok) throw new Error('Unexpected init result');
     process.stdout.write(options.format === 'text'

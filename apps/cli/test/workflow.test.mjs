@@ -130,10 +130,10 @@ test('failed commit hook preserves original index, files, and recovery artifacts
   assert.equal(f.git(['rev-parse', '--verify', 'HEAD'], f.repo, true).status, 128);
 });
 
-test('built CLI exposes workflow commands and default auto init', t => {
+test('built CLI preserves deprecated workflow commands with explicit legacy init', t => {
   const f = fixture(t); const entry = fileURLToPath(new URL('../dist/main.js', import.meta.url));
   const call = args => { const r = spawnSync(process.execPath, [entry, ...args], { cwd: f.repo, env: f.env, encoding: 'utf8', timeout: 60000 }); assert.equal(r.status, 0, r.stderr); return JSON.parse(r.stdout); };
-  assert.equal(call(['init']).mode, 'auto'); assert.equal(call(['mode', 'show']).data.mode, 'auto');
+  assert.equal(call(['init', '--mode', 'auto']).mode, 'auto'); assert.equal(call(['mode', 'show']).data.mode, 'auto');
   const d = call(['req', 'draft', '--spec', 'start', '--title', '시작', '--message', '제품을 만든다.', '--author', 'Codex', '--reason', '사용자 요청']);
   assert.match(d.data.result.id, /^R-start-/); assert.equal(call(['brief']).version, 2);
 });

@@ -42,7 +42,7 @@ try {
   assert.equal(initialized.outcome, 'created');
   assert.deepEqual(initialized.baseline, { kind: 'empty' });
   const configBefore = await readFile(join(temporaryRoot, '.tryce', 'config.json'));
-  assert.equal(JSON.parse(pnpm(['--dir', temporaryRoot, 'exec', 'tryce', 'init'], temporaryRoot)).outcome, 'already-initialized');
+  assert.equal(JSON.parse(pnpm(['--dir', temporaryRoot, 'exec', 'tryce', 'init', '--mode', 'prototype'], temporaryRoot)).outcome, 'already-initialized');
   assert.deepEqual(await readFile(join(temporaryRoot, '.tryce', 'config.json')), configBefore);
   const enabled = JSON.parse(pnpm(['--dir', temporaryRoot, 'exec', 'tryce', 'note', 'enable'], temporaryRoot));
   assert.equal(enabled.outcome, 'enabled');
@@ -64,6 +64,7 @@ try {
   assert.equal(installSkills.outcome, 'installed');
   const sourceBytes = await readFile(skillSource, 'utf8');
   assert.match(sourceBytes, /name: tryce-workflow/);
+  assert.equal(sourceBytes, await readFile(join(workspace, '.agents/skills/tryce-workflow/SKILL.md'), 'utf8'), 'Installed skill must match the current source.');
   assert.equal(await readFile(skillCopy, 'utf8'), sourceBytes);
   await writeFile(skillSource, sourceBytes + '\nProject customization\n');
   pnpm(['--dir', temporaryRoot, 'exec', 'tryce', 'skills', 'sync'], temporaryRoot);

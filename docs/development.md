@@ -1,5 +1,56 @@
 # 개발 환경
 
+## MVP 관련 파일 커밋 실행 개발 빌드
+
+2026-09-14 기본 커밋 정책을 관련 명세·이유·코드·테스트의 단일 커밋으로 정리하고 `spec-preview commit-plan/commit-apply --experimental`을 연결했다. 분리 정책에서는 명세·이유를 먼저 커밋하고 코드 커밋에서 실제 R-ID를 참조한다. 명세만 또는 코드만 변경하는 작업도 지원한다. 원문·정책·index를 계획에 묶고 실행 직전 다시 검사한다. 실행 입력과 제한은 [MVP 전환 계획](mvp-transition.md)의 관련 파일 커밋 실행 절을 따른다.
+
+기존 staging과 intent-to-add가 있으면 보존하고 보류한다. 별도 index에서 선택 파일만 staging하며 Git 훅·서명을 따른다. 실제 커밋 tree·부모·R-ID 참조를 검증한 뒤 index를 반영한다. HEAD가 바뀌지 않은 실패는 소유한 잠금을 정리해 재시도할 수 있고, HEAD 변경 후 결과가 불확실하면 원래·임시 index와 복구 자료를 보존하고 중복 실행을 막는다. 강제 종료 후 자동 복구·일부 미커밋 명세만 선택·기존 staging의 자동 병합은 미지원이다.
+
+첫 시험에서 정책 파일의 경로를 커밋 선택 경로처럼 제한한 오류를 발견해 역할을 구분했다. 빈 Git template로 만든 시험 저장소에는 hooks 폴더도 없으므로 테스트 준비를 수정했다. 이후 관련 7개 테스트가 통과했고, 마지막으로 index 복사본을 사용해 관계없는 플래그를 보존하도록 보강했다.
+
+최종 소스의 `pnpm check`가 통과했다. core 19개·contracts 7개·CLI 114개·브라우저 9개·스킬 5개로 총 154개 테스트와 외부 오프라인 패키지 설치·실행을 확인했다. SHA-1/SHA-256 함께 커밋, 명세/코드 분리와 R-ID 참조, 기존 staging·intent-to-add·index 플래그 보존, 명세·코드·지침 변경 감지, 훅 실패 후 재시도, 훅이 커밋 내용을 바꾼 경우 복구 자료 보존을 검증했다. 문서 로컬 링크 69개와 diff 형식도 확인했다. 새 커밋 실행의 linked worktree·강제 종료·실제 서명 키 동작은 별도 시험하지 않았다.
+
+`.tmp/spec-commit-demo/`는 실제 CLI로 명세·이유·구현·테스트를 한 커밋에 담은 독립 저장소다. R-4ktb7euauo, 시험 커밋 `40cf3d8cb94b40c43688fdb2b14a52714526bdc2`를 만들었고 빈 제목 거부·정상 제목 저장 테스트 2개가 통과했다. 커밋 후 데모 작업 폴더가 깨끗하며 입력·결과·commit.txt를 보존했다. 루트 Tryce의 Git 커밋이 아니다.
+
+개발 번들 SHA-256은 `7db4c31ca11e7d5c28f6649737b9adebe91e0a51eb9c6fe1e8187da82ce17801`다. 새 기록용 프로젝트 사용 버전으로 지정하지 않았다. 기존 .tryce·기준선·0.3.0 지정 CLI는 유지한다. DEV-01로 정책·설계·검증 문서를 직접 갱신했으며 루트 커밋·푸시·npm 배포는 하지 않았다.
+
+## MVP 커밋 이유 준비 개발 빌드
+
+2026-09-14 `spec-preview changes/prepare/verify --experimental`을 추가했다. HEAD와 현재 명세의 최종 차이를 구하고, 확인된 이유를 스펙별 history.jsonl에 준비한다. 여러 초안 수정은 한 최종 차이로 비교한다. 커밋된 이유의 원문 바이트는 보존하고 미커밋 이유만 다시 구성한다. 같은 준비의 반복은 H-ID를 재사용하며 원복한 요구사항에는 이유를 추가하지 않는다.
+
+changes는 미커밋 이유를 pendingReasons로 함께 반환한다. prepare에는 이를 확인해 유지할 이유를 포함한 최종 reasons 전체를 전달한다. 이유가 없는 변경은 withoutReason으로 표시한다. prepare의 verification 객체로 원문·HEAD가 그대로인지 검사하고, verify --staged로 index 원문 일치까지 확인할 수 있다. staging·커밋 실행·기존 형식 전환은 수행하지 않는다. 입력 예시와 보존·제거 범위는 [MVP 전환 계획](mvp-transition.md)의 커밋 이유 준비 절을 따른다.
+
+`pnpm check`에서 core 19개·contracts 7개·CLI 107개·브라우저 9개·스킬 5개, 총 147개 테스트와 외부 오프라인 패키지 설치가 통과했다. 이후 pendingReasons 응답을 보강했고 CLI 타입 검사·재빌드, 관련 8개 테스트와 `pnpm test:package`를 다시 통과했다. 최종 보완 뒤 전체 check를 다시 반복한 것은 아니다. 문서 로컬 링크 68개와 diff 형식 검사도 통과했다.
+
+`.tmp/spec-prepare-demo/`에 실제 개발 CLI와 독립 Git 저장소로 만든 예시를 남겼다. 최초 기능을 커밋하고 요구사항을 두 번 고친 뒤 최종 이유를 준비·staging 검증·커밋했다. 비교 결과는 R-qssyoe6f3p의 수정 1건과 새 이유 1건이며 history.jsonl은 초기 이유와 최종 수정 이유 두 줄이다. 입력·결과·committed-diff.json을 함께 보존했다. 루트 Tryce의 커밋이 아니다.
+
+개발 번들 SHA-256은 `f91c67bbaef688cbee76602cf9d2958f80aae896574b39d601c21951eff2e8cd`다. 실제 프로젝트 기록용 0.3.0 지정은 유지한다. Git 통합 작업 중 준비, 전체 기능·과거 이유 삭제, merge·squash 이유 연결과 검증 후 커밋까지의 원자적 실행은 아직 지원하지 않는다. 강제 종료 후 자동 복구도 기존 실험 단계의 제한을 유지한다. DEV-01로 설계·시험 결과를 문서에 기록했으며 루트 .tryce 전환·커밋·푸시·npm 배포는 하지 않았다.
+
+## MVP 초안 편집 개발 빌드
+
+2026-09-14 `spec-preview working/save --experimental`을 추가했다. Markdown 생성·요구사항 추가·수정·이동·문서 제목 변경을 지원한다. 입력과 제한은 [MVP 전환 계획](mvp-transition.md)의 초안 생성·수정·이동 구현 절을 따른다. 기존 프로젝트 형식은 거부하며 Git index·HEAD·설정·history.jsonl을 수정하지 않는다.
+
+새 테스트로 SHA-1/SHA-256 저장소의 생성·수정·이동과 ID 유지, staging 보존, 오래된 입력·중복·본문 구조 삽입 거부를 확인했다. 두 번째 파일 저장 실패 시 CRLF 원문 복구와 외부 편집이 있으면 이를 보존하고 복구 자료를 남기는 경로를 검사했다. 강제 종료·전원 장애의 자동 복구와 새 기능의 linked worktree 시험은 아직 하지 않았다. 다중 파일 반영은 파일별 rename이므로 실험 단계에서 중단 시 수동 복구가 필요할 수 있다.
+
+최종 소스의 `pnpm check`가 통과했다. core 19개·contracts 7개·CLI 99개·브라우저 9개·스킬 5개, 총 139개 테스트와 workspace 밖 오프라인 패키지 설치·실행을 확인했다. 기존 기록 기능의 회귀 검사도 포함한다.
+
+참고용 `.tmp/spec-write-demo/`는 새 독립 Git 저장소에서 실제 CLI로 만든 결과다. 초기 파일은 initial/requirements.md, 현재 원문은 repo/.tryce/spec/my-profile/requirements.md다. 가상의 본인 프로필 이미지 변경을 사원 관리에 잘못 배치했다가 내 프로필로 이동하며 R-k7tz7ladmc를 유지했다. 입력·결과 JSON도 함께 남겼다. 임시 자료 없이도 추적된 테스트에서 같은 시나리오를 실행할 수 있다.
+
+개발 번들 SHA-256은 `fe2c4f702b500491594f68c71aa72b1bb559473eaae0243bfc2e96f8e4b996c6`다. 실제 프로젝트의 기존 기록용 0.3.0 사본과 해시를 다시 확인했고 해당 지정은 유지한다. 이번 설계 문서는 DEV-01로 직접 갱신했다. 루트 .tryce 전환·커밋·푸시·npm 배포는 하지 않았다.
+
+## MVP 읽기·비교 개발 빌드
+
+2026-09-14 Markdown 검토 형식의 spec-preview 명령을 개발 소스에 추가했다. 실행 범위와 문법은 [MVP 전환 계획](mvp-transition.md)의 첫 읽기·비교 구현 절을 따른다. 새 빌드는 실험용 조회를 포함하며 기존 프로젝트 쓰기 도구로 자동 지정하지 않는다.
+
+기존 지정 CLI 0.3.0 바이트는 `.tmp/record-cli-0.3.0/main.mjs`에 보존했고 SHA-256 `45f28813c9b8020d5949ff19cad8e5d6236781ad891853640674ba117c68297a`를 확인했다. 이 checkout의 기존 기록·커밋 작업에는 `node .tmp/record-cli-0.3.0/main.mjs`를 사용한다. 임시 사본이 없는 새 checkout은 기존 지정 릴리스와 해시를 확인해 준비하며 새 개발 빌드를 대신 신뢰하지 않는다. 현재 apps/cli/dist/main.js는 새 개발 빌드다.
+
+검증: `pnpm check`가 core 16개·contracts 7개·CLI 92개·브라우저 9개·스킬 5개와 외부 오프라인 패키지 설치를 통과했다. 실행 중 보강한 링크·서브모듈 거부와 전체 조회 크기 제한은 이후 CLI 타입 검사·재빌드, spec-preview 관련 9개 테스트와 `pnpm test:package`를 다시 실행해 확인했다. 추가 UTF-8·링크 시험도 통과했다. 전체 조회 크기 상한의 경계값과 대규모 성능은 별도 시험이 필요하다. 최종 변경 이후 전체 check를 다시 반복한 것은 아니다.
+
+기존 이동 fixture를 실제 새 CLI로 읽어 R-b6fq2ry4ns의 moved 한 건과 이유 연결을 확인했다. 문서 로컬 링크 66개와 diff 형식 검사도 통과했다. 최종 개발 번들 SHA-256은 `c4395fd0b6f67e07e5c8ecf6c22f68294b6e813352149650fb92839eeb1d0600`이며 쓰기용 지정·npm 게시·루트 커밋·푸시는 하지 않았다. 미확정 새 형식의 설계 기록은 DEV-01로 전환 계획에 남겼다.
+
+> 기존 기록용 CLI는 위에 보존한 0.3.0 바이트를 사용한다. 아래의 이전 버전 설명·테스트 결과는 당시 실행 기록이며 새 목표를 의미하지 않는다. [MVP 전환 계획](mvp-transition.md)의 실험용 조회·편집·커밋 이유 준비를 제외한 새 커밋 실행 통합과 전환은 아직 구현하지 않았다. 기존 specs 링크는 삭제 전 Git 버전에 고정했다.
+
+
 현재 프로젝트 사용 CLI는 0.3.0이다. `init`·`mode`로 설정과 정책을 관리하고 `note`·`req`로 판단과 요구사항을 기록한다. `brief`는 현재 자료와 원문 위치를 제공하며 `commit plan/apply`로 관련 기록을 커밋한다. `status`·`browser`는 Git 상태를 조회하고 `skills install/sync/remove`는 스킬 원본 설치와 로컬 복사본 관리를 지원한다. 전체 Git 이력 검사·훅·브라우저 편집은 미지원이다. 이 저장소의 자동모드 전환과 초기 요구사항 범위는 [자체 도입 기록](adoption.md)을 따른다. 아래 날짜별 검증 기록은 당시 상태를 보존한다.
 
 ## 사용자 프로젝트 시험과 첫 npm 배포
@@ -14,7 +65,7 @@ demo는 첫 공개 게시 후 npm 레지스트리의 `@tryce/cli@0.1.0`으로 �
 
 ## 개발 에이전트 사용
 
-Codex는 `.agents/skills/tryce-workflow/SKILL.md`를 원본으로 사용한다. Claude Code로 이 저장소를 작업할 때는 `pnpm skills:sync`로 로컬 복사본을 생성하고 `pnpm skills:check`로 일치를 확인한다. 사용자 전역 설정은 바꾸지 않는다. 원본 변경 후 sync를 다시 실행한다. 상세 보존·복구·제거 절차는 [스킬 연결](specs/agent-skills.md)을 따른다.
+Codex는 `.agents/skills/tryce-workflow/SKILL.md`를 원본으로 사용한다. Claude Code로 이 저장소를 작업할 때는 `pnpm skills:sync`로 로컬 복사본을 생성하고 `pnpm skills:check`로 일치를 확인한다. 사용자 전역 설정은 바꾸지 않는다. 원본 변경 후 sync를 다시 실행한다. 상세 보존·복구·제거 절차는 [스킬 연결](https://github.com/dev-goraebap/tryce/blob/479d392a93fa40e7a95993d4979417beae869723/docs/specs/agent-skills.md)을 따른다.
 
 스킬에서 예시로 쓰는 `tryce`는 이 저장소에서 `pnpm cli`다. 기계 출력이 필요하면 `node apps/cli/dist/main.js`를 사용한다. 기존에 지정한 CLI 빌드를 유지한다. 개발용 스킬 동기화는 2026-09-13 임시 폴더 테스트 5개와 스킬 형식 검증을 통과했다. DEV-04는 유지한다.
 
@@ -51,7 +102,7 @@ pnpm cli browser --dev --port 4317
 pnpm dev
 ```
 
-Vite 주소는 `http://127.0.0.1:5173`이다. `/api`를 CLI 서버로 전달한다. API 포트를 바꾸려면 Vite 실행 환경의 `TRYCE_API_PORT`도 맞춘다. 통합 실행은 `--dev` 없이 사용한다. 상세 계약은 [로컬 브라우저 서버](specs/browser-server.md)를 따른다.
+Vite 주소는 `http://127.0.0.1:5173`이다. `/api`를 CLI 서버로 전달한다. API 포트를 바꾸려면 Vite 실행 환경의 `TRYCE_API_PORT`도 맞춘다. 통합 실행은 `--dev` 없이 사용한다. 상세 계약은 [로컬 브라우저 서버](https://github.com/dev-goraebap/tryce/blob/479d392a93fa40e7a95993d4979417beae869723/docs/specs/browser-server.md)를 따른다.
 
 ```sh
 pnpm build
@@ -68,7 +119,7 @@ status의 기본 형식은 JSON이다. 성공은 stdout·종료 코드 0, 조회
 node apps/cli/dist/main.js status
 ```
 
-다른 프로젝트에서는 빌드한 `apps/cli/dist/main.js`의 절대 경로로 실행한다. 실행 위치의 checkout을 조회한다. 파일 변경이 없거나 충돌이 있어도 tryce 검사는 항상 미실행으로 표시한다. 상세 계약은 [저장소 상태 조회](specs/repository-status.md)를 따른다.
+다른 프로젝트에서는 빌드한 `apps/cli/dist/main.js`의 절대 경로로 실행한다. 실행 위치의 checkout을 조회한다. 파일 변경이 없거나 충돌이 있어도 tryce 검사는 항상 미실행으로 표시한다. 상세 계약은 [저장소 상태 조회](https://github.com/dev-goraebap/tryce/blob/479d392a93fa40e7a95993d4979417beae869723/docs/specs/repository-status.md)를 따른다.
 
 CLI를 수정하는 동안 `pnpm dev:cli`를 실행하면 core·contracts를 먼저 빌드하고 세 패키지의 변경을 함께 감시한다. 별도 터미널에서 `pnpm cli`로 실행한다. watcher가 CLI 명령을 자동 실행하지는 않는다.
 
@@ -111,9 +162,9 @@ Git 통합 시험에는 unborn·detached HEAD, 부분 staging, 삭제·타입 �
 
 통합 서버의 실제 화면과 새로고침을 별도로 확인했다. Vite 개발 프록시의 실제 화면 검증은 5173 포트가 이미 사용 중이어서 수행하지 못했다. 기존 프로세스는 종료하지 않았다. 개발 Origin 허용·거부는 HTTP 테스트로 검증했다.
 
-첫 조회의 입력·출력과 Git 스냅샷 경계는 [저장소 상태 조회 명세](specs/repository-status.md), HTTP·세션·캐시는 [로컬 브라우저 서버](specs/browser-server.md)에 정리했다. 도입 기준선은 init-1에 정의했고, 요구사항 기록·검사·brief에 필요한 나머지 영속 형식은 후속 명세에서 정의한다. 관련 기준은 [아키텍처](architecture/README.md)와 [제품 기준](bref.md)을 따른다.
+첫 조회의 입력·출력과 Git 스냅샷 경계는 [저장소 상태 조회 명세](https://github.com/dev-goraebap/tryce/blob/479d392a93fa40e7a95993d4979417beae869723/docs/specs/repository-status.md), HTTP·세션·캐시는 [로컬 브라우저 서버](https://github.com/dev-goraebap/tryce/blob/479d392a93fa40e7a95993d4979417beae869723/docs/specs/browser-server.md)에 정리했다. 도입 기준선은 init-1에 정의했고, 요구사항 기록·검사·brief에 필요한 나머지 영속 형식은 후속 명세에서 정의한다. 관련 기준은 [아키텍처](architecture/README.md)와 [제품 기준](bref.md)을 따른다.
 
-설정과 도입 기준선 생성은 [프로젝트 초기화](specs/project-init.md), 저장 형식과 호환성은 [init-1](specs/project-format.md)을 따른다. 최초 생성에는 `pnpm cli init --mode prototype` 또는 `--mode normal`을 사용한다. `--dry-run`은 계획만 확인하고, 기존 설정 확인은 `pnpm cli init`으로 실행한다. 최초 생성 후 설정을 커밋할지는 별도 Git 작업으로 결정한다.
+설정과 도입 기준선 생성은 [프로젝트 초기화](https://github.com/dev-goraebap/tryce/blob/479d392a93fa40e7a95993d4979417beae869723/docs/specs/project-init.md), 저장 형식과 호환성은 [init-1](https://github.com/dev-goraebap/tryce/blob/479d392a93fa40e7a95993d4979417beae869723/docs/specs/project-format.md)을 따른다. 최초 생성에는 `pnpm cli init --mode prototype` 또는 `--mode normal`을 사용한다. `--dry-run`은 계획만 확인하고, 기존 설정 확인은 `pnpm cli init`으로 실행한다. 최초 생성 후 설정을 커밋할지는 별도 Git 작업으로 결정한다.
 
 ## 초기화 검증과 프로젝트 사용 빌드
 
@@ -127,7 +178,7 @@ init은 실제 임시 저장소에서 dry-run 무변경, 일반·unborn·detache
 
 ## 프로토타입 기록 실행
 
-첫 활성화는 `pnpm cli note enable --dry-run`으로 계획을 확인한 뒤 `pnpm cli note enable`로 수행한다. init-1 원본을 보존하고 format만 prototype-1로 전환한다. 모드와 기준선은 유지한다. 명세는 [프로토타입 기록](specs/prototype-notes.md)을 따른다.
+첫 활성화는 `pnpm cli note enable --dry-run`으로 계획을 확인한 뒤 `pnpm cli note enable`로 수행한다. init-1 원본을 보존하고 format만 prototype-1로 전환한다. 모드와 기준선은 유지한다. 명세는 [프로토타입 기록](https://github.com/dev-goraebap/tryce/blob/479d392a93fa40e7a95993d4979417beae869723/docs/specs/prototype-notes.md)을 따른다.
 
 ```sh
 pnpm cli note add --type discovery --message "확인한 동작과 근거" --author Codex
@@ -148,13 +199,13 @@ pnpm cli note show N-<UUID> --format text
 
 실제 파일·Git 저장소를 사용해 전환 원본 보존, dry-run 무변경, 재실행, 원문과 정정 참조 보존, 없는 참조·손상·삭제·ignore·junction 거부, 부분 staging·linked worktree 보존, 경쟁 쓰기 거부를 확인했다. 전환 원본 보존 후 실제 자식 프로세스 종료와 남은 잠금의 명시적 정리·재개도 시험했다. 입력 변경·일반 실패는 제어한 시점에 주입했다. 실제 디스크 부족·ACL 오류·전원 손실·지속적인 외부 경로 교체·macOS·Linux 실행은 미검증이다.
 
-지정한 빌드로 이 저장소에 note enable을 적용했다. 원본은 [config.init-1.b47160756686330516d729c6e605c7a2d5d885610a2531bb0a6813e50a501f13.json](../.tryce/config.init-1.b47160756686330516d729c6e605c7a2d5d885610a2531bb0a6813e50a501f13.json)에 보존했고, format만 prototype-1로 바꿨다. prototype 모드와 기준선, Git index·HEAD를 유지했다. 실제 근거가 있는 발견·제약·기각 이유 세 개를 note add로 작성하고 list·show로 재조회했다. 활성화 직후 기록과 전환 파일은 미커밋 상태였다.
+지정한 빌드로 이 저장소에 note enable을 적용했다. 원본은 [config.init-1.b47160756686330516d729c6e605c7a2d5d885610a2531bb0a6813e50a501f13.json](https://github.com/dev-goraebap/tryce/blob/479d392a93fa40e7a95993d4979417beae869723/.tryce/config.init-1.b47160756686330516d729c6e605c7a2d5d885610a2531bb0a6813e50a501f13.json)에 보존했고, format만 prototype-1로 바꿨다. prototype 모드와 기준선, Git index·HEAD를 유지했다. 실제 근거가 있는 발견·제약·기각 이유 세 개를 note add로 작성하고 list·show로 재조회했다. 활성화 직후 기록과 전환 파일은 미커밋 상태였다.
 
 자체 적용한 기록:
 
-- [discovery: N-633cb083-c215-46e9-bcd3-923a5da45aed](../.tryce/notes/N-633cb083-c215-46e9-bcd3-923a5da45aed.json)
-- [constraint: N-ebaf0e3d-74e6-4beb-85ce-314d37854b36](../.tryce/notes/N-ebaf0e3d-74e6-4beb-85ce-314d37854b36.json)
-- [rejected: N-478d7df1-01b8-42af-9c68-9dc7ad512cbd](../.tryce/notes/N-478d7df1-01b8-42af-9c68-9dc7ad512cbd.json)
+- [discovery: N-633cb083-c215-46e9-bcd3-923a5da45aed](https://github.com/dev-goraebap/tryce/blob/479d392a93fa40e7a95993d4979417beae869723/.tryce/notes/N-633cb083-c215-46e9-bcd3-923a5da45aed.json)
+- [constraint: N-ebaf0e3d-74e6-4beb-85ce-314d37854b36](https://github.com/dev-goraebap/tryce/blob/479d392a93fa40e7a95993d4979417beae869723/.tryce/notes/N-ebaf0e3d-74e6-4beb-85ce-314d37854b36.json)
+- [rejected: N-478d7df1-01b8-42af-9c68-9dc7ad512cbd](https://github.com/dev-goraebap/tryce/blob/479d392a93fa40e7a95993d4979417beae869723/.tryce/notes/N-478d7df1-01b8-42af-9c68-9dc7ad512cbd.json)
 
 DEV-01은 검증·지정한 note의 발견·제약·기각 이유 작성 범위에서 축소한다. 일반 문서와 미지원 요구사항·승인 기록에는 유지한다. DEV-02의 요구사항 검사, DEV-04의 스킬·연동 준비도 유지한다.
 
@@ -165,7 +216,7 @@ pnpm cli brief --format text
 pnpm cli brief --all
 ```
 
-기본 JSON은 기계 입력용이며 text는 사람이 확인할 때 사용한다. 기본 출력은 기록 20개·본문 240 Unicode 코드 포인트, Git 변경 20개, 문서 위치 30개다. total·included·omitted와 본문 생략 표시를 확인하고, 필요한 원문은 note show 또는 brief --all로 읽는다. 전체 지원 범위와 제한은 [세션 브리핑 명세](specs/session-brief.md)를 따른다.
+기본 JSON은 기계 입력용이며 text는 사람이 확인할 때 사용한다. 기본 출력은 기록 20개·본문 240 Unicode 코드 포인트, Git 변경 20개, 문서 위치 30개다. total·included·omitted와 본문 생략 표시를 확인하고, 필요한 원문은 note show 또는 brief --all로 읽는다. 전체 지원 범위와 제한은 [세션 브리핑 명세](https://github.com/dev-goraebap/tryce/blob/479d392a93fa40e7a95993d4979417beae869723/docs/specs/session-brief.md)를 따른다.
 
 설정·기록·문서 중 일부를 읽지 못하면 stderr의 JSON에 부분 report와 오류를 제공하고 종료 코드 1을 반환한다. Git 상태 자체가 바뀌거나 읽히지 않으면 report는 null이다. 초기화 전 상태와 note 미활성화는 명시한 정상 관측 상태이며 자동으로 초기화하지 않는다. 요구사항 검사·미결 질문 추출·과거 이력 분석은 아직 미실행·미지원이다.
 
@@ -177,7 +228,7 @@ pnpm cli brief --all
 
 brief의 정렬·Unicode 발췌·생략 집계·목록 밖 정정 관계, 초기화 전 상태, init-1, prototype-1, 손상·삭제·미지원 형식·잠금, Git·설정·기록 변경 중 조회, linked worktree, 문서 junction 거부, stdout/stderr·부분 보고서와 전체 파일 보존을 확인했다. 문서 본문·모든 지침 탐색·과거 이력·실제 권한 차단·지속적인 외부 경로 교체·macOS·Linux 실행은 미검증 또는 지원 범위 밖이다.
 
-자체 적용에서 brief --all이 prototype 모드, 기존 기준선, 기록 4개와 문서 위치 13개를 반환하는 것을 확인했다. brief 실행 전후 .tryce와 Git 파일 지문이 같았다. 부분 실패 처리의 실제 검증 결과를 [발견 기록](../.tryce/notes/N-4840375c-a0e2-469f-a371-868aeae6927a.json)으로 남겼다. AGENTS.md의 작업 시작 절차를 brief로 연결했고, DEV-02는 지원한 현재 자료 브리핑 범위에서 축소했다. 요구사항 검사·미결 질문 추출·과거 이력 분석의 예외는 유지한다. 이 자체 적용 단계에서는 커밋·푸시를 수행하지 않았다.
+자체 적용에서 brief --all이 prototype 모드, 기존 기준선, 기록 4개와 문서 위치 13개를 반환하는 것을 확인했다. brief 실행 전후 .tryce와 Git 파일 지문이 같았다. 부분 실패 처리의 실제 검증 결과를 [발견 기록](https://github.com/dev-goraebap/tryce/blob/479d392a93fa40e7a95993d4979417beae869723/.tryce/notes/N-4840375c-a0e2-469f-a371-868aeae6927a.json)으로 남겼다. AGENTS.md의 작업 시작 절차를 brief로 연결했고, DEV-02는 지원한 현재 자료 브리핑 범위에서 축소했다. 요구사항 검사·미결 질문 추출·과거 이력 분석의 예외는 유지한다. 이 자체 적용 단계에서는 커밋·푸시를 수행하지 않았다.
 
 ## CLI 스킬 배포 검증과 사용 빌드
 
@@ -185,7 +236,7 @@ brief의 정렬·Unicode 발췌·생략 집계·목록 밖 정정 관계, 초기
 
 이후 제품 잠금·미지원 매니페스트 보존, linked worktree 격리, 저널 게시 후 사용자 수정 보존의 테스트 3개를 추가 실행해 통과했다. 전체 실행 93개와 추가 3개로 총 96개를 검증했으며 추가 시험을 위해 제품 코드는 바꾸지 않았다. .tmp/demo에서도 같은 설치물로 dry-run·install·sync·remove·재설치, 설정 보존과 원본 잔존, 로컬 파일 ignore, note 작성·brief 조회를 확인했다.
 
-프로젝트 사용 빌드는 apps/cli/dist/main.js (CLI 0.0.0, SHA-256 167e607bae031fa561c9bd3f0f292ce9eeed430a249cbba5dd9fb7aea777c6cc)로 갱신한다. 검증한 기존 init·note·brief·Git 관측과 skills install/sync/remove를 지원한다. 같은 해시의 설치 패키지를 .tmp/demo 시험에 사용한다. 상세 규약과 실패 복구는 [프로젝트 스킬 배포](specs/skill-distribution.md)를 따른다.
+프로젝트 사용 빌드는 apps/cli/dist/main.js (CLI 0.0.0, SHA-256 167e607bae031fa561c9bd3f0f292ce9eeed430a249cbba5dd9fb7aea777c6cc)로 갱신한다. 검증한 기존 init·note·brief·Git 관측과 skills install/sync/remove를 지원한다. 같은 해시의 설치 패키지를 .tmp/demo 시험에 사용한다. 상세 규약과 실패 복구는 [프로젝트 스킬 배포](https://github.com/dev-goraebap/tryce/blob/479d392a93fa40e7a95993d4979417beae869723/docs/specs/skill-distribution.md)를 따른다.
 
 현재 개발 저장소의 Claude 복사본은 기존 개발 스크립트가 관리한다. CLI 매니페스트로 자동 채택하지 않으며 pnpm skills:sync 절차를 유지한다. DEV-04는 이 이전 연결과 미지원 upgrade·전체 eject·훅에 남는다. 새 사용자 프로젝트에는 CLI 명령을 사용한다. 실제 에이전트의 자동 선택과 macOS·Linux 실행은 미검증이다.
 
@@ -205,9 +256,9 @@ brief의 정렬·Unicode 발췌·생략 집계·목록 밖 정정 관계, 초기
 
 초기 통합 실행에서 발견한 기존 brief 한국어 표시 회귀와 commit 계획의 읽기 명령이 index를 갱신하는 문제를 수정한 뒤 전체 검증을 다시 통과했다. 검증 로그·패키지·호환성 시험 저장소는 `.tmp/validation-archive/2026-09-13/`에 둔다. 이 임시 자료 없이도 추적된 테스트로 검증할 수 있다.
 
-프로젝트 사용 빌드는 `apps/cli/dist/main.js`, CLI `0.2.0-dev.0`, SHA-256 `daeb1e1bf4ac8867eed8ee281bd089c7f1d2f449a1f04976214aa6e46344e92d`로 지정한다. 기존 init·note·brief·Git 관측·스킬 기능과 [workflow-1](specs/workflow-format.md)의 mode·req·commit 기능을 지원한다. 실행은 `node apps/cli/dist/main.js`이며 다시 빌드한 바이너리의 해시가 다르면 이 지정을 자동 승계하지 않는다.
+프로젝트 사용 빌드는 `apps/cli/dist/main.js`, CLI `0.2.0-dev.0`, SHA-256 `daeb1e1bf4ac8867eed8ee281bd089c7f1d2f449a1f04976214aa6e46344e92d`로 지정한다. 기존 init·note·brief·Git 관측·스킬 기능과 [workflow-1](https://github.com/dev-goraebap/tryce/blob/479d392a93fa40e7a95993d4979417beae869723/docs/specs/workflow-format.md)의 mode·req·commit 기능을 지원한다. 실행은 `node apps/cli/dist/main.js`이며 다시 빌드한 바이너리의 해시가 다르면 이 지정을 자동 승계하지 않는다.
 
-현재 개발 저장소의 config는 prototype-1로 유지한다. 요구사항·승인·커밋 기능은 workflow-1에서 검증됐으며 기존 프로젝트에 적용하려면 사용할 모드를 명시적으로 선택해야 한다. 그래서 이 저장소의 새 기능 설계 문서는 DEV-01로 작성했고, 이번 변경의 Git 커밋에는 DEV-03을 적용한다. 기존 note는 지정된 0.1.0 빌드로 [판단 기록](../.tryce/notes/N-be88a17d-ef33-4923-8120-1853df1c26a0.json)을 추가했다. Claude 복사본의 기존 개발 동기화에는 DEV-04를 유지한다.
+현재 개발 저장소의 config는 prototype-1로 유지한다. 요구사항·승인·커밋 기능은 workflow-1에서 검증됐으며 기존 프로젝트에 적용하려면 사용할 모드를 명시적으로 선택해야 한다. 그래서 이 저장소의 새 기능 설계 문서는 DEV-01로 작성했고, 이번 변경의 Git 커밋에는 DEV-03을 적용한다. 기존 note는 지정된 0.1.0 빌드로 [판단 기록](https://github.com/dev-goraebap/tryce/blob/479d392a93fa40e7a95993d4979417beae869723/.tryce/notes/N-be88a17d-ef33-4923-8120-1853df1c26a0.json)을 추가했다. Claude 복사본의 기존 개발 동기화에는 DEV-04를 유지한다.
 
 실제 에이전트가 새 세션의 대화에서 스킬을 자율적으로 선택하고 적절한 시점에 질문·기록·커밋하는 종단 시험은 아직 수행하지 않았다. 사용자 지침의 자연어 의미와 승인자의 신원은 CLI가 인증하지 않는다. 요구사항 GUI, 구현·검증 완료 판정, superseded·cut 상태 전이, 모든 사건 트레일러와 전체 이력 검사, 장기 기록의 파일 분할, macOS·Linux 실행은 후속 범위다.
 
@@ -257,7 +308,7 @@ Windows / Node.js 24.17.0에서 요구사항 16개·note 21개인 Tryce를 측�
 
 첫 요청 2초 목표에 도달했다. 재요청 300ms·변경 후 1초 목표는 아직 달성하지 못했으며 추가 Git 관측과 전체 파일 재확인 비용이 남는다. 모든 저장소나 부하 조건에서의 보장값은 아니다. 독립 복제 저장소에서 변경 후 새 관측 ID와 note 수 증가를 확인했다. 원래 Tryce의 파일을 변경 시험 대상으로 사용하지 않았다.
 
-읽기 전용 측정은 `pnpm build` 후 `node scripts/benchmark-browser.mjs`로 재현한다. 다른 checkout은 마지막 인자로 경로를 지정한다. 개발 상세와 캐시 범위는 [로컬 브라우저 서버](specs/browser-server.md#조회-비용과-결과-재사용)를 따른다.
+읽기 전용 측정은 `pnpm build` 후 `node scripts/benchmark-browser.mjs`로 재현한다. 다른 checkout은 마지막 인자로 경로를 지정한다. 개발 상세와 캐시 범위는 [로컬 브라우저 서버](https://github.com/dev-goraebap/tryce/blob/479d392a93fa40e7a95993d4979417beae869723/docs/specs/browser-server.md#조회-비용과-결과-재사용)를 따른다.
 
 최종 소스에서 `pnpm typecheck`, `pnpm build`, `pnpm test:built`를 순서대로 실행했다(`pnpm check`와 같은 구성). core 11개, contracts 7개, CLI 89개, Chromium 9개, 스킬 5개가 통과했다. 캐시의 동일 입력 재사용·동시 요청 공유, 수정 시각과 크기를 유지한 내용 변경, index에만 다른 원문이 있는 경우, HEAD·note·설정·문서 목록 변경, 잠금·손상과 조회 중 경합을 검사했다. 별도 SHA-1/SHA-256 fixture의 40개 blob으로 배치 경계와 한글·줄바꿈 원문 보존을 확인했다. 실제 4317 서버에서도 새 요구사항의 목록·상세와 자동 확정 표시를 확인했고 페이지 실행 오류는 없었다.
 
@@ -266,3 +317,25 @@ workspace 밖 오프라인 패키지 설치와 형식 전환·승인·note·brie
 ## 2026-09-14 0.3.0 릴리스 빌드
 
 브라우저와 성능 개선을 포함한 기능 검증은 위 기록을 따른다. 버전·README 변경 후 CLI를 다시 빌드하고 `pnpm test:package`를 통과했다. 프로젝트 사용 빌드는 `apps/cli/dist/main.js`, CLI 0.3.0, SHA-256 `45f28813c9b8020d5949ff19cad8e5d6236781ad891853640674ba117c68297a`로 지정한다. 이번 릴리스 기록과 커밋에는 직전 지정 빌드(2d9513ad202a3c7a5533c7e7dafcfcd6779725ff80feaaa006684591bad12b2f)를 `.tmp/releases/0.3.0/record-cli.mjs`에 보관해 사용한다. 실제 npm 게시·설치 결과는 [배포 기록](releases.md)에 남긴다.
+
+## 2026-09-14 MVP 스킬 개편 검증
+
+tryce-workflow에 요구사항 분류·점진적 도출·Markdown 초안 정리·최종 변경 준비·관련 코드와의 커밋 흐름을 반영했다. 새 형식에는 note와 승인 묶음을 만들지 않고, 기존 형식은 선택한 모드와 기록을 보존한다. 정책 부재를 자동 커밋 권한으로 보던 안내를 제거하고 README 도입 프롬프트에도 명시했다.
+
+설치·동기화가 SKILL.md 한 파일을 소유·배포하므로 단일 파일을 유지했다. 참조 파일을 분리하면 현재 패키지와 복사본에 누락될 수 있다. 기존 skills install은 config.json이 필요하므로 설정 없는 새 실험 형식의 설치 수단으로 안내하지 않는다. 새 형식의 설치·마이그레이션과 공개 도입 프롬프트 전환은 후속 작업이다.
+
+스킬 형식 검사, skills:sync/check, 동기화 테스트 5개, CLI 빌드와 test:package가 통과했다. 패키지 검증은 외부에 설치된 스킬이 현재 원본과 바이트 단위로 같은지도 확인한다. 격리된 .tmp/skill-workflow-demo에서 새 CLI의 save → changes → prepare → commit-plan/apply를 실행해 명세·이유·코드·테스트 네 파일의 커밋과 깨끗한 작업 상태를 확인했다. 빈 제목 거부·정상 제목 저장 테스트 2개도 통과했다.
+
+이는 명령 실행 검증이며 독립 에이전트의 스킬 선택·인터뷰·분류 판단을 검증한 것은 아니다. 전체 pnpm check는 이번 스킬 변경에서 다시 실행하지 않았다. 실제 프로젝트의 구형 기록·기준선·지정 쓰기 CLI는 유지했다. DEV-01로 전환 판단을 이 문서에 직접 기록했으며 신규 note나 승인은 생성하지 않았다. 루트 커밋·푸시·npm 게시는 수행하지 않았다.
+
+## 2026-09-14 spec-1 프로젝트 사용 빌드
+
+프로젝트 사용 빌드를 `apps/cli/dist/main.js`, SHA-256 `abfb982da1d4dee1d7617d237070471f94f6562180011541223753433be8751c`로 지정한다. 실행은 `node apps/cli/dist/main.js` 또는 `pnpm cli`다. 패키지 버전 문자열은 아직 0.3.0이며 공개 npm의 같은 버전과 다른 개발 빌드다. 다시 빌드하면 해시와 검증 범위를 확인한다.
+
+지정 범위는 spec-1 초기화·스킬 설치·명세 working/save/read/diff/changes/prepare/verify/commit-plan/commit-apply다. 임시 저장소에서 새 설정 초기화·재실행·staging 보존·스킬 설치·명세 및 코드 커밋, 실패 후 초기화 재시도, 구형 기록 교체와 삭제 커밋을 검증했다. 프로젝트의 일회성 전환은 DEV-01이며 범용 마이그레이션 명령을 제공한다는 의미가 아니다.
+
+req·note·mode·init --mode는 도움말에 deprecated로 표시한다. 기존 JSON 출력·오류 계약을 깨지 않도록 실행 중 별도 경고 문자열은 추가하지 않는다. spec-preview는 실험용 호환 이름으로 유지한다. brief와 브라우저는 아직 spec-1 미지원이므로 현재 맥락은 spec working과 원문·Git으로 확인한다. 신규 형식의 공개 설치 프롬프트는 개발 빌드용으로 구분했다.
+
+검증 결과: pnpm check에서 타입 검사·core 19개·contracts 7개·브라우저 9개가 통과했다. CLI 119개 중 기본 init을 auto로 기대하던 기존 테스트 2개가 실패했고, 새 기본값과 명시적 구형 init으로 기대값을 바꾼 뒤 두 테스트를 다시 실행해 통과했다. 이후 별도 전환·삭제 커밋 테스트 1개도 통과해 CLI 검사 범위는 총 120개다. 스킬 동기화 5개·스킬 형식·패키지 외부 오프라인 설치·문서 링크 69개 검사를 완료했다. 전체 check를 두 번째로 실행한 것은 아니다.
+
+우리 프로젝트의 spec working·changes는 6개 명세·19개 최종 추가를 반환한다. 원본 백업을 남기지 않는 전환을 적용했으며 현재 명세는 미커밋이다. history.jsonl은 커밋 요청 시 prepare에서 생성한다. 루트 HEAD·staging은 변경하지 않았으며 커밋·푸시·npm 게시를 수행하지 않았다.

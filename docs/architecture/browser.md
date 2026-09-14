@@ -1,5 +1,8 @@
 # 브라우저 아키텍처
 
+> MVP의 목표 화면은 요구사항 이력·제품 기능·기여자다. [MVP 전환 계획](../mvp-transition.md)의 화면 합의를 따르며 React·Astryx·FSD·Router·Query 지침은 유지한다. 아래 workspace·판단 기록 화면과 API는 기존 구현 설명이며 새 화면으로 전환할 대상이다.
+
+
 브라우저는 CLI가 제공하는 프로젝트 기록과 현재 환경을 살펴보는 React 앱이다. 요구사항과 스킬을 편집하는 기능은 현재 범위에 포함하지 않는다. 전체 코드 경계는 [아키텍처 기준](README.md)을 따르고, 실제 작성 규칙은 [프론트엔드 지침](frontend/README.md)을 적용한다.
 
 ## React와 Astryx
@@ -96,4 +99,4 @@ Query의 기본 stale·재시도·포커스 재조회 정책은 그대로 두지
 
 2026-09-14 browser-design-v2의 사이드 메뉴·촘촘한 행·오른쪽 상세 구조를 실제 데이터에 연결했다. 브리핑, 요구사항, 판단 기록, Git 상태를 제공한다. 전체 추적 그래프·건강 검사·스킬 탐색은 실제 계약이 준비되기 전까지 메뉴와 가짜 결과를 만들지 않는다.
 
-공유 session/status/project 조회는 entities/project, 전체 메뉴는 widgets/app-shell, 본문은 pages가 소유한다. workspace의 검색·영역·상태·상세 선택은 검증된 URL search에 둔다. 전체 데이터를 한 번 읽고 로컬에서 필터링하므로 필터마다 별도 Query 캐시를 만들지 않는다. API와 보안 경계는 [로컬 서버 계약](../specs/browser-server.md)을 따른다.
+공유 session/status/project 조회는 entities/project, 전체 메뉴는 widgets/app-shell, 본문은 pages가 소유한다. workspace의 검색·영역·상태·상세 선택은 검증된 URL search에 둔다. 전체 데이터를 한 번 읽고 로컬에서 필터링하므로 필터마다 별도 Query 캐시를 만들지 않는다. API와 보안 경계는 [로컬 서버 계약](https://github.com/dev-goraebap/tryce/blob/479d392a93fa40e7a95993d4979417beae869723/docs/specs/browser-server.md)을 따른다.

@@ -1,7 +1,7 @@
 import { lstat, readFile, realpath, mkdir, open, link, unlink } from 'node:fs/promises';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { InitError, parseProjectConfig } from '@tryce/core';
+import { InitError, parseManagedConfig } from '@tryce/core';
 
 const missing = (error: unknown) => (error as NodeJS.ErrnoException).code === 'ENOENT';
 export const fileInfo = (path: string) => lstat(path).catch(error => { if (missing(error)) return undefined; throw error; });
@@ -54,7 +54,7 @@ export async function publishConfig(root: string, text: string, recheck: () => P
     await unchanged();
     const bytes = await readFile(temporary, 'utf8');
     if (bytes !== text) throw new InitError('INPUT_CHANGED', '임시 설정이 변경됐습니다.');
-    parseProjectConfig(bytes);
+    parseManagedConfig(bytes);
     await link(temporary, join(directory, 'config.json'));
   } finally {
     // Never delete a replacement directory or a file introduced by another process.
