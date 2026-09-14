@@ -8,3 +8,4 @@ export * from './versions/project-init-v2.js';
 export * from './versions/workflow-v1.js';
 export * from './versions/brief-v2.js';
 export * from './versions/browser-project-v1.js';
+export * from './versions/browser-specs-v1.js';

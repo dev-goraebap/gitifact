@@ -1,13 +1,18 @@
 import { AppShell } from '@astryxdesign/core/AppShell';
-import { SideNav, SideNavHeading, SideNavItem, SideNavSection } from '@astryxdesign/core/SideNav';
+import { SideNav, SideNavItem, SideNavSection } from '@astryxdesign/core/SideNav';
 import { VStack } from '@astryxdesign/core/VStack';
 import { Text } from '@astryxdesign/core/Text';
-import { Outlet, useNavigate, useRouterState } from '@tanstack/react-router';
+import { Link, Outlet, useNavigate, useRouterState } from '@tanstack/react-router';
+import { HgiHistory } from '../../../shared/ui/icons/HgiHistory';
+import { HgiRequirement } from '../../../shared/ui/icons/HgiRequirement';
+import { HgiMembers } from '../../../shared/ui/icons/HgiMembers';
+import { HgiGit } from '../../../shared/ui/icons/HgiGit';
+import { HgiInfo } from '../../../shared/ui/icons/HgiInfo';
 const destinations = [
-  ['/', '브리핑'],
-  ['/requirements', '요구사항'],
-  ['/decisions', '판단 기록'],
-  ['/git', 'Git 상태'],
+  ['/', '요구사항 이력', HgiHistory],
+  ['/features', '제품 기능', HgiRequirement],
+  ['/contributors', '기여자', HgiMembers],
+  ['/git', 'Git 상태', HgiGit],
 ] as const;
 export function BrowserShell() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
@@ -20,8 +25,8 @@ export function BrowserShell() {
       mobileNav={{ breakpoint: 'lg' }}
       sideNav={
         <SideNav
-          style={{ width: '15rem' }}
-          header={<SideNavHeading heading="tryce" headingHref="/" />}
+          style={{ width: '15rem', borderInlineEnd: '1px solid var(--color-border)' }}
+          header={<Link to="/" className="tryce-wordmark">TRYCE</Link>}
           footer={
             <VStack padding={4} gap={2}>
               <Text type="supporting">로컬 프로젝트 · 읽기 전용</Text>
@@ -32,10 +37,11 @@ export function BrowserShell() {
           }
         >
           <SideNavSection title="WORKSPACE">
-            {destinations.map(([to, label]) => (
+            {destinations.map(([to, label, MenuIcon]) => (
               <SideNavItem
                 key={to}
                 label={label}
+                icon={<MenuIcon/>}
                 href={to}
                 isSelected={pathname === to}
                 onClick={(event) => {
@@ -56,6 +62,7 @@ export function BrowserShell() {
           <SideNavSection title="TRYCE">
             <SideNavItem
               label="소개"
+              icon={<HgiInfo/>}
               href="/about"
               isSelected={pathname === '/about'}
               onClick={(event) => {

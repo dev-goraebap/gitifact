@@ -1,6 +1,8 @@
 @import '@astryxdesign/core/reset.css';
 @import '@astryxdesign/core/astryx.css';
 @import '@astryxdesign/theme-neutral/theme.css';
+@import '@fontsource/outfit/latin-800.css';
+@import '@fontsource/noto-sans-kr/800.css';
 html,
 body,
 #root {
@@ -12,4 +14,30 @@ body {
 }
 a {
   color: var(--color-text-accent, inherit);
+}
+
+@font-face {
+  font-family: 'Unbounded';
+  font-style: normal;
+  font-weight: 400 900;
+  font-display: swap;
+  src: url('/fonts/unbounded-latin.woff2') format('woff2');
+}
+#root h1, #root h2 {
+  font-family: 'Outfit', 'Noto Sans KR', system-ui, sans-serif;
+  font-weight: 800;
+  letter-spacing: -.035em;
+}
+.tryce-wordmark {
+  font-family: 'Unbounded', system-ui, sans-serif;
+  font-weight: 800;
+  letter-spacing: -.02em;
+  display: block;
+  padding: var(--spacing-4);
+  font-size: 1.75rem;
+  text-decoration: none;
+  color: var(--color-text-primary);
+}
+@media (prefers-reduced-motion: reduce) {
+  .astryx-skeleton { animation: none; }
 }

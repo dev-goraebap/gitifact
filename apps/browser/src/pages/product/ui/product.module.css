@@ -1,0 +1,47 @@
+ .page { min-width:0; height:100%; } .header {border-bottom:1px solid var(--color-border);justify-content:space-between;flex-shrink:0} .content {padding:var(--spacing-4);min-width:0;overflow:auto} .split {display:grid;grid-template-columns:minmax(0,1fr) minmax(20rem,26rem);align-items:start} .list,.timeline {min-width:0;overflow:auto} .detail {border-inline-start:1px solid var(--color-border);background:var(--color-background-body);overflow-wrap:anywhere;min-width:0} .events {position:relative;padding-inline-start:5.5rem} .events [role=listitem],.events li {height:5.5rem;min-height:5.5rem;max-height:5.5rem;overflow:hidden;border-bottom:1px solid var(--color-border)} .graph {position:absolute;inset-inline-start:0;top:0;color:var(--color-text-accent);pointer-events:none} .highlight {border-inline-start:2px solid var(--color-border-accent,var(--color-border));padding-inline-start:var(--spacing-3)}
+@media(width<64rem){.split{grid-template-columns:minmax(0,1fr)}.split>.list,.split>.timeline{display:none}.detail{border-inline-start:0}.page{height:auto}.events{padding-inline-start:4rem}.graph{width:4rem}}
+.detail p { white-space:pre-line; }
+.events ul {gap:0;}
+
+/* Feature documents own the main reading area; the list is a navigation rail. */
+.featureWorkspace { display:grid; grid-template-columns:19rem minmax(0,1fr); min-height:calc(100vh - 14rem); border:1px solid var(--color-border); border-radius:var(--radius-container); overflow:hidden; align-items:stretch; }
+.featureList { min-width:0; background:var(--color-background-body); border-inline-end:1px solid var(--color-border); }
+.featureList ul { gap:0; }
+.featureList li { padding:var(--spacing-5); border-radius:0; }
+.featureList li[aria-selected=true] { box-shadow:inset 3px 0 var(--color-text-accent); }
+.specDocument { min-width:0; padding:var(--spacing-8); overflow-wrap:anywhere; background:var(--color-background-surface); }
+.documentToolbar { justify-content:space-between; }
+.documentHeading { padding-block:var(--spacing-6); }
+.documentHeading h2 { font-size:1.75rem; line-height:1.4; letter-spacing:-.025em; }
+.documentIndex { padding-block:var(--spacing-5); border-block:1px solid var(--color-border); }
+.documentIndex a { padding-block:var(--spacing-1); text-decoration:none; }
+.specDocument a:hover { text-decoration:underline; }
+.requirementSection { padding-block:var(--spacing-7); border-bottom:1px solid var(--color-border); scroll-margin-top:var(--spacing-6); }
+.requirementSection h3 { font-size:1.25rem; line-height:1.5; }
+.requirementSection p,.requirementSection li { line-height:1.9; }
+.requirementSection a,.documentHeading a { font-size:.8125rem; }
+.documentEmpty { justify-content:center; align-items:center; text-align:center; min-height:24rem; }
+@media(width>=90rem){.featureWorkspace{grid-template-columns:21rem minmax(0,1fr)}.specDocument{padding-inline:var(--spacing-10)}}
+@media(width<64rem){.featureWorkspace{grid-template-columns:minmax(0,1fr)}.featureSelected>.featureList{display:none}.featureList{border-inline-end:0}.specDocument{padding:var(--spacing-5)}.documentEmpty{display:none}.documentHeading h2{font-size:1.5rem}}
+@media(width>=64rem){.featureWorkspace{height:calc(100dvh - 12rem);min-height:0}.featureList,.specDocument{min-height:0;overflow-y:auto}.specDocument>*{flex-shrink:0}}
+@media(width<64rem){.specDocument>*{flex-shrink:0}}
+.events.noGraph { padding-inline-start:0; }
+.events li,.events [role=listitem] { border-radius:0; }
+.historyPagination { align-items:center; border-top:1px solid var(--color-border); }
+.inbox {border-block:1px solid var(--color-border)}
+.inbox .graph {top:40px}
+.inbox thead tr {height:40px}
+.inbox tbody tr {height:64px;cursor:pointer}
+.inbox td {height:64px;max-height:64px;overflow:hidden;padding-block:var(--spacing-2)}
+.inbox tr[aria-current=true] td {background:var(--color-background-muted)}
+.inbox tr:focus-visible {outline:2px solid var(--color-text-accent);outline-offset:-2px}
+.inbox table {border-radius:0}
+.historyWorkspace {height:calc(100dvh - 18rem);min-height:24rem;min-width:0}
+.readingPane {min-width:0;background:var(--color-background-surface);overflow-wrap:anywhere}
+.readingPane>*{flex-shrink:0}
+.readingToolbar {position:sticky;top:0;z-index:1;justify-content:space-between;background:var(--color-background-surface);border-bottom:1px solid var(--color-border)}
+.readingAuthor {justify-content:space-between}
+.readingSection {border-top:1px solid var(--color-border);padding-top:var(--spacing-5)}
+.readingPane p,.readingPane li{line-height:1.9}
+.historyWorkspace .timeline {height:100%;min-height:0;overflow:auto}
+.historyWorkspace .timeline>* {flex-shrink:0}

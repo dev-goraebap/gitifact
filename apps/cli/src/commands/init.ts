@@ -62,7 +62,7 @@ export async function runInit(options: InitOptions) {
   try {
     if (!options.mode) {
       const dto = await initializeSpecProject(process.cwd(), options.dryRun);
-      process.stdout.write(options.format === 'text' ? `${dto.outcome}: ${dto.rootPath}/.tryce/config.json\n형식: spec-1\n스킬·훅은 설치하지 않았습니다.\n` : JSON.stringify(dto) + '\n');
+      process.stdout.write(options.format === 'text' ? `${dto.outcome}: ${dto.rootPath}/.tryce/config.json\n저장 규약: schemaVersion 1\n스킬·훅은 설치하지 않았습니다.\n` : JSON.stringify(dto) + '\n');
       return;
     }
     const dto = await initializeProject(process.cwd(), options);

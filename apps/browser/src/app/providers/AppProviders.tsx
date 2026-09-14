@@ -3,21 +3,21 @@ import { InternationalizationProvider } from '@astryxdesign/core/i18n';
 import koKR from '@astryxdesign/core/locales/ko-KR.json';
 import { Theme } from '@astryxdesign/core/theme';
 import { neutralTheme } from '@astryxdesign/theme-neutral/built';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { createRouter, RouterProvider } from '@tanstack/react-router';
 import { routeTree } from '../routeTree.gen';
+import { queryClient } from './query-client';
+import { RequestState } from '../../shared/ui/request-state';
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: { retry: false, refetchOnWindowFocus: false },
-    mutations: { retry: false },
-  },
-});
 const router = createRouter({
   routeTree,
   context: { queryClient },
   defaultPreload: 'intent',
   defaultPreloadStaleTime: 0,
+  scrollRestoration: true,
+  defaultPendingComponent: RequestState,
+  defaultPendingMs: 200,
+  defaultPendingMinMs: 0,
 });
 
 declare module '@tanstack/react-router' {

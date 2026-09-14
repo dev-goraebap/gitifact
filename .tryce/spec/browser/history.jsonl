@@ -1,1 +1,3 @@
 {"id":"H-t3cteezhje","requirements":["R-5eehizubwl","R-hsflueyc4b","R-tkl3lrrlpu","R-xqf3xsumye"],"reason":"사용자가 합의한 새 MVP 방향에 따라 유효한 요구사항을 기능별 Markdown으로 정리하고 구형 JSON·승인·note 형식을 제거한다. 단기 초안 변경 대신 Git에 커밋된 최종 명세와 변경 이유를 추적한다."}
+{"id":"H-fh62f2kl4b","requirements":["R-5eehizubwl"],"reason":"데이터 조회 중 기존 맥락을 유지하고 로딩·빈 결과·오류를 구분하며, 로컬 폰트와 메뉴 아이콘으로 브라우저 표현을 일관되게 한다."}
+{"id":"H-hbkaklb7cl","requirements":["R-tkl3lrrlpu"],"reason":"오래된 요구사항 이력을 더보기로 이어 읽고, 추가 조회와 실패·마지막 상태를 구분하도록 한다."}

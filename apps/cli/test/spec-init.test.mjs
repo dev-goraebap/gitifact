@@ -16,7 +16,7 @@ test('spec init dry-run, repeat and skills install preserve existing work and st
   const f = fixture(t); f.write('work', 'user work'); f.git(['add', 'work']);
   const before = fingerprint(f.repo);
   assert.equal(call(f, ['init', '--dry-run']).outcome, 'planned'); assert.deepEqual(fingerprint(f.repo), before);
-  assert.equal(call(f, ['init']).projectFormat, 'spec-1');
+  assert.equal(call(f, ['init']).schemaVersion, 1);
   const config = readFileSync(join(f.repo, '.tryce/config.json'), 'utf8');
   assert.equal(JSON.parse(config).mode, undefined);
   assert.equal(call(f, ['init']).outcome, 'already-initialized'); assert.equal(readFileSync(join(f.repo, '.tryce/config.json'), 'utf8'), config);
@@ -24,7 +24,7 @@ test('spec init dry-run, repeat and skills install preserve existing work and st
   assert.equal(readFileSync(join(f.repo, '.agents/skills/tryce-workflow/SKILL.md'), 'utf8'), readFileSync(join(f.repo, '.claude/skills/tryce-workflow/SKILL.md'), 'utf8'));
   assert.equal(f.git(['diff', '--cached', '--name-only']).stdout.trim(), 'work');
 });
-test('init refuses legacy records, malformed config and deleted tracked config without mutation', async t => {
+test('init refuses legacy records and malformed config without mutation', async t => {
   const f = fixture(t); call(f, ['init', '--mode', 'auto']);
   const before = fingerprint(f.repo); assert.match(call(f, ['init'], false).stderr, /MIGRATION_REQUIRED/); assert.deepEqual(fingerprint(f.repo), before);
   assert.match(call(f, ['req', 'list']).contract, /requirements|workflow/);
@@ -58,7 +58,7 @@ test('explicit legacy replacement can prepare and commit deletion without retain
   call(f,['init','--mode','auto']); mkdirSync(join(f.repo,'.tryce/spec/old'),{recursive:true});
   const oldPath='.tryce/spec/old/tryce.json'; f.write(oldPath,'{"kind":"tryce-requirements","format":"requirements-1","spec":"old","requirements":[],"reviews":[],"decisions":[]}\n'); f.commit('Legacy baseline');
   const config=JSON.parse(readFileSync(join(f.repo,'.tryce/config.json'),'utf8'));
-  f.write('.tryce/config.json',JSON.stringify({kind:config.kind,format:'spec-1',baseline:config.baseline})+'\n');
+  f.write('.tryce/config.json',JSON.stringify({schemaVersion:1,baseline:config.baseline})+'\n');
   const {unlinkSync}=await import('node:fs'); unlinkSync(join(f.repo,oldPath));
   const saved=input(f,'save',{expected:call(f,['spec','working']).stamp,operations:[{type:'create',feature:'product',title:'제품 요구사항'},{type:'add',feature:'product',title:'사용자 의도 기록',body:'최종 요구사항을 기록한다.'}]});
   const prepared=input(f,'prepare',{expected:call(f,['spec','changes']).expected,reasons:[{requirements:[saved.results[1].id],reason:'사용자가 요청한 새 형식 전환'}]});

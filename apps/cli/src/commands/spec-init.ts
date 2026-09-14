@@ -7,11 +7,11 @@ import { fileInfo, publishConfig, readConfigFile } from '../adapters/filesystem/
 export async function initializeSpecProject(cwd: string, dryRun = false, env = process.env, beforePublish?: () => Promise<void>) {
   const repo = initRepository(cwd, env); const first = await repo.inspect(); const root = first.state.repository.rootPath;
   const result = (config: SpecProjectConfig, outcome: string) => ({ contract: 'project-init', version: 3, ok: true, outcome,
-    rootPath: root, configPath: '.tryce/config.json', projectFormat: config.format, baseline: config.baseline,
+    rootPath: root, configPath: '.tryce/config.json', schemaVersion: config.schemaVersion, baseline: config.baseline,
     integrations: { skills: 'not-installed-by-init', hooks: 'not-installed-by-init' } });
   const existing = async (text: string) => {
     const config = parseManagedConfig(text);
-    if (config.format !== 'spec-1') throw new InitError('MIGRATION_REQUIRED', '기존 형식은 별도 전환이 필요합니다. 설정과 기록을 보존하세요.');
+    if (!('schemaVersion' in config)) throw new InitError('MIGRATION_REQUIRED', '기존 형식은 별도 전환이 필요합니다. 설정과 기록을 보존하세요.');
     await repo.validateBaseline(config, root, first.state.head.commit, first.state.repository.objectFormat);
     if ((await repo.inspect()).stamp !== first.stamp || await readConfigFile(root) !== text) throw new InitError('INPUT_CHANGED', '초기화 조회 중 입력이 변경됐습니다.');
     return result(config, 'already-initialized');
@@ -23,7 +23,7 @@ export async function initializeSpecProject(cwd: string, dryRun = false, env = p
     const entries = await readdir(join(root, '.tryce')).catch(e => { if (e.code === 'ENOENT') return []; throw e; });
     if (entries.some(name => !/^\.init-[a-f0-9-]+\.tmp$/.test(name))) throw new InitError('EXISTING_RECORDS', '설정 없는 .tryce 자료를 자동 채택하지 않습니다.');
   };
-  const config: SpecProjectConfig = { kind: 'tryce-project', format: 'spec-1', baseline: first.state.head.commit
+  const config: SpecProjectConfig = { schemaVersion: 1, baseline: first.state.head.commit
     ? { kind: 'commit', objectFormat: first.state.repository.objectFormat, commit: first.state.head.commit } : { kind: 'empty' } };
   const recheck = async () => {
     await checkRecords(); await repo.checkIgnore(root);

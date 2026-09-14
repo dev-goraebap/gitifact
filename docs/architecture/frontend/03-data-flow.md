@@ -15,3 +15,9 @@ QueryClient는 앱에서 안정적으로 생성한다. loader가 필요하면 �
 읽기 HTTP는 AbortSignal을 전달한다. 서버 상태를 localStorage에 영구 저장하지 않는다. 자동 재시도는 제한하고 상태 갱신 POST는 반복하지 않는다. 변경 성공과 후속 조회 실패를 구분한다.
 
 현재 전체 목록을 받는 계약에서는 프론트에서 검색·필터를 적용한다. 검색 입력은 URL replace, 상세 이동은 뒤로가기로 복원한다. Query가 파일 변경을 자동 통지받는다고 가정하지 않는다. 명시적 새로고침으로 갱신하며 응답의 관측 시각과 best-effort 한계를 유지한다.
+
+## Gentask 참조 적용 (2026-09-14)
+
+Gentask apps/desktop의 QueryClient·Router·RequestState를 확인했다. 단일 QueryClient, queryOptions 중심 캐시, URL 검색 상태, pending 표시 지연을 적용한다. Gentask의 데스크톱 hash history·로그인/401 처리·자동 재시도 정책은 로컬 읽기 전용 Tryce에 복사하지 않는다. 기존 웹 URL과 세션/worktree 격리·AbortSignal·명시적 재조회는 유지한다.
+
+초기 조회에는 200ms 지연 골격을 표시하고 재조회에는 현재 목록을 유지한다. 이력은 useInfiniteQuery와 더보기로 이어 읽는다. 불러온 개수·추가 조회 중·재시도·마지막 페이지를 구분한다. 다음 페이지 실패 시 기존 목록을 보존한다. Router의 pending 표시는 코드 전환에 사용하고 API 상태는 Query가 소유한다.

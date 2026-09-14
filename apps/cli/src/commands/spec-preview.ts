@@ -16,7 +16,7 @@ export async function runSpecPreview(action: 'read' | 'diff' | 'working' | 'save
       const raw = await readConfigFile(state.state.repository.rootPath);
       if (raw === undefined) throw new SpecPreviewError('먼저 tryce init으로 초기화하세요.');
       const config = parseManagedConfig(raw);
-      if (config.format !== 'spec-1') throw new SpecPreviewError('기존 프로젝트는 별도 전환이 필요합니다.');
+      if (!('schemaVersion' in config)) throw new SpecPreviewError('기존 프로젝트는 별도 전환이 필요합니다.');
       await repo.validateBaseline(config, state.state.repository.rootPath, state.state.head.commit, state.state.repository.objectFormat);
     }
     if (!options.experimental) throw new SpecPreviewError('--experimental이 필요한 검토용 기능입니다.');

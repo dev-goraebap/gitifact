@@ -26,6 +26,7 @@ export async function writeNotices() {
         texts.push(await readFile(new URL('../licenses/astryx-LICENSE', import.meta.url), 'utf8'));
       }
       if (!texts.length && key === '@stylexjs/stylex@0.19.0') texts.push(await readFile(new URL('../licenses/stylex-LICENSE', import.meta.url), 'utf8'));
+      if (!texts.length && key === '@hugeicons/core-free-icons@4.3.0') texts.push(await readFile(new URL('../licenses/hugeicons-LICENSE', import.meta.url), 'utf8'));
       if (!texts.length) missingLicenses.push(key);
       seen.set(key, `${key} (${typeof pkg.license === 'string' ? pkg.license : 'see license text'})\n\n${texts.join('\n\n')}`);
     }

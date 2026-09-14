@@ -1,6 +1,5 @@
 {
-  "kind": "tryce-project",
-  "format": "spec-1",
+  "schemaVersion": 1,
   "baseline": {
     "kind": "commit",
     "objectFormat": "sha1",

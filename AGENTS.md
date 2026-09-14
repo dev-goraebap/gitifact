@@ -2,9 +2,9 @@
 
 이 저장소는 tryce를 개발하면서 프로젝트 자체에도 적용한다. 제품의 기록 원칙을 따르되, 아직 구현되지 않은 기능은 아래 대체 절차로 수행한다. 이 예외는 tryce 개발 저장소에만 적용하며 제품의 기본 동작으로 확장하지 않는다.
 
-현재 프로젝트는 `.tryce/config.json`의 `spec-1` 형식이다. 모드·승인 묶음·note를 새로 작성하지 않는다. 개발 작업에는 [.agents/skills/tryce-workflow/SKILL.md](.agents/skills/tryce-workflow/SKILL.md)를 읽고 적용한다. 원본만 커밋하며 Claude 복사본은 `pnpm skills:sync`로 생성하고 직접 편집된 복사본을 보존한다.
+현재 프로젝트는 `.tryce/config.json`의 `schemaVersion: 1` 저장 규약이다. 모드·승인 묶음·note를 새로 작성하지 않는다. 개발 작업에는 [.agents/skills/tryce-workflow/SKILL.md](.agents/skills/tryce-workflow/SKILL.md)를 읽고 적용한다. 원본만 커밋하며 Claude 복사본은 `pnpm skills:sync`로 생성하고 직접 편집된 복사본을 보존한다.
 
-프로젝트 사용 빌드와 해시는 [개발 환경](docs/development.md)의 최신 지정을 따른다. 시작할 때 `pnpm cli spec working`과 Git 상태를 읽고 필요한 명세·아키텍처 문서를 원문으로 확인한다. brief·browser는 아직 새 형식을 지원하지 않는다. 구형 req·note·mode는 호환성 시험에만 사용한다.
+프로젝트 사용 빌드와 해시는 [개발 환경](docs/development.md)의 최신 지정을 따른다. 시작할 때 `pnpm cli spec working`과 Git 상태를 읽고 필요한 명세·아키텍처 문서를 원문으로 확인한다. brief는 아직 새 형식을 지원하지 않는다. browser는 요구사항 이력·제품 기능·기여자를 읽기 전용으로 제공한다. 구형 req·note·mode는 호환성 시험에만 사용한다.
 
 명세는 `spec working/save`로 관리하고 커밋 요청 시 `spec changes/prepare/commit-plan/commit-apply`를 사용한다. 관련 명세·이유·코드·테스트를 함께 담되 기존 staging과 무관한 변경은 보존한다. 자동 기록은 커밋 권한이 아니며 사용자 요청 또는 명시적 프로젝트 정책에 따라 커밋한다. 푸시는 별도 권한을 따른다.
 
@@ -18,7 +18,7 @@
 
 1. `git status`와 현재 브랜치·작업 경로를 확인한다. 기존 변경과 다른 에이전트의 작업을 보존한다.
 2. [제품·설계 기준](docs/bref.md)을 읽고 해당 작업의 확정·합의·보류 상태를 확인한다. 이후 작성된 관련 명세도 읽는다.
-   코드 구조와 기술 선택은 [아키텍처 기준](docs/architecture/README.md)을 따른다. CLI 또는 브라우저를 작업할 때는 해당 상세 문서도 읽는다.
+   코드 구조와 기술 선택은 [아키텍처 기준](docs/architecture/README.md)을 따른다. CLI 또는 브라우저를 작업할 때는 해당 상세 문서도 읽는다. 브라우저 작업 전에는 반드시 [apps/browser/AGENTS.md](apps/browser/AGENTS.md)의 Astryx 생성 지침과 [프론트엔드 지침](docs/architecture/frontend/README.md)을 직접 읽는다. 자동 첨부 여부에 의존하지 않고, 사용할 컴포넌트의 설치 버전 API를 Astryx CLI로 확인한다.
 3. 실제 파일과 실행 가능한 명령을 확인한다. README나 설계 문서에 등장한다는 이유만으로 기능이 구현됐다고 가정하지 않는다.
    실행 방법과 검증 범위는 [개발 환경](docs/development.md)을 확인한다. 현재 통합 검증 명령은 `pnpm check`다.
 4. 이번 작업의 범위, 관련 문서, 검증 방법을 정하고 진행한다.

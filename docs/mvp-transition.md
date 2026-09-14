@@ -4,9 +4,9 @@
 
 ## 현재 상태
 
-개발 CLI에 새 spec 명령과 spec-1 초기화·스킬 설치를 연결했고 우리 프로젝트도 6개 명세·19개 요구사항으로 전환했다. 구형 원본을 별도 보관하지 않는다는 사용자 요청에 따라 기존 JSON·note·승인·설정 백업을 작업 폴더에서 제거했다. Git 과거 이력과 도입 기준선은 유지한다. 적용 범위와 실제 파일은 [자체 도입 기록](adoption.md), 지정 빌드는 [개발 환경](development.md)을 따른다.
+개발 CLI에 새 spec 명령과 schemaVersion: 1 초기화·스킬 설치를 연결했고 우리 프로젝트도 6개 명세·19개 요구사항으로 전환했다. 구형 원본을 별도 보관하지 않는다는 사용자 요청에 따라 기존 JSON·note·승인·설정 백업을 작업 폴더에서 제거했다. Git 과거 이력과 도입 기준선은 유지한다. 적용 범위와 실제 파일은 [자체 도입 기록](adoption.md), 지정 빌드는 [개발 환경](development.md)을 따른다.
 
-req·note·mode·init --mode는 deprecated이며 호환 동작은 남아 있다. 정식 명령은 spec이고 spec-preview는 실험용 호환 이름이다. 새 브라우저·brief 연결과 범용 마이그레이션, 독립 에이전트 도입 시험은 아직 남아 있다. 이 문서는 남은 구현 작업의 임시 목록이며 기능 요구사항의 원본은 .tryce/spec이다.
+req·note·mode·init --mode는 deprecated이며 호환 동작은 남아 있다. 정식 명령은 spec이고 spec-preview는 실험용 호환 이름이다. 새 브라우저 세 화면은 실제 Markdown·Git 조회에 연결했다. brief 연결과 범용 마이그레이션, 독립 에이전트 도입 시험은 아직 남아 있다. 이 문서는 남은 구현 작업의 임시 목록이며 기능 요구사항의 원본은 .tryce/spec이다.
 
 ## 작업 흐름
 
@@ -310,7 +310,7 @@ Git 커밋 후 실제 tree·부모·브랜치·R-ID 참조·임시 index를 확�
 - [ ] 스킬·도입 프롬프트 개편, 승인·note 없는 작업 흐름 시험. 단일 SKILL.md의 새 형식·기존 형식 분리와 커밋 권한 안내, CLI 실행 시험은 완료했다. 새 형식 설치·전환과 독립 에이전트 행동 시험은 남아 있다.
 - [ ] 범용 마이그레이션 구현·복구 검증. 일회성 전환·삭제 커밋 시험과 새 프로젝트 사용 빌드 지정은 완료했다.
 - [x] 우리 프로젝트 요구사항·기록 정리와 새 형식 적용(일회성 DEV-01, 커밋은 별도).
-- [ ] 프론트엔드 지침에 따라 세 화면을 실제 데이터에 연결.
+- [x] 프론트엔드 지침에 따라 세 화면을 실제 데이터에 연결. 최신 변경 커밋 10개씩 조회하며 전체 장기 색인은 후속 범위.
 - [ ] 외부 패키지 설치·실제 개발 사이클·성능 검증 후 릴리스.
 
 핵심 시험: 생성·수정·삭제, 여러 번 편집 후 한 번 커밋, 수정 후 원복, ID 이동·충돌, 분리·통합, 직접 편집, staging 보존, 잠금·훅 실패 복구. SHA-1/SHA-256·worktree·merge·squash·브랜치 전환을 확인한다. 누락 원문·파싱 오류를 정상 결과로 꾸미지 않는다.
@@ -328,3 +328,7 @@ Git 커밋 후 실제 tree·부모·브랜치·R-ID 참조·임시 index를 확�
 보존 대상 파일은 workflow-format.md, project-format.md, project-init.md, repository-status.md, browser-server.md, session-brief.md, prototype-notes.md, agent-skills.md, skill-distribution.md, recording-policy.md, requirement-capture.md다. [삭제 전 문서 목록](https://github.com/dev-goraebap/tryce/tree/479d392a93fa40e7a95993d4979417beae869723/docs/specs)에서도 읽을 수 있다.
 
 기존 저장 상한·읽기/쓰기 거부·잠금 복구·사용자 수정 보존·HTTP 보안 경계는 새 구현에서 검토 없이 제거하지 않는다. 실행·검증·릴리스 이력은 development.md와 releases.md에 유지한다. docs는 아키텍처·개발·운영 문서로 남기고 기능 요구사항의 두 번째 원본으로 사용하지 않는다.
+
+## 2026-09-14 설정과 과거 호환성 결정
+
+config.json의 kind와 format: spec-1을 제거하고 schemaVersion: 1로 정리했다. baseline은 유지한다. 사용자 요청에 따라 1.0.0 전 과거 규약을 계속 유지하는 설계를 우선하지 않는다. 1.0.0 이후 충돌하는 변경은 마이그레이션 지원 범위를 정한다. 이번 브라우저는 현재 Markdown 규약을 읽으며 구형 JSON 이전 원문은 Git 이력에서만 확인한다.

@@ -16,7 +16,7 @@ async function snapshot(root: string) {
   const parent = await info(join(root, '.tryce'));
   if (parent && (!parent.isDirectory() || parent.isSymbolicLink())) fail('.tryce는 일반 디렉터리여야 합니다.');
   const config = await readConfigFile(root);
-  if ((config !== undefined && parseManagedConfig(config).format !== 'spec-1') || await info(join(root, 'specs'))) fail('기존 프로젝트 형식은 별도 전환이 필요합니다.');
+  if ((config !== undefined && !('schemaVersion' in parseManagedConfig(config))) || await info(join(root, 'specs'))) fail('기존 프로젝트 형식은 별도 전환이 필요합니다.');
   async function visit(path: string, depth: number) {
     const stat = await info(join(root, path)); if (!stat) return;
     if (stat.isSymbolicLink() || (!stat.isDirectory() && !stat.isFile())) fail('링크·특수 파일은 지원하지 않습니다: ' + path);

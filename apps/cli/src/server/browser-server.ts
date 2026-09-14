@@ -10,6 +10,7 @@ import { statusDto } from '../output/repository-status.js';
 import { loadBrowserAssets, contentType } from './assets.js';
 import { createStatusSession } from './status-session.js';
 import { createBrowserProjectReader } from './project-reader.js';
+import { createSpecBrowserReader } from './spec-reader.js';
 
 interface Options {
   cwd: string;
@@ -46,6 +47,7 @@ export async function startBrowserServer(options: Options) {
   let closing = false;
   let origin = '';
   const readProject = createBrowserProjectReader(initial.repository.rootPath, options.env);
+  const readSpecs = createSpecBrowserReader(initial.repository.rootPath, session.sessionId, options.env);
   let pendingProject: ReturnType<typeof readProject> | undefined;
   function json(response: ServerResponse, status: number, value: unknown) {
     response.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
@@ -82,15 +84,23 @@ export async function startBrowserServer(options: Options) {
     const api = path === '/api' || path.startsWith('/api/');
     if (api) {
       if (request.headers['sec-fetch-site'] === 'cross-site' && !allowedOrigin) return fail(response, 403, 'FORBIDDEN', '외부 페이지의 요청을 허용하지 않습니다.');
-      if (url.search) return fail(response, 400, 'BAD_REQUEST', '조회 인자를 받지 않습니다.');
+      if (url.search && path !== '/api/v1/specs') return fail(response, 400, 'BAD_REQUEST', '조회 인자를 받지 않습니다.');
       const method = path === '/api/v1/status/refresh' ? 'POST' : 'GET';
-      if (!['/api/v1/session', '/api/v1/status', '/api/v1/status/refresh', '/api/v1/project'].includes(path)) return fail(response, 404, 'NOT_FOUND', 'API를 찾을 수 없습니다.');
+      if (!['/api/v1/session', '/api/v1/status', '/api/v1/status/refresh', '/api/v1/project', '/api/v1/specs'].includes(path)) return fail(response, 404, 'NOT_FOUND', 'API를 찾을 수 없습니다.');
       if (request.method !== method) {
         response.setHeader('Allow', method);
         return fail(response, 405, 'METHOD_NOT_ALLOWED', '허용하지 않는 메서드입니다.');
       }
       if (path === '/api/v1/session') return json(response, 200, session);
       if (request.headers['x-tryce-session'] !== session.sessionId) return fail(response, 409, 'SESSION_CHANGED', '서버 세션이 변경됐습니다. 다시 연결하세요.');
+      if (path === '/api/v1/specs') {
+        const cursor = url.searchParams.get('cursor') ?? '0'; const head = url.searchParams.get('head');
+        if ([...url.searchParams.keys()].some(k => !['cursor','head'].includes(k)) || url.searchParams.getAll('cursor').length > 1 || url.searchParams.getAll('head').length > 1
+          || !/^(0|[1-9]\d{0,5})$/.test(cursor) || (head !== null && !/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/.test(head))) return fail(response,400,'BAD_REQUEST','조회 범위를 확인하세요.');
+        try { json(response,200,await readSpecs(Number(cursor), head ?? undefined)); }
+        catch (error) { fail(response,503,'INTERNAL_ERROR',error instanceof Error ? error.message : '명세를 읽지 못했습니다.'); }
+        return;
+      }
       if (path === '/api/v1/project') {
         pendingProject ??= readProject().finally(() => { pendingProject = undefined; });
         const project = await pendingProject;

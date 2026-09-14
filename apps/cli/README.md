@@ -1,6 +1,6 @@
 # Development CLI: Markdown specifications
 
-The development build defaults to `spec-1`; published 0.3.0 is unchanged.
+The development build uses `schemaVersion: 1`; published 0.3.0 is unchanged.
 
 ```sh
 tryce init --dry-run
@@ -18,9 +18,9 @@ tryce spec diff --from BEFORE --to AFTER
 
 Initialization creates only configuration and the Git adoption baseline. It requires Git, accepts an unborn repository, preserves unrelated work and staging, and never performs a commit. Existing legacy configuration requires an explicit separate transition. Skill installation preserves edited sources; the agent handles AGENTS.md/CLAUDE.md linkage and reads the installed skill in the current session.
 
-`req`, `note`, `mode`, and `init --mode` are deprecated compatibility commands. Help marks them deprecated; JSON stdout and stderr error contracts remain unchanged. They still work for legacy projects. Removal follows validated transition support, not a fixed number of development turns. `spec-preview --experimental` remains a compatibility entry point. `brief` and the current browser do not yet support spec-1 records.
+`req`, `note`, `mode`, and `init --mode` are deprecated compatibility commands. Help marks them deprecated; JSON stdout and stderr error contracts remain unchanged. They still work for legacy projects. Removal follows validated transition support, not a fixed number of development turns. `spec-preview --experimental` remains a compatibility entry point. `brief` does not yet support the new schema. `browser` serves requirement history, current features and contributors from Markdown/Git.
 
-The `spec` commands use the same input objects as the experimental commands documented below, without `--experimental`. Their output envelope is `contract: "spec", version: 1`. For a configured spec-1 project, config bytes are bound to working stamps and commit plans. Creation and edits never imply user approval or implementation completion.
+The `spec` commands use the same input objects as the experimental commands documented below, without `--experimental`. Their output envelope is `contract: "spec", version: 1`. For a project with schemaVersion 1, config bytes are bound to working stamps and commit plans. Creation and edits never imply user approval or implementation completion.
 
 ## Legacy release reference
 
