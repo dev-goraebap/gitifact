@@ -3,24 +3,15 @@ import { VStack } from '@astryxdesign/core/VStack';
 import { HStack } from '@astryxdesign/core/HStack';
 import { Heading } from '@astryxdesign/core/Heading';
 import { Text } from '@astryxdesign/core/Text';
-import { Button } from '@astryxdesign/core/Button';
-import { Token } from '@astryxdesign/core/Token';
 import { Collapsible } from '@astryxdesign/core/Collapsible';
 import { Markdown } from '@astryxdesign/core/Markdown';
 import { Link } from '@tanstack/react-router';
 import { DesignDocument } from './DesignDocument';
 import { Person } from './Person';
 import styles from './product.module.css';
-const names={created:'생성',modified:'수정',deleted:'삭제',moved:'이동'};
-export function EventDetail({event:e,close,features}: {event:SpecEvent;close:()=>void;features:SpecFeature[]}) {
-  return <VStack as="aside" aria-label="변경 상세" gap={0} className={styles.readingPane}>
-    <HStack gap={3} padding={4} className={styles.readingToolbar}>
-      <Token label={(e.kind==='design'?'설계 ':'요구사항 ')+e.types.map(type=>names[type]).join(' · ')}/>
-      <Text type="supporting" color="secondary">{e.commit.slice(0,7)}</Text>
-      <Button label="상세 닫기" variant="ghost" size="sm" onClick={close}/>
-    </HStack>
-    <VStack padding={6} gap={5}>
-      <VStack gap={2}><Heading level={2}>{(e.after??e.before)?.title}</Heading><Text type="supporting" color="secondary">{e.id}</Text></VStack>
+/** Body of one activity entry: after, before (collapsed) and reasons. The surrounding drawer owns the title and close control. */
+export function EventDetail({event:e,features}: {event:SpecEvent;features:SpecFeature[]}) {
+  return <VStack gap={5} className={styles.readingPane}>
       <HStack gap={4} wrap="wrap" className={styles.readingAuthor}><Person name={e.author} email={e.email}/><Text type="supporting" color="secondary">{new Date(e.date).toLocaleString()}</Text></HStack>
       <VStack gap={4} className={styles.readingSection}>
         <Heading level={3}>변경 후</Heading>
@@ -32,6 +23,5 @@ export function EventDetail({event:e,close,features}: {event:SpecEvent;close:()=
         <Text type="supporting" color="secondary">{e.message} · 커미터 {e.committer}</Text>
       </VStack>
       <Link to="/features" search={{feature:(e.after??e.before)?.specId,selected:e.kind==='design'?undefined:e.id,tab:e.kind==='design'?'design':'requirements'}}>현재 기능 명세 보기 →</Link>
-    </VStack>
   </VStack>;
 }

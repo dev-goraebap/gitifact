@@ -1,9 +1,12 @@
 import { VStack } from '@astryxdesign/core/VStack';
+import { PageHeader } from '../../../widgets/page-header';
 import { Heading } from '@astryxdesign/core/Heading';
 import { Text } from '@astryxdesign/core/Text';
 export function AboutPage() {
   return (
-    <VStack padding={6} gap={5} maxWidth="48rem">
+    <VStack gap={0}>
+      <PageHeader page="tryce 소개" />
+      <VStack padding={6} gap={5} maxWidth="48rem">
       <Heading level={1}>tryce 소개</Heading>
       <Text>tryce는 에이전트와 함께 만드는 프로젝트의 요구사항과 결정 이력을 Git에 남기는 도구입니다.</Text>
       <Text>
@@ -14,6 +17,7 @@ export function AboutPage() {
         현재는 요구사항·확인 이력·판단 기록과 Git 상태를 읽습니다. 전체 커밋 연결, 검사 결과, 스킬 탐색은 이후
         범위입니다.
       </Text>
+      </VStack>
     </VStack>
   );
 }

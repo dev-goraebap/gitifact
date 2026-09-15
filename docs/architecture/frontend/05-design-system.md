@@ -4,7 +4,7 @@ Gentask의 05-design-system.md를 Tryce에 적용한다. Astryx의 설치 버전
 
 apps/browser에서 pnpm exec astryx build "화면 설명", docs layout, template <이름>, component <이름> 순으로 실제 API와 골격을 확인한다. 템플릿은 참고 코드다. raw div/span으로 레이아웃을 재구현하지 않는다. 컴포넌트 props를 우선하고 추가 스타일은 CSS Modules와 디자인 토큰을 사용한다. StyleX 컴파일러나 Tailwind는 추가하지 않는다.
 
-reset.css → astryx.css → neutral theme.css → 앱 전역 스타일 순으로 가져온다. Theme·LayerProvider·InternationalizationProvider는 앱 진입에서 구성한다. 브랜드 색상은 테마로 정의하며 :root에서 색상 토큰을 덮어쓰지 않는다. 첫 적용은 neutral 테마를 유지한다.
+reset.css → astryx.css → stone theme.css → 앱 전역 스타일 순으로 가져온다. Theme·LayerProvider·InternationalizationProvider는 앱 진입에서 구성한다. 브랜드 색상은 테마로 정의하며 :root에서 색상 토큰을 덮어쓰지 않는다. 첫 적용은 neutral 테마였고 2026-09-15에 사용자 요청으로 stone 테마로 바꿨다. 테마 패키지는 Montserrat·Figtree 글꼴을 참조하지만 글꼴 파일을 포함하지 않는다.
 
 고밀도 목록에는 Table 또는 List/Item을 사용하고 행마다 Card를 만들지 않는다. 상태는 Token/StatusDot, Badge는 개수에 사용한다. shared/ui는 도메인 독립 UI에 한정하고 동일 props 재수출 래퍼는 만들지 않는다.
 

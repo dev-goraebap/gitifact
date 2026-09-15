@@ -1,7 +1,6 @@
- .page { min-width:0; height:100%; } .header {border-bottom:1px solid var(--color-border);justify-content:space-between;flex-shrink:0} .content {padding:var(--spacing-4);min-width:0;overflow:auto} .split {display:grid;grid-template-columns:minmax(0,1fr) minmax(20rem,26rem);align-items:start} .list,.timeline {min-width:0;overflow:auto} .detail {border-inline-start:1px solid var(--color-border);background:var(--color-background-body);overflow-wrap:anywhere;min-width:0} .events {position:relative;padding-inline-start:5.5rem} .events [role=listitem],.events li {height:5.5rem;min-height:5.5rem;max-height:5.5rem;overflow:hidden;border-bottom:1px solid var(--color-border)} .graph {position:absolute;inset-inline-start:0;top:0;color:var(--color-text-accent);pointer-events:none} .highlight {border-inline-start:2px solid var(--color-border-accent,var(--color-border));padding-inline-start:var(--spacing-3)}
-@media(width<64rem){.split{grid-template-columns:minmax(0,1fr)}.split>.list,.split>.timeline{display:none}.detail{border-inline-start:0}.page{height:auto}.events{padding-inline-start:4rem}.graph{width:4rem}}
+ .page { min-width:0; } .content {padding:var(--spacing-4);min-width:0} .split {display:grid;grid-template-columns:minmax(0,1fr) minmax(20rem,26rem);align-items:start} .list,.timeline {min-width:0;overflow:auto} .detail {border-inline-start:1px solid var(--color-border);background:var(--color-background-body);overflow-wrap:anywhere;min-width:0} .highlight {border-inline-start:2px solid var(--color-border-accent,var(--color-border));padding-inline-start:var(--spacing-3)}
+@media(width<64rem){.split{grid-template-columns:minmax(0,1fr)}.split>.list,.split>.timeline{display:none}.detail{border-inline-start:0}}
 .detail p { white-space:pre-line; }
-.events ul {gap:0;}
 
 /* Feature documents own the main reading area; the list is a navigation rail. */
 .featureWorkspace { display:grid; grid-template-columns:19rem minmax(0,1fr); min-height:calc(100vh - 14rem); border:1px solid var(--color-border); border-radius:var(--radius-container); overflow:hidden; align-items:stretch; }
@@ -25,26 +24,31 @@
 @media(width<64rem){.featureWorkspace{grid-template-columns:minmax(0,1fr)}.featureSelected>.featureList{display:none}.featureList{border-inline-end:0}.specDocument{padding:var(--spacing-5)}.documentEmpty{display:none}.documentHeading h2{font-size:1.5rem}}
 @media(width>=64rem){.featureWorkspace{height:calc(100dvh - 12rem);min-height:0}.featureList,.specDocument{min-height:0;overflow-y:auto}.specDocument>*{flex-shrink:0}}
 @media(width<64rem){.specDocument>*{flex-shrink:0}}
-.events.noGraph { padding-inline-start:0; }
-.events li,.events [role=listitem] { border-radius:0; }
 .historyPagination { align-items:center; border-top:1px solid var(--color-border); }
-.inbox {border-block:1px solid var(--color-border)}
-.inbox .graph {top:40px}
-.inbox thead tr {height:40px}
-.inbox tbody tr {height:64px;cursor:pointer}
-.inbox td {height:64px;max-height:64px;overflow:hidden;padding-block:var(--spacing-2)}
-.inbox tr[aria-current=true] td {background:var(--color-background-muted)}
-.inbox tr:focus-visible {outline:2px solid var(--color-text-accent);outline-offset:-2px}
-.inbox table {border-radius:0}
-.historyWorkspace {height:calc(100dvh - 18rem);min-height:24rem;min-width:0}
 .readingPane {min-width:0;background:var(--color-background-surface);overflow-wrap:anywhere}
 .readingPane>*{flex-shrink:0}
-.readingToolbar {position:sticky;top:0;z-index:1;justify-content:space-between;background:var(--color-background-surface);border-bottom:1px solid var(--color-border)}
 .readingAuthor {justify-content:space-between}
 .readingSection {border-top:1px solid var(--color-border);padding-top:var(--spacing-5)}
 .readingPane p,.readingPane li{line-height:1.9}
-.historyWorkspace .timeline {height:100%;min-height:0;overflow:auto}
-.historyWorkspace .timeline>* {flex-shrink:0}
 
-/* Commit boundaries keep fixed-height rows aligned with the history graph. */
-.inbox tr[data-commit-start="true"] { box-shadow: inset 0 1px var(--color-border); }
+
+/* Activity page: a centered column; the title scrolls away while the filter row sticks under the top bar. */
+.column { width:100%; max-width:64rem; margin-inline:auto; min-width:0; }
+.pageTitle { padding-inline:var(--spacing-5); padding-block:var(--spacing-6) var(--spacing-2); }
+.filters { padding:var(--spacing-3) var(--spacing-5); }
+.filtersSticky { position:sticky; top:var(--tryce-topbar-height); z-index:2; background:var(--color-background-surface); border-bottom:1px solid var(--color-border); }
+.timeline { position:relative; padding:0; margin:0; list-style:none; }
+.timeline::before { content:""; position:absolute; top:var(--spacing-3); bottom:var(--spacing-3); inset-inline-start:calc(var(--spacing-3) - 1px); width:2px; background:var(--color-border); }
+.entry { position:relative; padding-block:var(--spacing-4); align-items:flex-start; min-width:0; }
+.entryContinued { padding-top:0; }
+.entryAvatar { position:relative; z-index:1; flex-shrink:0; padding-block:var(--spacing-1); background:var(--color-background-surface); }
+.entryBody { min-width:0; flex:1; }
+.entryHead { justify-content:space-between; align-items:baseline; }
+.entryLine { align-items:center; min-width:0; }
+.entryTitle { color:var(--color-text-primary); font-weight:500; text-decoration:none; }
+.entryTitle:hover, .entryFeature:hover { text-decoration:underline; }
+.entryFeature { color:var(--color-text-accent); text-decoration:none; }
+.entry[aria-current=true] .entryTitle { text-decoration:underline; }
+.drawer { height:100dvh; max-height:100dvh; margin:0; border-radius:0; overflow:auto; scrollbar-width:thin; scrollbar-color:var(--color-border-emphasized, var(--color-border)) transparent; }
+.drawerHeader { position:sticky; top:0; z-index:1; background:var(--color-background-surface); padding-inline:var(--spacing-5); padding-top:var(--spacing-4); }
+.drawerHandle { position:absolute; inset-block:0; inset-inline-start:0; z-index:2; }

@@ -8,8 +8,9 @@ import { HgiRequirement } from '../../../shared/ui/icons/HgiRequirement';
 import { HgiMembers } from '../../../shared/ui/icons/HgiMembers';
 import { HgiGit } from '../../../shared/ui/icons/HgiGit';
 import { HgiInfo } from '../../../shared/ui/icons/HgiInfo';
+import styles from './app-shell.module.css';
 const destinations = [
-  ['/', '명세 이력', HgiHistory],
+  ['/', '활동', HgiHistory],
   ['/features', '제품 기능', HgiRequirement],
   ['/contributors', '기여자', HgiMembers],
   ['/git', 'Git 상태', HgiGit],
@@ -21,12 +22,12 @@ export function BrowserShell() {
     <AppShell
       height="fill"
       contentPadding={0}
-      variant="surface"
+      variant="wash"
       mobileNav={{ breakpoint: 'lg' }}
       sideNav={
         <SideNav
-          style={{ width: '15rem', borderInlineEnd: '1px solid var(--color-border)' }}
-          header={<Link to="/" className="tryce-wordmark" aria-label="TRYCE 홈" />}
+          style={{ width: '15rem' }}
+          header={<Link to="/" className="tryce-wordmark" aria-label="GITIFACT 홈" />}
           footer={
             <VStack padding={4} gap={2}>
               <Text type="supporting">로컬 프로젝트 · 읽기 전용</Text>
@@ -82,7 +83,11 @@ export function BrowserShell() {
         </SideNav>
       }
     >
-      <Outlet />
+      <VStack gap={0} className={styles.frame}>
+        <VStack gap={0} className={styles.card}>
+          <Outlet />
+        </VStack>
+      </VStack>
     </AppShell>
   );
 }

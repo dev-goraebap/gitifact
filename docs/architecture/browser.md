@@ -16,11 +16,11 @@ Astryx는 Meta의 React·StyleX 기반 디자인 시스템이다. 기본 컴포�
 | 패키지 | 조회 버전 | peer 조건 |
 | :--- | :--- | :--- |
 | `@astryxdesign/core` | 0.6.0 | React·React DOM >=19, `@stylexjs/stylex` ^0.19.0 |
-| `@astryxdesign/theme-neutral` | 0.6.0 | React >=19, core 0.6.0 |
+| `@astryxdesign/theme-stone` | 0.6.0 | React >=19, core 0.6.0 |
 
 근거는 `npm view <package> version peerDependencies --json`이다. 설치 시 core와 테마의 호환 조합을 다시 확인하고 정확한 버전과 lockfile을 기록한다. beta 단계이므로 업데이트는 별도 변경으로 검증한다.
 
-초기에는 neutral 테마를 사용하고 최종 색상과 밀도는 와이어프레임에 맞춘다. 전역 CSS는 reset → Astryx 컴포넌트 CSS → 테마 → 앱 스타일 순서로 구성한다. 앱의 보조 스타일은 CSS Modules를 기본으로 한다. Tailwind나 앱 자체의 StyleX 컴파일 환경은 필요가 확인되면 추가한다.
+초기에는 neutral 테마를 사용했고 현재는 stone 테마를 사용한다. 최종 색상과 밀도는 와이어프레임에 맞춘다. 전역 CSS는 reset → Astryx 컴포넌트 CSS → 테마 → 앱 스타일 순서로 구성한다. 앱의 보조 스타일은 CSS Modules를 기본으로 한다. Tailwind나 앱 자체의 StyleX 컴파일 환경은 필요가 확인되면 추가한다.
 
 모든 Astryx 컴포넌트를 단순 재수출하는 래퍼는 만들지 않는다. 테마·provider·라우터 링크 연동, 반복되는 제품별 표시 규칙처럼 실제 차이가 있는 부분만 감싼다. 테이블·탭·오류 표시 등은 선택한 Astryx 버전의 실제 API를 확인한 뒤 사용한다.
 

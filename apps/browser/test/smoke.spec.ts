@@ -13,7 +13,7 @@ test('built app loads Astryx and supports navigation, reload, and history', asyn
   });
 
   await page.goto('/');
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('명세 이력');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('활동');
   const button = page.getByRole('link', { name: '소개', exact: true });
   await expect(button).toBeVisible();
   // Confirms that the shipped component CSS and theme have both loaded.
@@ -30,7 +30,7 @@ test('built app loads Astryx and supports navigation, reload, and history', asyn
   await page.reload();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('tryce 소개');
   await page.goBack();
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('명세 이력');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('활동');
   expect(errors).toEqual([]);
 });
 

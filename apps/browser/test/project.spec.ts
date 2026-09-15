@@ -2,13 +2,13 @@ import {expect,test} from '@playwright/test';
 import {mockApi,specs} from './mock-api';
 test('history links to current features and contributors with URL restoration',async({page})=>{
  await mockApi(page);await page.goto('/');await page.getByText('검색어 입력',{exact:true}).click();
- await expect(page.getByRole('complementary',{name:'변경 상세'})).toContainText('사용자가 검색을 요청했습니다.');
+ await expect(page.getByRole('dialog',{name:'검색어 입력'})).toContainText('사용자가 검색을 요청했습니다.');
  await page.getByRole('link',{name:'현재 기능 명세 보기 →'}).click();
  const detail=page.getByRole('complementary',{name:'기능 명세'});await expect(detail).toContainText('기대 동작:');await page.reload();await expect(detail).toBeVisible();
  await page.getByRole('link',{name:'기여자',exact:true}).click();await page.getByRole('button',{name:'Fixture',exact:true}).click();
  await expect(page.getByRole('complementary',{name:'기여자 상세'})).toContainText('최근 불러온 명세 활동');
- await page.getByRole('link',{name:'이 기여자의 명세 이력 →'}).click();await expect(page).toHaveURL(/author=/);
- await page.getByRole('textbox',{name:'검색',exact:true}).fill('없는 항목');await expect(page.getByText('표시할 명세 이력이 없습니다.',{exact:false})).toBeVisible();
+ await page.getByRole('link',{name:'이 기여자의 활동 →'}).click();await expect(page).toHaveURL(/author=/);
+ await page.getByRole('textbox',{name:'검색',exact:true}).fill('없는 항목');await expect(page.getByText('표시할 활동이 없습니다.',{exact:false})).toBeVisible();
 });
 test('reload failure labels previous snapshot and malformed responses are rejected',async({page})=>{
  await mockApi(page);await page.goto('/');await expect(page.getByText('검색어 입력',{exact:true})).toBeVisible();
@@ -23,28 +23,6 @@ test('mobile dark theme preserves safe Markdown and navigation',async({page})=>{
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
  await detail.getByRole('button',{name:'상세 닫기'}).click();await expect(detail).toHaveCount(0);
  await page.getByRole('button',{name:'탐색 열기',exact:true}).click();await page.getByRole('link',{name:'기여자',exact:true}).click();await expect(page).toHaveURL(/contributors/);
-});
-
-test('relationship graph connects repeated requirement IDs without expanding its width',async({page})=>{
- await mockApi(page);const repeated=structuredClone(specs);const older=structuredClone(repeated.events[0]!);older.key='d'.repeat(40)+':R-abcdefghij';older.commit='d'.repeat(40);repeated.events.push(older);
- await page.route('**/api/v1/specs*',r=>r.fulfill({json:repeated}));await page.goto('/');const graph=page.getByRole('img',{name:'같은 명세의 변경 관계'});await expect(graph.locator('circle')).toHaveCount(2);await expect(graph.locator('path')).toHaveCount(1);expect((await graph.boundingBox())!.width).toBeLessThanOrEqual(88);
-});
-
-test('unconnected history hides graph and mixed history only draws connected nodes', async ({page}) => {
- await mockApi(page);
- await page.goto('/');
- await expect(page.getByText('검색어 입력', {exact:true})).toBeVisible();
- const graph = page.getByRole('img', {name:'같은 명세의 변경 관계'});
- await expect(graph).toHaveCount(0);
- const mixed = structuredClone(specs);
- const older = structuredClone(mixed.events[0]!);
- older.key = 'd'.repeat(40) + ':R-abcdefghij';
- const unrelated = {...older, key:'unrelated', id:'R-unrelated'};
- mixed.events.push(unrelated, older);
- await page.route('**/api/v1/specs*', route => route.fulfill({json:mixed}));
- await page.getByRole('button', {name:'새로고침',exact:true}).click();
- await expect(graph.locator('circle')).toHaveCount(2);
- await expect(graph.locator('path')).toHaveCount(1);
 });
 
 test('load more retains rows, appends the next page and shows completion', async ({page}) => {
@@ -70,20 +48,40 @@ test('initial request shows delayed skeleton then the Gentask empty illustration
  await page.goto('/');
  await expect(page.getByRole('status',{name:'프로젝트 불러오는 중'})).toHaveCSS('opacity','1');
  release();
- await expect(page.getByRole('heading',{name:'표시할 명세 이력이 없습니다.'})).toBeVisible();
+ await expect(page.getByRole('heading',{name:'표시할 활동이 없습니다.'})).toBeVisible();
  await expect(page.locator('img[aria-hidden="true"]').first()).toBeVisible();
  await expect(page.getByRole('status',{name:'프로젝트 불러오는 중'})).toHaveCount(0);
 });
 
-test('reading pane keeps avatars and can be resized from the keyboard', async ({page}) => {
+test('detail drawer opens from the timeline, keeps avatars and can be resized from the keyboard', async ({page}) => {
  await mockApi(page);await page.goto('/');
- await expect(page.getByRole('columnheader',{name:'명세 · 변경 후'})).toBeVisible();
+ await expect(page.getByRole('list',{name:'활동 목록'}).locator('img').first()).toBeVisible();
  await page.getByText('검색어 입력',{exact:true}).click();
- const pane=page.getByRole('region',{name:'읽기 패널'});
+ const pane=page.getByRole('dialog',{name:'검색어 입력'});
  await expect(pane.getByRole('heading',{name:'변경 후',exact:true})).toBeVisible();
- await expect(page.locator('tbody img').first()).toBeVisible();
+ await expect(page).toHaveURL(/selected=/);
  const width=(await pane.boundingBox())!.width;
  const handle=page.getByRole('separator',{name:'변경 상세 너비 조절'});
  await handle.focus();await handle.press('ArrowLeft');
  await expect.poll(async()=>(await pane.boundingBox())!.width).not.toBe(width);
+ await page.keyboard.press('Escape');await expect(pane).toHaveCount(0);await expect(page).not.toHaveURL(/selected=/);
+});
+
+test('history rows preview change reasons and mark missing ones', async ({page}) => {
+ await mockApi(page);
+ const event=specs.events[0]!;
+ const data={...structuredClone(specs),events:[
+  {...event,key:specs.head+':R-bbbbbbbbbb',id:'R-bbbbbbbbbb',types:['modified'],before:event.after,after:{...event.after,id:'R-bbbbbbbbbb',title:'검색 결과 정렬',body:'정렬 **본문**입니다.'},reasons:['정렬을 요청했습니다.','응답 순서를 고정합니다.']},
+  {...event,key:specs.head+':R-cccccccccc',id:'R-cccccccccc',after:{...event.after,id:'R-cccccccccc',title:'이유 없는 변경',body:'본문만 있습니다.'},reasons:[]},
+ ]};
+ await page.route('**/api/v1/specs*',r=>r.fulfill({json:data}));
+ await page.goto('/');
+ const rows=page.getByRole('list',{name:'활동 목록'}).getByRole('listitem');await expect(rows).toHaveCount(2);
+ await expect(rows.nth(0)).toContainText('정렬을 요청했습니다. · 응답 순서를 고정합니다.');
+ await expect(rows.nth(0)).not.toContainText('정렬 본문입니다.');
+ await expect(rows.nth(1)).toContainText('변경 이유가 기록되지 않았습니다.');
+ await rows.nth(0).getByRole('link',{name:'검색 결과 정렬'}).click();
+ const pane=page.getByRole('dialog',{name:'검색 결과 정렬'});
+ await expect(pane.getByRole('heading',{name:'변경 후',exact:true})).toBeVisible();
+ await expect(pane).toContainText('정렬 본문입니다.');
 });
