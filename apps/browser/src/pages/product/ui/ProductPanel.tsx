@@ -18,15 +18,20 @@ import { ContributorsView } from './ContributorsView';
 import styles from './product.module.css';
 import { RequestState } from '../../../shared/ui/request-state';
 import { PageHeader } from '../../../widgets/page-header';
+import { useLoadingHold } from '../../../shared/ui/request-state/useLoadingHold';
+import { ViewSkeleton } from './ViewSkeleton';
 export function ProductPanel({session,view,search,change}:ProductProps&{session:BrowserSessionV1}) {
  const query=useInfiniteQuery(specsOptions(session));
  const disconnected=query.error instanceof ApiError && query.error.code==='SESSION_CHANGED';
  const first=disconnected?undefined:query.data?.pages[0];
+ // The skeleton waits 200ms before appearing and then stays at least 300ms, so fast answers never flash and slow ones never blink.
+ const skeleton=useLoadingHold(!first&&!query.error);
+ const ready=!!first&&!skeleton;
  const events=[...new Map((query.data?.pages.flatMap(p=>p.events)??[]).map(e=>[e.key,e])).values()];
  const title={history:'활동',features:'제품 기능',contributors:'기여자'}[view];
  const centered=view!=='contributors';
  const detailPage=view==='features'&&!!(search.feature||search.selected);
- const filters=first&&!detailPage&&<HStack gap={3} wrap="wrap" className={`${styles.filters} ${centered?styles.filtersSticky:''}`}><TextInput label="검색" isLabelHidden placeholder={view==='features'?'기능·요구사항 검색':'이름 또는 ID 검색'} value={search.q??''} hasClear onChange={q=>change({...search,q:q||undefined},true)}/>
+ const filters=ready&&!detailPage&&<HStack gap={3} wrap="wrap" className={`${styles.filters} ${centered?styles.filtersSticky:''}`}><TextInput label="검색" isLabelHidden placeholder={view==='features'?'기능·요구사항 검색':'이름 또는 ID 검색'} value={search.q??''} hasClear onChange={q=>change({...search,q:q||undefined},true)}/>
  {view==='history'&&<><Selector label="기능 필터" isLabelHidden value={search.feature??''} options={[{value:'',label:'모든 기능'},...first.features.map(f=>({value:f.id,label:f.title}))]} onChange={feature=>change({...search,feature:feature||undefined})}/>
  <Selector label="명세 종류" isLabelHidden value={search.document??''} options={[{value:'',label:'전체 명세'},{value:'requirement',label:'요구사항'},{value:'design',label:'설계'}]} onChange={document=>change({...search,document:document||undefined})}/>
  <Selector label="변경 종류" isLabelHidden value={search.kind??''} options={[{value:'',label:'모든 변경'},{value:'created',label:'추가'},{value:'modified',label:'변경'},{value:'moved',label:'이동'},{value:'deleted',label:'제거'}]} onChange={kind=>change({...search,kind:kind||undefined})}/>
@@ -37,9 +42,10 @@ export function ProductPanel({session,view,search,change}:ProductProps&{session:
  <VStack gap={0} className={centered?styles.column:undefined}>
  {!detailPage&&<VStack gap={1} className={styles.pageTitle}><Heading level={1}>{title}</Heading></VStack>}
  {query.error&&first&&<VStack padding={4} role="alert"><Text>{query.error.message}</Text><Text>이전 조회 자료입니다. 현재 상태로 확정하지 마세요.</Text></VStack>}
- {!first&&<RequestState error={query.error} retry={()=>{if(disconnected)window.location.reload();else void query.refetch();}}/>}
+ {!first&&query.error&&<RequestState error={query.error} retry={()=>{if(disconnected)window.location.reload();else void query.refetch();}}/>}
+ {skeleton&&<ViewSkeleton view={view}/>}
  {filters}
- {first&&<VStack gap={3} className={styles.content}>
+ {ready&&<VStack gap={3} className={styles.content}>
  {first.working&&<Text type="supporting">미커밋 명세 변경이 있습니다. 제품 기능은 작업 중인 내용이며, 이력은 커밋된 내용입니다.</Text>}
  {view==='history'?<HistoryView events={events} features={first.features} search={search} change={change}/>:view==='features'?<FeatureView features={first.features} search={search} change={change}/>:<ContributorsView people={first.contributors} events={events} features={first.features} search={search} change={change}/>}
  {view!=='features'&&<VStack gap={3} padding={5} className={styles.historyPagination}>

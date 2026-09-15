@@ -20,4 +20,4 @@ QueryClient는 앱에서 안정적으로 생성한다. loader가 필요하면 �
 
 Gentask apps/desktop의 QueryClient·Router·RequestState를 확인했다. 단일 QueryClient, queryOptions 중심 캐시, URL 검색 상태, pending 표시 지연을 적용한다. Gentask의 데스크톱 hash history·로그인/401 처리·자동 재시도 정책은 로컬 읽기 전용 Gitifact에 복사하지 않는다. 기존 웹 URL과 세션/worktree 격리·AbortSignal·명시적 재조회는 유지한다.
 
-초기 조회에는 200ms 지연 골격을 표시하고 재조회에는 현재 목록을 유지한다. 이력은 useInfiniteQuery와 더보기로 이어 읽는다. 불러온 개수·추가 조회 중·재시도·마지막 페이지를 구분한다. 다음 페이지 실패 시 기존 목록을 보존한다. Router의 pending 표시는 코드 전환에 사용하고 API 상태는 Query가 소유한다.
+초기 조회에는 useLoadingHold로 200ms 지연 뒤 골격을 표시하고, 보이기 시작하면 최소 300ms 유지한 뒤 본문을 0.22초 페이드인한다. 골격은 pages/product의 ViewSkeleton이 화면별 배치를 본떠 그린다. 재조회에는 현재 목록을 유지한다. 이력은 useInfiniteQuery와 더보기로 이어 읽는다. 불러온 개수·추가 조회 중·재시도·마지막 페이지를 구분한다. 다음 페이지 실패 시 기존 목록을 보존한다. Router의 pending 표시는 코드 전환에 사용하고 API 상태는 Query가 소유한다.

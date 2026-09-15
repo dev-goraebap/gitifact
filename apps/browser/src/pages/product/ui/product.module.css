@@ -1,4 +1,6 @@
  .page { min-width:0; } .content {padding:var(--spacing-4);min-width:0;animation:reveal .22s ease-out both}
+.skeleton { min-height:24rem; animation:reveal .2s ease-out both; }
+.skeletonRow { align-items:center; padding-block:var(--spacing-3); border-bottom:1px solid var(--color-border); }
 @keyframes reveal { from { opacity:0; transform:translateY(4px); } }
 @media (prefers-reduced-motion: reduce) { .content { animation:none; } } .split {display:grid;grid-template-columns:minmax(0,1fr) minmax(20rem,26rem);align-items:start} .list,.timeline {min-width:0;overflow:auto} .detail {border-inline-start:1px solid var(--color-border);background:var(--color-background-body);overflow-wrap:anywhere;min-width:0} .highlight {border-inline-start:2px solid var(--color-border-accent,var(--color-border));padding-inline-start:var(--spacing-3)}
 @media(width<64rem){.split{grid-template-columns:minmax(0,1fr)}.split>.list,.split>.timeline{display:none}.detail{border-inline-start:0}}
