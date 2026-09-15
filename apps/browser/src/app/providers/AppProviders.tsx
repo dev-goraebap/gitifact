@@ -1,4 +1,6 @@
 import { LayerProvider } from '@astryxdesign/core/Layer';
+import { LinkProvider } from '@astryxdesign/core/Link';
+import { RouterLink } from '../../shared/ui/router-link/RouterLink';
 import { InternationalizationProvider } from '@astryxdesign/core/i18n';
 import koKR from '@astryxdesign/core/locales/ko-KR.json';
 import { Theme } from '@astryxdesign/core/theme';
@@ -31,9 +33,11 @@ export function AppProviders() {
     <Theme theme={stoneTheme}>
       <InternationalizationProvider locale="ko-KR" messages={{ 'ko-KR': koKR }}>
         <LayerProvider>
-          <QueryClientProvider client={queryClient}>
-            <RouterProvider router={router} />
-          </QueryClientProvider>
+          <LinkProvider component={RouterLink}>
+            <QueryClientProvider client={queryClient}>
+              <RouterProvider router={router} />
+            </QueryClientProvider>
+          </LinkProvider>
         </LayerProvider>
       </InternationalizationProvider>
     </Theme>

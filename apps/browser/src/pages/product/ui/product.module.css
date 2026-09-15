@@ -2,9 +2,7 @@
 .skeleton { min-height:24rem; animation:reveal .2s ease-out both; }
 .skeletonRow { align-items:center; padding-block:var(--spacing-3); border-bottom:1px solid var(--color-border); }
 @keyframes reveal { from { opacity:0; transform:translateY(4px); } }
-@media (prefers-reduced-motion: reduce) { .content { animation:none; } } .split {display:grid;grid-template-columns:minmax(0,1fr) minmax(20rem,26rem);align-items:start} .list,.timeline {min-width:0;overflow:auto} .detail {border-inline-start:1px solid var(--color-border);background:var(--color-background-body);overflow-wrap:anywhere;min-width:0} .highlight {border-inline-start:2px solid var(--color-border-accent,var(--color-border));padding-inline-start:var(--spacing-3)}
-@media(width<64rem){.split{grid-template-columns:minmax(0,1fr)}.split>.list,.split>.timeline{display:none}.detail{border-inline-start:0}}
-.detail p { white-space:pre-line; }
+@media (prefers-reduced-motion: reduce) { .content { animation:none; } } .highlight {border-inline-start:2px solid var(--color-border-accent,var(--color-border));padding-inline-start:var(--spacing-3)}
 
 /* Feature list: a table in the centered column; the detail page replaces the list at the same width. */
 .featureTable table { border-radius:0; }
@@ -56,3 +54,14 @@
 .drawer > :first-child { overflow-y:auto; scrollbar-gutter:stable; overscroll-behavior:contain; scrollbar-width:thin; scrollbar-color:var(--color-border-emphasized, var(--color-border)) transparent; }
 .drawerHeader { position:sticky; top:0; z-index:1; background:var(--color-background-surface); padding-inline:var(--spacing-5); padding-top:var(--spacing-4); }
 .drawerHandle { position:absolute; inset-block:0; inset-inline-start:0; z-index:2; }
+
+/* Contributors: a card grid; the detail page opens at the same width with a hero row. */
+.person { align-items:center; }
+.personName { color:var(--color-text-primary); text-decoration:none; font-size:.8125rem; }
+.personName:hover { text-decoration:underline; }
+.personCard { align-items:flex-start; min-width:0; }
+.personCardBody { min-width:0; align-self:stretch; }
+.personStats { align-items:center; }
+.personHero { align-items:center; padding-block:var(--spacing-4) var(--spacing-6); }
+.personActivityRow { align-items:center; padding-block:var(--spacing-3); border-bottom:1px solid var(--color-border); min-width:0; }
+.personActivityRow > :nth-child(3) { flex:1; min-width:0; }

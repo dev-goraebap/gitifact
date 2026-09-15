@@ -13,7 +13,7 @@ import { AvatarGroup, AvatarGroupOverflow } from '@astryxdesign/core/AvatarGroup
 import { useMediaQuery } from '@astryxdesign/core/hooks';
 import { Link } from '@tanstack/react-router';
 import { DesignDocument } from './DesignDocument';
-import { avatarSource } from './Person';
+import { avatarSource, contributorHref } from './Person';
 import type { ProductSearch } from '../model/search';
 import styles from './product.module.css';
 import { PageState } from '../../../shared/ui/page-state';
@@ -28,7 +28,7 @@ function Contributors({ people }: { people: SpecFeature['contributors'] }) {
   if (!people.length) return <Text type="supporting" color="secondary">미커밋</Text>;
   const shown = people.slice(0, 3);
   return <AvatarGroup size="sm" shape="circle">
-    {shown.map(p => <Avatar key={p.email} name={p.name} src={avatarSource(p.email)}/>)}
+    {shown.map(p => <Avatar key={p.email} name={p.name} src={avatarSource(p.email)} href={contributorHref(p.email)}/>)}
     {people.length > shown.length && <AvatarGroupOverflow count={people.length - shown.length}/>}
   </AvatarGroup>;
 }
@@ -48,7 +48,8 @@ function FeatureList({ features, search, change }: { features: SpecFeature[]; se
   columns.push({ key: 'contributors', header: '참여자', width: pixel(mobile ? 88 : 120), renderCell: f => <Contributors people={f.contributors}/> });
   if (!mobile) columns.push({ key: 'updatedAt', header: '최근 변경', width: pixel(110), align: 'end', renderCell: f => f.updatedAt ? <Timestamp value={f.updatedAt} format="relative"/> : <Text type="supporting" color="secondary">작업 중</Text> });
   const interaction: TablePlugin<SpecFeature> = { transformBodyRow: (props, item) => ({ ...props, htmlProps: { ...props.htmlProps, tabIndex: 0,
-    onClick: () => open(item), onKeyDown: event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); open(item); } } } }) };
+    // Links inside the row (title, contributor avatars) navigate on their own; only bare surface clicks open the feature.
+    onClick: (event: { target: EventTarget | null }) => { if (!(event.target as HTMLElement | null)?.closest('a, button')) open(item); }, onKeyDown: event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); open(item); } } } }) };
   if (!filtered.length) return <PageState kind={features.length ? 'search' : 'empty'} title="일치하는 기능이 없습니다." description={features.length ? '검색어를 바꿔 보세요.' : '에이전트와 기능 명세를 정리하고 커밋하면 이곳에서 볼 수 있습니다.'}/>;
   return <VStack gap={3} className={styles.featureTable}>
     <Text type="supporting" color="secondary">기능 명세 {filtered.length}개 · 참여자와 최근 변경은 커밋된 기록 기준입니다.</Text>

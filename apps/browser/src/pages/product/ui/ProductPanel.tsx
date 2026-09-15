@@ -29,12 +29,13 @@ export function ProductPanel({session,view,search,change}:ProductProps&{session:
  const ready=!!first&&!skeleton;
  const events=[...new Map((query.data?.pages.flatMap(p=>p.events)??[]).map(e=>[e.key,e])).values()];
  const title={history:'활동',features:'제품 기능',contributors:'기여자'}[view];
- const centered=view!=='contributors';
+ const centered=true;
  const detailFeature=view==='features'?first?.features.find(f=>f.id===search.feature||f.requirements.some(r=>r.id===search.selected)):undefined;
- const detailPage=view==='features'&&!!(search.feature||search.selected);
+ const detailPerson=view==='contributors'?first?.contributors.find(p=>p.email===search.author):undefined;
+ const detailPage=(view==='features'&&!!(search.feature||search.selected))||(view==='contributors'&&!!search.author);
  const root={history:'/',features:'/features',contributors:'/contributors'}[view];
- const trail=[{label:title,to:root},...(detailFeature?[{label:detailFeature.title}]:[])];
- const filters=ready&&!detailPage&&<HStack gap={3} wrap="wrap" className={`${styles.filters} ${centered?styles.filtersSticky:''}`}><TextInput label="검색" isLabelHidden placeholder={view==='features'?'기능·요구사항 검색':'이름 또는 ID 검색'} value={search.q??''} hasClear onChange={q=>change({...search,q:q||undefined},true)}/>
+ const trail=[{label:title,to:root},...(detailFeature?[{label:detailFeature.title}]:[]),...(detailPerson?[{label:detailPerson.name}]:[])];
+ const filters=ready&&!detailPage&&<HStack gap={3} wrap="wrap" className={`${styles.filters} ${centered?styles.filtersSticky:''}`}><TextInput label="검색" isLabelHidden placeholder={view==='features'?'기능·요구사항 검색':view==='contributors'?'이름 또는 이메일 검색':'이름 또는 ID 검색'} value={search.q??''} hasClear onChange={q=>change({...search,q:q||undefined},true)}/>
  {view==='history'&&<><Selector label="기능 필터" isLabelHidden value={search.feature??''} options={[{value:'',label:'모든 기능'},...first.features.map(f=>({value:f.id,label:f.title}))]} onChange={feature=>change({...search,feature:feature||undefined})}/>
  <Selector label="명세 종류" isLabelHidden value={search.document??''} options={[{value:'',label:'전체 명세'},{value:'requirement',label:'요구사항'},{value:'design',label:'설계'}]} onChange={document=>change({...search,document:document||undefined})}/>
  <Selector label="변경 종류" isLabelHidden value={search.kind??''} options={[{value:'',label:'모든 변경'},{value:'created',label:'추가'},{value:'modified',label:'변경'},{value:'moved',label:'이동'},{value:'deleted',label:'제거'}]} onChange={kind=>change({...search,kind:kind||undefined})}/>
