@@ -1,13 +1,18 @@
 import { lstat, readdir, readFile, mkdir, writeFile, rename, unlink, rmdir } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import { createHash, randomBytes } from 'node:crypto';
-import { editSpecPreview, parsePreviewFiles, renderDesignPreview, designReferenceWarnings, renderSpecPreview, SpecPreviewError, parseManagedConfig } from '@tryce/core';
+import { editSpecPreview, parsePreviewFiles, renderDesignPreview, designReferenceWarnings, renderSpecPreview, SpecPreviewError, parseManagedConfig } from '@gitifact/core';
 import { specPreviewReader } from '../git/spec-preview-reader.js';
 import { readConfigFile } from './config-file.js';
 
 const fail = (message: string): never => { throw new SpecPreviewError(message); };
 const info = async (path: string) => lstat(path).catch(e => { if (e.code === 'ENOENT') return undefined; throw e; });
 const digest = (value: string) => createHash('sha256').update(value).digest('hex');
+/** Lock names written by earlier Tryce builds; their presence still means an unfinished or unrecovered run. */
+export const LEGACY_LOCKS = ['tryce-spec-preview.lock', 'tryce-spec-commit.lock'] as const;
+export async function failOnLegacyLock(gitDir: string) {
+  for (const name of LEGACY_LOCKS) if (await info(join(gitDir, name))) fail('이전 Tryce 실행의 잠금 또는 복구 자료가 있습니다: ' + join(gitDir, name));
+}
 const decode = (bytes: Buffer) => new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(bytes);
 export const generatePreviewId = (prefix: 'S' | 'R' | 'H') => prefix + '-' + [...randomBytes(10)].map(n => 'abcdefghijklmnopqrstuvwxyz234567'[n & 31]).join('');
 /** A failure after Git may have changed HEAD: keep written files and recovery data instead of rolling back. */
@@ -15,8 +20,9 @@ export class PreservedPreviewError extends SpecPreviewError {}
 
 async function snapshot(root: string) {
   const files = new Map<string, string>(); let count = 0; let bytes = 0;
-  const parent = await info(join(root, '.tryce'));
-  if (parent && (!parent.isDirectory() || parent.isSymbolicLink())) fail('.tryce는 일반 디렉터리여야 합니다.');
+  const parent = await info(join(root, '.gitifact'));
+  if (parent && (!parent.isDirectory() || parent.isSymbolicLink())) fail('.gitifact는 일반 디렉터리여야 합니다.');
+  if (!parent && await info(join(root, '.tryce'))) fail('.tryce 저장소입니다. gitifact migrate로 .gitifact에 전환한 뒤 사용하세요.');
   const config = await readConfigFile(root);
   if ((config !== undefined && !('schemaVersion' in parseManagedConfig(config))) || await info(join(root, 'specs'))) fail('기존 프로젝트 형식은 별도 전환이 필요합니다.');
   async function visit(path: string, depth: number) {
@@ -29,24 +35,25 @@ async function snapshot(root: string) {
     } else {
       if (path.endsWith('/tryce.json')) fail('기존 JSON 형식은 전환하지 않습니다.');
       if (!/\/(requirements\.md|design\.md|history\.jsonl)$/.test(path)) return;
-      if (!/^\.tryce\/spec\/[^/]+\/(requirements\.md|design\.md|history\.jsonl)$/.test(path)) fail('지원하지 않는 명세 경로입니다.');
+      if (!/^\.gitifact\/spec\/[^/]+\/(requirements\.md|design\.md|history\.jsonl)$/.test(path)) fail('지원하지 않는 명세 경로입니다.');
       if (stat.nlink !== 1 || stat.size > 1024 * 1024) fail('하드 링크 또는 1 MiB 한도를 확인하세요.');
       const raw = await readFile(join(root, path)); bytes += raw.length;
       if (raw.length > 1024 * 1024 || bytes > 16 * 1024 * 1024) fail('명세 크기 한도를 초과했습니다.');
       files.set(path, decode(raw));
     }
   }
-  await visit('.tryce/spec', 0);
+  await visit('.gitifact/spec', 0);
   const specs = parsePreviewFiles(files);
   return { files, specs, config, stamp: digest(JSON.stringify([...files]) + (config ?? '')) };
 }
 
 export async function readWorkingPreviewState(cwd: string) {
   const { root, gitDir } = await specPreviewReader(cwd).location();
-  if (await info(join(gitDir, 'tryce-spec-preview.lock'))) fail('명세 저장 잠금 또는 복구 자료가 있습니다.');
+  await failOnLegacyLock(gitDir);
+  if (await info(join(gitDir, 'gitifact-spec-preview.lock'))) fail('명세 저장 잠금 또는 복구 자료가 있습니다.');
   const first = await snapshot(root); const second = await snapshot(root);
   if (first.stamp !== second.stamp) fail('조회 중 명세가 변경됐습니다. 다시 읽으세요.');
-  if (await info(join(gitDir, 'tryce-spec-preview.lock'))) fail('조회 중 저장 잠금이 생겼습니다.');
+  if (await info(join(gitDir, 'gitifact-spec-preview.lock'))) fail('조회 중 저장 잠금이 생겼습니다.');
   return first;
 }
 
@@ -71,13 +78,14 @@ export async function saveWorkingPreview(cwd: string, input: unknown, publish = 
 }
 
 export type WorkingPreviewSnapshot = Awaited<ReturnType<typeof snapshot>>;
-// Internal callers must already hold tryce-spec-preview.lock.
+// Internal callers must already hold gitifact-spec-preview.lock.
 export const readLockedPreviewState = (root: string) => snapshot(root);
 export async function previewTransaction<T>(cwd: string, expected: string, build: (before: WorkingPreviewSnapshot) => Promise<{
   writes: Map<string, string | null>; data: T; recheck?: () => Promise<void>;
 }>, publish = rename, afterPublish?: (state: WorkingPreviewSnapshot) => Promise<void>) {
   const { root, gitDir } = await specPreviewReader(cwd).location();
-  const lock = join(gitDir, 'tryce-spec-preview.lock');
+  await failOnLegacyLock(gitDir);
+  const lock = join(gitDir, 'gitifact-spec-preview.lock');
   try { await mkdir(lock); } catch (e) { if ((e as NodeJS.ErrnoException).code === 'EEXIST') fail('명세 저장 잠금 또는 복구 자료가 있습니다.'); throw e; }
   const createdDirs: string[] = []; const temporary: string[] = [];
   const changed: { path: string; before: string | null; after: string | null }[] = [];
@@ -92,7 +100,7 @@ export async function previewTransaction<T>(cwd: string, expected: string, build
     if (before.stamp !== expected) fail('읽은 뒤 명세가 변경됐습니다. working으로 다시 읽으세요.');
     const result = await build(before);
     for (const [path, after] of result.writes) {
-      if (!/^\.tryce\/spec\/[^/]+\/(requirements\.md|design\.md|history\.jsonl)$/.test(path) || path.split('/').some(p => p === '..' || p === '.' || /[\\:\0]/.test(p))) fail('지원하지 않는 저장 경로입니다.');
+      if (!/^\.gitifact\/spec\/[^/]+\/(requirements\.md|design\.md|history\.jsonl)$/.test(path) || path.split('/').some(p => p === '..' || p === '.' || /[\\:\0]/.test(p))) fail('지원하지 않는 저장 경로입니다.');
       if (after !== null && Buffer.byteLength(after) > 1024 * 1024) fail('명세 1 MiB 한도를 초과했습니다.');
       changed.push({ path, before: before.files.get(path) ?? null, after });
     }
@@ -103,7 +111,7 @@ export async function previewTransaction<T>(cwd: string, expected: string, build
     for (const c of changed) {
       if (c.after === null) { temporary.push(''); continue; }
       await directory(dirname(join(root, c.path)));
-      const temp = join(dirname(join(root, c.path)), '.tryce-save-' + randomBytes(12).toString('hex'));
+      const temp = join(dirname(join(root, c.path)), '.gitifact-save-' + randomBytes(12).toString('hex'));
       await writeFile(temp, c.after, { flag: 'wx' }); temporary.push(temp);
     }
     if ((await snapshot(root)).stamp !== before.stamp) fail('저장 준비 중 명세가 변경됐습니다.');
@@ -128,7 +136,7 @@ export async function previewTransaction<T>(cwd: string, expected: string, build
         if (c.after === null ? !!stat : !stat?.isFile() || stat.isSymbolicLink() || decode(await readFile(path)) !== c.after) { keepRecovery = true; continue; }
         if (c.before === null) await unlink(path);
         else {
-          const temp = join(dirname(path), '.tryce-restore-' + randomBytes(12).toString('hex'));
+          const temp = join(dirname(path), '.gitifact-restore-' + randomBytes(12).toString('hex'));
           temporary.push(temp); await writeFile(temp, c.before, { flag: 'wx' }); await rename(temp, path);
         }
       } catch { keepRecovery = true; }

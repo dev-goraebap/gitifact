@@ -1,4 +1,4 @@
-import type { BrowserSpecsV1, SpecEvent, SpecFeature } from '@tryce/contracts';
+import type { BrowserSpecsV1, SpecEvent, SpecFeature } from '@gitifact/contracts';
 import { VStack } from '@astryxdesign/core/VStack';
 import { Heading } from '@astryxdesign/core/Heading';
 import { Text } from '@astryxdesign/core/Text';

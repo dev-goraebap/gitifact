@@ -10,7 +10,7 @@ const entrypoint = fileURLToPath(new URL('../dist/main.js', import.meta.url));
 const { version } = JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf8'));
 
 test('CLI works outside the workspace and leaves the working directory untouched', async (t) => {
-  const cwd = await mkdtemp(join(tmpdir(), 'tryce-cli-'));
+  const cwd = await mkdtemp(join(tmpdir(), 'gitifact-cli-'));
   t.after(() => rm(cwd, { recursive: true, force: true }));
   const run = (...args) => {
     const result = spawnSync(process.execPath, [entrypoint, ...args], {
@@ -24,7 +24,7 @@ test('CLI works outside the workspace and leaves the working directory untouched
     const result = run(...args);
     assert.equal(result.status, 0);
     assert.equal(result.stderr, '');
-    assert.match(result.stdout, /Usage: tryce/);
+    assert.match(result.stdout, /Usage: gitifact/);
     assert.match(result.stdout, /아직 제공하지 않습니다/);
   }
   const result = run('--version');

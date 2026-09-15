@@ -1,13 +1,13 @@
 import { createHash } from 'node:crypto';
 import { lstat, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { SpecPreviewError } from '@tryce/core';
+import { SpecPreviewError, recordPathPattern } from '@gitifact/core';
 
 export const fail = (message: string): never => { throw new SpecPreviewError(message); };
 export const hash = (value: Buffer | string) => createHash('sha256').update(value).digest('hex');
 export const optional = (path: string) => readFile(path).catch(e => { if (e.code === 'ENOENT') return null; throw e; });
 export const info = (path: string) => lstat(path).catch(e => { if (e.code === 'ENOENT') return undefined; throw e; });
-export const record = (path: string) => /^\.tryce\/spec\/[^/]+\/(requirements\.md|design\.md|history\.jsonl)$/.test(path);
+export const record = (path: string) => recordPathPattern.test(path);
 export function validPath(path: string) {
   if (typeof path !== 'string' || path.length > 1000 || /[\\:\x00-\x1f\x7f]/.test(path)
     || path.split('/').some(p => !p || p === '.' || p === '..' || p.toLowerCase() === '.git')) fail('저장소 상대 경로의 명세 또는 일반 파일만 선택하세요.');
@@ -39,12 +39,17 @@ export function paths(value: unknown, limit = 128): string[] {
   const list = [...new Set(value as string[])].sort(); list.forEach(validPath); return list;
 }
 export function policyPaths(files: string[]) {
-  const all = new Set(['AGENTS.md', 'CLAUDE.md', '.agents/skills/tryce-workflow/SKILL.md', '.gitignore', '.gitattributes', '.tryce/config.json']);
+  const all = new Set(['AGENTS.md', 'CLAUDE.md', '.agents/skills/gitifact-workflow/SKILL.md', '.gitignore', '.gitattributes', '.gitifact/config.json', '.tryce/config.json']);
   for (const file of files) { const parts = file.split('/'); for (let i = 1; i < parts.length; i++) for (const name of ['AGENTS.md', 'CLAUDE.md', '.gitignore', '.gitattributes']) all.add(parts.slice(0, i).join('/') + '/' + name); }
   return [...all].sort();
 }
 export async function checkLegacySelection(root: string, selected: string[]) {
-  for (const p of selected.filter(p => p.startsWith('.tryce/') && !record(p) && p !== '.tryce/config.json')) {
-    if (!/^\.tryce\/(?:spec\/[^/]+\/tryce\.json|notes\/N-[a-f0-9-]+\.json|mode-[a-f0-9-]+\.json|config\.(?:init-1|prototype-1)\.[a-f0-9]+\.json)$/.test(p) || await fingerprint(root, p) !== null) fail('.tryce의 구형 기록은 전환 시 삭제만 선택할 수 있습니다.');
+  // Old JSON records (in either store) may only be selected for deletion; after `gitifact migrate` the whole `.tryce` store leaves the same way.
+  const legacyJson = /^\.(?:gitifact|tryce)\/(?:spec\/[^/]+\/tryce\.json|notes\/N-[a-f0-9-]+\.json|mode-[a-f0-9-]+\.json|config\.(?:init-1|prototype-1)\.[a-f0-9]+\.json)$/;
+  for (const p of selected.filter(p => p.startsWith('.gitifact/') && !record(p) && p !== '.gitifact/config.json')) {
+    if (!legacyJson.test(p) || await fingerprint(root, p) !== null) fail('.gitifact의 구형 기록은 삭제만 선택할 수 있습니다: ' + p);
+  }
+  for (const p of selected.filter(p => p.startsWith('.tryce/'))) {
+    if (!(record(p) || p === '.tryce/config.json' || legacyJson.test(p)) || await fingerprint(root, p) !== null) fail('.tryce의 이전 기록은 전환 시 삭제만 선택할 수 있습니다: ' + p);
   }
 }

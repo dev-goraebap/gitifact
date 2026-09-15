@@ -27,7 +27,7 @@ export function BrowserShell() {
       sideNav={
         <SideNav
           style={{ width: '15rem' }}
-          header={<Link to="/" className="tryce-wordmark" aria-label="GITIFACT 홈" />}
+          header={<Link to="/" className="gitifact-wordmark" aria-label="GITIFACT 홈" />}
           footer={
             <VStack padding={4} gap={2}>
               <Text type="supporting">로컬 프로젝트 · 읽기 전용</Text>
@@ -60,7 +60,7 @@ export function BrowserShell() {
               />
             ))}
           </SideNavSection>
-          <SideNavSection title="TRYCE">
+          <SideNavSection title="GITIFACT">
             <SideNavItem
               label="소개"
               icon={<HgiInfo/>}

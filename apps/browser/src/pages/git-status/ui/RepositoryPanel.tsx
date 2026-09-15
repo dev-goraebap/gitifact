@@ -1,6 +1,6 @@
 import { Button } from '@astryxdesign/core/Button';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { BrowserSessionV1 } from '@tryce/contracts';
+import type { BrowserSessionV1 } from '@gitifact/contracts';
 import { ApiError } from '../../../shared/api/client';
 import { refreshStatus, statusKey, statusOptions } from '../../../entities/project';
 import { VStack } from '@astryxdesign/core/VStack';
@@ -42,7 +42,7 @@ export function RepositoryPanel({
           isDisabled={busy || needsReconnect}
           onClick={() => refresh.mutate()}
         />
-        <Text color="secondary">tryce 요구사항 검사는 아직 실행하지 않습니다.</Text>
+        <Text color="secondary">gitifact 요구사항 검사는 아직 실행하지 않습니다.</Text>
       </HStack>
       {error && (
         <VStack role="alert" gap={3}>
@@ -73,7 +73,7 @@ export function RepositoryPanel({
             <Text>충돌 {data.summary.conflicted}</Text>
           </HStack>
           {data.changes.length === 0 ? (
-            <Text>Git 변경 경로가 없습니다. tryce 검사는 미실행입니다.</Text>
+            <Text>Git 변경 경로가 없습니다. gitifact 검사는 미실행입니다.</Text>
           ) : (
             <Table
               data={data.changes}

@@ -1,10 +1,10 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { mkdir, open, readFile, rename, rmdir, unlink, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { prepareSpecPreview } from '@tryce/core';
+import { prepareSpecPreview } from '@gitifact/core';
 import { createGitRunner } from '../adapters/git/run-git.js';
 import { previewExpected, readPreviewContext } from '../adapters/filesystem/spec-preview-prepare.js';
-import { generatePreviewId, PreservedPreviewError, previewTransaction, readLockedPreviewState } from '../adapters/filesystem/spec-preview-store.js';
+import { failOnLegacyLock, generatePreviewId, PreservedPreviewError, previewTransaction, readLockedPreviewState } from '../adapters/filesystem/spec-preview-store.js';
 import { checkLegacySelection, fail, fingerprint, hash, info, object, optional, paths, policyPaths, record, text } from './spec-commit-files.js';
 
 const fields = ['reasons', 'paths', 'message', 'authorization', 'requirements', 'policyFiles', 'expected'];
@@ -23,7 +23,7 @@ export async function specCommit(cwd: string, input: unknown, dryRun: boolean) {
   const selected = paths(request.paths); const authorization = object(request.authorization);
   if (Object.keys(authorization).sort().join(',') !== 'basis,evidence' || !['user-request', 'project-policy'].includes(String(authorization.basis))) fail('사용자 요청 또는 명시적 정책에 따른 커밋 근거가 필요합니다.');
   text(authorization.evidence, 2000);
-  const message = text(request.message, 4000); if (/^\s*Tryce-/im.test(message)) fail('Tryce 트레일러는 requirements로 지정하세요.');
+  const message = text(request.message, 4000); if (/^\s*Gitifact-/im.test(message)) fail('Gitifact 트레일러는 requirements로 지정하세요.');
   const references = request.requirements ?? [];
   if (!Array.isArray(references) || references.length > 1000 || references.some(r => typeof r !== 'string')) fail('잘못된 요구사항 참조입니다.');
   const extra = request.policyFiles === undefined ? [] : paths(request.policyFiles, 1024);
@@ -36,7 +36,8 @@ export async function specCommit(cwd: string, input: unknown, dryRun: boolean) {
       GIT_OPTIONAL_LOCKS: '0', GIT_NO_LAZY_FETCH: '1', GIT_NO_REPLACE_OBJECTS: '1', GIT_TERMINAL_PROMPT: '0', ...(index ? { GIT_INDEX_FILE: index } : {}) },
     timeoutMs: 120000, maxBytes: 32 * 1024 * 1024, ...(stdin ? { input: stdin } : {}) });
   const staged = async (index?: string) => (await git(['diff', '--cached', '--ita-visible-in-index', '--name-only', '--no-renames', '-z'], index)).toString('utf8').split('\0').filter(Boolean).sort();
-  const busy = join(gitDir, 'tryce-spec-commit.lock');
+  const busy = join(gitDir, 'gitifact-spec-commit.lock');
+  await failOnLegacyLock(gitDir);
   if (await info(busy)) fail('이전 커밋 작업 또는 복구 자료가 있습니다: ' + busy);
   if ((await staged()).length) fail('기존 staging을 보존합니다. 선택 범위를 정리한 후 다시 실행하세요.');
   const indexHash = hash(await optional(indexPath) ?? Buffer.alloc(0));
@@ -75,8 +76,8 @@ export async function specCommit(cwd: string, input: unknown, dryRun: boolean) {
     reasons: prepared.reasons, withoutReason: prepared.withoutReason, historyPaths: [...writes.keys()].sort() };
   if (dryRun) { await c.recheck(); return { outcome: 'dry-run' as const, committed: false, ...summary }; }
 
-  const trailers = [...requirements.map(id => 'Tryce-Req: ' + id), ...prepared.changes.filter(c => c.kind === 'design').map(c => 'Tryce-Design: ' + c.id)];
-  const temporary = join(gitDir, 'tryce-commit-index-' + randomUUID());
+  const trailers = [...requirements.map(id => 'Gitifact-Req: ' + id), ...prepared.changes.filter(c => c.kind === 'design').map(c => 'Gitifact-Design: ' + c.id)];
+  const temporary = join(gitDir, 'gitifact-commit-index-' + randomUUID());
   let owned = false; let uncertain = false; let indexLock: Awaited<ReturnType<typeof open>> | undefined;
   let committed: { commit: string; paths: string[] } | undefined;
   try {

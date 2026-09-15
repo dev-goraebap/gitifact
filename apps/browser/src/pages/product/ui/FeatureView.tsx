@@ -1,4 +1,4 @@
-import type { SpecFeature } from '@tryce/contracts';
+import type { SpecFeature } from '@gitifact/contracts';
 import { VStack } from '@astryxdesign/core/VStack';
 import { HStack } from '@astryxdesign/core/HStack';
 import { Heading } from '@astryxdesign/core/Heading';

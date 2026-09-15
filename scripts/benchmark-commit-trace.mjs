@@ -7,7 +7,7 @@ import { performance } from 'node:perf_hooks';
 // Preload for scripts/benchmark-commit.mjs: node --import <this> dist/main.js ...
 // Records Git process and file access timing without changing the CLI bundle or its stdout.
 // Only command names, Git subcommands and caller function names are written, never file contents or env.
-const target = process.env.TRYCE_BENCH_TRACE;
+const target = process.env.GITIFACT_BENCH_TRACE;
 if (target) {
   const loadedAt = performance.now();
   const git = [];

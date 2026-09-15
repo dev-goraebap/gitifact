@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { readRepositoryStatus } from '@tryce/core';
+import { readRepositoryStatus } from '@gitifact/core';
 import { createRepositoryReader } from '../adapters/git/repository-reader.js';
 import { failureDto, statusDto, statusText } from '../output/repository-status.js';
 

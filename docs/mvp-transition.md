@@ -1,5 +1,7 @@
 # MVP 전환 계획
 
+> 2026-09-15 이름 전환: 이 문서의 `.tryce` 경로, `tryce-*` 마커, `tryce-workflow`, `Tryce-Req` 트레일러, `tryce-*.lock` 잠금 이름은 작성 당시 이름이다. 현재 이름은 `.gitifact`, `gitifact-*`, `gitifact-workflow`, `Gitifact-Req`, `gitifact-*.lock`이며 규칙은 같다. 과거 커밋의 이전 이름은 CLI가 읽기만 한다.
+
 2026-09-14 확정한 방향을 구현하기 위한 임시 작업 문서다. 제품 원칙은 [제품 기준](bref.md), 실제 실행은 [개발 환경](development.md)을 따른다. docs에 기능별 spec을 다시 만들지 않는다. 새 형식과 CLI가 검증되면 유효한 요구사항을 `.tryce/spec/`에 등록하고 이 문서를 종료한다.
 
 ## 현재 상태

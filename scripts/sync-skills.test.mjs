@@ -6,13 +6,13 @@ import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { syncSkills } from './sync-skills.mjs';
 
-const source = '.agents/skills/tryce-workflow/SKILL.md';
-const target = '.claude/skills/tryce-workflow/SKILL.md';
-const manifest = '.agents/tryce-local-skills.json';
+const source = '.agents/skills/gitifact-workflow/SKILL.md';
+const target = '.claude/skills/gitifact-workflow/SKILL.md';
+const manifest = '.agents/gitifact-local-skills.json';
 async function fixture(t) {
-  const root = await mkdtemp(join(tmpdir(), 'tryce-skills-'));
+  const root = await mkdtemp(join(tmpdir(), 'gitifact-skills-'));
   t.after(() => rm(root, { recursive: true, force: true }));
-  await mkdir(join(root, '.agents/skills/tryce-workflow'), { recursive: true });
+  await mkdir(join(root, '.agents/skills/gitifact-workflow'), { recursive: true });
   await writeFile(join(root, source), 'original\n');
   return root;
 }
@@ -32,7 +32,7 @@ test('create, repeat and update preserve the edited source and unrelated skills'
 });
 test('unmanaged and edited destinations are refused without changing files', async t => {
   const root = await fixture(t);
-  await mkdir(join(root, '.claude/skills/tryce-workflow'), { recursive: true });
+  await mkdir(join(root, '.claude/skills/gitifact-workflow'), { recursive: true });
   await writeFile(join(root, target), 'original\n');
   await assert.rejects(syncSkills(root), /Unmanaged/);
   await rm(join(root, target));
@@ -58,7 +58,7 @@ test('an interrupted publication resumes from either recorded side', async t => 
 });
 test('lock and corrupt manifest are preserved for explicit recovery', async t => {
   const root = await fixture(t);
-  const lock = join(root, '.agents/tryce-local-skills.lock');
+  const lock = join(root, '.agents/gitifact-local-skills.lock');
   await writeFile(lock, 'other operation');
   await assert.rejects(syncSkills(root), /EEXIST/);
   assert.equal(await readFile(lock, 'utf8'), 'other operation');
@@ -69,9 +69,9 @@ test('lock and corrupt manifest are preserved for explicit recovery', async t =>
 });
 test('directory junction does not redirect publication outside the target', async t => {
   const root = await fixture(t);
-  const outside = await mkdtemp(join(tmpdir(), 'tryce-skills-outside-'));
+  const outside = await mkdtemp(join(tmpdir(), 'gitifact-skills-outside-'));
   t.after(() => rm(outside, { recursive: true, force: true }));
   await symlink(outside, join(root, '.claude'), process.platform === 'win32' ? 'junction' : 'dir');
   await assert.rejects(syncSkills(root), /Unsupported path/);
-  await assert.rejects(readFile(join(outside, 'skills/tryce-workflow/SKILL.md')), { code: 'ENOENT' });
+  await assert.rejects(readFile(join(outside, 'skills/gitifact-workflow/SKILL.md')), { code: 'ENOENT' });
 });

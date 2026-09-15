@@ -10,7 +10,7 @@ Gentask의 04-layout.md와 Claude의 browser-design-v2/Main.dc.html을 바탕으
 
 Astryx AppShell·Layout·LayoutPanel·LayoutContent·VStack·HStack을 우선 사용한다. 중복 패딩과 구분선을 줄이고 간격은 토큰을 사용한다. 본문에는 rem을 사용하며 페이지별 zoom이나 root font-size 변경은 하지 않는다.
 
-키보드 내비게이션, 상세 진입과 닫기, 작은 화면, 긴 콘텐츠, 라이트·다크를 검증한다. Tryce는 읽기 전용이므로 생성 FAB·편집 모달·자동 저장은 포함하지 않는다.
+키보드 내비게이션, 상세 진입과 닫기, 작은 화면, 긴 콘텐츠, 라이트·다크를 검증한다. Gitifact는 읽기 전용이므로 생성 FAB·편집 모달·자동 저장은 포함하지 않는다.
 
 ## 활동 타임라인 배치
 

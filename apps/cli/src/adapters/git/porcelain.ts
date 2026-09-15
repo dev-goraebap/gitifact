@@ -1,5 +1,5 @@
-import { RepositoryReadError } from '@tryce/core';
-import type { ObjectFormat, RepositoryChange, RepositoryHead, SubmoduleChanges } from '@tryce/core';
+import { RepositoryReadError } from '@gitifact/core';
+import type { ObjectFormat, RepositoryChange, RepositoryHead, SubmoduleChanges } from '@gitifact/core';
 
 const invalid = (): never => { throw new RepositoryReadError('INVALID_GIT_OUTPUT'); };
 export function decodeGit(buffer: Buffer): string {

@@ -74,7 +74,7 @@ test('process runner enforces output limits and execution timeout', async () => 
   await assert.rejects(invoke(['-e', 'setInterval(() => {}, 1000)'], { ...context, timeoutMs: 100 }), { code: 'READ_LIMIT_EXCEEDED' });
 });
 test('process runner classifies absent executable without leaking raw error', async () => {
-  await assert.rejects(createGitRunner('tryce-nonexistent-git-executable')([], {
+  await assert.rejects(createGitRunner('gitifact-nonexistent-git-executable')([], {
     cwd: process.cwd(), env: process.env, timeoutMs: 1000, maxBytes: 1024,
   }), { code: 'GIT_NOT_FOUND' });
 });

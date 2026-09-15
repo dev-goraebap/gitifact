@@ -21,7 +21,7 @@ gitifact spec diff --from BEFORE --to AFTER
 
 Initialization creates only configuration and the Git adoption baseline. It requires Git, accepts an unborn repository, preserves unrelated work and staging, and never performs a commit. Existing legacy configuration requires an explicit separate transition. Skill installation preserves edited sources; the agent handles AGENTS.md/CLAUDE.md linkage and reads the installed skill in the current session.
 
-The legacy `req`, `note`, `mode`, `brief`, `commit plan/apply` and `init --mode` commands and the `spec-preview` alias have been removed. Historical JSON projects require the old `@tryce/cli@0.4.0` or earlier. `browser` serves requirement history, current features and contributors from Markdown/Git.
+The legacy `req`, `note`, `mode`, `brief`, `commit plan/apply` and `init --mode` commands and the `spec-preview` alias have been removed. Historical JSON projects require the old `gitifact@0.4.0` or earlier. `browser` serves requirement history, current features and contributors from Markdown/Git.
 
 The `spec` commands use the same input objects described by the installed workflow skill. Their output envelope is `contract: "spec", version: 1`. For a project with schemaVersion 1, config bytes are bound to working stamps and commit plans. Creation and edits never imply user approval or implementation completion.
 
@@ -50,7 +50,7 @@ By default, agents select related specifications, reasons, source and tests toge
 
 The command rechecks content, instructions and HEAD under a lock, stages selected paths in an isolated index, and runs normal Git hooks and signing. A rejected commit with unchanged HEAD restores the reason files and the original index, so the same input can be retried. If another process edited a reason file meanwhile, that file is kept with recovery data under the Git directory's `gitifact-spec-preview.lock`. An uncertain outcome after HEAD changes keeps all files and recovery evidence under `gitifact-spec-commit.lock`; inspect HEAD and both indexes before recovery and do not blindly retry. Automatic crash recovery and migration of existing projects are not supported.
 
-`prepare`, `verify`, `commit-plan` and `commit-apply` are deprecated. Their previous removal target belonged to the Tryce release line; a Gitifact removal version has not been assigned.
+`prepare`, `verify`, `commit-plan` and `commit-apply` are deprecated. Their previous removal target belonged to the Gitifact release line; a Gitifact removal version has not been assigned.
 
 ## Compatibility and limits
 

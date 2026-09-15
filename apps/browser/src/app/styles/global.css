@@ -21,13 +21,13 @@ a {
   font-weight: 800;
   letter-spacing: -.035em;
 }
-.tryce-wordmark {
+.gitifact-wordmark {
   display: block;
   padding: var(--spacing-4);
   text-decoration: none;
   color: var(--color-text-primary);
 }
-.tryce-wordmark::before {
+.gitifact-wordmark::before {
   content: '';
   display: block;
   width: calc(var(--spacing-4) * 12);
@@ -37,7 +37,7 @@ a {
   mask: url('/gitifact-logo.svg') center / contain no-repeat;
 }
 @media (forced-colors: active) {
-  .tryce-wordmark::before { background-color: LinkText; forced-color-adjust: none; }
+  .gitifact-wordmark::before { background-color: LinkText; forced-color-adjust: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .astryx-skeleton { animation: none; }

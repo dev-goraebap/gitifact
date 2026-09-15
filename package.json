@@ -1,5 +1,5 @@
 {
-  "name": "tryce-workspace",
+  "name": "gitifact-workspace",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.33.0",
@@ -11,16 +11,16 @@
     "skills:sync": "node scripts/sync-skills.mjs",
     "skills:check": "node scripts/sync-skills.mjs --check",
     "skills:test": "node --test scripts/sync-skills.test.mjs",
-    "build": "pnpm --filter @tryce/core --filter @tryce/contracts build && pnpm --filter @tryce/browser build && pnpm --filter @tryce/cli build",
-    "typecheck": "pnpm --filter @tryce/core --filter @tryce/contracts build && pnpm -r typecheck",
-    "dev": "pnpm --filter @tryce/browser dev",
-    "dev:cli": "pnpm --filter @tryce/core --filter @tryce/contracts build && pnpm --filter @tryce/browser build && pnpm --parallel --filter @tryce/core --filter @tryce/contracts --filter @tryce/cli dev",
+    "build": "pnpm --filter @gitifact/core --filter @gitifact/contracts build && pnpm --filter @gitifact/browser build && pnpm --filter gitifact build",
+    "typecheck": "pnpm --filter @gitifact/core --filter @gitifact/contracts build && pnpm -r typecheck",
+    "dev": "pnpm --filter @gitifact/browser dev",
+    "dev:cli": "pnpm --filter @gitifact/core --filter @gitifact/contracts build && pnpm --filter @gitifact/browser build && pnpm --parallel --filter @gitifact/core --filter @gitifact/contracts --filter gitifact dev",
     "cli": "node apps/cli/dist/main.js",
     "test": "pnpm build && pnpm test:built",
     "test:built": "pnpm -r --if-present test:built && pnpm skills:test && node scripts/test-package.mjs",
     "test:package": "node scripts/test-package.mjs",
     "check": "pnpm typecheck && pnpm test",
-    "browser:install": "pnpm --filter @tryce/browser exec playwright install chromium"
+    "browser:install": "pnpm --filter @gitifact/browser exec playwright install chromium"
   },
   "devDependencies": {
     "typescript": "7.0.2",

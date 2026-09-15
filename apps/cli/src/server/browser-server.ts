@@ -2,9 +2,9 @@ import { createServer } from 'node:http';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import { readRepositoryStatus } from '@tryce/core';
-import { browserHttpErrorV1 } from '@tryce/contracts';
-import type { RepositoryStatusSuccessV1 } from '@tryce/contracts';
+import { readRepositoryStatus } from '@gitifact/core';
+import { browserHttpErrorV1 } from '@gitifact/contracts';
+import type { RepositoryStatusSuccessV1 } from '@gitifact/contracts';
 import { createRepositoryReader } from '../adapters/git/repository-reader.js';
 import { statusDto } from '../output/repository-status.js';
 import { loadBrowserAssets, contentType } from './assets.js';
@@ -89,7 +89,7 @@ export async function startBrowserServer(options: Options) {
         return fail(response, 405, 'METHOD_NOT_ALLOWED', '허용하지 않는 메서드입니다.');
       }
       if (path === '/api/v1/session') return json(response, 200, session);
-      if (request.headers['x-tryce-session'] !== session.sessionId) return fail(response, 409, 'SESSION_CHANGED', '서버 세션이 변경됐습니다. 다시 연결하세요.');
+      if (request.headers['x-gitifact-session'] !== session.sessionId) return fail(response, 409, 'SESSION_CHANGED', '서버 세션이 변경됐습니다. 다시 연결하세요.');
       if (path === '/api/v1/specs') {
         const cursor = url.searchParams.get('cursor') ?? '0'; const head = url.searchParams.get('head');
         if ([...url.searchParams.keys()].some(k => !['cursor','head'].includes(k)) || url.searchParams.getAll('cursor').length > 1 || url.searchParams.getAll('head').length > 1

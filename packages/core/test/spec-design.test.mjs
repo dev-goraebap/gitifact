@@ -1,13 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {parseDesignPreview,parseSpecPreview,parsePreviewFiles,compareSpecPreviews,editSpecPreview} from '../dist/index.js';
-const sid='S-abcdefghij',rid='R-abcdefghij',path='.tryce/spec/posts/requirements.md';
-const req=`<!-- tryce-spec: ${sid} -->\n# Posts\n## Save\n<!-- tryce-req: ${rid} -->\nSave`;
-const doc=body=>`<!-- tryce-design: ${sid} -->\n# Design\n${body}`;
+const sid='S-abcdefghij',rid='R-abcdefghij',path='.gitifact/spec/posts/requirements.md';
+const req=`<!-- gitifact-spec: ${sid} -->\n# Posts\n## Save\n<!-- gitifact-req: ${rid} -->\nSave`;
+const doc=body=>`<!-- gitifact-design: ${sid} -->\n# Design\n${body}`;
 test('design reference grammar ignores fenced examples and validates owner, title and body',()=>{
- const design=parseDesignPreview(doc(`## Flow\n<!-- tryce-ref: ${rid} -->\n\n\`\`\`md\n<!-- tryce-ref: invalid -->\n\`\`\``).replace(/\n/g,'\r\n'),sid);
+ const design=parseDesignPreview(doc(`## Flow\n<!-- gitifact-ref: ${rid} -->\n\n\`\`\`md\n<!-- gitifact-ref: invalid -->\n\`\`\``).replace(/\n/g,'\r\n'),sid);
  assert.deepEqual(design.requirements,[rid]);
- for(const input of [doc(''),doc('<!-- tryce-ref: invalid -->'),doc('# Second title'),doc('```\nopen'),doc('Body').replace(sid,'S-zzzzzzzzzz')])assert.throws(()=>parseDesignPreview(input,sid));
+ for(const input of [doc(''),doc('<!-- gitifact-ref: invalid -->'),doc('# Second title'),doc('```\nopen'),doc('Body').replace(sid,'S-zzzzzzzzzz')])assert.throws(()=>parseDesignPreview(input,sid));
  assert.throws(()=>parsePreviewFiles(new Map([[path.replace('requirements','design'),doc('Orphan')]])));
 });
 test('design revisions never become requirement changes; revert and atomic draft preserve input',()=>{

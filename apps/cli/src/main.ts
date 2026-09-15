@@ -4,11 +4,12 @@ import { runBrowser, parsePort } from './commands/browser.js';
 import { runInit } from './commands/init.js';
 import { runSkills } from './commands/skills.js';
 import { runSpecPreview } from './commands/spec-preview.js';
+import { runMigrate } from './commands/migrate.js';
 
 declare const __CLI_VERSION__: string;
 
 const program = new Command()
-  .name('tryce')
+  .name('gitifact')
   .description('프로젝트의 요구사항과 결정 이력을 Git에 남기는 도구')
   .version(__CLI_VERSION__)
   .allowExcessArguments(false)
@@ -16,7 +17,7 @@ const program = new Command()
   .action(() => program.outputHelp());
 
 program.command('status')
-  .description('현재 checkout의 Git 상태 조회 (tryce 검사 미실행)')
+  .description('현재 checkout의 Git 상태 조회 (gitifact 검사 미실행)')
   .allowExcessArguments(false)
   .addOption(new Option('--format <format>', '출력 형식').choices(['json', 'text']).default('json'))
   .action(async (options: { format: 'json' | 'text' }) => { await runStatus(options.format); });
@@ -34,6 +35,12 @@ program.command('init')
   .option('--dry-run', '파일을 만들지 않고 초기화 계획 확인')
   .addOption(new Option('--format <format>', '출력 형식').choices(['json', 'text']).default('json'))
   .action(runInit);
+
+program.command('migrate')
+  .description('.tryce 저장소를 .gitifact로 전환 (경로와 마커만 바꾸고 ID·이유·이력은 보존)')
+  .allowExcessArguments(false)
+  .option('--dry-run', '파일을 바꾸지 않고 전환 계획 확인')
+  .action(runMigrate);
 
 const outputOption = () => new Option('--format <format>', '출력 형식').choices(['json', 'text']).default('json');
 const skills = program.command('skills').description('프로젝트 스킬 원본 설치와 로컬 복사본 관리');

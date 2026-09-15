@@ -3,7 +3,7 @@
 > 새 제품 범위는 [MVP 전환 계획](../mvp-transition.md)을 따른다. 아래 기존 API와 구축 기록은 현재 구현 설명이다. 앱·패키지 경계는 유지하고 새 명세·Git 이력 모델로 교체한다. docs/specs 링크는 구형 규약 참조로 고정했다.
 
 
-tryce는 `apps`와 `packages`로 구성하는 TypeScript 모노레포로 개발한다. CLI와 브라우저는 실행 환경과 빌드를 분리하고, 기록 규칙과 외부 데이터 계약을 명시적인 패키지 경계로 나눈다.
+gitifact는 `apps`와 `packages`로 구성하는 TypeScript 모노레포로 개발한다. CLI와 브라우저는 실행 환경과 빌드를 분리하고, 기록 규칙과 외부 데이터 계약을 명시적인 패키지 경계로 나눈다.
 
 이 문서는 2026-09-13 사용자 지침과 공식 자료 조사를 바탕으로 정한 구현 방향이다. React·Astryx 사용은 사용자 지정이며, pnpm·Node.js·Vite·TanStack 조합은 위임받은 기술 선택이다. 현재 실행 골격과 검증한 버전·명령은 [개발 환경](../development.md)에 기록한다. 아래 구조에는 아직 구현하지 않은 목표도 포함한다. 제품의 확정·보류 상태는 [제품 기준](../bref.md)을 따른다.
 
@@ -24,7 +24,7 @@ packages/
   core/                  요구사항·이력 규칙과 유스케이스
   contracts/             버전이 있는 외부 DTO·검증 계약
 .agents/
-  skills/tryce-*/         이 프로젝트가 관리하는 스킬 원본
+  skills/gitifact-*/         이 프로젝트가 관리하는 스킬 원본
 docs/
   bref.md                제품 기준과 결정 상태
   architecture/          기술 선택과 코드 경계
@@ -68,17 +68,17 @@ apps/cli     ──→ packages/core
 
 ## 브라우저와 CLI의 연결
 
-`tryce browser`가 현재 프로젝트를 대상으로 로컬 서버를 실행한다. 서버는 같은 `core` 유스케이스로 데이터를 만들고 버전이 있는 계약으로 응답한다. 브라우저는 HTTP로 읽으며 CLI 프로세스를 직접 실행하거나 파일 시스템에 접근하지 않는다.
+`gitifact browser`가 현재 프로젝트를 대상으로 로컬 서버를 실행한다. 서버는 같은 `core` 유스케이스로 데이터를 만들고 버전이 있는 계약으로 응답한다. 브라우저는 HTTP로 읽으며 CLI 프로세스를 직접 실행하거나 파일 시스템에 접근하지 않는다.
 
 개발 중에는 Vite 개발 서버가 API 요청을 로컬 서버로 프록시한다. 배포 시에는 미리 빌드한 브라우저 정적 파일을 CLI 배포물에 포함하고 같은 origin에서 제공하는 방향으로 시작한다. 소스 의존 대신 빌드 산출물을 패키징 단계에서 연결한다. 설치된 CLI가 UI를 보여주기 위해 Vite 개발 서버나 workspace 원본을 필요로 해서는 안 된다.
 
-이력·현재 상태와 브리핑은 공통 모델에서 파생한다. 첫 읽기 전용 화면은 소규모 로컬 기록을 browser-project 버전 1로 묶었으나, 현재 화면은 browser-specs 계약으로 명세와 이력을 읽고 browser-project는 제거했다. Git 경로 상태는 별도 계약을 유지한다. 기록 규모가 커지면 필요한 범위의 조회와 페이지네이션을 도입하되 서로 다른 관측 시점을 혼합하지 않는다. 현재 경계는 [로컬 브라우저 계약](https://github.com/dev-goraebap/tryce/blob/479d392a93fa40e7a95993d4979417beae869723/docs/specs/browser-server.md)에 정의한다.
+이력·현재 상태와 브리핑은 공통 모델에서 파생한다. 첫 읽기 전용 화면은 소규모 로컬 기록을 browser-project 버전 1로 묶었으나, 현재 화면은 browser-specs 계약으로 명세와 이력을 읽고 browser-project는 제거했다. Git 경로 상태는 별도 계약을 유지한다. 기록 규모가 커지면 필요한 범위의 조회와 페이지네이션을 도입하되 서로 다른 관측 시점을 혼합하지 않는다. 현재 경계는 [로컬 브라우저 계약](https://github.com/dev-goraebap/gitifact/blob/479d392a93fa40e7a95993d4979417beae869723/docs/specs/browser-server.md)에 정의한다.
 
 ## 스킬과 자체 적용
 
-스킬 원본을 `.agents/skills/tryce-*`에 둔다는 확정을 유지한다. 모노레포 정리를 이유로 `.tryce/skills`나 `packages/skills`에 두 번째 편집 원본을 만들지 않는다. 향후 CLI 배포에 스킬을 포함할 경우 빌드 과정에서 원본을 배포 자산으로 수집한다.
+스킬 원본을 `.agents/skills/gitifact-*`에 둔다는 확정을 유지한다. 모노레포 정리를 이유로 `.gitifact/skills`나 `packages/skills`에 두 번째 편집 원본을 만들지 않는다. 향후 CLI 배포에 스킬을 포함할 경우 빌드 과정에서 원본을 배포 자산으로 수집한다.
 
-소스 코드의 앱 경계와 실제 사용 프로젝트의 `.agents`·설정·캐시 배치는 별개다. 사용자가 원본만 커밋하고 에이전트용 복사본은 로컬 생성하기로 정했다. 개발용 연결은 [스킬 연결](https://github.com/dev-goraebap/tryce/blob/479d392a93fa40e7a95993d4979417beae869723/docs/specs/agent-skills.md)을 따른다. 현재 개발은 [AGENTS.md](../../AGENTS.md)의 DEV-01 등 대체 절차를 적용한다.
+소스 코드의 앱 경계와 실제 사용 프로젝트의 `.agents`·설정·캐시 배치는 별개다. 사용자가 원본만 커밋하고 에이전트용 복사본은 로컬 생성하기로 정했다. 개발용 연결은 [스킬 연결](https://github.com/dev-goraebap/gitifact/blob/479d392a93fa40e7a95993d4979417beae869723/docs/specs/agent-skills.md)을 따른다. 현재 개발은 [AGENTS.md](../../AGENTS.md)의 DEV-01 등 대체 절차를 적용한다.
 
 ## 구축 순서와 검증
 

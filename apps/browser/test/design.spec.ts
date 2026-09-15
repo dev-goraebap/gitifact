@@ -1,8 +1,8 @@
 import {test, expect} from '@playwright/test';
 import {mockApi, specs} from './mock-api';
-const design={title:'검색 구현 설계',body:'## 처리 흐름\n<!-- tryce-ref: R-abcdefghij -->\n검색 색인을 조회합니다.\n\n<!-- tryce-ref: R-zzzzzzzzzz -->',requirements:['R-abcdefghij','R-zzzzzzzzzz']};
+const design={title:'검색 구현 설계',body:'## 처리 흐름\n<!-- gitifact-ref: R-abcdefghij -->\n검색 색인을 조회합니다.\n\n<!-- gitifact-ref: R-zzzzzzzzzz -->',requirements:['R-abcdefghij','R-zzzzzzzzzz']};
 function data(){return {...structuredClone(specs), features:specs.features.map(f=>({...f,design})), events:[
- {...specs.events[0]!,key:specs.head+':S-abcdefghij',id:'S-abcdefghij',kind:'design',types:['modified'],before:{...specs.events[0]!.after,title:design.title,body:'이전 설계'},after:{...specs.events[0]!.after,id:'S-abcdefghij',title:design.title,body:design.body,path:'.tryce/spec/search/design.md'},reasons:['검색 부하를 줄입니다.']},...specs.events]};}
+ {...specs.events[0]!,key:specs.head+':S-abcdefghij',id:'S-abcdefghij',kind:'design',types:['modified'],before:{...specs.events[0]!.after,title:design.title,body:'이전 설계'},after:{...specs.events[0]!.after,id:'S-abcdefghij',title:design.title,body:design.body,path:'.gitifact/spec/search/design.md'},reasons:['검색 부하를 줄입니다.']},...specs.events]};}
 test('design tab, explicit references and URL restoration',async({page})=>{
  await mockApi(page);await page.route('**/api/v1/specs*',r=>r.fulfill({json:data()}));
  await page.goto('/features?feature=S-abcdefghij');await page.getByRole('tab',{name:'설계',exact:true}).click();

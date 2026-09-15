@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Text } from '@astryxdesign/core/Text';
-import type { BrowserSessionV1 } from '@tryce/contracts';
+import type { BrowserSessionV1 } from '@gitifact/contracts';
 import { sessionOptions, statusOptions } from '../api/repository';
 /** Last folder of the observed checkout path; a generic label until the status query resolves. */
 export function ProjectName() {

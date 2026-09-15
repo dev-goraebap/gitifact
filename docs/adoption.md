@@ -1,5 +1,7 @@
 # Tryce 프로젝트 자체 도입
 
+> 2026-09-15 제품 이름을 Gitifact로 바꾸고 저장 경로를 `.gitifact`로 전환했다. 아래 기록의 Tryce·`.tryce`는 당시 이름이며 링크만 현재 경로로 맞췄다.
+
 > 아래는 기존 workflow-1의 도입 기록이다. 현재 상태는 아래 최신 전환 기록을 따른다. 구형 데이터는 사용자 요청으로 작업 폴더에서 제거했고 과거 커밋에서만 확인할 수 있다.
 
 
@@ -55,12 +57,12 @@ AGENTS.md가 이미 공용 스킬을 연결하고 CLAUDE.md가 AGENTS.md를 읽�
 
 최신 대화와 제품 기준을 기준으로 다음 명세를 CLI로 생성·검증했다. 과거 JSON ID는 신규 Markdown ID의 과거 이력으로 가장하지 않으며 승인·구현 완료도 소급하지 않는다.
 
-- [agent-workflow](../.tryce/spec/agent-workflow/requirements.md): 3개 요구사항, `S-4snufavmgg`
-- [browser](../.tryce/spec/browser/requirements.md): 4개 요구사항, `S-jqxgddhsdf`
-- [contributors](../.tryce/spec/contributors/requirements.md): 1개 요구사항, `S-b4ubq7ghty`
-- [git-history](../.tryce/spec/git-history/requirements.md): 4개 요구사항, `S-zyro4g3e5f`
-- [onboarding](../.tryce/spec/onboarding/requirements.md): 3개 요구사항, `S-eordsbir6z`
-- [specification](../.tryce/spec/specification/requirements.md): 4개 요구사항, `S-qk6cmgqgmt`
+- [agent-workflow](../.gitifact/spec/agent-workflow/requirements.md): 3개 요구사항, `S-4snufavmgg`
+- [browser](../.gitifact/spec/browser/requirements.md): 4개 요구사항, `S-jqxgddhsdf`
+- [contributors](../.gitifact/spec/contributors/requirements.md): 1개 요구사항, `S-b4ubq7ghty`
+- [git-history](../.gitifact/spec/git-history/requirements.md): 4개 요구사항, `S-zyro4g3e5f`
+- [onboarding](../.gitifact/spec/onboarding/requirements.md): 3개 요구사항, `S-eordsbir6z`
+- [specification](../.gitifact/spec/specification/requirements.md): 4개 요구사항, `S-qk6cmgqgmt`
 
 폐기한 내용은 auto/approval·승인 묶음·note 원문 보존·정책 부재 시 자동 커밋·구형 브라우저의 승인 및 note 화면이다. 전체 Git 감사·훅·PR 연동은 확정된 MVP 요구사항으로 등록하지 않았다. 기존 성능 측정·설치 검증·라이선스·패키지 이름 결정은 development.md·releases.md·아키텍처 문서에 이미 남아 있다.
 

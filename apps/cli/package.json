@@ -1,16 +1,16 @@
 {
-  "name": "@tryce/cli",
-  "version": "0.5.0",
+  "name": "gitifact",
+  "version": "0.1.0",
   "description": "Git-backed requirements and change history for coding agents.",
   "license": "MIT",
-  "repository": { "type": "git", "url": "git+https://github.com/dev-goraebap/tryce.git", "directory": "apps/cli" },
-  "homepage": "https://github.com/dev-goraebap/tryce#readme",
-  "bugs": { "url": "https://github.com/dev-goraebap/tryce/issues" },
+  "repository": { "type": "git", "url": "git+https://github.com/dev-goraebap/gitifact.git", "directory": "apps/cli" },
+  "homepage": "https://github.com/dev-goraebap/gitifact#readme",
+  "bugs": { "url": "https://github.com/dev-goraebap/gitifact/issues" },
   "keywords": ["cli", "git", "coding-agents", "project-context"],
   "publishConfig": { "access": "public", "registry": "https://registry.npmjs.org/", "tag": "latest" },
   "type": "module",
   "bin": {
-    "tryce": "dist/main.js"
+    "gitifact": "dist/main.js"
   },
   "files": [
     "dist"
@@ -25,8 +25,8 @@
     "test:built": "tsc -p tsconfig.test.json && node --test --test-concurrency=4 test/*.test.mjs"
   },
   "devDependencies": {
-    "@tryce/core": "workspace:*",
-    "@tryce/contracts": "workspace:*",
+    "@gitifact/core": "workspace:*",
+    "@gitifact/contracts": "workspace:*",
     "commander": "15.0.0",
     "esbuild": "0.28.2"
   }

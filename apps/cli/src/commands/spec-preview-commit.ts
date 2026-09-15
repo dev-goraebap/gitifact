@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { readFile, lstat, mkdir, open, rename, unlink, rmdir, writeFile } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
-import { SpecPreviewError } from '@tryce/core';
+import { SpecPreviewError } from '@gitifact/core';
 import { specPreviewReader } from '../adapters/git/spec-preview-reader.js';
 import { createGitRunner } from '../adapters/git/run-git.js';
 import { readWorkingPreviewState, readLockedPreviewState } from '../adapters/filesystem/spec-preview-store.js';
@@ -25,7 +25,7 @@ export async function previewCommit(cwd: string, action: 'plan' | 'apply', input
     timeoutMs: 120000, maxBytes: 32 * 1024 * 1024 });
   const indexPath = (await git(['rev-parse', '--path-format=absolute', '--git-path', 'index'])).toString('utf8').trim();
   const staged = async (index?: string) => (await git(['diff', '--cached', '--ita-visible-in-index', '--name-only', '--no-renames', '-z'], index)).toString('utf8').split('\0').filter(Boolean).sort();
-  const busy = join(gitDir, 'tryce-spec-commit.lock');
+  const busy = join(gitDir, 'gitifact-spec-commit.lock');
   if (await info(busy)) fail('이전 커밋 작업 또는 복구 자료가 있습니다: ' + busy);
   if ((await staged()).length) fail('기존 staging을 보존합니다. 선택 범위를 정리한 후 다시 계획하세요.');
   const request = object(input); let plan: Plan;
@@ -35,7 +35,7 @@ export async function previewCommit(cwd: string, action: 'plan' | 'apply', input
     const selected = paths(request.paths); const authorization = object(request.authorization);
     await checkLegacySelection(root, selected);
     if (Object.keys(authorization).sort().join(',') !== 'basis,evidence' || !['user-request', 'project-policy'].includes(String(authorization.basis))) fail('사용자 요청 또는 명시적 정책에 따른 커밋 근거가 필요합니다.');
-    const message = text(request.message, 4000); if (/^\s*Tryce-/im.test(message)) fail('Tryce 트레일러는 requirements로 지정하세요.');
+    const message = text(request.message, 4000); if (/^\s*Gitifact-/im.test(message)) fail('Gitifact 트레일러는 requirements로 지정하세요.');
     const state = await readWorkingPreviewState(cwd); const base = await reader.baseline(); const previous = base.head ? await reader.files(base.head, state.config !== undefined) : new Map<string, string>();
     const pending = [...new Set([...previous.keys(), ...state.files.keys()])].filter(p => previous.get(p) !== state.files.get(p));
     if (pending.some(p => !selected.includes(p))) fail('변경된 명세와 이유를 함께 선택하세요. 미선택 명세를 자동 포함하지 않습니다.');
@@ -65,9 +65,9 @@ export async function previewCommit(cwd: string, action: 'plan' | 'apply', input
     requirements: plan.requirements, authorization: plan.authorization, policyFiles: plan.context.map(f => f.path) });
   if (!('plan' in refreshed) || refreshed.plan.digest !== plan.digest) fail('계획 이후 파일·정책·index가 변경됐습니다. 다시 계획하세요.');
   const before = await reader.baseline(); const original = await optional(indexPath);
-  await mkdir(busy); const draftLock = join(gitDir, 'tryce-spec-preview.lock');
+  await mkdir(busy); const draftLock = join(gitDir, 'gitifact-spec-preview.lock');
   let draftOwned = false; let indexLock: Awaited<ReturnType<typeof open>> | undefined;
-  let uncertain = false; let commitStarted = false; const temporary = join(gitDir, 'tryce-commit-index-' + randomUUID());
+  let uncertain = false; let commitStarted = false; const temporary = join(gitDir, 'gitifact-commit-index-' + randomUUID());
   const checkFiles = async () => {
     for (const f of [...plan.files, ...plan.context]) if (f.hash !== await fingerprint(root, f.path)) fail('커밋 준비 중 파일·정책이 변경됐습니다: ' + f.path);
     if ((await readLockedPreviewState(root)).stamp !== object(plan.verification).stamp) fail('커밋 준비 중 명세 집합이 변경됐습니다.');
@@ -89,7 +89,7 @@ export async function previewCommit(cwd: string, action: 'plan' | 'apply', input
     }
     await checkFiles(); if (JSON.stringify(before) !== JSON.stringify(await reader.baseline())) fail('HEAD가 변경됐습니다.');
     const tree = (await git(['write-tree'], temporary)).toString('utf8').trim();
-    const trailers = plan.requirements.map(id => 'Tryce-Req: ' + id);
+    const trailers = plan.requirements.map(id => 'Gitifact-Req: ' + id);
     commitStarted = true;
     await git(['commit', '-m', plan.message.trim() + (trailers.length ? '\n\n' + trailers.join('\n') : '')], temporary);
     const after = await reader.baseline();

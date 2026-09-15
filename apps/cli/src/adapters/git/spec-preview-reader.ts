@@ -1,4 +1,4 @@
-import { parsePreviewFiles, SpecPreviewError, parseProjectConfig, type PreviewSpec } from '@tryce/core';
+import { parsePreviewFiles, SpecPreviewError, parseProjectConfig, recordPathPattern, STORE_DIRS, type PreviewSpec } from '@gitifact/core';
 import { createGitRunner } from './run-git.js';
 import { commandScoped } from './command-scope.js';
 
@@ -18,14 +18,14 @@ export function specPreviewReader(cwd: string) {
   };
   return {
     async index() {
-      const output = decode(await git(['ls-files', '--stage', '-z', '--', '.tryce/spec/']));
+      const output = decode(await git(['ls-files', '--stage', '-z', '--', ...STORE_DIRS.map(d => d + '/spec/')]));
       const files = new Map<string, string>();
       for (const row of output.split('\0').filter(Boolean)) {
         const match = /^(\d+) ([a-f0-9]+) ([0-3])\t([\s\S]+)$/.exec(row);
         if (!match) throw new SpecPreviewError('잘못된 index 항목입니다.');
         const [, mode, oid, stage, path] = match;
         if (!['100644', '100755'].includes(mode!) || stage !== '0') throw new SpecPreviewError('명세 staging에 충돌 또는 링크가 있습니다.');
-        if (!/^\.tryce\/spec\/[^/]+\/(requirements\.md|design\.md|history\.jsonl)$/.test(path!)) throw new SpecPreviewError('명세 staging에 지원하지 않는 파일이 있습니다.');
+        if (!recordPathPattern.test(path!)) throw new SpecPreviewError('명세 staging에 지원하지 않는 파일이 있습니다.');
         files.set(path!, oid!);
       }
       return files;
@@ -65,9 +65,9 @@ export function specPreviewReader(cwd: string) {
       return oid;
     },
     async files(oid: string, allowLegacyBaseline = false): Promise<Map<string, string>> {
-      const entries = decode(await git(['ls-tree', '--full-tree', '-r', '-z', oid, '--', '.tryce/spec/']));
+      const entries = decode(await git(['ls-tree', '--full-tree', '-r', '-z', oid, '--', ...STORE_DIRS.map(d => d + '/spec/')]));
       const files = new Map<string, string>();
-      let legacy = false;
+      let legacy: string | undefined;
       for (const row of entries.split('\0').filter(Boolean)) {
         const match = /^(\d+) (\w+) ([a-f0-9]+)\t([\s\S]+)$/.exec(row);
         if (!match) throw new SpecPreviewError('잘못된 Git tree입니다.');
@@ -76,14 +76,15 @@ export function specPreviewReader(cwd: string) {
         if (!/(?:requirements\.md|design\.md|history\.jsonl|tryce\.json)$/.test(path!)) continue;
         if (path!.endsWith('/tryce.json')) {
           if (!allowLegacyBaseline) throw new SpecPreviewError('기존 JSON 형식은 req 명령으로 조회하세요. 이 명령은 전환하지 않습니다.');
-          legacy = true; continue;
+          legacy = path!.split('/')[0]; continue;
         }
-        if (!/^\.tryce\/spec\/[^/]+\/(?:requirements\.md|design\.md|history\.jsonl)$/.test(path!) || !['100644', '100755'].includes(mode!) || type !== 'blob') throw new SpecPreviewError('지원하지 않는 경로 또는 파일 종류: ' + path);
+        if (!recordPathPattern.test(path!) || !['100644', '100755'].includes(mode!) || type !== 'blob') throw new SpecPreviewError('지원하지 않는 경로 또는 파일 종류: ' + path);
         files.set(path!, object!);
       }
+      if (new Set([...files.keys()].map(p => p.split('/')[0])).size > 1) throw new SpecPreviewError('과거 커밋에 .gitifact와 .tryce 명세가 함께 있습니다. 전환 커밋을 확인하세요.');
       if (legacy) {
         if (files.size) throw new SpecPreviewError('과거 커밋에 신구 명세가 혼합돼 있습니다.');
-        parseProjectConfig(decode(await git(['show', oid + ':.tryce/config.json'])));
+        parseProjectConfig(decode(await git(['show', `${oid}:${legacy}/config.json`])));
       }
       if (files.size > 2000) throw new SpecPreviewError('검토 조회 파일 한도를 초과했습니다.');
       const blobs = new Map<string, string>(); const ids = [...new Set(files.values())]; let totalBytes = 0;

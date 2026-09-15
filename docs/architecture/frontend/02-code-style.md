@@ -1,6 +1,6 @@
 # 프론트엔드 코드 스타일
 
-Gentask의 02-code-style.md를 Tryce에 맞게 적용한다. apps/browser/src가 대상이다.
+Gentask의 02-code-style.md를 Gitifact에 맞게 적용한다. apps/browser/src가 대상이다.
 
 - React 컴포넌트는 한 파일에 하나를 정의하고 컴포넌트·파일은 같은 PascalCase를 사용한다. Provider·보조 컴포넌트도 분리한다. TanStack 생성 규약의 route 파일명은 예외이며 화면 컴포넌트는 분리한다.
 - 페이지 컴포넌트에만 Page 접미사를 사용한다. 폴더에는 -page를 붙이지 않는다. Hook은 use로 시작하는 camelCase, 나머지 모듈은 kebab-case다.

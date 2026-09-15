@@ -1,8 +1,8 @@
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { InitError } from '@tryce/core';
-import type { ProjectConfig, RepositoryState } from '@tryce/core';
+import { InitError } from '@gitifact/core';
+import type { ProjectConfig, RepositoryState } from '@gitifact/core';
 import { createRepositoryReader } from './repository-reader.js';
 import { createGitRunner } from './run-git.js';
 import { decodeGitLine } from './porcelain.js';
@@ -28,8 +28,8 @@ export function initRepository(cwd: string, inherited: NodeJS.ProcessEnv = proce
       if (state.changes.some(change => change.kind === 'unmerged')) throw new InitError('GIT_OPERATION_IN_PROGRESS', 'Git 충돌을 먼저 해결하세요.');
       const index = await readFile(indexPath).catch(error => { if (error.code === 'ENOENT') return Buffer.alloc(0); throw error; });
       const [staged, committed] = includeTrackedConfig ? await Promise.all([
-        git(['ls-files', '--stage', '-z', '--', '.tryce/config.json'], root),
-        state.head.commit ? git(['ls-tree', '-z', state.head.commit, '--', '.tryce/config.json'], root) : Buffer.alloc(0),
+        git(['ls-files', '--stage', '-z', '--', '.gitifact/config.json'], root),
+        state.head.commit ? git(['ls-tree', '-z', state.head.commit, '--', '.gitifact/config.json'], root) : Buffer.alloc(0),
       ]) : [Buffer.alloc(0), Buffer.alloc(0)];
       return { state, trackedConfig: staged.length > 0 || committed.length > 0,
         stamp: JSON.stringify({ repository: state.repository, head: state.head, index: createHash('sha256').update(index).digest('hex') }) };
@@ -39,7 +39,7 @@ export function initRepository(cwd: string, inherited: NodeJS.ProcessEnv = proce
       const committed = commit ? await git(['ls-tree', '-r', '--name-only', '-z', commit, '--', prefix], root) : Buffer.alloc(0);
       return [...new Set(Buffer.concat([indexed, committed]).toString('utf8').split('\0').filter(Boolean))];
     },
-    async checkIgnore(root: string, path = '.tryce/config.json') {
+    async checkIgnore(root: string, path = '.gitifact/config.json') {
       const output = (await git(['check-ignore', '--no-index', '-v', '-z', '--stdin'], root, [0, 1], Buffer.from(path + '\0'))).toString('utf8');
       const fields = output.split('\0');
       if (output && fields[2] && !fields[2].startsWith('!')) throw new InitError('CONFIG_IGNORED', '설정이 ignore 규칙으로 제외됩니다: ' + fields[0] + ':' + fields[1] + ' ' + fields[2]);

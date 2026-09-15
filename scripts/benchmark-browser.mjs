@@ -29,7 +29,7 @@ try {
   const requests = [];
   for (let index = 0; index < 4; index++) {
     const began = performance.now();
-    const response = await fetch(new URL('/api/v1/project', url), { headers: { 'X-Tryce-Session': session.sessionId } });
+    const response = await fetch(new URL('/api/v1/project', url), { headers: { 'X-Gitifact-Session': session.sessionId } });
     const data = await response.json();
     if (!response.ok || !data.brief?.ok) throw new Error(JSON.stringify(data));
     requests.push({ kind: index ? 'unchanged' : 'first', ms: Math.round(performance.now() - began),

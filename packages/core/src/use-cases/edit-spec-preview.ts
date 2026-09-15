@@ -5,12 +5,12 @@ const featurePattern = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
 const reserved = /^(con|prn|aux|nul|com[0-9]|lpt[0-9])$/;
 export function previewPath(feature: string): string {
   if (!featurePattern.test(feature) || feature.length > 80 || reserved.test(feature)) fail('잘못된 기능 폴더 이름입니다.');
-  return `.tryce/spec/${feature}/requirements.md`;
+  return `.gitifact/spec/${feature}/requirements.md`;
 }
 export function renderSpecPreview(spec: PreviewSpec): string {
-  return `<!-- tryce-spec: ${spec.id} -->\n\n# ${spec.title}\n\n`
+  return `<!-- gitifact-spec: ${spec.id} -->\n\n# ${spec.title}\n\n`
     + (spec.description ? spec.description + '\n\n' : '')
-    + spec.requirements.map(r => `## ${r.title}\n<!-- tryce-req: ${r.id} -->\n\n${r.body}\n`).join('\n');
+    + spec.requirements.map(r => `## ${r.title}\n<!-- gitifact-req: ${r.id} -->\n\n${r.body}\n`).join('\n');
 }
 
 /** Draft edits only. History and Git state are not part of this operation. */

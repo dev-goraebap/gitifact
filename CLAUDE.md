@@ -1,4 +1,4 @@
-# tryce
+# gitifact
 
 이 프로젝트의 공통 작업 지침은 [AGENTS.md](AGENTS.md)에 있다. 작업 전에 해당 파일을 읽고 따른다.
 

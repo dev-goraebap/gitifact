@@ -7,12 +7,12 @@ import { performance } from 'node:perf_hooks';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 // Commit flow benchmark in independent fixture repositories. Never touches the current checkout.
-// Build or choose a CLI first. Run: node scripts/benchmark-commit.mjs [--cli path] [--runs 5] [--case small,medium,many,tryce] [--flow both|legacy|merged] [--work dir] [--keep]
+// Build or choose a CLI first. Run: node scripts/benchmark-commit.mjs [--cli path] [--runs 5] [--case small,medium,many,gitifact] [--flow both|legacy|merged] [--work dir] [--keep]
 const option = (name, fallback) => { const i = process.argv.indexOf('--' + name); return i < 0 ? fallback : process.argv[i + 1]; };
 const repoRoot = fileURLToPath(new URL('../', import.meta.url));
 const cli = resolve(option('cli', join(repoRoot, 'apps/cli/dist/main.js')));
 const runs = Number(option('runs', '5'));
-const selectedCases = option('case', 'small,medium,many,tryce').split(',');
+const selectedCases = option('case', 'small,medium,many,gitifact').split(',');
 const label = new Date().toISOString().replace(/[:.]/g, '-');
 const base = resolve(option('work', join(repoRoot, '.tmp/commit-performance/work')), label);
 const out = resolve(option('out', join(repoRoot, '.tmp/commit-performance', `results-${label}.json`)));
@@ -46,10 +46,10 @@ function timed(command, args, cwd, env = process.env) {
     });
   });
 }
-async function tryce(cwd, args, trace = false) {
+async function gitifact(cwd, args, trace = false) {
   const traceFile = trace ? join(inputs, 'trace-' + randomUUID() + '.json') : null;
   const { wallMs, stdout } = await timed(process.execPath, [...(trace ? ['--import', tracer] : []), cli, ...args], cwd,
-    traceFile ? { ...process.env, TRYCE_BENCH_TRACE: traceFile } : process.env);
+    traceFile ? { ...process.env, GITIFACT_BENCH_TRACE: traceFile } : process.env);
   const result = stdout.trim() && args[0] === 'spec' ? JSON.parse(stdout) : stdout;
   return { result, wallMs, trace: traceFile ? summarize(JSON.parse(readFileSync(traceFile, 'utf8'))) : undefined };
 }
@@ -75,17 +75,17 @@ function summarize(trace) {
 const body = (label, version) => `${label} 요청을 처리합니다. 변경 ${version}.\n\n### 수용 조건\n\n1. 조건: 사용자가 ${label}을 요청합니다.\n   기대 동작: 시스템은 입력을 검증하고 결과를 표시합니다.\n2. 조건: 입력이 올바르지 않습니다.\n   기대 동작: 시스템은 안내를 표시하고 저장을 중단합니다.`;
 const history = path => path.replace(/requirements\.md$/, 'history.jsonl');
 async function save(repo, operations) {
-  const working = (await tryce(repo, ['spec', 'working'])).result;
-  return (await tryce(repo, ['spec', 'save', '--file', writeInput({ expected: working.stamp, operations })])).result;
+  const working = (await gitifact(repo, ['spec', 'working'])).result;
+  return (await gitifact(repo, ['spec', 'save', '--file', writeInput({ expected: working.stamp, operations })])).result;
 }
 async function commitSpecs(repo, reasons, paths, message) {
-  const changes = (await tryce(repo, ['spec', 'changes'])).result;
-  const prepared = (await tryce(repo, ['spec', 'prepare', '--file', writeInput({ expected: changes.expected, reasons })])).result;
-  const planned = (await tryce(repo, ['spec', 'commit-plan', '--file', writeInput({ verification: prepared.verification, paths, message, authorization })])).result;
-  await tryce(repo, ['spec', 'commit-apply', '--file', writeInput(planned.plan)]);
+  const changes = (await gitifact(repo, ['spec', 'changes'])).result;
+  const prepared = (await gitifact(repo, ['spec', 'prepare', '--file', writeInput({ expected: changes.expected, reasons })])).result;
+  const planned = (await gitifact(repo, ['spec', 'commit-plan', '--file', writeInput({ verification: prepared.verification, paths, message, authorization })])).result;
+  await gitifact(repo, ['spec', 'commit-apply', '--file', writeInput(planned.plan)]);
 }
 const configure = repo => {
-  git(repo, ['config', 'user.name', 'Tryce benchmark']); git(repo, ['config', 'user.email', 'benchmark@example.invalid']);
+  git(repo, ['config', 'user.name', 'Gitifact benchmark']); git(repo, ['config', 'user.email', 'benchmark@example.invalid']);
   git(repo, ['config', 'commit.gpgsign', 'false']);
 };
 
@@ -100,13 +100,13 @@ async function syntheticTemplate(name, { specs, requirements, tracked, rounds })
   }
   writeFileSync(join(repo, 'README.md'), '# Benchmark fixture\n');
   git(repo, ['add', '-A']); git(repo, ['commit', '-q', '-m', 'Add source']);
-  await tryce(repo, ['init']); git(repo, ['add', '.tryce/config.json']); git(repo, ['commit', '-q', '-m', 'Initialize tryce']);
+  await gitifact(repo, ['init']); git(repo, ['add', '.gitifact/config.json']); git(repo, ['commit', '-q', '-m', 'Initialize gitifact']);
   const meta = { code, specs: [] };
   for (let s = 0; s < specs; s++) {
     const feature = `area-${s + 1}`;
     const result = await save(repo, [{ type: 'create', feature, title: `영역 ${s + 1}` },
       ...Array.from({ length: requirements }, (_, r) => ({ type: 'add', feature, title: `요구사항 ${s + 1}-${r + 1}`, body: body(`요구사항 ${s + 1}-${r + 1}`, 0) }))]);
-    meta.specs.push({ path: `.tryce/spec/${feature}/requirements.md`,
+    meta.specs.push({ path: `.gitifact/spec/${feature}/requirements.md`,
       requirements: result.results.slice(1).map((x, r) => ({ id: x.id, title: `요구사항 ${s + 1}-${r + 1}` })) });
   }
   await commitSpecs(repo, meta.specs.map(sp => ({ requirements: sp.requirements.map(r => r.id), reason: `${sp.path} 초기 요구사항` })),
@@ -119,11 +119,11 @@ async function syntheticTemplate(name, { specs, requirements, tracked, rounds })
   }
   return { repo, meta };
 }
-async function tryceTemplate() {
-  const repo = join(base, 'templates', 'tryce');
+async function gitifactTemplate() {
+  const repo = join(base, 'templates', 'gitifact');
   // Match the LF working tree of the source checkout. The deprecated commit-plan still rejects CRLF checkouts.
   git(base, ['clone', '-q', '--no-hardlinks', '-c', 'core.autocrlf=false', repoRoot, repo]); configure(repo);
-  const working = (await tryce(repo, ['spec', 'working'])).result;
+  const working = (await gitifact(repo, ['spec', 'working'])).result;
   const code = git(repo, ['ls-files', '-z', '--', 'docs', 'apps/cli/src']).split('\0').filter(p => /\.(md|ts)$/.test(p));
   return { repo, meta: { code, specs: working.specs.map(s => ({ path: s.path, requirements: s.requirements.map(r => ({ id: r.id, title: r.title, body: r.body })) })) } };
 }
@@ -132,7 +132,7 @@ const cases = {
   small: { template: 'small', specChanges: 1, codeFiles: 2 },
   medium: { template: 'medium', specChanges: 3, codeFiles: 20 },
   many: { template: 'medium', specChanges: 3, codeFiles: 118 },
-  tryce: { template: 'tryce', specChanges: 1, codeFiles: 5 },
+  gitifact: { template: 'gitifact', specChanges: 1, codeFiles: 5 },
 };
 const templateShapes = { small: { specs: 1, requirements: 3, tracked: 10, rounds: 1 }, medium: { specs: 20, requirements: 8, tracked: 2000, rounds: 3 } };
 const templates = {};
@@ -147,7 +147,7 @@ log(JSON.stringify(environment));
 
 // Fixed process costs, measured once in this environment.
 for (let i = 0; i < 10; i++) records.push({ case: 'process', kind: 'spawn', step: 'git --version', iteration: i, wallMs: (await timed('git', ['--version'], base)).wallMs });
-for (let i = 0; i < runs; i++) records.push({ case: 'process', kind: 'spawn', step: 'tryce --version', iteration: i, wallMs: (await timed(process.execPath, [cli, '--version'], base)).wallMs });
+for (let i = 0; i < runs; i++) records.push({ case: 'process', kind: 'spawn', step: 'gitifact --version', iteration: i, wallMs: (await timed(process.execPath, [cli, '--version'], base)).wallMs });
 
 const failures = [];
 const persist = () => writeFileSync(out, JSON.stringify({ environment, failures, records }, null, 2));
@@ -159,7 +159,7 @@ for (const name of selectedCases) {
 async function runCase(name, spec) {
   if (!templates[spec.template]) {
     log(`preparing template ${spec.template}`);
-    templates[spec.template] = spec.template === 'tryce' ? await tryceTemplate() : await syntheticTemplate(spec.template, templateShapes[spec.template]);
+    templates[spec.template] = spec.template === 'gitifact' ? await gitifactTemplate() : await syntheticTemplate(spec.template, templateShapes[spec.template]);
   }
   const { repo: template, meta } = templates[spec.template];
   for (let iteration = 0; iteration < runs; iteration++) {
@@ -183,16 +183,16 @@ async function runCase(name, spec) {
 
       const status = await timed('git', ['status', '--porcelain=v2', '--untracked-files=all', '-z'], dir); record('git status (reference)', status);
       if (flows.legacy) {
-        const working = await tryce(dir, ['spec', 'working'], true); record('working', working);
-        const changes = await tryce(dir, ['spec', 'changes'], true); record('changes', changes);
-        const prepared = await tryce(dir, ['spec', 'prepare', '--file', writeInput({ expected: changes.result.expected, reasons })], true); record('prepare', prepared);
-        const planned = await tryce(dir, ['spec', 'commit-plan', '--file', writeInput({ verification: prepared.result.verification, ...commitInput })], true); record('commit-plan', planned);
-        const applied = await tryce(dir, ['spec', 'commit-apply', '--file', writeInput(planned.result.plan)], true); record('commit-apply', applied);
+        const working = await gitifact(dir, ['spec', 'working'], true); record('working', working);
+        const changes = await gitifact(dir, ['spec', 'changes'], true); record('changes', changes);
+        const prepared = await gitifact(dir, ['spec', 'prepare', '--file', writeInput({ expected: changes.result.expected, reasons })], true); record('prepare', prepared);
+        const planned = await gitifact(dir, ['spec', 'commit-plan', '--file', writeInput({ verification: prepared.result.verification, ...commitInput })], true); record('commit-plan', planned);
+        const applied = await gitifact(dir, ['spec', 'commit-apply', '--file', writeInput(planned.result.plan)], true); record('commit-apply', applied);
         if (applied.result.outcome !== 'committed' || applied.result.paths.length !== paths.length) throw new Error('Unexpected commit result: ' + JSON.stringify(applied.result));
         progress.push(`4-step flow ${Math.round(working.wallMs + changes.wallMs + prepared.wallMs + planned.wallMs + applied.wallMs)}ms`);
       }
       if (flows.merged) {
-        const committed = await tryce(single, ['spec', 'commit', '--file', writeInput({ reasons, ...commitInput })], true); record('commit (single)', committed);
+        const committed = await gitifact(single, ['spec', 'commit', '--file', writeInput({ reasons, ...commitInput })], true); record('commit (single)', committed);
         if (committed.result.outcome !== 'committed' || committed.result.paths.length !== paths.length) throw new Error('Unexpected commit result: ' + JSON.stringify(committed.result));
         progress.push(`single commit ${Math.round(committed.wallMs)}ms`);
       }
@@ -223,7 +223,7 @@ if (flows.legacy) for (const caseName of selectedCases) for (const kind of ['spe
   const flows = Array.from({ length: runs }, (_, i) => records.filter(r => r.case === caseName && r.kind === kind && r.iteration === i && ['working', 'changes', 'prepare', 'commit-plan', 'commit-apply'].includes(r.step)));
   const totals = flows.map(f => f.reduce((n, r) => n + r.wallMs, 0)); const gits = flows.map(f => f.reduce((n, r) => n + r.gitCount, 0));
   const repeat = totals.length > 1 ? totals.slice(1) : totals;
-  summary.push({ case: caseName, kind, step: 'TOTAL tryce flow', runs, firstMs: round(totals[0]), medianMs: round(median(repeat)), minMs: round(Math.min(...repeat)), maxMs: round(Math.max(...repeat)), gitCount: gits[0] });
+  summary.push({ case: caseName, kind, step: 'TOTAL gitifact flow', runs, firstMs: round(totals[0]), medianMs: round(median(repeat)), minMs: round(Math.min(...repeat)), maxMs: round(Math.max(...repeat)), gitCount: gits[0] });
 }
 writeFileSync(out, JSON.stringify({ environment, failures, summary, records }, null, 2));
 console.table(summary.map(({ runs: _, ...row }) => row));

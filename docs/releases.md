@@ -41,6 +41,12 @@ Gitifact는 조직 없는 공개 패키지 `gitifact`로 게시한다. 사용자
 
 이름 변경과 새 remote 반영, 기록 전환, 패키지 검증을 완료한 뒤 위 게시 절차를 수행한다. 현재 문서 변경만으로 인증 설정·게시가 완료된 것은 아니다. [이름 전환 계획](gitifact-transition.md)을 함께 따른다.
 
+## 0.1.0 배포 준비
+
+Tryce에서 Gitifact로 이름을 바꾼 첫 배포다. 패키지 `gitifact@0.1.0`, 실행 명령 `gitifact`, 저장 경로 `.gitifact`, 스킬 `gitifact-workflow`, 새 `migrate` 명령을 포함한다. 이전 `@tryce/cli` 0.5.0 사용자는 `gitifact migrate`로 저장소를 전환하며 과거 커밋 기록은 그대로 읽힌다. 전환 내용은 [이름 전환 계획](gitifact-transition.md), 검증은 [개발 환경](development.md#2026-09-15-gitifact-전환-사용-빌드)에 있다.
+
+`pnpm check`와 `pnpm test:package`를 통과했다. core 16개·contracts 4개·CLI 106개·브라우저 16개·스킬 5개와 workspace 밖 오프라인 설치·실행을 확인했다. CLI 번들 SHA-256은 지정 빌드와 같은 `9bbe7721595c08c0aa3f7b71427fae34b12f957a25d3e992f312934a9474bfc5`이다. 게시 결과는 아래에 이어서 기록한다.
+
 ## 이전 Tryce 배포 기록
 
 아래 패키지 이름·버전·커밋·무결성은 당시 배포의 사실이다. Gitifact 0.1.0의 게시 결과로 해석하거나 새 이름으로 일괄 치환하지 않는다.

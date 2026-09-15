@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { performance } from 'node:perf_hooks';
-import { RepositoryReadError } from '@tryce/core';
-import type { ObjectFormat, RepositoryReader, RepositoryState } from '@tryce/core';
+import { RepositoryReadError } from '@gitifact/core';
+import type { ObjectFormat, RepositoryReader, RepositoryState } from '@gitifact/core';
 import { decodeGitLine, parsePorcelain } from './porcelain.js';
 import { createGitRunner } from './run-git.js';
 import type { GitRunner } from './run-git.js';

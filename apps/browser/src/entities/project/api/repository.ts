@@ -1,6 +1,6 @@
 import { queryOptions } from '@tanstack/react-query';
-import { browserSessionV1, browserHttpErrorV1, repositoryStatusV1 } from '@tryce/contracts';
-import type { BrowserSessionV1, RepositoryStatusSuccessV1 } from '@tryce/contracts';
+import { browserSessionV1, browserHttpErrorV1, repositoryStatusV1 } from '@gitifact/contracts';
+import type { BrowserSessionV1, RepositoryStatusSuccessV1 } from '@gitifact/contracts';
 import { ApiError, requestJson } from '../../../shared/api/client';
 
 export const sessionKey = ['browser-session', 1, window.location.origin] as const;
@@ -41,7 +41,7 @@ async function fetchStatus(
 ): Promise<RepositoryStatusSuccessV1> {
   const { response, data } = await requestJson('/api/v1/status' + (refresh ? '/refresh' : ''), {
     method: refresh ? 'POST' : 'GET',
-    headers: { 'X-Tryce-Session': session.sessionId },
+    headers: { 'X-Gitifact-Session': session.sessionId },
     ...(signal ? { signal } : {}),
   });
   const result = repositoryStatusV1.safeParse(data);

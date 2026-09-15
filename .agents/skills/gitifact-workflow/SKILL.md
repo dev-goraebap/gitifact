@@ -1,19 +1,19 @@
 ---
-name: tryce-workflow
+name: gitifact-workflow
 description: 에이전트와 개발하는 프로젝트에서 제품 요구사항을 수집·정리하고 커밋 시점의 최종 명세와 변경 이유를 Git에 연결한다. 새 프로젝트 인터뷰, 기존 기능 도출, 기능 변경과 커밋 요청에 적용한다. 프로젝트 지침과 설치된 기록 형식을 확인하며 임의로 초기화·전환·커밋하지 않는다.
 ---
 
-# tryce 작업 흐름
+# gitifact 작업 흐름
 
 사용자는 제품을 설명하고 개발을 이어간다. 에이전트는 제품 요구사항을 정리하고, 커밋할 때 최종 변경을 연결한다. 사용자가 기록 명령이나 별도 개발 방법론을 익히게 하지 않는다.
 
 ## 시작과 형식 선택
 
-현재 경로·브랜치·Git 상태와 기존 staging을 확인하고 적용되는 AGENTS.md·CLAUDE.md를 원문으로 읽는다. 지침에서 지정한 CLI를 사용한다. 아래 `tryce`는 그 실행 방법을 뜻한다. CLI가 없다면 설치·전역 설정 변경을 임의로 하지 않고 가능한 조사부터 진행한다.
+현재 경로·브랜치·Git 상태와 기존 staging을 확인하고 적용되는 AGENTS.md·CLAUDE.md를 원문으로 읽는다. 지침에서 지정한 CLI를 사용한다. 아래 `gitifact`는 그 실행 방법을 뜻한다. CLI가 없다면 설치·전역 설정 변경을 임의로 하지 않고 가능한 조사부터 진행한다.
 
 설정과 실제 파일, CLI 도움말을 함께 확인해 다음 중 하나의 흐름을 선택한다. 명령이 존재한다는 사실만으로 프로젝트 사용이나 전환이 허용되지는 않는다.
 
-- **새 형식:** config.json의 `schemaVersion: 1`은 `.tryce/spec/<기능>/requirements.md`, 선택적인 `design.md`, `history.jsonl`을 사용한다. 아래 `tryce spec` 흐름을 따른다. 실험 플래그는 필요 없다. 설계 저장은 설치된 CLI가 `set-design`을 지원하는지 확인한다.
+- **새 형식:** config.json의 `schemaVersion: 1`은 `.gitifact/spec/<기능>/requirements.md`, 선택적인 `design.md`, `history.jsonl`을 사용한다. 아래 `gitifact spec` 흐름을 따른다. 실험 플래그는 필요 없다. 설계 저장은 설치된 CLI가 `set-design`을 지원하는지 확인한다.
 - **기존 형식:** workflow-1·prototype-1·init-1 설정은 현재 CLI가 조회·기록하지 않는다. 기존 기록을 삭제하거나 새 형식으로 가장하지 않고, 기존 기록을 읽으려면 0.4.0 이하 CLI가 필요하다고 알린다.
 - **미도입:** 도입이 허용됐으면 Git 상태와 지침을 확인하고 `init --dry-run`, `init`, `skills install --agent codex|claude`로 연결한다. Git 저장소가 없으면 Git 생성 권한을 확인한다. 기존 변경과 staging을 보존한다.
 
@@ -49,12 +49,12 @@ init은 설정과 기준선만 만들며 스킬·지침 파일·요구사항·�
 S-ID와 R-ID는 CLI가 발급한 값을 그대로 사용한다. 형식은 `S-<난수>`와 `R-<난수>`이며 난수는 소문자 base32 10자다. R-ID에 기능 이름을 넣거나 직접 예시 ID를 만들어 저장하지 않는다. 현재 Markdown은 frontmatter 없이 다음 구조를 쓴다.
 
 ```markdown
-<!-- tryce-spec: S-CLI가발급한값 -->
+<!-- gitifact-spec: S-CLI가발급한값 -->
 
 # 게시물 관리 요구사항
 
 ## 게시물 등록
-<!-- tryce-req: R-CLI가발급한값 -->
+<!-- gitifact-req: R-CLI가발급한값 -->
 
 사용자는 제목을 입력해 게시물을 저장할 수 있습니다.
 
@@ -77,7 +77,7 @@ S-ID와 R-ID는 CLI가 발급한 값을 그대로 사용한다. 형식은 `S-<�
 }
 ```
 
-명령 그룹은 `tryce spec`다. 기존 요구사항은 `update`의 id·title·body, 이동은 `move`의 id·feature, 명세 제목 변경은 `rename-spec`의 id·title을 사용한다. id에는 조회한 실제 R-ID 또는 S-ID를 전달한다. 전용 삭제·폴더 이름 변경 명령은 아직 없다. 미지원 작업에 존재하지 않는 명령이나 임의 전환 절차를 안내하지 않는다.
+명령 그룹은 `gitifact spec`다. 기존 요구사항은 `update`의 id·title·body, 이동은 `move`의 id·feature, 명세 제목 변경은 `rename-spec`의 id·title을 사용한다. id에는 조회한 실제 R-ID 또는 S-ID를 전달한다. 전용 삭제·폴더 이름 변경 명령은 아직 없다. 미지원 작업에 존재하지 않는 명령이나 임의 전환 절차를 안내하지 않는다.
 
 대화 중에는 명세 초안을 다듬는다. 매 수정마다 이유나 사건을 쌓지 않는다. 코드와 테스트를 고치는 동안 달라진 요구사항은 마지막 합의 내용으로 맞춘다.
 
@@ -88,7 +88,7 @@ S-ID와 R-ID는 CLI가 발급한 값을 그대로 사용한다. 형식은 `S-<�
 설계는 여러 요구사항을 구현하는 공통 구조와 처리 방식을 설명한다. 다음 목차를 기본으로 하되 필요한 절만 쓴다: 개요 / 구조와 데이터 / 처리 흐름 / 오류 처리와 검증 / 주요 설계 결정 / 미결 사항. 확정·관측·제안을 구분하고 중요한 대안과 선택 이유를 덧붙인다. 결정 목록만으로 구현 설명을 대신하지 않는다.
 
 ```markdown
-<!-- tryce-design: S-소유명세의실제값 -->
+<!-- gitifact-design: S-소유명세의실제값 -->
 
 # 게시물 관리 설계
 
@@ -99,7 +99,7 @@ S-ID와 R-ID는 CLI가 발급한 값을 그대로 사용한다. 형식은 `S-<�
 구성 요소의 책임, 관계, 저장할 데이터.
 
 ## 처리 흐름
-<!-- tryce-ref: R-관련요구사항의실제값 -->
+<!-- gitifact-ref: R-관련요구사항의실제값 -->
 입력부터 결과까지의 핵심 흐름.
 
 ## 오류 처리와 검증
@@ -114,9 +114,9 @@ S-ID와 R-ID는 CLI가 발급한 값을 그대로 사용한다. 형식은 `S-<�
 
 위 문장은 목차 설명이다. 실제 저장할 때는 파악한 내용으로 채우고 불필요한 절은 생략한다. 예시 ID와 안내 문장을 그대로 저장하지 않는다.
 
-save의 operations에 set-design(type·feature·title·body)을 사용한다. create·add·set-design을 같은 요청에 담아 두 파일을 저장할 수 있다. CLI가 동일 S-ID의 tryce-design 주석을 작성하며 빈 설계를 자동 생성하지 않는다. 신규 R-ID는 반환된 결과에서 얻은 뒤 참조가 필요한 설계 절을 후속 save로 보완한다. ID를 미리 만들어 넣지 않는다. 설계 삭제는 delete-design(type·feature)이다.
+save의 operations에 set-design(type·feature·title·body)을 사용한다. create·add·set-design을 같은 요청에 담아 두 파일을 저장할 수 있다. CLI가 동일 S-ID의 gitifact-design 주석을 작성하며 빈 설계를 자동 생성하지 않는다. 신규 R-ID는 반환된 결과에서 얻은 뒤 참조가 필요한 설계 절을 후속 save로 보완한다. ID를 미리 만들어 넣지 않는다. 설계 삭제는 delete-design(type·feature)이다.
 
-본문 참조는 실제 ID로 `<!-- tryce-ref: R-ID, R-ID -->`를 쓴다. 코드 블록의 예시는 참조가 아니다. working/save의 MISSING_DESIGN_REFERENCE 경고는 삭제·이동 여부와 원문을 확인하고 필요하면 수정한다. 경고를 무시한 채 연결이 유효하다고 주장하지 않는다.
+본문 참조는 실제 ID로 `<!-- gitifact-ref: R-ID, R-ID -->`를 쓴다. 코드 블록의 예시는 참조가 아니다. working/save의 MISSING_DESIGN_REFERENCE 경고는 삭제·이동 여부와 원문을 확인하고 필요하면 수정한다. 경고를 무시한 채 연결이 유효하다고 주장하지 않는다.
 
 개정 전 기존 설계와 관련 요구사항을 읽고 영향을 받는 절을 수정한다. 매번 전체 문서를 재작성하지 않고 현재 유효한 설계를 유지한다. 과거 원문은 Git이 보존한다. 요구사항을 바꾸면 설계도 검토하고, 설계만 바뀌면 요구사항을 억지로 수정하지 않는다.
 
@@ -133,7 +133,7 @@ save의 operations에 set-design(type·feature·title·body)을 사용한다. cr
 ```json
 {
   "reasons": [{ "requirements": ["실제 R-ID"], "reason": "대화·결정에서 확인한 변경 이유" }],
-  "paths": [".tryce/spec/posts/requirements.md", ".tryce/spec/posts/history.jsonl", "src/posts.ts", "test/posts.test.ts"],
+  "paths": [".gitifact/spec/posts/requirements.md", ".gitifact/spec/posts/history.jsonl", "src/posts.ts", "test/posts.test.ts"],
   "message": "프로젝트 정책에 맞는 메시지",
   "authorization": { "basis": "user-request", "evidence": "실제 커밋 요청과 작업 범위" }
 }

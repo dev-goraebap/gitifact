@@ -1,16 +1,16 @@
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
-import { InitError, parseManagedConfig } from '@tryce/core';
-import { skillsV1 } from '@tryce/contracts';
+import { InitError, parseManagedConfig } from '@gitifact/core';
+import { skillsV1 } from '@gitifact/contracts';
 import { initRepository } from '../adapters/git/init-repository.js';
 import { readConfigFile } from '../adapters/filesystem/config-file.js';
 import { skillLock, skillRead, skillWrite } from '../adapters/filesystem/skill-files.js';
 
-const source = '.agents/skills/tryce-workflow/SKILL.md';
-const target = '.claude/skills/tryce-workflow/SKILL.md';
-const manifest = '.agents/tryce-skills.local.json';
-const lock = '.agents/tryce-skills.local.lock';
-const ignores = ['/' + manifest, '/' + lock, '/' + target, '/.claude/skills/tryce-workflow/.tryce-skill-*.tmp', '/.agents/skills/tryce-workflow/.tryce-skill-*.tmp', '/.agents/.tryce-skill-*.tmp'];
+const source = '.agents/skills/gitifact-workflow/SKILL.md';
+const target = '.claude/skills/gitifact-workflow/SKILL.md';
+const manifest = '.agents/gitifact-skills.local.json';
+const lock = '.agents/gitifact-skills.local.lock';
+const ignores = ['/' + manifest, '/' + lock, '/' + target, '/.claude/skills/gitifact-workflow/.gitifact-skill-*.tmp', '/.agents/skills/gitifact-workflow/.gitifact-skill-*.tmp', '/.agents/.gitifact-skill-*.tmp'];
 type Agent = 'codex' | 'claude';
 type Action = 'install' | 'sync' | 'remove';
 interface State { version: 1; source: typeof source; target: typeof target; agent: Agent | null; accepted: (string | null)[] }
@@ -47,15 +47,15 @@ export async function skillsCommand(cwd: string, action: Action, options: Option
     if (copy !== null && !state) throw new InitError('UNMANAGED_SKILL', '기존 Claude 복사본은 관리 대상이 아닙니다. 보존하고 출처를 확인하세요.');
     if (state && !state.accepted.includes(digest(copy))) throw new InitError('SKILL_MODIFIED', 'Claude 복사본이 수정되거나 삭제됐습니다. 원본과 비교하고 보존하세요.');
     const tracked = await repo.trackedPaths(root, '.agents/', first.state.head.commit);
-    const localTracked = await repo.trackedPaths(root, '.claude/skills/tryce-workflow/', first.state.head.commit);
+    const localTracked = await repo.trackedPaths(root, '.claude/skills/gitifact-workflow/', first.state.head.commit);
     if (tracked.includes(manifest) || tracked.includes(lock) || localTracked.length) throw new InitError('LOCAL_SKILL_TRACKED', '로컬 스킬 파일이 Git에서 추적 중입니다. 먼저 보관 방침을 확인하세요.');
     if (original === null && tracked.includes(source)) throw new InitError('SKILL_DELETED', 'Git에 있는 스킬 원본이 삭제됐습니다. 복구 후 실행하세요.');
     const agent = action === 'remove' ? null : options.agent ?? state?.agent;
     if (action !== 'remove' && !agent) throw new InitError('AGENT_REQUIRED', '--agent codex 또는 claude를 지정하세요.');
     if (action === 'sync' && original === null) throw new InitError('SKILL_NOT_INSTALLED', '스킬 원본을 먼저 설치하세요.');
     let wanted = original;
-    if (action === 'install' && wanted === null) wanted = controls.template ?? await readFile(new URL('./skills/tryce-workflow/SKILL.md', import.meta.url), 'utf8');
-    if (wanted !== null && (!wanted.startsWith('---') || !/^name: tryce-workflow\r?$/m.test(wanted) || Buffer.byteLength(wanted) > 65536)) throw new InitError('INVALID_SKILL', 'tryce-workflow 원본 형식을 확인하세요.');
+    if (action === 'install' && wanted === null) wanted = controls.template ?? await readFile(new URL('./skills/gitifact-workflow/SKILL.md', import.meta.url), 'utf8');
+    if (wanted !== null && (!wanted.startsWith('---') || !/^name: gitifact-workflow\r?$/m.test(wanted) || Buffer.byteLength(wanted) > 65536)) throw new InitError('INVALID_SKILL', 'gitifact-workflow 원본 형식을 확인하세요.');
     const nextCopy = agent === 'claude' ? wanted : null;
     const ignoreBefore = await skillRead(root, '.gitignore');
     const lines = (ignoreBefore ?? '').split(/\r?\n/);

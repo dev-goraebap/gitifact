@@ -1,7 +1,7 @@
 import { open, readFile, mkdir, realpath, rename, link, unlink } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { InitError } from '@tryce/core';
+import { InitError } from '@gitifact/core';
 import { fileInfo } from './config-file.js';
 
 export async function skillPath(root: string, path: string, create = false) {
@@ -50,7 +50,7 @@ export async function skillWrite(root: string, path: string, previous: string | 
     if (previous !== null) await unlink(full);
     return;
   }
-  const temp = join(directory, '.tryce-skill-' + randomUUID() + '.tmp');
+  const temp = join(directory, '.gitifact-skill-' + randomUUID() + '.tmp');
   const handle = await open(temp, 'wx', 0o600);
   const tempOwner = await handle.stat();
   try {

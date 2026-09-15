@@ -5,12 +5,12 @@ import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync, lstat
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { repositoryStatusSuccessV1, repositoryStatusFailureV1 } from '@tryce/contracts';
+import { repositoryStatusSuccessV1, repositoryStatusFailureV1 } from '@gitifact/contracts';
 
 const executable = fileURLToPath(new URL('../dist/main.js', import.meta.url));
 export function fixture(t, format = 'sha1') {
   const base = realpathSync(tmpdir());
-  const root = mkdtempSync(join(base, 'tryce-status-'));
+  const root = mkdtempSync(join(base, 'gitifact-status-'));
   t.after(() => {
     assert.equal(dirname(realpathSync(root)), base);
     rmSync(root, { recursive: true, force: true });
@@ -59,11 +59,11 @@ export function fixture(t, format = 'sha1') {
   };
   return { root, repo, env, git, write, commit, cli, status, failure };
 }
-// Adopts schemaVersion 1 without a baseline commit, as `tryce init` does in an unborn repository.
+// Adopts schemaVersion 1 without a baseline commit, as `gitifact init` does in an unborn repository.
 export function specFixture(t, format = 'sha1') {
   const f = fixture(t, format);
-  mkdirSync(join(f.repo, '.tryce'));
-  writeFileSync(join(f.repo, '.tryce', 'config.json'), JSON.stringify({ schemaVersion: 1, baseline: { kind: 'empty' } }, null, 2) + '\n');
+  mkdirSync(join(f.repo, '.gitifact'));
+  writeFileSync(join(f.repo, '.gitifact', 'config.json'), JSON.stringify({ schemaVersion: 1, baseline: { kind: 'empty' } }, null, 2) + '\n');
   return f;
 }
 export function fingerprint(root) {

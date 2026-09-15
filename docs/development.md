@@ -1,6 +1,16 @@
 # 개발 환경
 
-> Gitifact 전환 예정: 새 패키지는 `gitifact@0.1.0`이다. 현재 실행 이름과 아래 지정 빌드는 아직 Tryce 기준이다. 검증된 전환 빌드를 지정하기 전에는 기존 기록 명령을 임의로 바꾸지 않는다. [이름 전환 계획](gitifact-transition.md)을 참고한다.
+## 2026-09-15 Gitifact 전환 사용 빌드
+
+제품 이름을 Gitifact로 바꾸고 공개 패키지를 `gitifact@0.1.0`(실행 명령 `gitifact`)으로 전환했다. 내부 workspace는 `@gitifact/core`·`@gitifact/contracts`·`@gitifact/browser`, 스킬은 `gitifact-workflow`, 저장 경로는 `.gitifact`, 마커는 `gitifact-spec/req/design/ref`, 트레일러는 `Gitifact-Req`·`Gitifact-Design`, 잠금·임시 파일 접두어는 `gitifact-*`, 환경 변수는 `GITIFACT_API_PORT`, 세션 헤더는 `X-Gitifact-Session`이다. 범위와 결정은 [이름 전환 계획](gitifact-transition.md)을 따른다.
+
+새 `gitifact migrate [--dry-run]`이 `.tryce`를 `.gitifact`로 옮기고 줄 첫머리 마커만 바꾼다. CLI는 과거 커밋의 `.tryce` 경로와 `tryce-*` 마커를 읽기만 지원하고, 설계 본문의 이전 참조 마커는 파싱 결과에서 현재 이름으로 정규화해 전환 전후 비교가 비지 않게 한다. 작업 폴더에 `.tryce`만 있으면 모든 명세 명령이 MIGRATION_REQUIRED로 전환을 안내한다. 이전 Tryce 실행의 잠금 파일 이름도 계속 검사한다.
+
+이 빌드를 프로젝트 사용 대상으로 지정한다. 실행은 `node apps/cli/dist/main.js` 또는 `pnpm cli`, 번들 SHA-256은 `9bbe7721595c08c0aa3f7b71427fae34b12f957a25d3e992f312934a9474bfc5`이다. 이전 지정 빌드(3ce78ded…)는 `.tryce`만 쓰므로 이 저장소를 전환한 뒤에는 사용하지 않는다.
+
+최종 소스의 `pnpm check`가 통과했다. core 16개·contracts 4개·CLI 106개(새 migrate 3개 포함)·브라우저 16개·스킬 5개와 workspace 밖 오프라인 패키지 설치·실행(`node_modules/gitifact`, `gitifact --version`, init·spec save/commit/read·skills·status·browser)을 확인했다. 새 시험은 전환 전 거부, dry-run 무변경, 마커 재작성과 코드 블록·이유 파일 보존, 전환 커밋의 이유·트레일러 없음, 과거 커밋 읽기와 전환 전후 diff 비어 있음, 전환 뒤 변경의 활동 피드 표시, 구형 JSON·잡파일·이전 잠금·저장소 없음 거부, 두 저장 경로가 섞인 커밋 거부를 검사한다. 첫 전체 check에서 브라우저 검사 1건이 CLI 검사와 동시 실행 중 시간 초과로 실패했고 단독 실행과 재실행에서는 통과했다.
+
+이 저장소의 `.tryce`는 이 빌드의 migrate로 전환해 spec commit으로 커밋했다. 상세는 [자체 도입 기록](adoption.md)과 Git 이력을 따른다.
 
 ## 2026-09-15 설계 문서 지원 사용 빌드
 
@@ -85,9 +95,9 @@ demo는 첫 공개 게시 후 npm 레지스트리의 `@tryce/cli@0.1.0`으로 �
 
 ## 개발 에이전트 사용
 
-Codex는 `.agents/skills/tryce-workflow/SKILL.md`를 원본으로 사용한다. Claude Code로 이 저장소를 작업할 때는 `pnpm skills:sync`로 로컬 복사본을 생성하고 `pnpm skills:check`로 일치를 확인한다. 사용자 전역 설정은 바꾸지 않는다. 원본 변경 후 sync를 다시 실행한다. 상세 보존·복구·제거 절차는 [스킬 연결](https://github.com/dev-goraebap/tryce/blob/479d392a93fa40e7a95993d4979417beae869723/docs/specs/agent-skills.md)을 따른다.
+Codex는 `.agents/skills/gitifact-workflow/SKILL.md`를 원본으로 사용한다. Claude Code로 이 저장소를 작업할 때는 `pnpm skills:sync`로 로컬 복사본을 생성하고 `pnpm skills:check`로 일치를 확인한다. 사용자 전역 설정은 바꾸지 않는다. 원본 변경 후 sync를 다시 실행한다. 상세 보존·복구·제거 절차는 [스킬 연결](https://github.com/dev-goraebap/tryce/blob/479d392a93fa40e7a95993d4979417beae869723/docs/specs/agent-skills.md)을 따른다.
 
-스킬에서 예시로 쓰는 `tryce`는 이 저장소에서 `pnpm cli`다. 기계 출력이 필요하면 `node apps/cli/dist/main.js`를 사용한다. 기존에 지정한 CLI 빌드를 유지한다. 개발용 스킬 동기화는 2026-09-13 임시 폴더 테스트 5개와 스킬 형식 검증을 통과했다. DEV-04는 유지한다.
+스킬에서 예시로 쓰는 `gitifact`는 이 저장소에서 `pnpm cli`다. 기계 출력이 필요하면 `node apps/cli/dist/main.js`를 사용한다. 기존에 지정한 CLI 빌드를 유지한다. 개발용 스킬 동기화는 2026-09-13 임시 폴더 테스트 5개와 스킬 형식 검증을 통과했다. DEV-04는 유지한다.
 
 ## 준비와 실행
 

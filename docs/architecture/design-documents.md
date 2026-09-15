@@ -4,9 +4,9 @@
 
 ## 파일과 식별자
 
-`.tryce/spec/<기능>/design.md` 첫 줄은 `<!-- tryce-design: S-ID -->`이며 같은 폴더의 requirements.md와 같은 실제 S-ID를 사용한다. 별도 설계 ID나 문단 ID는 발급하지 않는다. 최상위 제목 하나와 비어 있지 않은 Markdown 본문이 필요하다. 기능 폴더가 바뀌어도 S-ID가 같으면 동일 설계다. 요구사항 문서 없는 설계·이유 파일은 거부한다.
+`.gitifact/spec/<기능>/design.md` 첫 줄은 `<!-- gitifact-design: S-ID -->`이며(2026-09-15 이전 커밋의 `tryce-design`·`tryce-ref`·`.tryce` 경로는 읽기만 지원) 같은 폴더의 requirements.md와 같은 실제 S-ID를 사용한다. 별도 설계 ID나 문단 ID는 발급하지 않는다. 최상위 제목 하나와 비어 있지 않은 Markdown 본문이 필요하다. 기능 폴더가 바뀌어도 S-ID가 같으면 동일 설계다. 요구사항 문서 없는 설계·이유 파일은 거부한다.
 
-본문의 선택 참조는 `<!-- tryce-ref: R-ID, R-ID -->` 형식이다. 실제 ID를 쓰며 코드 블록의 예시는 참조로 해석하지 않는다. CLI는 문법과 기능 소유 ID를 검사한다. 현재 전체 명세에 없는 참조는 MISSING_DESIGN_REFERENCE 경고로 반환한다. 삭제·이동 이후의 설명과 과거 원문을 보존하기 위해 누락 참조로 조회·커밋을 막지는 않는다. 스킬은 경고를 확인하고 해당 설명이 여전히 유효한지 판단한다. 문서 의미의 타당성을 CLI가 판정하지 않는다.
+본문의 선택 참조는 `<!-- gitifact-ref: R-ID, R-ID -->` 형식이다. 실제 ID를 쓰며 코드 블록의 예시는 참조로 해석하지 않는다. CLI는 문법과 기능 소유 ID를 검사한다. 현재 전체 명세에 없는 참조는 MISSING_DESIGN_REFERENCE 경고로 반환한다. 삭제·이동 이후의 설명과 과거 원문을 보존하기 위해 누락 참조로 조회·커밋을 막지는 않는다. 스킬은 경고를 확인하고 해당 설명이 여전히 유효한지 판단한다. 문서 의미의 타당성을 CLI가 판정하지 않는다.
 
 ## 작성과 개정
 
@@ -30,7 +30,7 @@ working/read는 선택적인 design 객체(title/body/requirements)를, changes/
 
 기존 JSONL `{id, requirements, reason}`을 유지하며 설계 이유에 선택적인 `designs: [S-ID]`를 추가한다. 설계만 바뀌면 requirements는 빈 배열이다. 두 배열이 모두 비어 있으면 거부한다. 같은 이유로 요구사항과 설계를 함께 연결할 수 있고 기능별 history.jsonl에 나눠 저장한다. 커밋된 이유는 수정하지 않는다. 원문·작성자·시간을 JSONL에 복제하지 않는다.
 
-spec commit은 설계를 명세 파일로 검증하고 관련 이유·소스와 함께 커밋한다. 설계만 바뀌면 Tryce-Req를 만들지 않고 Tryce-Design: S-ID를 남긴다. 이유 누락은 withoutReason에 변경 ID로 표시한다. 기존 staging 보호·격리 index·줄바꿈 필터 검사·훅·서명·거부 후 이유 복구를 유지한다. deprecated 커밋 경로에는 설계 지원을 확대하지 않는다.
+spec commit은 설계를 명세 파일로 검증하고 관련 이유·소스와 함께 커밋한다. 설계만 바뀌면 Gitifact-Req를 만들지 않고 Gitifact-Design: S-ID를 남긴다. 이유 누락은 withoutReason에 변경 ID로 표시한다. 기존 staging 보호·격리 index·줄바꿈 필터 검사·훅·서명·거부 후 이유 복구를 유지한다. deprecated 커밋 경로에는 설계 지원을 확대하지 않는다.
 
 ## 브라우저
 

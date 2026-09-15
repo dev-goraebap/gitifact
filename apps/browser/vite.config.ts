@@ -2,8 +2,8 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { tanstackRouter } from '@tanstack/router-plugin/vite';
 
-const apiPort = process.env.TRYCE_API_PORT ?? '4317';
-if (!/^\d+$/.test(apiPort) || Number(apiPort) < 1 || Number(apiPort) > 65535) throw new Error('TRYCE_API_PORT must be between 1 and 65535.');
+const apiPort = process.env.GITIFACT_API_PORT ?? '4317';
+if (!/^\d+$/.test(apiPort) || Number(apiPort) < 1 || Number(apiPort) > 65535) throw new Error('GITIFACT_API_PORT must be between 1 and 65535.');
 
 export default defineConfig({
   plugins: [

@@ -99,7 +99,7 @@ Query의 기본 stale·재시도·포커스 재조회 정책은 그대로 두지
 
 2026-09-14 browser-design-v2의 사이드 메뉴·촘촘한 행·오른쪽 상세 구조를 실제 데이터에 연결했다. 브리핑, 요구사항, 판단 기록, Git 상태를 제공한다. 전체 추적 그래프·건강 검사·스킬 탐색은 실제 계약이 준비되기 전까지 메뉴와 가짜 결과를 만들지 않는다.
 
-공유 session/status/project 조회는 entities/project, 전체 메뉴는 widgets/app-shell, 본문은 pages가 소유한다. workspace의 검색·영역·상태·상세 선택은 검증된 URL search에 둔다. 전체 데이터를 한 번 읽고 로컬에서 필터링하므로 필터마다 별도 Query 캐시를 만들지 않는다. API와 보안 경계는 [로컬 서버 계약](https://github.com/dev-goraebap/tryce/blob/479d392a93fa40e7a95993d4979417beae869723/docs/specs/browser-server.md)을 따른다.
+공유 session/status/project 조회는 entities/project, 전체 메뉴는 widgets/app-shell, 본문은 pages가 소유한다. workspace의 검색·영역·상태·상세 선택은 검증된 URL search에 둔다. 전체 데이터를 한 번 읽고 로컬에서 필터링하므로 필터마다 별도 Query 캐시를 만들지 않는다. API와 보안 경계는 [로컬 서버 계약](https://github.com/dev-goraebap/gitifact/blob/479d392a93fa40e7a95993d4979417beae869723/docs/specs/browser-server.md)을 따른다.
 
 ## 2026-09-14 새 MVP 화면 연결
 

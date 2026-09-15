@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { request } from 'node:http';
 import { fileURLToPath } from 'node:url';
-import { RepositoryReadError } from '@tryce/core';
-import { browserSessionV1, repositoryStatusV1 } from '@tryce/contracts';
+import { RepositoryReadError } from '@gitifact/core';
+import { browserSessionV1, repositoryStatusV1 } from '@gitifact/contracts';
 import { startBrowserServer } from '../.test-build/server/browser-server.js';
 import { createStatusSession } from '../.test-build/server/status-session.js';
 import { fixture, fingerprint } from './git-fixture.mjs';
@@ -18,7 +18,7 @@ const sample = () => ({
   summary: { staged: 0, unstaged: 0, untracked: 0, conflicted: 0 },
   checks: { state: 'not-run', reason: 'git-status-only' },
 });
-const headers = server => ({ 'X-Tryce-Session': server.session.sessionId, Origin: server.url });
+const headers = server => ({ 'X-Gitifact-Session': server.session.sessionId, Origin: server.url });
 
 test('real HTTP reads cached status, refreshes Git and serves only bundled browser files', async (t) => {
   const f = fixture(t);
@@ -69,10 +69,10 @@ test('invalid Host, Origin, session, method, query and body cannot trigger Git',
       ['/api/v1/session', { headers: { Origin: 'https://evil.example' } }, 403],
       ['/api/v1/session', { headers: { 'Sec-Fetch-Site': 'cross-site' } }, 403],
       ['/api/v1/status', {}, 409],
-      ['/api/v1/status', { headers: { 'X-Tryce-Session': 'wrong' } }, 409],
+      ['/api/v1/status', { headers: { 'X-Gitifact-Session': 'wrong' } }, 409],
       ['/api/v1/status?path=elsewhere', { headers: headers(server) }, 400],
       ['/api/v1/status', { method: 'POST', headers: headers(server) }, 405],
-      ['/api/v1/status/refresh', { method: 'POST', headers: { 'X-Tryce-Session': server.session.sessionId } }, 403],
+      ['/api/v1/status/refresh', { method: 'POST', headers: { 'X-Gitifact-Session': server.session.sessionId } }, 403],
       ['/api/v1/status/refresh', { method: 'POST', headers: headers(server), body: '{}' }, 400],
       ['/api/v1/status/refresh', { method: 'OPTIONS' }, 405],
       ['/%00', {}, 400], ['/assets/%', {}, 400],

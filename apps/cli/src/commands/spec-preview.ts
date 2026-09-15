@@ -1,6 +1,6 @@
 import { join } from 'node:path';
 import { readFile, stat } from 'node:fs/promises';
-import { compareSpecPreviews, SpecPreviewError, RepositoryReadError, InitError, parseManagedConfig } from '@tryce/core';
+import { compareSpecPreviews, SpecPreviewError, RepositoryReadError, InitError, parseManagedConfig } from '@gitifact/core';
 import { specPreviewReader } from '../adapters/git/spec-preview-reader.js';
 import { withCommandScope } from '../adapters/git/command-scope.js';
 import { readWorkingPreview, saveWorkingPreview } from '../adapters/filesystem/spec-preview-store.js';
@@ -25,7 +25,7 @@ async function execute(action: Action, options: Options) {
     for (const marker of operations) if (await fileInfo(join(gitDir, marker))) throw new InitError('GIT_OPERATION_IN_PROGRESS', 'Git 작업이 진행 중입니다: ' + marker);
     if (await guard.hasUnmerged()) throw new InitError('GIT_OPERATION_IN_PROGRESS', 'Git 충돌을 먼저 해결하세요.');
     const raw = await readConfigFile(root);
-    if (raw === undefined) throw new SpecPreviewError('먼저 tryce init으로 초기화하세요.');
+    if (raw === undefined) throw new SpecPreviewError('먼저 gitifact init으로 초기화하세요.');
     const config = parseManagedConfig(raw);
     if (!('schemaVersion' in config)) throw new SpecPreviewError('기존 프로젝트는 별도 전환이 필요합니다.');
     await initRepository(root).validateBaseline(config, root, 'HEAD', objectFormat);

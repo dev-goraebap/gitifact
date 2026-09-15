@@ -29,6 +29,9 @@ importers:
       '@fontsource/outfit':
         specifier: 5.3.0
         version: 5.3.0
+      '@gitifact/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
       '@hugeicons/core-free-icons':
         specifier: 4.3.0
         version: 4.3.0
@@ -41,9 +44,6 @@ importers:
       '@tanstack/react-router':
         specifier: 1.170.35
         version: 1.170.35(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      '@tryce/contracts':
-        specifier: workspace:*
-        version: link:../../packages/contracts
       react:
         specifier: 19.3.0
         version: 19.3.0
@@ -78,10 +78,10 @@ importers:
 
   apps/cli:
     devDependencies:
-      '@tryce/contracts':
+      '@gitifact/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
-      '@tryce/core':
+      '@gitifact/core':
         specifier: workspace:*
         version: link:../../packages/core
       commander:

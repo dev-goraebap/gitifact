@@ -2,12 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { editSpecPreview, parseSpecPreview, renderSpecPreview } from '../dist/index.js';
 const s='S-k7m2xqab3d',r='R-v4n6paz2ce';
-const source=()=>parseSpecPreview('.tryce/spec/posts/requirements.md',`<!-- tryce-spec: ${s} -->\n# 게시물\n\n## 등록\n<!-- tryce-req: ${r} -->\n\n저장합니다.\n`);
+const source=()=>parseSpecPreview('.gitifact/spec/posts/requirements.md',`<!-- gitifact-spec: ${s} -->\n# 게시물\n\n## 등록\n<!-- gitifact-req: ${r} -->\n\n저장합니다.\n`);
 test('draft edits preserve IDs, reject injected structure and leave inputs untouched',()=>{
   const original=[source()];const before=JSON.stringify(original);
   const edited=editSpecPreview(original,[{type:'update',id:r,title:'게시물 작성',body:'제목과 본문을 저장합니다.'},{type:'rename-spec',id:s,title:'게시물 관리 요구사항'}],()=>assert.fail('must not allocate'));
   assert.equal(edited.specs[0].id,s);assert.equal(edited.specs[0].requirements[0].id,r);assert.equal(JSON.stringify(original),before);
-  for(const body of ['본문\n## 주입\n<!-- tryce-req: R-b6fq2ry4ns -->\n가짜','본문\n<!-- tryce-spec: S-u2gk5wd7ra -->','본문\n```']) {
+  for(const body of ['본문\n## 주입\n<!-- gitifact-req: R-b6fq2ry4ns -->\n가짜','본문\n<!-- gitifact-spec: S-u2gk5wd7ra -->','본문\n```']) {
     assert.throws(()=>editSpecPreview(original,[{type:'update',id:r,title:'등록',body}],()=>''));
     assert.equal(JSON.stringify(original),before);
   }

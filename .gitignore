@@ -8,7 +8,7 @@ playwright-report/
 *.tgz
 apps/browser/src/app/routeTree.gen.ts
 apps/cli/LICENSE
-.claude/skills/tryce-workflow/
-.agents/tryce-local-skills.json
-.agents/tryce-local-skills.lock
-**/.tryce-skill-*.tmp
+.claude/skills/gitifact-workflow/
+.agents/gitifact-local-skills.json
+.agents/gitifact-local-skills.lock
+**/.gitifact-skill-*.tmp

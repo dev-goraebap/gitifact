@@ -10,36 +10,49 @@ export interface PreviewSpec {
   requirements: PreviewRequirement[]; history: PreviewReason[]; design?: PreviewDesign;
 }
 const token = '[a-z2-7]{10}';
+/** Current store directory; `.tryce` is read from history and legacy checkouts but never written. */
+export const STORE_DIR = '.gitifact';
+export const LEGACY_STORE_DIR = '.tryce';
+export const STORE_DIRS = [STORE_DIR, LEGACY_STORE_DIR] as const;
+/** Marker prefixes accepted on read: `gitifact-*` (current) and `tryce-*` (legacy). */
+const marker = '(?:gitifact|tryce)';
+/** Path of a spec record inside either store directory. */
+export const recordPathPattern = /^\.(?:gitifact|tryce)\/spec\/[^/]+\/(?:requirements\.md|design\.md|history\.jsonl)$/;
+/** Strips the store directory so the same feature folder compares equal across the rename. */
+export const storeRelative = (path: string) => path.replace(/^\.(?:gitifact|tryce)\//, '');
 const reqId = new RegExp(`^R-${token}$`);
 const fail = (message: string): never => { throw new SpecPreviewError(message); };
 const normalized = (value: string) => value.replace(/\r\n/g, '\n').trim();
 
 export function renderDesignPreview(id: string, design: {title: string; body: string}): string {
-  return `<!-- tryce-design: ${id} -->\n\n# ${design.title}\n\n${design.body}\n`;
+  return `<!-- gitifact-design: ${id} -->\n\n# ${design.title}\n\n${design.body}\n`;
 }
 
 /** References are explicit annotations outside fenced code; prose and examples are not identifiers. */
 export function parseDesignPreview(source: string, specId: string): PreviewDesign {
   if (source.includes('\0') || /\r(?!\n)/.test(source)) fail('잘못된 설계 문자입니다.');
   const lines = normalized(source).split('\n');
-  if (lines.shift() !== `<!-- tryce-design: ${specId} -->`) fail('설계의 tryce-design ID는 같은 기능의 S-ID여야 합니다.');
+  if (!new RegExp(`^<!-- ${marker}-design: ${specId} -->$`).test(lines.shift() ?? '')) fail('설계의 gitifact-design ID는 같은 기능의 S-ID여야 합니다.');
   while (lines[0] === '') lines.shift();
   const heading = lines.shift();
   if (!heading?.startsWith('# ') || !heading.slice(2).trim()) fail('설계 제목이 필요합니다.');
-  const title = heading!.slice(2).trim(); const body = normalized(lines.join('\n'));
-  if (!body) fail('설계 본문이 필요합니다.');
+  const title = heading!.slice(2).trim(); const raw = normalized(lines.join('\n'));
+  if (!raw) fail('설계 본문이 필요합니다.');
   const references = new Set<string>(); let fence: {char: string; size: number} | undefined;
-  for (const line of body.split('\n')) {
-    if (fence) { if (new RegExp(`^ {0,3}${fence.char}{${fence.size},}\\s*$`).test(line)) fence = undefined; continue; }
+  // The parsed body carries current marker names, so a legacy `tryce-ref` read from history compares equal to its migrated form.
+  const body = raw.split('\n').map(line => {
+    if (fence) { if (new RegExp(`^ {0,3}${fence.char}{${fence.size},}\\s*$`).test(line)) fence = undefined; return line; }
     const open = /^ {0,3}(`{3,}|~{3,})(.*)$/.exec(line);
-    if (open) { fence = {char: open[1]![0]!, size: open[1]!.length}; continue; }
+    if (open) { fence = {char: open[1]![0]!, size: open[1]!.length}; return line; }
     if (/^#\s/.test(line)) fail('설계 최상위 제목은 하나만 씁니다.');
-    if (line.includes('<!-- tryce-')) {
-      const ref = /^<!-- tryce-ref: (R-[a-z2-7]{10}(?:, R-[a-z2-7]{10})*) -->$/.exec(line);
+    if (/<!-- (?:gitifact|tryce)-/.test(line)) {
+      const ref = /^<!-- (?:gitifact|tryce)-ref: (R-[a-z2-7]{10}(?:, R-[a-z2-7]{10})*) -->$/.exec(line);
       if (!ref) fail('설계의 참조 주석 형식을 확인하세요.');
       for (const id of ref![1]!.split(', ')) references.add(id);
+      return `<!-- gitifact-ref: ${ref![1]} -->`;
     }
-  }
+    return line;
+  }).join('\n');
   if (fence) fail('설계 코드 블록이 닫히지 않았습니다.');
   return {title, body, requirements: [...references]};
 }
@@ -60,11 +73,11 @@ export function parsePreviewFiles(files: ReadonlyMap<string, string>): PreviewSp
 }
 
 export function parseSpecPreview(path: string, source: string, history = '', designSource?: string): PreviewSpec {
-  if (!/^\.tryce\/spec\/[^/]+\/requirements\.md$/.test(path)) fail('지원하지 않는 명세 경로: ' + path);
+  if (!/^\.(?:gitifact|tryce)\/spec\/[^/]+\/requirements\.md$/.test(path)) fail('지원하지 않는 명세 경로: ' + path);
   if (source.includes('\0') || source.includes('\r') && /\r(?!\n)/.test(source)) fail('잘못된 명세 문자: ' + path);
   const lines = normalized(source).split('\n');
-  const specMatch = new RegExp(`^<!-- tryce-spec: (S-${token}) -->$`).exec(lines[0] ?? '');
-  if (!specMatch) fail('첫 줄에 유효한 tryce-spec 주석이 필요합니다: ' + path);
+  const specMatch = new RegExp(`^<!-- ${marker}-spec: (S-${token}) -->$`).exec(lines[0] ?? '');
+  if (!specMatch) fail('첫 줄에 유효한 gitifact-spec 주석이 필요합니다: ' + path);
   let title = ''; let description = ''; let current: PreviewRequirement | undefined;
   const requirements: PreviewRequirement[] = [];
   let fence: { char: string; size: number } | undefined;
@@ -75,7 +88,7 @@ export function parseSpecPreview(path: string, source: string, history = '', des
   for (let i = 1; i < lines.length; i++) {
     const line = lines[i]!;
     if (waitingId) {
-      const match = new RegExp(`^<!-- tryce-req: (R-${token}) -->$`).exec(line);
+      const match = new RegExp(`^<!-- ${marker}-req: (R-${token}) -->$`).exec(line);
       if (!match || !current) fail('요구사항 제목 바로 아래에 유효한 ID가 필요합니다: ' + path);
       current!.id = match![1]!; waitingId = false; continue;
     }
@@ -164,7 +177,7 @@ export function compareSpecPreviews(before: PreviewSpec[], after: PreviewSpec[])
     const types: ('created' | 'deleted' | 'moved' | 'modified')[] = [];
     if (!from) types.push('created'); else if (!to) types.push('deleted');
     else {
-      if (from.specId !== to.specId || (id.startsWith('S-') && from.path !== to.path)) types.push('moved');
+      if (from.specId !== to.specId || (id.startsWith('S-') && storeRelative(from.path) !== storeRelative(to.path))) types.push('moved');
       if (from.title !== to.title || from.body !== to.body) types.push('modified');
     }
     return types.length ? [{ id, types, before: from, after: to, kind: id.startsWith('S-') ? 'design' as const : 'requirement' as const, reasons: reasons.filter(h => [...h.requirements, ...(h.designs ?? [])].includes(id)) }] : [];
@@ -176,7 +189,9 @@ export function compareSpecPreviews(before: PreviewSpec[], after: PreviewSpec[])
     const from = prevSpecs.get(id); const to = nextSpecs.get(id);
     const summary = (s: PreviewSpec | undefined) => s ? { path: s.path, title: s.title, description: s.description } : null;
     const a = summary(from); const b = summary(to);
-    return JSON.stringify(a) !== JSON.stringify(b) ? [{ id, before: a, after: b }] : [];
+    // The store rename (.tryce → .gitifact) keeps the feature folder, so it is not a spec change.
+    const key = (s: ReturnType<typeof summary>) => s ? { ...s, path: storeRelative(s.path) } : null;
+    return JSON.stringify(key(a)) !== JSON.stringify(key(b)) ? [{ id, before: a, after: b }] : [];
   });
   return { specChanges, changes };
 }

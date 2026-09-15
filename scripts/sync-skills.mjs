@@ -4,10 +4,10 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 // Development-only mapping. No glob-based ownership or user-global locations.
-const source = '.agents/skills/tryce-workflow/SKILL.md';
-const target = '.claude/skills/tryce-workflow/SKILL.md';
-const statePath = '.agents/tryce-local-skills.json';
-const lockPath = '.agents/tryce-local-skills.lock';
+const source = '.agents/skills/gitifact-workflow/SKILL.md';
+const target = '.claude/skills/gitifact-workflow/SKILL.md';
+const statePath = '.agents/gitifact-local-skills.json';
+const lockPath = '.agents/gitifact-local-skills.lock';
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 const info = async path => { try { return await lstat(path); } catch (error) { if (error.code === 'ENOENT') return undefined; throw error; } };
 
@@ -28,7 +28,7 @@ async function bytes(root, path) {
 }
 async function publish(root, path, value, previous) {
   const full = await safe(root, path, true);
-  const temp = join(dirname(full), '.tryce-skill-' + randomUUID() + '.tmp');
+  const temp = join(dirname(full), '.gitifact-skill-' + randomUUID() + '.tmp');
   await writeFile(temp, value, { flag: 'wx' });
   try {
     const current = await bytes(root, path);

@@ -7,10 +7,10 @@ import { fileURLToPath } from 'node:url';
 import { fixture, fingerprint } from './git-fixture.mjs';
 import { skillsCommand } from '../.test-build/commands/skills.js';
 import { initializeSpecProject } from '../.test-build/commands/spec-init.js';
-const source = '.agents/skills/tryce-workflow/SKILL.md';
-const target = '.claude/skills/tryce-workflow/SKILL.md';
-const manifest = '.agents/tryce-skills.local.json';
-const template = '---\nname: tryce-workflow\ndescription: fixture\n---\nOriginal\n';
+const source = '.agents/skills/gitifact-workflow/SKILL.md';
+const target = '.claude/skills/gitifact-workflow/SKILL.md';
+const manifest = '.agents/gitifact-skills.local.json';
+const template = '---\nname: gitifact-workflow\ndescription: fixture\n---\nOriginal\n';
 async function setup(t) {
   const f = fixture(t);
   await initializeSpecProject(f.repo, false, f.env);
@@ -23,7 +23,7 @@ test('install dry-run preserves all files; repeat, sync and remove preserve sour
   assert.deepEqual(fingerprint(f.repo), before);
   await f.run('install', { agent: 'claude' });
   assert.equal(f.read(target), template);
-  const config = f.read('.tryce/config.json'); const git = fingerprint(join(f.repo, '.git'));
+  const config = f.read('.gitifact/config.json'); const git = fingerprint(join(f.repo, '.git'));
   await f.run('install', { agent: 'claude' });
   f.write(source, template + 'Custom project guidance\n');
   await f.run('sync');
@@ -31,12 +31,12 @@ test('install dry-run preserves all files; repeat, sync and remove preserve sour
   await f.run('remove');
   assert.equal(existsSync(join(f.repo, target)), false);
   assert.equal(f.read(source), template + 'Custom project guidance\n');
-  assert.equal(f.read('.tryce/config.json'), config);
+  assert.equal(f.read('.gitifact/config.json'), config);
   assert.deepEqual(fingerprint(join(f.repo, '.git')), git);
 });
 test('same-content unmanaged copy and later user edits are refused and preserved', async t => {
   const f = await setup(t);
-  mkdirSync(join(f.repo, '.claude/skills/tryce-workflow'), { recursive: true });
+  mkdirSync(join(f.repo, '.claude/skills/gitifact-workflow'), { recursive: true });
   f.write(target, template);
   await assert.rejects(f.run('install', { agent: 'claude' }), { code: 'UNMANAGED_SKILL' });
   assert.equal(f.read(target), template);
@@ -50,7 +50,7 @@ test('managed copy edits block sync and removal without modifying the source or 
 });
 test('an existing source is preserved on install and a clone can create local copies', async t => {
   const f = await setup(t);
-  mkdirSync(join(f.repo, '.agents/skills/tryce-workflow'), { recursive: true });
+  mkdirSync(join(f.repo, '.agents/skills/gitifact-workflow'), { recursive: true });
   f.write(source, template + 'Project customization\n');
   await f.run('install', { agent: 'codex' });
   assert.equal(f.read(source), template + 'Project customization\n');
@@ -97,7 +97,7 @@ test('CLI output is versioned and unsupported agents do not touch the repository
 });
 test('product lock and unsupported local manifest are preserved without writes', async t => {
   const f = await setup(t); await f.run('install', { agent: 'claude' });
-  const lock = '.agents/tryce-skills.local.lock'; f.write(lock, 'another writer');
+  const lock = '.agents/gitifact-skills.local.lock'; f.write(lock, 'another writer');
   await assert.rejects(f.run('sync'), { code: 'SKILLS_BUSY' });
   assert.equal(f.read(lock), 'another writer');
   // Dry-run reads an unsupported version without taking or removing the existing lock.

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { repositoryStatusSuccessV1, repositoryStatusFailureV1 } from '@tryce/contracts';
+import { repositoryStatusSuccessV1, repositoryStatusFailureV1 } from '@gitifact/contracts';
 import { mockApi, session, status } from './mock-api';
 
 test('loading, successful refresh and failure retain the last observed data', async ({ page }) => {
@@ -100,5 +100,5 @@ test('connection failure and empty result are distinct', async ({ page }) => {
     }),
   );
   await page.getByRole('button', { name: '다시 연결' }).click();
-  await expect(page.getByText('Git 변경 경로가 없습니다. tryce 검사는 미실행입니다.')).toBeVisible();
+  await expect(page.getByText('Git 변경 경로가 없습니다. gitifact 검사는 미실행입니다.')).toBeVisible();
 });

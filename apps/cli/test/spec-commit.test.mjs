@@ -10,12 +10,12 @@ const cli=(f,args)=>spawnSync(process.execPath,[exe,...args],{cwd:f.repo,env:f.e
 const ok=r=>{assert.equal(r.status,0,r.stderr);return JSON.parse(r.stdout);};
 const file=(f,value)=>{const p=join(f.root,'input.json');writeFileSync(p,JSON.stringify(value));return p;};
 const commit=(f,value,...flags)=>cli(f,['spec','commit','--file',file(f,value),...flags]);
-const specPaths=['.tryce/spec/posts/requirements.md','.tryce/spec/posts/history.jsonl'];const codePaths=['app.js','app.test.js'];
+const specPaths=['.gitifact/spec/posts/requirements.md','.gitifact/spec/posts/history.jsonl'];const codePaths=['app.js','app.test.js'];
 const authorization={basis:'user-request',evidence:'Fixture explicitly requests this test commit'};
-const locks=f=>['tryce-spec-commit.lock','tryce-spec-preview.lock','index.lock'].filter(l=>existsSync(join(f.repo,'.git',l)));
+const locks=f=>['gitifact-spec-commit.lock','gitifact-spec-preview.lock','index.lock'].filter(l=>existsSync(join(f.repo,'.git',l)));
 function setup(t,format='sha1'){
  const f=fixture(t,format);for(const [k,v] of [['user.name','Tryce fixture'],['user.email','fixture@example.invalid'],['commit.gpgsign','false'],['core.autocrlf','false']])f.git(['config',k,v]);
- mkdirSync(join(f.repo,'.git/hooks'));ok(cli(f,['init']));f.commit('Initialize tryce');
+ mkdirSync(join(f.repo,'.git/hooks'));ok(cli(f,['init']));f.commit('Initialize gitifact');
  const saved=ok(cli(f,['spec','save','--file',file(f,{expected:ok(cli(f,['spec','working'])).stamp,operations:[{type:'create',feature:'posts',title:'게시물'},{type:'add',feature:'posts',title:'저장',body:'제목을 입력해 저장합니다.'}]})]));
  f.write('app.js','export const save = title => !!title;\n');f.write('app.test.js','// fixture test source\n');
  return {...f,id:saved.results[1].id};
@@ -28,7 +28,7 @@ for(const format of ['sha1','sha256'])test(`dry-run previews without changes, th
  assert.deepEqual(preview.requirements,[f.id]);assert.deepEqual(preview.withoutReason,[]);assert.deepEqual(fingerprint(f.repo),before);
  const result=ok(commit(f,request(f)));
  assert.equal(result.outcome,'committed');assert.deepEqual(result.paths,[...specPaths,...codePaths].sort());assert.equal(result.commit,f.git(['rev-parse','HEAD']).stdout.trim());
- assert.equal(f.git(['status','--porcelain']).stdout,'?? unrelated.txt\n');assert.match(f.git(['log','-1','--format=%B']).stdout,new RegExp('Tryce-Req: '+f.id));
+ assert.equal(f.git(['status','--porcelain']).stdout,'?? unrelated.txt\n');assert.match(f.git(['log','-1','--format=%B']).stdout,new RegExp('Gitifact-Req: '+f.id));
  assert.equal(JSON.parse(f.git(['show','HEAD:'+specPaths[1]]).stdout).id,result.reasons[0].id);assert.deepEqual(locks(f),[]);
  const head=f.git(['rev-parse','HEAD']).stdout;assert.equal(commit(f,request(f)).status,1);assert.equal(f.git(['rev-parse','HEAD']).stdout,head);
 });
@@ -38,7 +38,7 @@ test('missing reasons warn without blocking and code-only commits reference requ
  assert.deepEqual(result.withoutReason,[f.id]);assert.deepEqual(result.historyPaths,[]);assert.equal(existsSync(join(f.repo,specPaths[1])),false);
  f.write('app.js','export const save = title => !!title.trim();\n');
  const code=ok(commit(f,{paths:['app.js'],message:'Trim titles',requirements:[f.id],authorization}));
- assert.deepEqual(code.paths,['app.js']);assert.match(f.git(['log','-1','--format=%B']).stdout,new RegExp('Tryce-Req: '+f.id));assert.equal(f.git(['status','--porcelain']).stdout,'');
+ assert.deepEqual(code.paths,['app.js']);assert.match(f.git(['log','-1','--format=%B']).stdout,new RegExp('Gitifact-Req: '+f.id));assert.equal(f.git(['status','--porcelain']).stdout,'');
 });
 test('omitted reasons keep uncommitted reasons, and a stale expected value is rejected without changes',t=>{
  const f=setup(t);const changes=ok(cli(f,['spec','changes']));
@@ -66,10 +66,10 @@ test('a rejected commit restores the reason file and index, then retries cleanly
 test('rollback keeps a reason file edited by another process and leaves recovery data',t=>{
  const f=setup(t);writeFileSync(join(f.repo,'.git/hooks/pre-commit'),`#!/bin/sh\nprintf edited >> ${specPaths[1]}\nexit 1\n`);
  const result=commit(f,request(f));assert.equal(result.status,1);assert.match(result.stderr,/복구 자료/);
- assert.match(readFileSync(join(f.repo,specPaths[1]),'utf8'),/edited$/);assert.equal(existsSync(join(f.repo,'.git/tryce-spec-preview.lock/recovery.json')),true);
+ assert.match(readFileSync(join(f.repo,specPaths[1]),'utf8'),/edited$/);assert.equal(existsSync(join(f.repo,'.git/gitifact-spec-preview.lock/recovery.json')),true);
 });
 test('a CRLF checkout of untouched specs commits without rewriting them (core.autocrlf)',t=>{
- const f=setup(t);const profilePaths=['.tryce/spec/profile/requirements.md','.tryce/spec/profile/history.jsonl'];
+ const f=setup(t);const profilePaths=['.gitifact/spec/profile/requirements.md','.gitifact/spec/profile/history.jsonl'];
  const profile=ok(cli(f,['spec','save','--file',file(f,{expected:ok(cli(f,['spec','working'])).stamp,operations:[{type:'create',feature:'profile',title:'프로필'},{type:'add',feature:'profile',title:'조회',body:'프로필을 조회합니다.'}]})])).results[1].id;
  ok(commit(f,request(f,{reasons:[{requirements:[f.id,profile],reason:'초기 기능'}],paths:[...specPaths,...profilePaths,...codePaths]})));
  // Check the specs out again as Windows does: LF blobs become CRLF files while Git reports them unchanged.
@@ -87,13 +87,13 @@ test('a CRLF checkout of untouched specs commits without rewriting them (core.au
 });
 test('a Git clean filter that rewrites spec content is still rejected and rolled back',t=>{
  const f=setup(t);f.git(['config','filter.upper.clean','tr a-z A-Z']);f.git(['config','filter.upper.smudge','cat']);
- f.write('.gitattributes','.tryce/spec/** filter=upper\n');const head=f.git(['rev-parse','HEAD']).stdout;
+ f.write('.gitattributes','.gitifact/spec/** filter=upper\n');const head=f.git(['rev-parse','HEAD']).stdout;
  const result=commit(f,request(f));assert.equal(result.status,1);assert.match(result.stderr,/Git 필터/);
  assert.equal(f.git(['rev-parse','HEAD']).stdout,head);assert.equal(existsSync(join(f.repo,specPaths[1])),false);assert.deepEqual(locks(f),[]);
 });
 test('a hook changing the commit keeps written reasons and recovery evidence and blocks retries',t=>{
  const f=setup(t);writeFileSync(join(f.repo,'.git/hooks/pre-commit'),'#!/bin/sh\nprintf extra > extra.txt\ngit add extra.txt\n');
  const result=commit(f,request(f));assert.equal(result.status,1);assert.match(result.stderr,/복구 자료/);
- assert.equal(existsSync(join(f.repo,'.git/tryce-spec-commit.lock/recovery.json')),true);assert.match(readFileSync(join(f.repo,specPaths[1]),'utf8'),/제목 없는 저장을 방지/);
+ assert.equal(existsSync(join(f.repo,'.git/gitifact-spec-commit.lock/recovery.json')),true);assert.match(readFileSync(join(f.repo,specPaths[1]),'utf8'),/제목 없는 저장을 방지/);
  const head=f.git(['rev-parse','HEAD']).stdout;assert.equal(commit(f,request(f)).status,1);assert.equal(f.git(['rev-parse','HEAD']).stdout,head);
 });

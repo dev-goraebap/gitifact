@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
-import { RepositoryReadError } from '@tryce/core';
-import { browserSessionV1 } from '@tryce/contracts';
-import type { RepositoryStatusSuccessV1, RepositoryStatusFailureV1 } from '@tryce/contracts';
+import { RepositoryReadError } from '@gitifact/core';
+import { browserSessionV1 } from '@gitifact/contracts';
+import type { RepositoryStatusSuccessV1, RepositoryStatusFailureV1 } from '@gitifact/contracts';
 import { failureDto } from '../output/repository-status.js';
 
 type Result = RepositoryStatusSuccessV1 | RepositoryStatusFailureV1;

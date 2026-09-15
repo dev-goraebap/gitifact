@@ -1,5 +1,5 @@
-import { compareSpecPreviews, SpecPreviewError, parseManagedConfig, type PreviewSpec } from '@tryce/core';
-import { browserSpecsV1, type BrowserSpecsV1 } from '@tryce/contracts';
+import { compareSpecPreviews, SpecPreviewError, parseManagedConfig, type PreviewSpec } from '@gitifact/core';
+import { browserSpecsV1, type BrowserSpecsV1 } from '@gitifact/contracts';
 import { createGitRunner } from '../adapters/git/run-git.js';
 import { specPreviewReader } from '../adapters/git/spec-preview-reader.js';
 import { readWorkingPreviewState } from '../adapters/filesystem/spec-preview-store.js';
@@ -34,8 +34,8 @@ export function createSpecBrowserReader(root: string, sessionId: string, inherit
     if (!base.head) return browserSpecsV1.parse({ contract: 'browser-specs', version: 1, sessionId, head: null, observedAt: new Date().toISOString(), working: features.length > 0, features, events: [], contributors: [], contributorsLimited: false, nextCursor: null, boundary: false });
     const head = base.head;
     const [rows, dirty] = await Promise.all([
-      git(['log', '--first-parent', '--date-order', '--format=%H%x00%P%x00%aN%x00%aE%x00%aI%x00%cN%x00%s', '--max-count=11', '--skip=' + cursor, head, '--', ':(glob).tryce/spec/*/requirements.md', ':(glob).tryce/spec/*/design.md', ':(glob).tryce/spec/*/history.jsonl']),
-      git(['status', '--porcelain=v1', '--', '.tryce/spec']),
+      git(['log', '--first-parent', '--date-order', '--format=%H%x00%P%x00%aN%x00%aE%x00%aI%x00%cN%x00%s', '--max-count=11', '--skip=' + cursor, head, '--', ...['.gitifact', '.tryce'].flatMap(d => [`:(glob)${d}/spec/*/requirements.md`, `:(glob)${d}/spec/*/design.md`, `:(glob)${d}/spec/*/history.jsonl`])]),
+      git(['status', '--porcelain=v1', '--', '.gitifact/spec']),
     ]);
     // Git mailmap may change without a new HEAD; refresh names with every observation.
     {

@@ -37,7 +37,7 @@ test('partial staging and Unicode paths preserve all files, index, refs and conf
   assert.deepEqual(fingerprint(f.repo), before);
   const text = f.cli(['--format', 'text']);
   assert.equal(text.status, 0); assert.equal(text.stderr, '');
-  assert.match(text.stdout, /tryce 검사 미실행/);
+  assert.match(text.stdout, /gitifact 검사 미실행/);
   assert.match(text.stdout, /MM "tracked.txt"/);
   assert.deepEqual(fingerprint(f.repo), before);
 });

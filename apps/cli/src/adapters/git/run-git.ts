@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process';
 import { stat } from 'node:fs/promises';
-import { RepositoryReadError } from '@tryce/core';
+import { RepositoryReadError } from '@gitifact/core';
 
 export interface GitInvocation {
   cwd: string;

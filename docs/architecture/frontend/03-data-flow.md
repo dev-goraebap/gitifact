@@ -1,6 +1,6 @@
 # 프론트엔드 데이터 흐름
 
-Gentask의 03-data-flow.md에서 상태 소유와 재조회 원칙을 적용한다. Tryce는 읽기 전용이므로 인증·생성·편집·삭제·자동 저장·첨부 흐름은 현재 적용 대상이 아니다.
+Gentask의 03-data-flow.md에서 상태 소유와 재조회 원칙을 적용한다. Gitifact는 읽기 전용이므로 인증·생성·편집·삭제·자동 저장·첨부 흐름은 현재 적용 대상이 아니다.
 
 | 상태 | 소유 |
 | --- | --- |
@@ -18,6 +18,6 @@ QueryClient는 앱에서 안정적으로 생성한다. loader가 필요하면 �
 
 ## Gentask 참조 적용 (2026-09-14)
 
-Gentask apps/desktop의 QueryClient·Router·RequestState를 확인했다. 단일 QueryClient, queryOptions 중심 캐시, URL 검색 상태, pending 표시 지연을 적용한다. Gentask의 데스크톱 hash history·로그인/401 처리·자동 재시도 정책은 로컬 읽기 전용 Tryce에 복사하지 않는다. 기존 웹 URL과 세션/worktree 격리·AbortSignal·명시적 재조회는 유지한다.
+Gentask apps/desktop의 QueryClient·Router·RequestState를 확인했다. 단일 QueryClient, queryOptions 중심 캐시, URL 검색 상태, pending 표시 지연을 적용한다. Gentask의 데스크톱 hash history·로그인/401 처리·자동 재시도 정책은 로컬 읽기 전용 Gitifact에 복사하지 않는다. 기존 웹 URL과 세션/worktree 격리·AbortSignal·명시적 재조회는 유지한다.
 
 초기 조회에는 200ms 지연 골격을 표시하고 재조회에는 현재 목록을 유지한다. 이력은 useInfiniteQuery와 더보기로 이어 읽는다. 불러온 개수·추가 조회 중·재시도·마지막 페이지를 구분한다. 다음 페이지 실패 시 기존 목록을 보존한다. Router의 pending 표시는 코드 전환에 사용하고 API 상태는 Query가 소유한다.

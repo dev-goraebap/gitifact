@@ -1,7 +1,7 @@
-import { RepositoryReadError } from '@tryce/core';
-import type { RepositoryObservation } from '@tryce/core';
-import { repositoryStatusFailureV1, repositoryStatusSuccessV1 } from '@tryce/contracts';
-import type { RepositoryStatusSuccessV1 } from '@tryce/contracts';
+import { RepositoryReadError } from '@gitifact/core';
+import type { RepositoryObservation } from '@gitifact/core';
+import { repositoryStatusFailureV1, repositoryStatusSuccessV1 } from '@gitifact/contracts';
+import type { RepositoryStatusSuccessV1 } from '@gitifact/contracts';
 
 export function statusDto(observation: RepositoryObservation) {
   return repositoryStatusSuccessV1.parse({
@@ -30,7 +30,7 @@ export function statusText(value: RepositoryStatusSuccessV1): string {
   const lines = [
     '저장소: ' + escapeTerminal(value.repository.rootPath),
     'HEAD: ' + head.state + (head.branch ? ' ' + escapeTerminal(head.branch) : '') + (head.commit ? ' ' + head.commit : ''),
-    'Git 변경 경로 ' + value.changes.length + '개, tryce 검사 미실행',
+    'Git 변경 경로 ' + value.changes.length + '개, gitifact 검사 미실행',
     'staged ' + summary.staged + ' / unstaged ' + summary.unstaged + ' / untracked ' + summary.untracked + ' / conflicted ' + summary.conflicted,
     '관측: ' + value.observation.completedAt + ' (best-effort, 파일 내용 스냅샷 아님)',
   ];

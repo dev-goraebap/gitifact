@@ -1,4 +1,4 @@
-import type { SpecEvent, SpecFeature } from '@tryce/contracts';
+import type { SpecEvent, SpecFeature } from '@gitifact/contracts';
 import { VStack } from '@astryxdesign/core/VStack';
 import { Text } from '@astryxdesign/core/Text';
 import { ActivityTimeline } from './ActivityTimeline';

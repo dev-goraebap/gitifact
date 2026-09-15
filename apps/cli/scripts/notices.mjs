@@ -19,7 +19,7 @@ export async function writeNotices() {
     const key = `${pkg.name}@${pkg.version}`;
     if (seen.has(key)) return;
     seen.set(key, null);
-    if (!pkg.name.startsWith('@tryce/')) {
+    if (!pkg.name.startsWith('@gitifact/')) {
       const names = (await readdir(dirname(path))).filter(name => /^(licen[sc]e|notice)(\.|$)/i.test(name)).sort();
       const texts = await Promise.all(names.map(name => readFile(join(dirname(path), name), 'utf8')));
       if (!texts.length && ['@astryxdesign/core@0.6.0', '@astryxdesign/theme-neutral@0.6.0'].includes(key)) {
@@ -35,7 +35,7 @@ export async function writeNotices() {
   await visit(fileURLToPath(new URL('../../browser/package.json', import.meta.url)));
   const cli = fileURLToPath(new URL('../package.json', import.meta.url));
   await visit(await dependency('commander', cli));
-  await visit(await dependency('@tryce/contracts', cli));
+  await visit(await dependency('@gitifact/contracts', cli));
   if (missingLicenses.length) throw new Error(`Missing license texts: ${missingLicenses.join(', ')}`);
   const notices = [...seen.entries()].filter(([, text]) => text).sort(([a], [b]) => a.localeCompare(b));
   await writeFile(new URL('../dist/THIRD_PARTY_NOTICES.txt', import.meta.url),

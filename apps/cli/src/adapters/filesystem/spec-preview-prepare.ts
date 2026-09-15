@@ -1,7 +1,7 @@
 import { lstat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
-import { compareSpecPreviews, finalSpecPreviewChanges, parsePreviewFiles, prepareSpecPreview, SpecPreviewError, validatePreviewSnapshot } from '@tryce/core';
+import { compareSpecPreviews, finalSpecPreviewChanges, parsePreviewFiles, prepareSpecPreview, SpecPreviewError, validatePreviewSnapshot } from '@gitifact/core';
 import { specPreviewReader } from '../git/spec-preview-reader.js';
 import { generatePreviewId, previewTransaction, readWorkingPreviewState } from './spec-preview-store.js';
 

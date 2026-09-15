@@ -20,7 +20,7 @@ for(const format of ['sha1','sha256']) test(`create, update, move and Git compar
   const f=fixture(t,format);const empty=working(f);assert.deepEqual(empty.specs,[]);
   const result=ok(save(f,create,empty.stamp));const req=result.results[1].id;
   assert.match(req,/^R-[a-z2-7]{10}$/);assert.match(result.results[0].id,/^S-[a-z2-7]{10}$/);
-  assert.equal(existsSync(join(f.repo,'.tryce/spec/employees/history.jsonl')),false);
+  assert.equal(existsSync(join(f.repo,'.gitifact/spec/employees/history.jsonl')),false);
   f.commit('initial requirements');const before=f.git(['rev-parse','HEAD']).stdout.trim();
   f.write('unrelated.txt','staged');f.git(['add','unrelated.txt']);f.write('unrelated.txt','unstaged');
   const gitBefore=fingerprint(join(f.repo,'.git'));
@@ -28,7 +28,7 @@ for(const format of ['sha1','sha256']) test(`create, update, move and Git compar
   assert.deepEqual(fingerprint(join(f.repo,'.git')),gitBefore);assert.equal(readFileSync(join(f.repo,'unrelated.txt'),'utf8'),'unstaged');
   assert.equal(revised.specs.find(s=>s.path.includes('/employees/')).requirements.length,0);
   assert.equal(revised.specs.find(s=>s.path.includes('/profile/')).requirements[0].id,req);
-  const nested=ok(run(f,['working','--experimental'],join(f.repo,'.tryce/spec/profile')));assert.equal(nested.stamp,revised.stamp);
+  const nested=ok(run(f,['working','--experimental'],join(f.repo,'.gitifact/spec/profile')));assert.equal(nested.stamp,revised.stamp);
   f.commit('move and refine');const diff=ok(run(f,['diff','--experimental','--from',before,'--to','HEAD']));
   assert.deepEqual(diff.changes[0].types,['moved','modified']);assert.equal(diff.changes[0].id,req);
 });
@@ -40,27 +40,27 @@ test('stale input, malformed bodies and duplicates preserve files',t=>{
     save(f,[{type:'create',feature:'employees',title:'duplicate'}],state.stamp)]) {
     assert.equal(result.status,1);assert.equal(result.stdout,'');assert.deepEqual(fingerprint(f.repo),original);
   }
-  writeFileSync(join(f.repo,'.tryce/spec/profile/requirements.md'),readFileSync(join(f.repo,'.tryce/spec/employees/requirements.md')));
+  writeFileSync(join(f.repo,'.gitifact/spec/profile/requirements.md'),readFileSync(join(f.repo,'.gitifact/spec/employees/requirements.md')));
   assert.equal(run(f,['working','--experimental']).status,1);
 });
 test('second publication failure restores both files and original CRLF bytes',async t=>{
-  const f=fixture(t);ok(save(f,create));const path=join(f.repo,'.tryce/spec/employees/requirements.md');writeFileSync(path,readFileSync(path,'utf8').replace(/\n/g,'\r\n'));
+  const f=fixture(t);ok(save(f,create));const path=join(f.repo,'.gitifact/spec/employees/requirements.md');writeFileSync(path,readFileSync(path,'utf8').replace(/\n/g,'\r\n'));
   const state=await readWorkingPreview(f.repo);const before=fingerprint(f.repo);let calls=0;
   await assert.rejects(saveWorkingPreview(f.repo,{expected:state.stamp,operations:[{type:'move',id:state.specs[0].requirements[0].id,feature:'profile'}]},async(a,b)=>{if(++calls===2)throw Error('simulated IO failure');await rename(a,b);}));
   assert.equal(calls,2);assert.deepEqual(fingerprint(f.repo),before);
 });
 test('intervening external edit is preserved and recovery journal blocks further writes',async t=>{
   const f=fixture(t);ok(save(f,create));const state=await readWorkingPreview(f.repo);let calls=0;
-  const path=join(f.repo,'.tryce/spec/employees/requirements.md');
+  const path=join(f.repo,'.gitifact/spec/employees/requirements.md');
   await assert.rejects(saveWorkingPreview(f.repo,{expected:state.stamp,operations:[{type:'move',id:state.specs[0].requirements[0].id,feature:'profile'}]},async(a,b)=>{
     if(++calls===2){writeFileSync(path,'external editor content');throw Error('simulated failure');}await rename(a,b);
   }),/복구 자료/);
-  assert.equal(readFileSync(path,'utf8'),'external editor content');assert.ok(existsSync(join(f.repo,'.git/tryce-spec-preview.lock/recovery.json')));
+  assert.equal(readFileSync(path,'utf8'),'external editor content');assert.ok(existsSync(join(f.repo,'.git/gitifact-spec-preview.lock/recovery.json')));
   assert.equal(run(f,['working','--experimental']).status,1);
 });
 test('existing formats and directory links are refused without writes',t=>{
-  const f=fixture(t);f.write('.tryce/config.json','{}');const before=fingerprint(f.repo);
+  const f=fixture(t);f.write('.gitifact/config.json','{}');const before=fingerprint(f.repo);
   assert.equal(run(f,['working','--experimental']).status,1);assert.deepEqual(fingerprint(f.repo),before);
-  const linked=join(f.root,'linked');mkdirSync(linked);f.git(['init','--template=',linked]);symlinkSync(join(f.repo,'.tryce'),join(linked,'.tryce'),'junction');
+  const linked=join(f.root,'linked');mkdirSync(linked);f.git(['init','--template=',linked]);symlinkSync(join(f.repo,'.gitifact'),join(linked,'.gitifact'),'junction');
   assert.equal(run(f,['working','--experimental'],linked).status,1);assert.deepEqual(fingerprint(f.repo),before);
 });

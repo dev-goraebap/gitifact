@@ -15,7 +15,7 @@ const changes=f=>ok(run(f,['changes','--experimental']));
 const edit=(f,operations)=>ok(input(f,'save',{expected:ok(run(f,['working','--experimental'])).stamp,operations}));
 const prepare=(f,reasons)=>ok(input(f,'prepare',{expected:changes(f).expected,reasons}));
 const create=f=>edit(f,[{type:'create',feature:'posts',title:'게시물 요구사항'},{type:'add',feature:'posts',title:'등록',body:'게시물을 저장합니다.'}]);
-const history=f=>readFileSync(join(f.repo,'.tryce/spec/posts/history.jsonl'),'utf8');
+const history=f=>readFileSync(join(f.repo,'.gitifact/spec/posts/history.jsonl'),'utf8');
 
 for(const hash of ['sha1','sha256']) test(`final changes, idempotent reasons, staged verification and committed Git link (${hash})`,t=>{
   const f=fixture(t,hash);const initial=create(f);const id=initial.results[1].id;
@@ -25,7 +25,7 @@ for(const hash of ['sha1','sha256']) test(`final changes, idempotent reasons, st
   const line=JSON.parse(history(f));assert.deepEqual(Object.keys(line).sort(),['id','reason','requirements']);assert.match(line.id,/^H-[a-z2-7]{10}$/);
   assert.equal(changes(f).pendingReasons[0].id,line.id);
   assert.equal(input(f,'verify',ready.verification,['--staged']).status,1);
-  f.git(['add','.tryce/spec']);assert.equal(ok(input(f,'verify',ready.verification,['--staged'])).scope,'staged');
+  f.git(['add','.gitifact/spec']);assert.equal(ok(input(f,'verify',ready.verification,['--staged'])).scope,'staged');
   f.commit('first spec');const before=f.git(['rev-parse','HEAD']).stdout.trim();const originalHistory=history(f);
   edit(f,[{type:'update',id,title:'등록',body:'중간 초안입니다.'}]);edit(f,[{type:'update',id,title:'등록',body:'제목이 있어야 저장합니다.'}]);
   assert.equal(changes(f).changes.length,1);assert.deepEqual(changes(f).changes[0].types,['modified']);
@@ -35,33 +35,33 @@ for(const hash of ['sha1','sha256']) test(`final changes, idempotent reasons, st
   const same=prepare(f,[{requirements:[id],reason:'빈 제목을 허용하지 않습니다.'}]);assert.deepEqual(same.paths,[]);assert.deepEqual(same.reasons,result.reasons);
   assert.equal(input(f,'verify',ready.verification).status,1); // A previous commit's preparation is stale.
   assert.equal(input(f,'verify',result.verification,['--staged']).status,1); // The spec is not staged yet.
-  f.git(['add','.tryce/spec']);ok(input(f,'verify',result.verification,['--staged']));
+  f.git(['add','.gitifact/spec']);ok(input(f,'verify',result.verification,['--staged']));
   f.commit('final requirements');const diff=ok(run(f,['diff','--experimental','--from',before,'--to','HEAD']));
   assert.equal(diff.changes.length,1);assert.equal(diff.changes[0].reasons[0].reason,'빈 제목을 허용하지 않습니다.');
   assert.equal(diff.changes[0].after.body,'제목이 있어야 저장합니다.');
 });
 test('reverting drafts removes only uncommitted reasons, preserving committed bytes',t=>{
   const f=fixture(t);const id=create(f).results[1].id;prepare(f,[{requirements:[id],reason:'최초 기능'}]);
-  const path=join(f.repo,'.tryce/spec/posts/history.jsonl');writeFileSync(path,history(f).replace(/\n/g,'\r\n'));f.commit();const old=history(f);
+  const path=join(f.repo,'.gitifact/spec/posts/history.jsonl');writeFileSync(path,history(f).replace(/\n/g,'\r\n'));f.commit();const old=history(f);
   edit(f,[{type:'update',id,title:'등록',body:'중간 변경'}]);const ready=prepare(f,[{requirements:[id],reason:'임시 이유'}]);
   edit(f,[{type:'update',id,title:'등록',body:'게시물을 저장합니다.'}]);assert.equal(changes(f).changes.length,0);
   assert.equal(input(f,'verify',ready.verification).status,1);
   const reverted=prepare(f,[]);assert.equal(reverted.reasons.length,0);assert.equal(history(f),old);
-  assert.equal(f.git(['diff','--','.tryce/spec']).stdout,'');
+  assert.equal(f.git(['diff','--','.gitifact/spec']).stdout,'');
 });
 test('initial draft reason disappears on revert; missing reasons are explicit, never invented',t=>{
   const f=fixture(t);const result=create(f);const id=result.results[1].id;const spec=result.specs[0];
-  const unexplained=prepare(f,[]);assert.deepEqual(unexplained.withoutReason,[id]);assert.equal(existsSync(join(f.repo,'.tryce/spec/posts/history.jsonl')),false);
-  prepare(f,[{requirements:[id],reason:'최초 초안'}]);f.write(spec.path,`<!-- tryce-spec: ${spec.id} -->\n# ${spec.title}\n`);
-  assert.equal(changes(f).changes.length,0);prepare(f,[]);assert.equal(existsSync(join(f.repo,'.tryce/spec/posts/history.jsonl')),false);
+  const unexplained=prepare(f,[]);assert.deepEqual(unexplained.withoutReason,[id]);assert.equal(existsSync(join(f.repo,'.gitifact/spec/posts/history.jsonl')),false);
+  prepare(f,[{requirements:[id],reason:'최초 초안'}]);f.write(spec.path,`<!-- gitifact-spec: ${spec.id} -->\n# ${spec.title}\n`);
+  assert.equal(changes(f).changes.length,0);prepare(f,[]);assert.equal(existsSync(join(f.repo,'.gitifact/spec/posts/history.jsonl')),false);
 });
 test('move reasons go to destination and deletion reasons remain at the source',t=>{
   const f=fixture(t);const first=create(f);const id=first.results[1].id;
   edit(f,[{type:'create',feature:'profile',title:'내 프로필'}]);prepare(f,[{requirements:[id],reason:'초기 기능'}]);f.commit();
   const old=history(f);edit(f,[{type:'move',id,feature:'profile'}]);const moved=prepare(f,[{requirements:[id],reason:'오배치 정정 시험'}]);
   assert.deepEqual(moved.changes[0].types,['moved']);assert.equal(history(f),old);
-  assert.equal(JSON.parse(readFileSync(join(f.repo,'.tryce/spec/profile/history.jsonl'),'utf8')).reason,'오배치 정정 시험');f.commit();
-  const profile=moved.specs.find(s=>s.path.includes('/profile/'));f.write(profile.path,`<!-- tryce-spec: ${profile.id} -->\n# 내 프로필\n`);
+  assert.equal(JSON.parse(readFileSync(join(f.repo,'.gitifact/spec/profile/history.jsonl'),'utf8')).reason,'오배치 정정 시험');f.commit();
+  const profile=moved.specs.find(s=>s.path.includes('/profile/'));f.write(profile.path,`<!-- gitifact-spec: ${profile.id} -->\n# 내 프로필\n`);
   const deleted=prepare(f,[{requirements:[id],reason:'기능 제외'}]);assert.deepEqual(deleted.changes[0].types,['deleted']);assert.equal(deleted.reasons[0].specId,profile.id);
 });
 test('invalid and stale reasons fail without writes; committed history cannot be rewritten',t=>{
@@ -70,7 +70,7 @@ test('invalid and stale reasons fail without writes; committed history cannot be
     {expected:state.expected,reasons:[{requirements:[id,id],reason:'duplicate'}]}]){
     assert.equal(input(f,'prepare',data).status,1);assert.deepEqual(fingerprint(f.repo),original);
   }
-  prepare(f,[{requirements:[id],reason:'original'}]);f.commit();const line=JSON.parse(history(f));line.reason='tampered';f.write('.tryce/spec/posts/history.jsonl',JSON.stringify(line)+'\n');
+  prepare(f,[{requirements:[id],reason:'original'}]);f.commit();const line=JSON.parse(history(f));line.reason='tampered';f.write('.gitifact/spec/posts/history.jsonl',JSON.stringify(line)+'\n');
   const tampered=fingerprint(f.repo);assert.equal(run(f,['changes','--experimental']).status,1);assert.deepEqual(fingerprint(f.repo),tampered);
 });
 test('failure publishing second history file rolls back both files',async t=>{

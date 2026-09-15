@@ -1,21 +1,24 @@
 import { lstat, readFile, realpath, mkdir, open, link, unlink } from 'node:fs/promises';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { InitError, parseManagedConfig } from '@tryce/core';
+import { InitError, parseManagedConfig } from '@gitifact/core';
 
 const missing = (error: unknown) => (error as NodeJS.ErrnoException).code === 'ENOENT';
 export const fileInfo = (path: string) => lstat(path).catch(error => { if (missing(error)) return undefined; throw error; });
 export async function configDirectory(root: string) {
-  const path = join(root, '.tryce');
+  const path = join(root, '.gitifact');
   const info = await fileInfo(path);
-  if (info && (!info.isDirectory() || info.isSymbolicLink())) throw new InitError('PATH_CONFLICT', '.tryce는 링크가 아닌 일반 디렉터리여야 합니다.');
+  if (info && (!info.isDirectory() || info.isSymbolicLink())) throw new InitError('PATH_CONFLICT', '.gitifact는 링크가 아닌 일반 디렉터리여야 합니다.');
   return info;
 }
 export async function readConfigFile(root: string): Promise<string | undefined> {
   await configDirectory(root);
-  const path = join(root, '.tryce', 'config.json');
+  const path = join(root, '.gitifact', 'config.json');
   const info = await fileInfo(path);
-  if (!info) return undefined;
+  if (!info) {
+    if (await fileInfo(join(root, '.tryce', 'config.json'))) throw new InitError('MIGRATION_REQUIRED', '.tryce 저장소입니다. gitifact migrate로 .gitifact에 전환하세요.');
+    return undefined;
+  }
   if (!info.isFile() || info.isSymbolicLink() || info.size > 65536) throw new InitError('PATH_CONFLICT', 'config.json은 64 KiB 이하의 일반 파일이어야 합니다.');
   const bytes = await readFile(path);
   const after = await fileInfo(path);
@@ -29,7 +32,7 @@ export async function readConfigFile(root: string): Promise<string | undefined> 
 
 // A hard link publishes the complete file without replacing an existing destination.
 export async function publishConfig(root: string, text: string, recheck: () => Promise<void>, beforePublish?: () => Promise<void>) {
-  const directory = join(root, '.tryce');
+  const directory = join(root, '.gitifact');
   await configDirectory(root);
   await mkdir(directory).catch(error => { if (error.code !== 'EEXIST') throw error; });
   const owner = await configDirectory(root);

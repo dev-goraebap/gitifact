@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test';
-import { browserSessionV1, repositoryStatusSuccessV1 } from '@tryce/contracts';
+import { browserSessionV1, repositoryStatusSuccessV1 } from '@gitifact/contracts';
 
 export const session = browserSessionV1.parse({
   contract: 'browser-session',
@@ -31,7 +31,7 @@ export async function mockApi(page: Page) {
 
 export const specs = {
  contract:'browser-specs',version:1,sessionId:session.sessionId,head:'c'.repeat(40),observedAt:'2026-09-14T00:00:00Z',working:false,
- features:[{id:'S-abcdefghij',path:'.tryce/spec/search/requirements.md',title:'검색 기능',description:'',requirements:[{id:'R-abcdefghij',title:'검색어 입력',body:'**검색어**를 입력합니다.\n\n조건: 검색어를 입력합니다.\n기대 동작: 결과를 보여줍니다.'}]}],
- events:[{key:'c'.repeat(40)+':R-abcdefghij',commit:'c'.repeat(40),id:'R-abcdefghij',date:'2026-09-14T00:00:00Z',author:'Fixture',email:'fixture@example.test',committer:'Fixture',message:'검색 도입',types:['created'],before:null,after:{id:'R-abcdefghij',title:'검색어 입력',body:'**검색어**를 입력합니다.',specId:'S-abcdefghij',path:'.tryce/spec/search/requirements.md'},reasons:['사용자가 검색을 요청했습니다.']}],
+ features:[{id:'S-abcdefghij',path:'.gitifact/spec/search/requirements.md',title:'검색 기능',description:'',requirements:[{id:'R-abcdefghij',title:'검색어 입력',body:'**검색어**를 입력합니다.\n\n조건: 검색어를 입력합니다.\n기대 동작: 결과를 보여줍니다.'}]}],
+ events:[{key:'c'.repeat(40)+':R-abcdefghij',commit:'c'.repeat(40),id:'R-abcdefghij',date:'2026-09-14T00:00:00Z',author:'Fixture',email:'fixture@example.test',committer:'Fixture',message:'검색 도입',types:['created'],before:null,after:{id:'R-abcdefghij',title:'검색어 입력',body:'**검색어**를 입력합니다.',specId:'S-abcdefghij',path:'.gitifact/spec/search/requirements.md'},reasons:['사용자가 검색을 요청했습니다.']}],
  contributors:[{name:'Fixture',email:'fixture@example.test',commits:3,latest:'2026-09-14T00:00:00Z'}],contributorsLimited:false,nextCursor:null,boundary:false,
 };
