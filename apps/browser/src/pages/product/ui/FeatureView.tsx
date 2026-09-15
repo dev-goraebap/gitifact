@@ -75,7 +75,7 @@ function FeatureDetail({ feature: selected, features, search, change }: { featur
       <Tab value="requirements" label="요구사항" panelId="feature-requirements"/>
       <Tab value="design" label="설계" panelId="feature-design"/>
     </TabList>
-    {tab === 'design' ? <VStack id="feature-design" role="tabpanel" aria-label="설계" padding={5} gap={4}>
+    {tab === 'design' ? <VStack id="feature-design" role="tabpanel" aria-label="설계" gap={4} className={styles.designPanel}>
       {selected.design ? <DesignDocument design={selected.design} features={features}/> : <PageState isCompact title="아직 작성된 설계가 없습니다." description="에이전트와 구현 방식을 정리하면 이곳에서 볼 수 있습니다."/>}
     </VStack> : <VStack id="feature-requirements" role="tabpanel" aria-label="요구사항" gap={0}>
       <VStack as="nav" aria-label="명세 목차" gap={2} className={styles.documentIndex}>

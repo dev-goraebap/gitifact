@@ -1,3 +1,5 @@
 /* Thin top bar pinned inside the content card: folder icon, project name / page name. */
 .bar { position: sticky; top: 0; z-index: 2; flex-shrink: 0; min-height: var(--gitifact-topbar-height); box-sizing: border-box; justify-content: space-between; align-items: center; padding-inline: var(--spacing-5); border-bottom: 1px solid var(--color-border); background: var(--color-background-surface); }
-.trail { align-items: center; color: var(--color-text-secondary); }
+.trail { align-items: center; color: var(--color-text-secondary); min-width: 0; }
+.crumb { font-size: .8125rem; color: var(--color-text-secondary); text-decoration: none; white-space: nowrap; }
+.crumb:hover { color: var(--color-text-primary); text-decoration: underline; }

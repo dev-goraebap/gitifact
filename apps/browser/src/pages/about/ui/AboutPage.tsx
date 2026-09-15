@@ -5,7 +5,7 @@ import { Text } from '@astryxdesign/core/Text';
 export function AboutPage() {
   return (
     <VStack gap={0}>
-      <PageHeader page="gitifact 소개" />
+      <PageHeader trail={[{ label: 'gitifact 소개' }]} />
       <VStack padding={6} gap={5} maxWidth="48rem">
       <Heading level={1}>gitifact 소개</Heading>
       <Text>gitifact는 에이전트와 함께 만드는 프로젝트의 요구사항과 결정 이력을 Git에 남기는 도구입니다.</Text>

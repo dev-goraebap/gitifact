@@ -17,6 +17,7 @@
 .documentHeading { padding-block:var(--spacing-4) var(--spacing-6); }
 .documentHeading h1 { font-size:1.75rem; line-height:1.4; letter-spacing:-.025em; }
 .featureDetail { padding-top:var(--spacing-6); }
+.designPanel { padding-block:var(--spacing-6); }
 .documentIndex { padding-block:var(--spacing-5); border-block:1px solid var(--color-border); }
 .documentIndex a { padding-block:var(--spacing-1); text-decoration:none; }
 .featureDetail a:hover { text-decoration:underline; }

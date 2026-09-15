@@ -19,7 +19,7 @@ export function GitStatusPage() {
   };
   return (
     <VStack gap={0}>
-      <PageHeader page="Git 상태" />
+      <PageHeader trail={[{ label: 'Git 상태' }]} />
       <VStack padding={6} gap={5}>
       <Heading level={1}>Git 상태</Heading>
       <Text color="secondary">현재 checkout에서 관측한 변경 파일입니다.</Text>
