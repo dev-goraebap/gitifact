@@ -138,3 +138,9 @@ Markdown 명세·변경 이유·Git 커밋 연결과 요구사항 이력·제품
 이유 기록과 관련 파일 커밋을 한 명령으로 하는 `spec commit`, 구형 명령 삭제, CRLF checkout 커밋 수정, 브라우저 SVG 워드마크를 배포한다. `spec prepare/verify/commit-plan/commit-apply`는 deprecated이며 0.6.0에서 제거한다. req·note·mode·brief·구형 commit·init --mode·spec-preview는 삭제했으므로 기존 JSON 프로젝트는 0.4.0 이하 CLI로 읽는다. 설계와 측정은 [MVP 전환 계획](mvp-transition.md)의 단일 커밋 명령 절과 [개발 환경](development.md)을 따른다.
 
 로고 커밋 af6503e와 CLI 커밋 e808f68 기준으로 `pnpm install --frozen-lockfile`과 `pnpm check`를 통과했다. core 14개·contracts 4개·CLI 100개·브라우저 17개·스킬 5개와 workspace 밖 패키지 설치·실행을 확인했다. CLI 번들 SHA-256은 지정 빌드와 같은 `41223f684db38ea8d8032d6e30a6535b1dcd75ce96d2421887638acf378e1e83`이다. 구형 형식 시험용 `.tmp/demo`는 새 버전이 읽지 않으므로 더 이상 갱신·확인하지 않으며 게시 확인 절차에서 뺐다.
+
+## 0.5.0 게시 결과
+
+2026-09-15 준비 커밋 75db585까지 main을 푸시하고 `apps/cli`에서 Git 검사를 유지한 pnpm publish로 공개 게시했다. latest는 0.5.0, 라이선스는 MIT다. 모의 게시·실제 게시·레지스트리의 integrity는 모두 `sha512-hLeY9nUCHa1P6Eje+s7R4u4rWG7saPUK1sovRKBlZ8Ni9HlDSwA3izo1HHcWQEYfChqK/F82/G9xCWjNQ5AKMA==`다. 배포물 281개 파일은 dist·README·LICENSE·package.json 범위에 한정됐고 SVG 로고가 포함되고 Unbounded 폰트는 빠졌다.
+
+레지스트리에서 새 폴더에 설치한 dist 278개 파일이 로컬 검증 빌드와 바이트 단위로 일치했고 main.js는 지정 빌드 해시와 같다. 새 Git 시험 프로젝트에서 version·help(삭제한 명령 없음), schemaVersion 1 초기화, spec save, spec commit dry-run·실행, spec read와 깨끗한 작업 폴더를 확인했다. 브라우저 서버의 명세 API와 로고 경로는 응답했고 제거한 project API는 404였다. 확인 스크립트와 로그는 `.tmp/releases/0.5.0/`에 보관한다. 기존 인증 세션으로 게시했으며 인증 파일과 토큰은 조회·변경하지 않았다.
