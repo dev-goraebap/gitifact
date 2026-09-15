@@ -1,4 +1,4 @@
-<!-- tryce-design: S-zyro4g3e5f -->
+<!-- gitifact-design: S-zyro4g3e5f -->
 
 # Git 기록 연결 설계
 
@@ -14,18 +14,18 @@
 - CLI는 작업 폴더와 HEAD의 명세를 파싱하고 최종 차이를 구한다. 파일 이동 후에도 ID가 같으면 동일 항목으로 추적한다.
 
 ## 처리 흐름
-<!-- tryce-ref: R-wpeh3aib32 -->
+<!-- gitifact-ref: R-wpeh3aib32 -->
 
 1. 에이전트는 커밋 요청을 받으면 실제 diff와 관련 테스트, 프로젝트 정책을 확인한다.
 2. spec commit에 선택 경로, 변경 이유, 메시지, 실제 권한 근거를 전달한다. CLI는 입력된 자연어 권한의 진위를 판정하지 않는다.
 3. CLI는 잠금 아래 HEAD·작업 명세·선택 경로를 검증하고 필요한 이유 파일을 준비한다. dry-run은 쓰지 않고 예상 결과를 반환한다.
 4. 실제 실행에서는 이유 파일을 반영한 뒤 격리 index로 관련 경로를 커밋한다. 실행 전 기존 staging이 있으면 보존하고 거부한다.
-5. 커밋 결과와 선택 경로를 확인한다. 요구사항 변경은 Tryce-Req, 설계 변경은 Tryce-Design 트레일러에 연결한다. 설계만 바뀌면 요구사항 변경을 만들지 않는다.
+5. 커밋 결과와 선택 경로를 확인한다. 요구사항 변경은 Gitifact-Req, 설계 변경은 Gitifact-Design 트레일러에 연결한다. 설계만 바뀌면 요구사항 변경을 만들지 않는다.
 
 브라우저는 커밋 10개 단위로 로그를 읽고 필요한 blob을 일괄 조회한다. 요구사항은 R-ID별로, 설계는 S-ID별로 비교한다. 같은 커밋의 항목을 함께 표시하되 각 명세의 변경 관계를 구분한다.
 
 ## 오류 처리와 검증
-<!-- tryce-ref: R-w4xotddy7p, R-droz5whebf -->
+<!-- gitifact-ref: R-w4xotddy7p, R-droz5whebf -->
 
 오래된 입력, 선택하지 않은 명세 변경, 기존 staging, 지원하지 않는 링크·필터는 커밋 전에 거부한다. 훅이 거부하고 HEAD가 그대로라면 이번에 쓴 이유 파일과 index를 실행 전으로 되돌린다. 다른 프로세스가 파일을 바꿨거나 HEAD가 달라졌다면 임의 복원하지 않고 잠금과 복구 자료를 남긴다.
 
@@ -34,17 +34,17 @@
 ## 주요 설계 결정
 
 ### 이유 누락은 거부하지 않고 표시한다
-<!-- tryce-ref: R-r6sufs7aez -->
+<!-- gitifact-ref: R-r6sufs7aez -->
 
 이유가 없어도 커밋하고 withoutReason에 해당 변경 ID를 표시한다. 이유를 필수로 요구하면 에이전트가 알 수 없는 이유를 지어낼 수 있다. history.jsonl에는 before/after를 복제하지 않는다. 커밋 사이의 짧은 초안 수정까지 영구 이력으로 남길 필요가 없기 때문이다.
 
 ### 명세 변경 여부는 Git blob ID로 비교한다
-<!-- tryce-ref: R-wpeh3aib32 -->
+<!-- gitifact-ref: R-wpeh3aib32 -->
 
 core.autocrlf=true에서 LF 명세가 CRLF로 checkout돼도 변경으로 보지 않는다. 필터 검사는 줄바꿈 변환만 허용하고 그 밖의 내용 변경은 거부한다. CLI가 Git 속성과 무관하게 줄바꿈을 무시하는 방식은 사용하지 않는다.
 
 ### 이유 파일은 커밋 전에 반영하고 실패 시 복원한다
-<!-- tryce-ref: R-w4xotddy7p, R-droz5whebf -->
+<!-- gitifact-ref: R-w4xotddy7p, R-droz5whebf -->
 
 작업 폴더를 읽는 훅도 이유 파일을 볼 수 있어야 한다. 커밋 성공 후에만 쓰는 방식은 사용하지 않는다. 거부 후 이유 파일을 그대로 남기는 방식도 다음 커밋에 잘못 이어질 수 있어 사용하지 않는다.
 

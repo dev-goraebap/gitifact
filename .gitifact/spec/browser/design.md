@@ -1,4 +1,4 @@
-<!-- tryce-design: S-jqxgddhsdf -->
+<!-- gitifact-design: S-jqxgddhsdf -->
 
 # 명세 브라우저 설계
 
@@ -7,14 +7,14 @@
 명세 이력·제품 기능·기여자를 연결하는 읽기 전용 브라우저다. React·Astryx로 UI를 구성하고 TanStack Router가 경로·선택·필터를, TanStack Query가 서버 조회 상태를 관리한다. 브라우저는 파일이나 Git 명령을 직접 실행하지 않는다.
 
 ## 구조와 데이터
-<!-- tryce-ref: R-5eehizubwl -->
+<!-- gitifact-ref: R-5eehizubwl -->
 
 CLI 로컬 서버가 정적 앱과 세션·명세 API를 제공한다. browser-specs 계약은 현재 기능, Git 명세 변경, 기여자, 다음 커서를 전달한다. 현재 원문은 작업 폴더에서, 이력의 전후·작성자·시점은 Git에서 읽는다. 미커밋 내용은 작업 상태라고 안내한다.
 
 Query 키에는 origin·서버 세션·worktree를 포함한다. API 요청은 세션 헤더를 보내며 응답 형식과 세션을 검증한다. FSD의 entities는 조회를, pages/product는 화면 구성과 검색 상태를 담당한다.
 
 ## 활동 타임라인
-<!-- tryce-ref: R-tkl3lrrlpu, R-hsflueyc4b -->
+<!-- gitifact-ref: R-tkl3lrrlpu, R-hsflueyc4b -->
 
 서버는 first-parent Git 로그의 관련 커밋 10개를 최신순으로 읽고 필요한 blob을 일괄 조회한다. 커밋별 스냅샷은 프로세스 메모리에 캐시한다. 다음 커서는 관측 HEAD에 연결해 다른 시점의 페이지가 섞이지 않게 한다.
 
@@ -23,14 +23,14 @@ Query 키에는 origin·서버 세션·worktree를 포함한다. API 요청은 �
 본문은 1024px 중앙 컬럼이며 스크롤은 콘텐츠 카드가 담당한다. 제목은 스크롤로 사라지고 필터 줄은 상단 바 아래에 고정된다. 종류·기능·작성자·검색 필터는 불러온 범위에 적용한다. 더보기는 기존 목록에 다음 페이지를 추가하며 실패 시 재시도할 수 있다. 모든 이력을 처음부터 한 번에 분석하지 않는다.
 
 ## 제품 기능
-<!-- tryce-ref: R-xqf3xsumye -->
+<!-- gitifact-ref: R-xqf3xsumye -->
 
 기능 목록은 S-ID별 명세를 보여준다. 상세의 요구사항 탭은 제목·본문·수용 조건을, 설계 탭은 문서 전체를 표시한다. 설계가 없으면 미작성 상태를 안내한다.
 
 feature·selected·tab은 URL에 저장한다. 설계의 R-ID 참조는 현재 전체 기능에서 찾아 해당 요구사항으로 연결한다. 삭제된 참조는 현재 명세에 없다고 표시한다. 과거 설계의 링크도 현재 요구사항으로 연결한다. Markdown은 실행 지시가 아닌 데이터로 렌더링한다.
 
 ## 오류 처리와 검증
-<!-- tryce-ref: R-5eehizubwl -->
+<!-- gitifact-ref: R-5eehizubwl -->
 
 짧은 조회에는 로딩 표시를 지연하고 긴 조회에는 골격 화면을 제공한다. 재조회 중 기존 내용을 유지하며 빈 결과·검색 결과 없음·조회 실패를 구분한다. HEAD·원문이 조회 중 바뀌거나 세션이 교체되면 다시 조회하도록 알린다.
 

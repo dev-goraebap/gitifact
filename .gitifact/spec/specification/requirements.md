@@ -1,9 +1,9 @@
-<!-- tryce-spec: S-qk6cmgqgmt -->
+<!-- gitifact-spec: S-qk6cmgqgmt -->
 
 # 기능 명세 관리 요구사항
 
 ## 기능별 Markdown 명세
-<!-- tryce-req: R-errzmn5edh -->
+<!-- gitifact-req: R-errzmn5edh -->
 
 관련 요구사항을 응집된 기능별 requirements.md로 정리한다. 코드 모듈이나 DDD 계층을 강제하지 않는다. 구현 설계는 같은 기능의 design.md에 정리하며 작업 문서는 현재 MVP 대상이 아니다.
 
@@ -13,7 +13,7 @@
    기대 동작: 기존 명세에 적합하면 함께 정리하고, 별도 기능이면 새 명세를 만듭니다. docs/specs에 중복 원본을 만들지 않습니다.
 
 ## 경로와 독립적인 식별자
-<!-- tryce-req: R-fypnjx6dju -->
+<!-- gitifact-req: R-fypnjx6dju -->
 
 명세는 S-난수, 요구사항은 R-난수로 식별하며 난수는 소문자 base32 10자다. 기능 이름을 요구사항 ID에 포함하지 않는다.
 
@@ -23,7 +23,7 @@
    기대 동작: R-ID를 유지하고 새 위치에서도 같은 요구사항으로 추적합니다. 다른 요구사항에 ID를 재사용하지 않습니다.
 
 ## 읽기 쉬운 수용 조건
-<!-- tryce-req: R-obomewrs7e -->
+<!-- gitifact-req: R-obomewrs7e -->
 
 요구사항은 제목·본문과 조건 및 기대 동작으로 표현한다. 현재 frontmatter는 사용하지 않는다.
 
@@ -33,7 +33,7 @@
    기대 동작: 기술적 JSON 구조 대신 제품 동작과 일반 텍스트 수용 조건을 읽을 수 있습니다.
 
 ## 유효한 저장과 오류 보존
-<!-- tryce-req: R-uvehohexvw -->
+<!-- gitifact-req: R-uvehohexvw -->
 
 CLI는 ID·형식·참조와 원문 상태를 검사한다. 조회 오류나 손상을 빈 정상 결과로 처리하지 않는다.
 
@@ -43,7 +43,7 @@ CLI는 ID·형식·참조와 원문 상태를 검사한다. 조회 오류나 손
    기대 동작: 저장을 거부하고 원인을 알립니다. 다른 작업·원문을 덮어쓰거나 없는 요구사항을 만들어 성공으로 표시하지 않습니다.
 
 ## 기능별 구현 설계
-<!-- tryce-req: R-hbz77tj5kc -->
+<!-- gitifact-req: R-hbz77tj5kc -->
 
 기능의 여러 요구사항을 구현하는 구조와 처리 방식을 같은 폴더의 design.md에 정리한다. 설계는 동일한 S-ID를 사용하며 별도 문단 ID를 발급하지 않는다.
 

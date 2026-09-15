@@ -1,2 +1,3 @@
 {"id":"H-2ijj6mnkfh","requirements":["R-errzmn5edh","R-fypnjx6dju","R-obomewrs7e","R-uvehohexvw"],"reason":"사용자가 합의한 새 MVP 방향에 따라 유효한 요구사항을 기능별 Markdown으로 정리하고 구형 JSON·승인·note 형식을 제거한다. 단기 초안 변경 대신 Git에 커밋된 최종 명세와 변경 이유를 추적한다."}
 {"id":"H-jsgueruowo","requirements":["R-errzmn5edh","R-hbz77tj5kc"],"designs":["S-qk6cmgqgmt"],"reason":"요구사항과 설계를 함께 작성하고 설계만 바뀐 이력도 구분해 볼 수 있도록 합의한 범위를 반영했다. 사용자 요청에 따라 이 기능의 현재 구현 구조와 제한을 설계 문서로 정리했다."}
+{"id":"H-bghyieawxj","requirements":[],"designs":["S-qk6cmgqgmt"],"reason":"저장 경로가 .gitifact/spec/<기능>/이고 마커가 gitifact-spec·gitifact-req·gitifact-design·gitifact-ref다. 과거 커밋의 .tryce 경로와 tryce-* 마커는 읽기만 지원하며 gitifact migrate가 작업 폴더를 전환한다."}

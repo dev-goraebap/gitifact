@@ -1,9 +1,9 @@
-<!-- tryce-spec: S-b4ubq7ghty -->
+<!-- gitifact-spec: S-b4ubq7ghty -->
 
 # 기여자 조회 요구사항
 
 ## Git 작성자별 참여 조회
-<!-- tryce-req: R-ybmsjjgqtp -->
+<!-- gitifact-req: R-ybmsjjgqtp -->
 
 프로젝트 Git 이력에서 기여자를 추려 기능별 참여와 관련 활동을 보여준다. author와 committer는 구분하며 커밋 작성자를 요구사항 요청자나 승인자로 단정하지 않는다.
 

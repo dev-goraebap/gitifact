@@ -1,4 +1,4 @@
-<!-- tryce-design: S-qk6cmgqgmt -->
+<!-- gitifact-design: S-qk6cmgqgmt -->
 
 # 기능 명세 관리 설계
 
@@ -7,23 +7,23 @@
 기능별 현재 요구사항과 구현 설계를 Markdown으로 관리한다. 순수 형식·편집 규칙은 packages/core에, 파일 접근과 잠금·복구는 CLI 어댑터에 둔다. Git 연결은 Git 기록 연결 설계에서 다룬다.
 
 ## 구조와 데이터
-<!-- tryce-ref: R-errzmn5edh, R-fypnjx6dju, R-obomewrs7e -->
+<!-- gitifact-ref: R-errzmn5edh, R-fypnjx6dju, R-obomewrs7e -->
 
-.tryce/spec/<기능>/에 requirements.md, 선택적인 design.md, 변경 이유가 생겼을 때 history.jsonl을 둔다. 별도 요구사항 목록이나 docs/specs 복사본은 만들지 않는다.
+.gitifact/spec/<기능>/에 requirements.md, 선택적인 design.md, 변경 이유가 생겼을 때 history.jsonl을 둔다. 별도 요구사항 목록이나 docs/specs 복사본은 만들지 않는다.
 
-requirements.md는 첫 줄의 tryce-spec 주석에 S-ID를, 각 요구사항 제목 아래 tryce-req 주석에 R-ID를 둔다. 최상위 제목은 문서 이름이고 요구사항은 제목·본문·수용 조건으로 구성한다. 조건과 기대 동작은 일반 텍스트로 읽힌다. frontmatter는 사용하지 않는다.
+requirements.md는 첫 줄의 gitifact-spec 주석에 S-ID를, 각 요구사항 제목 아래 gitifact-req 주석에 R-ID를 둔다. 최상위 제목은 문서 이름이고 요구사항은 제목·본문·수용 조건으로 구성한다. 조건과 기대 동작은 일반 텍스트로 읽힌다. frontmatter는 사용하지 않는다.
 
 ID는 CLI가 발급하는 소문자 base32 10자다. 이름·폴더와 독립적이며 이동·개명에도 유지한다. 이름 변경을 다른 요구사항 생성으로 처리하지 않는다.
 
 ## 설계 문서
-<!-- tryce-ref: R-hbz77tj5kc -->
+<!-- gitifact-ref: R-hbz77tj5kc -->
 
-design.md의 tryce-design 주석은 소유 기능의 S-ID와 일치해야 한다. 최상위 제목과 비어 있지 않은 본문을 저장하며 개요·구조와 데이터·처리 흐름·오류 처리와 검증·주요 결정·미결 사항 중 필요한 절을 쓴다.
+design.md의 gitifact-design 주석은 소유 기능의 S-ID와 일치해야 한다. 최상위 제목과 비어 있지 않은 본문을 저장하며 개요·구조와 데이터·처리 흐름·오류 처리와 검증·주요 결정·미결 사항 중 필요한 절을 쓴다.
 
-관련 절은 tryce-ref 주석으로 실제 R-ID를 참조한다. 참조는 현재 전체 명세에서 찾아 다른 기능으로 이동한 요구사항에도 연결할 수 있다. 코드 블록의 예시는 참조로 해석하지 않는다. 설계의 현재 문서 전체가 비교 단위이며 별도 문단 ID는 없다. tasks.md는 지원하지 않는다.
+관련 절은 gitifact-ref 주석으로 실제 R-ID를 참조한다. 참조는 현재 전체 명세에서 찾아 다른 기능으로 이동한 요구사항에도 연결할 수 있다. 코드 블록의 예시는 참조로 해석하지 않는다. 설계의 현재 문서 전체가 비교 단위이며 별도 문단 ID는 없다. tasks.md는 지원하지 않는다.
 
 ## 저장 흐름
-<!-- tryce-ref: R-uvehohexvw -->
+<!-- gitifact-ref: R-uvehohexvw -->
 
 1. spec working으로 전체 명세와 stamp, 참조 경고를 읽는다.
 2. spec save에 expected stamp와 create·add·update·move·rename-spec·set-design·delete-design 중 필요한 작업을 전달한다.

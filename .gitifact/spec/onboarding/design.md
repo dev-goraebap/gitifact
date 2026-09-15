@@ -1,4 +1,4 @@
-<!-- tryce-design: S-eordsbir6z -->
+<!-- gitifact-design: S-eordsbir6z -->
 
 # 프로젝트 도입 설계
 
@@ -7,14 +7,14 @@
 하나의 Git 저장소에 설정과 도입 기준선을 만들고 에이전트 스킬을 연결한다. 초기화, 스킬 설치, 명세 작성은 별도 작업이며 init이 커밋이나 스킬 설치까지 대신하지 않는다.
 
 ## 구조와 데이터
-<!-- tryce-ref: R-lpwtvv6ldp -->
+<!-- gitifact-ref: R-lpwtvv6ldp -->
 
-.tryce/config.json은 schemaVersion과 baseline을 저장한다. HEAD가 있으면 기준 커밋과 Git 객체 형식을, 첫 커밋 전이면 empty 기준선을 기록한다. 모드·승인 묶음은 저장하지 않는다.
+.gitifact/config.json은 schemaVersion과 baseline을 저장한다. HEAD가 있으면 기준 커밋과 Git 객체 형식을, 첫 커밋 전이면 empty 기준선을 기록한다. 모드·승인 묶음은 저장하지 않는다.
 
 CLI의 init-repository 어댑터가 저장소·현재 checkout·HEAD·index를 관측하고 initializeSpecProject가 도입 조건을 확인한다. 설정 파일 어댑터는 임시 파일로 준비하고 기존 파일을 덮어쓰지 않는 방식으로 게시한다.
 
 ## 초기화 흐름
-<!-- tryce-ref: R-lpwtvv6ldp, R-rmwolikuep -->
+<!-- gitifact-ref: R-lpwtvv6ldp, R-rmwolikuep -->
 
 1. 에이전트는 Git 저장소, 설치 제한과 커밋 정책을 확인한다. Git이 없으면 생성 권한을 확인하며 CLI가 임의로 git init을 실행하지 않는다.
 2. init --dry-run으로 대상 경로와 기준선을 확인한 뒤 init을 실행한다.
@@ -22,7 +22,7 @@ CLI의 init-repository 어댑터가 저장소·현재 checkout·HEAD·index를 �
 4. 새 설정이면 무시 규칙과 기존 기록을 검사하고 게시 직전 HEAD·index·설정 상태를 다시 대조한다. 파일을 게시한 뒤에도 관측 상태를 확인한다.
 
 ## 스킬 연결
-<!-- tryce-ref: R-b2q2g4sgsd -->
+<!-- gitifact-ref: R-b2q2g4sgsd -->
 
 에이전트는 기존 AGENTS.md·CLAUDE.md와 참조 지침을 읽고 스킬 경로를 최소 안내로 연결한다. 파일이 없으면 사용하는 에이전트에 맞는 지침 파일 하나를 준비한다. 이 자연어 지침 편집은 CLI가 자동 수행하지 않는다.
 

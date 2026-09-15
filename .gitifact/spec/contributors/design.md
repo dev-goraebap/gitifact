@@ -1,9 +1,9 @@
-<!-- tryce-design: S-b4ubq7ghty -->
+<!-- gitifact-design: S-b4ubq7ghty -->
 
 # 기여자 조회 설계
 
 ## 개요
-<!-- tryce-ref: R-ybmsjjgqtp -->
+<!-- gitifact-ref: R-ybmsjjgqtp -->
 
 Git author를 기준으로 기여자와 명세 활동을 표시한다. 커밋 작성자를 요구사항 요청자나 승인자로 추정하지 않고, 커밋 수를 구현 완료나 기여 품질로 해석하지 않는다.
 
