@@ -1,8 +1,8 @@
 @import '@astryxdesign/core/reset.css';
 @import '@astryxdesign/core/astryx.css';
 @import '@astryxdesign/theme-stone/theme.css';
-@import '@fontsource/outfit/latin-800.css';
-@import '@fontsource/noto-sans-kr/800.css';
+/* Self-hosted title face, preloaded from index.html. `optional` never swaps after first paint, so a reload does not reflow. */
+@font-face { font-family: 'Outfit'; font-style: normal; font-weight: 800; font-display: optional; src: url('/fonts/outfit-latin-800-normal.woff2') format('woff2'); }
 html,
 body,
 #root {
@@ -11,13 +11,14 @@ body,
 }
 body {
   font-family: var(--font-family-body, system-ui), sans-serif;
+  overflow-x: hidden;
 }
 a {
   color: var(--color-text-accent, inherit);
 }
 
 #root h1, #root h2 {
-  font-family: 'Outfit', 'Noto Sans KR', system-ui, sans-serif;
+  font-family: 'Outfit', system-ui, sans-serif;
   font-weight: 800;
   letter-spacing: -.035em;
 }

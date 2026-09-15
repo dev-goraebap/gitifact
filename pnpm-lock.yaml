@@ -23,12 +23,6 @@ importers:
       '@astryxdesign/theme-stone':
         specifier: 0.6.0
         version: 0.6.0(@astryxdesign/core@0.6.0(@stylexjs/stylex@0.19.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0)
-      '@fontsource/noto-sans-kr':
-        specifier: 5.3.0
-        version: 5.3.0
-      '@fontsource/outfit':
-        specifier: 5.3.0
-        version: 5.3.0
       '@gitifact/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
@@ -472,12 +466,6 @@ packages:
     engines: {node: '>=18'}
     cpu: [x64]
     os: [win32]
-
-  '@fontsource/noto-sans-kr@5.3.0':
-    resolution: {integrity: sha512-/JnpTjaCOXW7xUoqOyCVYSr05VOkDy5Yla9O+WAEiS7u+yYLsmHoqj6v1W0bf91G8G3XA2+NnRS3CX2Tf/FVZg==}
-
-  '@fontsource/outfit@5.3.0':
-    resolution: {integrity: sha512-0AVHzTTVJSxWDOxPKSfMeHhZeBFDU3cmgrcOb76ZEyhGo0+xgyG3GsLF3h9+X8w0IX7G4jzjJgFQEBiWdX6VgA==}
 
   '@formatjs/fast-memoize@3.1.7':
     resolution: {integrity: sha512-zXfhLpvA6T7+efdt9JLbBwZ00tT7NsBMDVnDu8rpHeNNv8KfRZAMo2gkG0k9lK/Nzc//3kJ9pImsfuJxk3KhUA==}
@@ -1739,10 +1727,6 @@ snapshots:
 
   '@esbuild/win32-x64@0.28.2':
     optional: true
-
-  '@fontsource/noto-sans-kr@5.3.0': {}
-
-  '@fontsource/outfit@5.3.0': {}
 
   '@formatjs/fast-memoize@3.1.7': {}
 

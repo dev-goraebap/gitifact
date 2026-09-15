@@ -14,7 +14,7 @@ reset.css → astryx.css → stone theme.css → 앱 전역 스타일 순으로 
 
 ## 글꼴·아이콘·빈 화면
 
-제목에는 Outfit 800, 한글 제목에는 Noto Sans KR 800을 사용한다. GITIFACT 워드마크는 README의 이미지 로고를 참고해 경로로 옮긴 `apps/browser/public/gitifact-logo.svg`를 사용한다. 둥근 획과 글자 비율을 유지하고 배경 질감은 제외한다. CSS 마스크에 텍스트 색상 토큰을 적용해 밝은 테마와 어두운 테마에서 표시하며 홈 링크에 접근 가능한 이름을 제공한다. 로고 전용 Unbounded 폰트와 해당 라이선스 사본은 제거했다. 본문은 기존 읽기용 시스템 글꼴을 유지한다. 제목용 Fontsource 자산은 로컬 번들에 포함하고 font-display: swap을 사용한다. OFL 원문은 public/licenses에 포함한다. 외부 CDN은 호출하지 않는다.
+제목에는 Outfit 800을 쓰고 한글은 시스템 글꼴로 둔다. Outfit은 public/fonts에 자체 호스팅하며 index.html에서 preload하고 font-display: optional로 선언해 새로고침 때 글꼴이 바뀌며 흔들리지 않게 한다. 2026-09-15 이전의 fontsource Noto Sans KR 800(124개 서브셋, swap 표시)은 재배치의 원인이라 제거했다. GITIFACT 워드마크는 README의 이미지 로고를 참고해 경로로 옮긴 `apps/browser/public/gitifact-logo.svg`를 사용한다. 둥근 획과 글자 비율을 유지하고 배경 질감은 제외한다. CSS 마스크에 텍스트 색상 토큰을 적용해 밝은 테마와 어두운 테마에서 표시하며 홈 링크에 접근 가능한 이름을 제공한다. 로고 전용 Unbounded 폰트와 해당 라이선스 사본은 제거했다. 본문은 기존 읽기용 시스템 글꼴을 유지한다. 제목용 Fontsource 자산은 로컬 번들에 포함하고 font-display: swap을 사용한다. OFL 원문은 public/licenses에 포함한다. 외부 CDN은 호출하지 않는다.
 
 메뉴 아이콘은 Gentask apps/desktop/src/renderer/shared/ui/icons의 SvgIcon·HgiHistory·HgiMembers·HgiRequirement 패턴과 @hugeicons/core-free-icons 4.3.0을 사용한다. 필요한 아이콘만 하위 경로에서 가져온다. 장식 아이콘은 접근성 트리에서 숨기고 메뉴의 텍스트 이름을 유지한다.
 

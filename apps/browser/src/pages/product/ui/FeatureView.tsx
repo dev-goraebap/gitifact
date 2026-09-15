@@ -27,7 +27,7 @@ export function FeatureView({ features, search, change }: { features: SpecFeatur
 function Contributors({ people }: { people: SpecFeature['contributors'] }) {
   if (!people.length) return <Text type="supporting" color="secondary">미커밋</Text>;
   const shown = people.slice(0, 3);
-  return <AvatarGroup size="sm" shape="rounded">
+  return <AvatarGroup size="sm" shape="circle">
     {shown.map(p => <Avatar key={p.email} name={p.name} src={avatarSource(p.email)}/>)}
     {people.length > shown.length && <AvatarGroupOverflow count={people.length - shown.length}/>}
   </AvatarGroup>;

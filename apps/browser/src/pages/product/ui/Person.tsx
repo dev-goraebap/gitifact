@@ -8,5 +8,5 @@ export function avatarSource(email:string) {
   return 'data:image/svg+xml,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><rect width="36" height="36" fill="hsl(${Math.abs(hash)%360} 25% 85%)"/><g fill="hsl(${Math.abs(hash)%360} 35% 30%)">${tiles}</g></svg>`);
 }
 export function Person({name,email,avatarOnly=false}: {name:string;email:string;avatarOnly?:boolean}) {
-  return <HStack gap={2}><Avatar name={name} src={avatarSource(email)} shape="rounded" size="sm"/>{!avatarOnly&&<Text type="supporting">{name}</Text>}</HStack>;
+  return <HStack gap={2}><Avatar name={name} src={avatarSource(email)} shape="circle" size="sm"/>{!avatarOnly&&<Text type="supporting">{name}</Text>}</HStack>;
 }
