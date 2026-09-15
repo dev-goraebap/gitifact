@@ -33,7 +33,7 @@ pnpm publish --access public --tag latest --publish-branch main
 npm view @tryce/cli@0.2.1 version license dist.integrity
 ```
 
-레지스트리 integrity를 실제 게시 결과와 비교하고, 새 시험 폴더에 레지스트리에서 설치해 버전·help와 실제 Git 프로젝트 명령을 실행한다. 모의 실행과 해시가 다르면 게시 전에 파일 내용과 배포 매니페스트를 비교해 원인을 확인한다. `.tmp/demo`의 기존 기록을 보존하며 의존 패키지를 갱신한다. 로컬 검증·원격 게시·설치 확인의 성공 여부를 각각 기록한다.
+레지스트리 integrity를 실제 게시 결과와 비교하고, 새 시험 폴더에 레지스트리에서 설치해 버전·help와 실제 Git 프로젝트 명령을 실행한다. 모의 실행과 해시가 다르면 게시 전에 파일 내용과 배포 매니페스트를 비교해 원인을 확인한다. 로컬 검증·원격 게시·설치 확인의 성공 여부를 각각 기록한다.
 
 Git 커밋과 npm 게시를 구분한다. 검증한 변경은 커밋하며, Git 원격 푸시는 별도로 요청받은 범위에서 수행한다.
 
@@ -132,3 +132,9 @@ Markdown 명세·변경 이유·Git 커밋 연결과 요구사항 이력·제품
 2026-09-14 릴리스 커밋 4fb9c68을 main에 푸시하고 `apps/cli`에서 Git 검사를 유지한 pnpm publish로 공개 게시했다. latest는 0.4.0이다. 모의 게시와 레지스트리 integrity는 `sha512-2+YX7ZBIofy0SdOqKs6QcFvmicaslJacJf/ppJTu/GvIjLlkvngp0brbaYgADaYF6MFA49XbJpq9fKBqI6LTkg==`로 일치한다. 배포물 282개 파일은 dist·README·LICENSE·package.json 범위에 한정됐다.
 
 레지스트리 설치본의 dist 전체가 로컬 검증 빌드와 바이트 단위로 일치했다. 새 Git 시험 프로젝트에서 버전·도움말·schemaVersion 1 초기화·명세 작성·브라우저 API와 정적 기능 경로를 확인했다. `.tmp/demo`도 0.4.0으로 갱신했고 기존 .tryce 파일의 해시는 모두 유지됐다. 기존 인증 세션으로 게시했으며 인증 파일과 토큰은 조회·변경하지 않았다.
+
+## 0.5.0 배포 준비
+
+이유 기록과 관련 파일 커밋을 한 명령으로 하는 `spec commit`, 구형 명령 삭제, CRLF checkout 커밋 수정, 브라우저 SVG 워드마크를 배포한다. `spec prepare/verify/commit-plan/commit-apply`는 deprecated이며 0.6.0에서 제거한다. req·note·mode·brief·구형 commit·init --mode·spec-preview는 삭제했으므로 기존 JSON 프로젝트는 0.4.0 이하 CLI로 읽는다. 설계와 측정은 [MVP 전환 계획](mvp-transition.md)의 단일 커밋 명령 절과 [개발 환경](development.md)을 따른다.
+
+로고 커밋 af6503e와 CLI 커밋 e808f68 기준으로 `pnpm install --frozen-lockfile`과 `pnpm check`를 통과했다. core 14개·contracts 4개·CLI 100개·브라우저 17개·스킬 5개와 workspace 밖 패키지 설치·실행을 확인했다. CLI 번들 SHA-256은 지정 빌드와 같은 `41223f684db38ea8d8032d6e30a6535b1dcd75ce96d2421887638acf378e1e83`이다. 구형 형식 시험용 `.tmp/demo`는 새 버전이 읽지 않으므로 더 이상 갱신·확인하지 않으며 게시 확인 절차에서 뺐다.
