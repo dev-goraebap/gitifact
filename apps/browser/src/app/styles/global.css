@@ -30,11 +30,11 @@ a {
 .tryce-wordmark::before {
   content: '';
   display: block;
-  width: calc(var(--spacing-4) * 9);
+  width: calc(var(--spacing-4) * 12);
   max-width: 100%;
-  aspect-ratio: 1850 / 380;
+  aspect-ratio: 2013 / 329;
   background-color: currentColor;
-  mask: url('/tryce-logo.svg') center / contain no-repeat;
+  mask: url('/gitifact-logo.svg') center / contain no-repeat;
 }
 @media (forced-colors: active) {
   .tryce-wordmark::before { background-color: LinkText; forced-color-adjust: none; }

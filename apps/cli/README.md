@@ -1,31 +1,33 @@
-# tryce 0.5.0
+# Gitifact CLI
+
+> Target release: `gitifact@0.1.0` (unscoped). This guide describes the renamed package; the code and storage transition must finish before publishing.
 
 Git-backed requirements and change history for coding agents. New projects use `schemaVersion: 1`, Markdown specifications and per-feature change reasons. Requires Node.js 24.x and Git.
 
-Install with `npm install -g @tryce/cli`. Load the installed tryce-workflow skill in the current agent session.
+Install with `npm install -g gitifact`. Load the installed gitifact-workflow skill in the current agent session.
 
 ```sh
-tryce init --dry-run
-tryce init
-tryce skills install --agent codex
-tryce spec working
-tryce spec save --file input.json
-tryce spec changes
-tryce spec commit --file commit.json --dry-run
-tryce spec commit --file commit.json
-tryce spec read --ref HEAD
-tryce spec diff --from BEFORE --to AFTER
+gitifact init --dry-run
+gitifact init
+gitifact skills install --agent codex
+gitifact spec working
+gitifact spec save --file input.json
+gitifact spec changes
+gitifact spec commit --file commit.json --dry-run
+gitifact spec commit --file commit.json
+gitifact spec read --ref HEAD
+gitifact spec diff --from BEFORE --to AFTER
 ```
 
 Initialization creates only configuration and the Git adoption baseline. It requires Git, accepts an unborn repository, preserves unrelated work and staging, and never performs a commit. Existing legacy configuration requires an explicit separate transition. Skill installation preserves edited sources; the agent handles AGENTS.md/CLAUDE.md linkage and reads the installed skill in the current session.
 
-The legacy `req`, `note`, `mode`, `brief`, `commit plan/apply` and `init --mode` commands and the `spec-preview` alias have been removed. Use CLI 0.4.0 or earlier to read legacy JSON projects. `browser` serves requirement history, current features and contributors from Markdown/Git.
+The legacy `req`, `note`, `mode`, `brief`, `commit plan/apply` and `init --mode` commands and the `spec-preview` alias have been removed. Historical JSON projects require the old `@tryce/cli@0.4.0` or earlier. `browser` serves requirement history, current features and contributors from Markdown/Git.
 
 The `spec` commands use the same input objects described by the installed workflow skill. Their output envelope is `contract: "spec", version: 1`. For a project with schemaVersion 1, config bytes are bound to working stamps and commit plans. Creation and edits never imply user approval or implementation completion.
 
 ## Browser
 
-Run `tryce browser` inside your project. It prints a local URL and stops with Ctrl+C. The read-only browser displays requirement history with before/after content, current feature specifications and Git contributors. History loads in pages; filtering applies to loaded results. No project records are changed by browsing.
+Run `gitifact browser` inside your project. It prints a local URL and stops with Ctrl+C. The read-only browser displays requirement history with before/after content, current feature specifications and Git contributors. History loads in pages; filtering applies to loaded results. No project records are changed by browsing.
 
 ## Commit
 
@@ -36,7 +38,7 @@ Run `tryce browser` inside your project. It prints a local URL and stops with Ct
 ```json
 {
   "reasons": [{ "requirements": ["R-…"], "reason": "…" }],
-  "paths": [".tryce/spec/posts/requirements.md", ".tryce/spec/posts/history.jsonl", "src/posts.ts"],
+  "paths": [".gitifact/spec/posts/requirements.md", ".gitifact/spec/posts/history.jsonl", "src/posts.ts"],
   "message": "…",
   "authorization": { "basis": "user-request", "evidence": "Actual request or policy basis" }
 }
@@ -46,9 +48,9 @@ Run `tryce browser` inside your project. It prints a local URL and stops with Ct
 
 By default, agents select related specifications, reasons, source and tests together. For a split policy, commit specification/reason files first and reference R-IDs from the later code commit. Changed specification/reason files must all be selected; partial selection of pending specifications is unsupported. A selected reason file with nothing to record is skipped. Do not stage files first. Existing staging, including intent-to-add, is preserved by refusing execution.
 
-The command rechecks content, instructions and HEAD under a lock, stages selected paths in an isolated index, and runs normal Git hooks and signing. A rejected commit with unchanged HEAD restores the reason files and the original index, so the same input can be retried. If another process edited a reason file meanwhile, that file is kept with recovery data under the Git directory's `tryce-spec-preview.lock`. An uncertain outcome after HEAD changes keeps all files and recovery evidence under `tryce-spec-commit.lock`; inspect HEAD and both indexes before recovery and do not blindly retry. Automatic crash recovery and migration of existing projects are not supported.
+The command rechecks content, instructions and HEAD under a lock, stages selected paths in an isolated index, and runs normal Git hooks and signing. A rejected commit with unchanged HEAD restores the reason files and the original index, so the same input can be retried. If another process edited a reason file meanwhile, that file is kept with recovery data under the Git directory's `gitifact-spec-preview.lock`. An uncertain outcome after HEAD changes keeps all files and recovery evidence under `gitifact-spec-commit.lock`; inspect HEAD and both indexes before recovery and do not blindly retry. Automatic crash recovery and migration of existing projects are not supported.
 
-`prepare`, `verify`, `commit-plan` and `commit-apply` are deprecated and will be removed in 0.6.0.
+`prepare`, `verify`, `commit-plan` and `commit-apply` are deprecated. Their previous removal target belonged to the Tryce release line; a Gitifact removal version has not been assigned.
 
 ## Compatibility and limits
 
@@ -60,6 +62,6 @@ MIT. Bundled dependency notices are included in `dist/THIRD_PARTY_NOTICES.txt`.
 
 ## Feature designs
 
-The development build supports optional `design.md` next to requirements.md. The workflow skill creates both by default for new features. Add `{type: "set-design", feature, title, body}` to spec save operations; use `{type: "delete-design", feature}` to remove it. The CLI writes the owning S-ID, while explicit `tryce-ref` annotations link actual R-IDs. Missing current references return warnings.
+The development build supports optional `design.md` next to requirements.md. The workflow skill creates both by default for new features. Add `{type: "set-design", feature, title, body}` to spec save operations; use `{type: "delete-design", feature}` to remove it. The CLI writes the owning S-ID, while explicit `gitifact-ref` annotations link actual R-IDs. Missing current references return warnings.
 
 Commit reasons may add `designs: ["S-…"]` alongside `requirements`. For a design-only reason, use `requirements: []`. Design changes have `kind: "design"` and do not become requirement changes. Use spec commit; deprecated commit-plan/apply do not accept new design changes. The browser displays designs in feature tabs and specification history. This extension is not yet published.
