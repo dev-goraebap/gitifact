@@ -51,7 +51,7 @@ test('bundled CLI serves a real checkout and refreshes changed files in the brow
       if (message.type() === 'error') errors.push(message.text());
     });
     await page.goto(new URL('/git', url).href);
-    await expect(page.getByText('Git 변경 경로가 없습니다. gitifact 검사는 미실행입니다.')).toBeVisible();
+    await expect(page.getByRole('heading', { name: '변경된 파일이 없습니다' })).toBeVisible();
     await writeFile(join(directory, 'actual-file.txt'), 'new work\n');
     await page.getByRole('button', { name: '상태 새로고침' }).click();
     await expect(page.getByRole('cell', { name: 'actual-file.txt', exact: true })).toBeVisible();

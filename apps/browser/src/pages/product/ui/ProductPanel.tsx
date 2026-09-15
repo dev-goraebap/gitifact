@@ -20,7 +20,7 @@ import { RequestState } from '../../../shared/ui/request-state';
 import { PageHeader } from '../../../widgets/page-header';
 import { useLoadingHold } from '../../../shared/ui/request-state/useLoadingHold';
 import { ViewSkeleton } from './ViewSkeleton';
-export function ProductPanel({session,view,search,change}:ProductProps&{session:BrowserSessionV1}) {
+export function ProductPanel({session,view,featureId,email,search,change}:ProductProps&{session:BrowserSessionV1}) {
  const query=useInfiniteQuery(specsOptions(session));
  const disconnected=query.error instanceof ApiError && query.error.code==='SESSION_CHANGED';
  const first=disconnected?undefined:query.data?.pages[0];
@@ -28,11 +28,11 @@ export function ProductPanel({session,view,search,change}:ProductProps&{session:
  const skeleton=useLoadingHold(!first&&!query.error);
  const ready=!!first&&!skeleton;
  const events=[...new Map((query.data?.pages.flatMap(p=>p.events)??[]).map(e=>[e.key,e])).values()];
- const title={history:'활동',features:'제품 기능',contributors:'기여자'}[view];
+ const title={history:'활동',features:'제품 기능',contributors:'참여자'}[view];
  const centered=true;
- const detailFeature=view==='features'?first?.features.find(f=>f.id===search.feature||f.requirements.some(r=>r.id===search.selected)):undefined;
- const detailPerson=view==='contributors'?first?.contributors.find(p=>p.email===search.author):undefined;
- const detailPage=(view==='features'&&!!(search.feature||search.selected))||(view==='contributors'&&!!search.author);
+ const detailFeature=featureId?first?.features.find(f=>f.id===featureId):undefined;
+ const detailPerson=email?first?.contributors.find(p=>p.email===email):undefined;
+ const detailPage=!!(featureId||email);
  const root={history:'/',features:'/features',contributors:'/contributors'}[view];
  const trail=[{label:title,to:root},...(detailFeature?[{label:detailFeature.title}]:[]),...(detailPerson?[{label:detailPerson.name}]:[])];
  const filters=ready&&!detailPage&&<HStack gap={3} wrap="wrap" className={`${styles.filters} ${centered?styles.filtersSticky:''}`}><TextInput label="검색" isLabelHidden placeholder={view==='features'?'기능·요구사항 검색':view==='contributors'?'이름 또는 이메일 검색':'이름 또는 ID 검색'} value={search.q??''} hasClear onChange={q=>change({...search,q:q||undefined},true)}/>
@@ -51,12 +51,12 @@ export function ProductPanel({session,view,search,change}:ProductProps&{session:
  {filters}
  {ready&&<VStack gap={3} className={styles.content}>
  {first.working&&<Text type="supporting">미커밋 명세 변경이 있습니다. 제품 기능은 작업 중인 내용이며, 이력은 커밋된 내용입니다.</Text>}
- {view==='history'?<HistoryView events={events} features={first.features} search={search} change={change}/>:view==='features'?<FeatureView features={first.features} search={search} change={change}/>:<ContributorsView people={first.contributors} events={events} features={first.features} search={search} change={change}/>}
- {view!=='features'&&<VStack gap={3} padding={5} className={styles.historyPagination}>
+ {view==='history'?<HistoryView events={events} features={first.features} search={search} change={change}/>:view==='features'?<FeatureView features={first.features} featureId={featureId} search={search} change={change}/>:<ContributorsView people={first.contributors} events={events} features={first.features} email={email} search={search}/>}
+ {view==='history'&&<VStack gap={3} padding={5} className={styles.historyPagination}>
  <Text type="supporting" color="secondary">{events.length}개 이력을 불러왔습니다.{query.hasNextPage?' 검색·필터는 불러온 범위에 적용됩니다.':' 마지막 이력까지 확인했습니다.'}</Text>
  {query.hasNextPage&&<Button label={query.isFetchingNextPage?'이전 이력 불러오는 중…':query.isFetchNextPageError?'이전 이력 다시 불러오기':'이전 이력 더 보기'} isDisabled={query.isFetching} onClick={()=>{void query.fetchNextPage();}}/>}
  </VStack>}
- <HStack gap={3} wrap="wrap"><Text type="supporting" color="secondary">{new Date(first.observedAt).toLocaleString()} 조회 · 로컬 읽기 전용</Text>{first.boundary&&<Text type="supporting" color="secondary">새 명세 도입 이전의 구형 기록은 표시하지 않습니다.</Text>}{first.contributorsLimited&&<Text type="supporting">기여자는 최근 10,000개 Git 커밋 기준입니다.</Text>}</HStack>
+ <HStack gap={3} wrap="wrap"><Text type="supporting" color="secondary">{new Date(first.observedAt).toLocaleString()} 조회 · 로컬 읽기 전용</Text>{first.boundary&&<Text type="supporting" color="secondary">새 명세 도입 이전의 구형 기록은 표시하지 않습니다.</Text>}{first.contributorsLimited&&<Text type="supporting">참여자는 최근 10,000개 Git 커밋 기준입니다.</Text>}</HStack>
  </VStack>}
  </VStack>
  </VStack>;

@@ -5,7 +5,8 @@ Gentask의 03-data-flow.md에서 상태 소유와 재조회 원칙을 적용한�
 | 상태 | 소유 |
 | --- | --- |
 | CLI 응답·조회 오류·재조회 상태 | TanStack Query |
-| 경로·확정 검색·영역·상태·상세 선택 | TanStack Router의 검증된 search params |
+| 상세 대상(기능 ID·참여자 이메일) | TanStack Router의 경로 매개변수 |
+| 확정 검색·필터·탭·드로어 선택 | TanStack Router의 검증된 search params |
 | 모바일 메뉴·테마 등 일시 UI | 컴포넌트 또는 app provider |
 
 QueryClient는 앱에서 안정적으로 생성한다. loader가 필요하면 화면과 동일 queryOptions를 사용하고 응답 사본을 따로 보관하지 않는다. ensureQueryData는 stale 캐시도 반환할 수 있으므로 최신 자료가 필요한 곳에서 이를 최신성 보장으로 취급하지 않는다.
@@ -14,7 +15,7 @@ QueryClient는 앱에서 안정적으로 생성한다. loader가 필요하면 �
 
 읽기 HTTP는 AbortSignal을 전달한다. 서버 상태를 localStorage에 영구 저장하지 않는다. 자동 재시도는 제한하고 상태 갱신 POST는 반복하지 않는다. 변경 성공과 후속 조회 실패를 구분한다.
 
-현재 전체 목록을 받는 계약에서는 프론트에서 검색·필터를 적용한다. 검색 입력은 URL replace, 상세 이동은 뒤로가기로 복원한다. Query가 파일 변경을 자동 통지받는다고 가정하지 않는다. 명시적 새로고침으로 갱신하며 응답의 관측 시각과 best-effort 한계를 유지한다.
+현재 전체 목록을 받는 계약에서는 프론트에서 검색·필터를 적용한다. 검색 입력은 URL replace, 상세 이동은 뒤로가기로 복원한다. 목록을 대체하는 상세 페이지는 경로로 구분하고, 같은 화면 안의 상태(활동 드로어의 selected, 기능 상세의 tab·selected 강조, 목록 검색어 q)는 search params에 둔다. 2026-09-15 이전에는 상세 대상도 search params였으나 사용자 요청으로 경로 계층으로 옮겼다. Query가 파일 변경을 자동 통지받는다고 가정하지 않는다. 명시적 새로고침으로 갱신하며 응답의 관측 시각과 best-effort 한계를 유지한다.
 
 ## Gentask 참조 적용 (2026-09-14)
 

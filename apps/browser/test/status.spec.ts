@@ -58,7 +58,7 @@ test('loading, successful refresh and failure retain the last observed data', as
   await expect(page.getByRole('alert')).toContainText('Git 조회에 실패했습니다.');
   await expect(page.getByRole('alert')).toContainText('이전 조회 결과');
   await expect(page.getByRole('cell', { name: 'new.txt', exact: true })).toBeVisible();
-  await expect(page.locator('time')).toHaveText('2026-09-13T00:00:02.000Z');
+  await expect(page.locator('time')).toHaveAttribute('datetime', '2026-09-13T00:00:02.000Z');
   expect(posts).toBe(2);
 });
 
@@ -100,5 +100,5 @@ test('connection failure and empty result are distinct', async ({ page }) => {
     }),
   );
   await page.getByRole('button', { name: '다시 연결' }).click();
-  await expect(page.getByText('Git 변경 경로가 없습니다. gitifact 검사는 미실행입니다.')).toBeVisible();
+  await expect(page.getByRole('heading', { name: '변경된 파일이 없습니다' })).toBeVisible();
 });

@@ -1,7 +1,7 @@
 import { forwardRef, type AnchorHTMLAttributes, type MouseEvent, type ReactNode } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 
-/** Astryx link swap: an `href` such as `/contributors?author=x` becomes an in-app route change instead of a full reload. */
+/** Astryx link swap: an `href` such as `/contributors/x%40y` becomes an in-app route change instead of a full reload. */
 export const RouterLink = forwardRef<HTMLAnchorElement, AnchorHTMLAttributes<HTMLAnchorElement> & { href?: string; children?: ReactNode }>(
   function RouterLink({ href = '', children, onClick, ...rest }, ref) {
     const navigate = useNavigate();

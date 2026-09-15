@@ -22,6 +22,6 @@ export function EventDetail({event:e,features}: {event:SpecEvent;features:SpecFe
         <Heading level={3}>변경 이유</Heading>{e.reasons.length?e.reasons.map((r,i)=><Text key={i}>{r}</Text>):<Text color="secondary">기록된 이유가 없습니다.</Text>}
         <Text type="supporting" color="secondary">{e.message} · 커미터 {e.committer}</Text>
       </VStack>
-      <Link to="/features" search={{feature:(e.after??e.before)?.specId,selected:e.kind==='design'?undefined:e.id,tab:e.kind==='design'?'design':'requirements'}}>현재 기능 명세 보기 →</Link>
+      <Link to="/features/$featureId" params={{featureId:(e.after??e.before)?.specId??''}} search={{selected:e.kind==='design'?undefined:e.id,tab:e.kind==='design'?'design':'requirements'}}>현재 기능 명세 보기 →</Link>
   </VStack>;
 }

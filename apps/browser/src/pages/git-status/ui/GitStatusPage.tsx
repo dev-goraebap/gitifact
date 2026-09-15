@@ -1,12 +1,14 @@
 import { useState } from 'react';
-import { Button } from '@astryxdesign/core/Button';
 import { VStack } from '@astryxdesign/core/VStack';
+import { Heading } from '@astryxdesign/core/Heading';
 import { Text } from '@astryxdesign/core/Text';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { sessionOptions } from '../../../entities/project';
 import { RepositoryPanel } from './RepositoryPanel';
 import { PageHeader } from '../../../widgets/page-header';
-import { Heading } from '@astryxdesign/core/Heading';
+import { RequestState } from '../../../shared/ui/request-state';
+import styles from './git-status.module.css';
+
 export function GitStatusPage() {
   const session = useQuery(sessionOptions());
   const client = useQueryClient();
@@ -17,34 +19,15 @@ export function GitStatusPage() {
     await session.refetch();
     setConnection((value) => value + 1);
   };
+  if (session.data && !session.error)
+    return <RepositoryPanel key={session.data.sessionId + ':' + connection} session={session.data} reconnect={() => { void reconnect(); }} />;
   return (
-    <VStack gap={0}>
+    <VStack gap={0} className={styles.page}>
       <PageHeader trail={[{ label: 'Git 상태' }]} />
-      <VStack padding={6} gap={5}>
-      <Heading level={1}>Git 상태</Heading>
-      <Text color="secondary">현재 checkout에서 관측한 변경 파일입니다.</Text>
-      {session.isPending && <Text role="status">로컬 서버에 연결하고 있습니다.</Text>}
-      {session.error && (
-        <VStack role="alert" gap={3}>
-          <Text>{session.error.message}</Text>
-          <Button
-            label="다시 연결"
-            isDisabled={session.isFetching}
-            onClick={() => {
-              void reconnect();
-            }}
-          />
-        </VStack>
-      )}
-      {session.data && !session.error && (
-        <RepositoryPanel
-          key={session.data.sessionId + ':' + connection}
-          session={session.data}
-          reconnect={() => {
-            void reconnect();
-          }}
-        />
-      )}
+      <VStack gap={0} className={styles.column}>
+        <VStack gap={1} className={styles.pageTitle}><Heading level={1}>Git 상태</Heading></VStack>
+        {session.isPending && <VStack padding={5}><Text role="status" type="supporting" color="secondary">로컬 서버에 연결하고 있습니다.</Text></VStack>}
+        {session.error && <RequestState error={session.error} retry={() => { void reconnect(); }} />}
       </VStack>
     </VStack>
   );

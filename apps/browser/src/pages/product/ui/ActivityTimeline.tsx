@@ -28,7 +28,7 @@ export function ActivityTimeline({events,features,selected}: {events:SpecEvent[]
       <Text type="supporting" color="secondary">{e.kind==='design'?'설계':'요구사항'}</Text>
       <Link to="/" search={s=>({...s,selected:e.key})} className={styles.entryTitle}>{spec?.title??e.id}</Link>
       {feature&&<Text type="supporting" color="secondary">·</Text>}
-      {feature&&<Link to="/features" search={{feature:feature.id}} className={styles.entryFeature}>{feature.title}</Link>}
+      {feature&&<Link to="/features/$featureId" params={{featureId:feature.id}} className={styles.entryFeature}>{feature.title}</Link>}
      </HStack>
      <HStack gap={2} className={styles.entryLine}>
       <Text type="code" color="secondary">{e.commit.slice(0,7)}</Text>

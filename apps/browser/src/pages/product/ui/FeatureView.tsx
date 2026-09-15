@@ -11,16 +11,18 @@ import { Timestamp } from '@astryxdesign/core/Timestamp';
 import { Avatar } from '@astryxdesign/core/Avatar';
 import { AvatarGroup, AvatarGroupOverflow } from '@astryxdesign/core/AvatarGroup';
 import { useMediaQuery } from '@astryxdesign/core/hooks';
-import { Link } from '@tanstack/react-router';
+import { Link, useNavigate } from '@tanstack/react-router';
 import { DesignDocument } from './DesignDocument';
 import { avatarSource, contributorHref } from './Person';
 import type { ProductSearch } from '../model/search';
 import styles from './product.module.css';
 import { PageState } from '../../../shared/ui/page-state';
 
-export function FeatureView({ features, search, change }: { features: SpecFeature[]; search: ProductSearch; change: (s: ProductSearch) => void }) {
-  const selected = features.find(f => f.id === search.feature || f.requirements.some(r => r.id === search.selected));
-  return selected ? <FeatureDetail feature={selected} features={features} search={search} change={change}/> : <FeatureList features={features} search={search} change={change}/>;
+export function FeatureView({ features, featureId, search, change }: { features: SpecFeature[]; featureId?: string | undefined; search: ProductSearch; change: (s: ProductSearch) => void }) {
+  if (!featureId) return <FeatureList features={features} search={search}/>;
+  const selected = features.find(f => f.id === featureId);
+  if (!selected) return <PageState kind="not-found" title="기능을 찾을 수 없습니다" description={`${featureId}는 현재 명세에 없습니다. 이름이 바뀌었거나 제거된 기능일 수 있습니다.`} actions={<Link to="/features">제품 기능 목록으로</Link>}/>;
+  return <FeatureDetail feature={selected} features={features} search={search} change={change}/>;
 }
 
 /** Overlapping author avatars; the fourth and later collapse into a "+N" count. */
@@ -33,13 +35,14 @@ function Contributors({ people }: { people: SpecFeature['contributors'] }) {
   </AvatarGroup>;
 }
 
-function FeatureList({ features, search, change }: { features: SpecFeature[]; search: ProductSearch; change: (s: ProductSearch) => void }) {
+function FeatureList({ features, search }: { features: SpecFeature[]; search: ProductSearch }) {
+  const navigate = useNavigate();
   const mobile = useMediaQuery('(max-width: 767px)');
   const filtered = features.filter(f => !search.q || [f.title, f.id, ...f.requirements.map(r => r.title + ' ' + r.id)].join(' ').toLowerCase().includes(search.q.toLowerCase()));
-  const open = (f: SpecFeature) => change({ ...search, feature: f.id, selected: undefined });
+  const open = (f: SpecFeature) => { void navigate({ to: '/features/$featureId', params: { featureId: f.id }, search: { q: search.q } }); };
   const columns: TableColumn<SpecFeature>[] = [
     { key: 'title', header: '기능', width: proportional(1, { minWidth: 160 }), renderCell: f => <VStack gap={1}>
-      <Link to="/features" search={{ ...search, feature: f.id, selected: undefined }} className={styles.featureTitle}>{f.title}</Link>
+      <Link to="/features/$featureId" params={{ featureId: f.id }} search={{ q: search.q }} className={styles.featureTitle}>{f.title}</Link>
       <Text type="supporting" color="secondary" maxLines={1}>{f.description ? f.description.replace(/[#*_`]/g, '').replace(/\s+/g, ' ').trim() : f.id}</Text>
     </VStack> },
     { key: 'requirements', header: '요구사항', width: pixel(mobile ? 64 : 88), align: 'end', renderCell: f => <Text>{f.requirements.length}</Text> },

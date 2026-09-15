@@ -12,7 +12,7 @@ import styles from './app-shell.module.css';
 const destinations = [
   ['/', '활동', HgiHistory],
   ['/features', '제품 기능', HgiRequirement],
-  ['/contributors', '기여자', HgiMembers],
+  ['/contributors', '참여자', HgiMembers],
   ['/git', 'Git 상태', HgiGit],
 ] as const;
 export function BrowserShell() {

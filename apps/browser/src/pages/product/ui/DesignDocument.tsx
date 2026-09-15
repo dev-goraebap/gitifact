@@ -13,7 +13,7 @@ export function DesignDocument({design, features}: {design: NonNullable<SpecFeat
     if (!ref) return line;
     return '\n관련 요구사항: ' + ref[1]!.split(', ').map(id => {
       const feature = features.find(f => f.requirements.some(r => r.id === id));
-      return feature ? `[${id}](/features?feature=${encodeURIComponent(feature.id)}&selected=${id}&tab=requirements#${id})` : `${id} (현재 명세에 없음)`;
+      return feature ? `[${id}](/features/${encodeURIComponent(feature.id)}?selected=${id}&tab=requirements#${id})` : `${id} (현재 명세에 없음)`;
     }).join(', ') + '\n';
   }).join('\n');
   return <VStack gap={4}><Heading level={3}>{design.title}</Heading><Markdown headingLevelStart={4}>{body}</Markdown></VStack>;

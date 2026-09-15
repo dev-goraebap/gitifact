@@ -9,6 +9,32 @@ body,
   height: 100%;
   margin: 0;
 }
+/* Same rule as Gentask: 16px up to 1920px wide, then growing with the viewport to 18px at 2560px. Scales with the user's browser font setting. */
+html { font-size: 100%; }
+@media (min-width: 1920px) {
+  html { font-size: max(100%, min(112.5%, 18px, calc(100% + 0.3125vw - 6px))); }
+}
+/* Astryx ships spacing and control sizes in px; restated in rem at the same 16px values so they scale with the root font. */
+:root {
+  --spacing-0: 0rem;
+  --spacing-0-5: 0.125rem;
+  --spacing-1: 0.25rem;
+  --spacing-1-5: 0.375rem;
+  --spacing-2: 0.5rem;
+  --spacing-3: 0.75rem;
+  --spacing-4: 1rem;
+  --spacing-5: 1.25rem;
+  --spacing-6: 1.5rem;
+  --spacing-7: 1.75rem;
+  --spacing-8: 2rem;
+  --spacing-9: 2.25rem;
+  --spacing-10: 2.5rem;
+  --spacing-11: 2.75rem;
+  --spacing-12: 3rem;
+  --size-element-sm: 1.75rem;
+  --size-element-md: 2rem;
+  --size-element-lg: 2.25rem;
+}
 body {
   font-family: var(--font-family-body, system-ui), sans-serif;
   overflow-x: hidden;
