@@ -26,7 +26,7 @@ export function BrowserShell() {
       sideNav={
         <SideNav
           style={{ width: '15rem', borderInlineEnd: '1px solid var(--color-border)' }}
-          header={<Link to="/" className="tryce-wordmark">TRYCE</Link>}
+          header={<Link to="/" className="tryce-wordmark" aria-label="TRYCE 홈" />}
           footer={
             <VStack padding={4} gap={2}>
               <Text type="supporting">로컬 프로젝트 · 읽기 전용</Text>

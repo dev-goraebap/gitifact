@@ -14,7 +14,7 @@ reset.css → astryx.css → neutral theme.css → 앱 전역 스타일 순으�
 
 ## 글꼴·아이콘·빈 화면
 
-제목에는 Outfit 800, 한글 제목에는 Noto Sans KR 800을 사용한다. TRYCE 워드마크는 Gentask와 같은 Unbounded 800 및 자간 -0.02em을 사용한다. Gentask의 public/fonts/unbounded-latin.woff2를 복사했으며 Google Fonts의 OFL 원문을 public/licenses/unbounded.txt에 포함한다. 본문은 기존 읽기용 시스템 글꼴을 유지한다. Fontsource 패키지의 자산을 로컬 번들에 포함하고 font-display: swap을 사용한다. OFL 원문은 public/licenses에 포함한다. 외부 CDN은 호출하지 않는다.
+제목에는 Outfit 800, 한글 제목에는 Noto Sans KR 800을 사용한다. TRYCE 워드마크는 README의 이미지 로고를 참고해 경로로 옮긴 `apps/browser/public/tryce-logo.svg`를 사용한다. 둥근 획과 글자 비율을 유지하고 배경 질감은 제외한다. CSS 마스크에 텍스트 색상 토큰을 적용해 밝은 테마와 어두운 테마에서 표시하며 홈 링크에 접근 가능한 이름을 제공한다. 로고 전용 Unbounded 폰트와 해당 라이선스 사본은 제거했다. 본문은 기존 읽기용 시스템 글꼴을 유지한다. 제목용 Fontsource 자산은 로컬 번들에 포함하고 font-display: swap을 사용한다. OFL 원문은 public/licenses에 포함한다. 외부 CDN은 호출하지 않는다.
 
 메뉴 아이콘은 Gentask apps/desktop/src/renderer/shared/ui/icons의 SvgIcon·HgiHistory·HgiMembers·HgiRequirement 패턴과 @hugeicons/core-free-icons 4.3.0을 사용한다. 필요한 아이콘만 하위 경로에서 가져온다. 장식 아이콘은 접근성 트리에서 숨기고 메뉴의 텍스트 이름을 유지한다.
 

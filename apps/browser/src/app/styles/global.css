@@ -16,27 +16,28 @@ a {
   color: var(--color-text-accent, inherit);
 }
 
-@font-face {
-  font-family: 'Unbounded';
-  font-style: normal;
-  font-weight: 400 900;
-  font-display: swap;
-  src: url('/fonts/unbounded-latin.woff2') format('woff2');
-}
 #root h1, #root h2 {
   font-family: 'Outfit', 'Noto Sans KR', system-ui, sans-serif;
   font-weight: 800;
   letter-spacing: -.035em;
 }
 .tryce-wordmark {
-  font-family: 'Unbounded', system-ui, sans-serif;
-  font-weight: 800;
-  letter-spacing: -.02em;
   display: block;
   padding: var(--spacing-4);
-  font-size: 1.75rem;
   text-decoration: none;
   color: var(--color-text-primary);
+}
+.tryce-wordmark::before {
+  content: '';
+  display: block;
+  width: calc(var(--spacing-4) * 9);
+  max-width: 100%;
+  aspect-ratio: 1850 / 380;
+  background-color: currentColor;
+  mask: url('/tryce-logo.svg') center / contain no-repeat;
+}
+@media (forced-colors: active) {
+  .tryce-wordmark::before { background-color: LinkText; forced-color-adjust: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .astryx-skeleton { animation: none; }
