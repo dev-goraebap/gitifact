@@ -40,6 +40,12 @@ a {
 @media (forced-colors: active) {
   .gitifact-wordmark::before { background-color: LinkText; forced-color-adjust: none; }
 }
+/* The side nav resize handle sits 1px past the nav panel, which otherwise shows a horizontal scrollbar on classic-scrollbar platforms. */
+.astryx-app-shell .astryx-layout-panel:has(> .astryx-side-nav),
+.astryx-app-shell .astryx-layout-panel:has(.astryx-side-nav) {
+  overflow-x: hidden;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .astryx-skeleton { animation: none; }
 }
