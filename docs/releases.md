@@ -59,6 +59,12 @@ Tryce에서 Gitifact로 이름을 바꾼 첫 배포다. 패키지 `gitifact@0.1.
 
 `pnpm check`와 `pnpm test:package`를 통과했다. core 16개·contracts 4개·CLI 106개·브라우저 16개·스킬 5개와 workspace 밖 오프라인 설치·실행을 확인했다. CLI 번들 SHA-256은 `667985b8966a625ae6b401d779eb7f6798ea8ff6775a65891a285a493e6727ea`이다. 게시 결과는 아래에 이어서 기록한다.
 
+## 0.2.0 게시 완료
+
+2026-09-15 릴리스 준비 커밋 `b4f8a84`까지 main을 푸시한 뒤 사용자가 apps/cli에서 Git 검사를 유지한 `pnpm publish --access public --tag latest --publish-branch main`을 실행했다. 에이전트 세션의 자동 모드 권한 분류기가 게시 명령을 막아 사용자가 직접 실행했다. npm은 202로 접수하고 몇 분 뒤 공개했다. latest는 0.2.0, 라이선스는 MIT다. 모의 실행·실제 게시·레지스트리의 integrity는 모두 `sha512-n4+s9GsDTmrDnnKL2xVrioMVeSAtn9WkeHVyR/TqBeaY1+fNe3l/6aKBDnto7QKq4XVjy0ZRZu1q+smQQdHUwg==`, shasum은 `a89139ff6a407cdd3ded64f862c54331a6a6932e`이며 패키지는 44개 파일이다.
+
+레지스트리에서 새 임시 폴더에 설치한 CLI 번들의 SHA-256이 지정 빌드 `667985b8…`와 같았다. 설치본으로 version, init dry-run·init, spec working을 실행했고 브라우저 정적 자산과 스킬 원본이 포함됨을 확인했다.
+
 ## 이전 Tryce 배포 기록
 
 아래 패키지 이름·버전·커밋·무결성은 당시 배포의 사실이다. Gitifact 0.1.0의 게시 결과로 해석하거나 새 이름으로 일괄 치환하지 않는다.
