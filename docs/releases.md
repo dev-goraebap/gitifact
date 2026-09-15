@@ -53,6 +53,12 @@ Tryce에서 Gitifact로 이름을 바꾼 첫 배포다. 패키지 `gitifact@0.1.
 
 새 폴더에 레지스트리에서 `gitifact@0.1.0`을 설치해 version·help, 새 Git 저장소의 init(`.gitifact/config.json`), spec working·save(`gitifact-spec` 마커), skills install(`gitifact-workflow`), spec commit, spec read를 확인했다. 설치된 main.js의 SHA-256은 지정 빌드와 같은 `9bbe7721…`이다. npm 인증은 기존 로그인 세션을 사용했고 인계 문서의 새 토큰은 실행 정책상 사용자 설정에 반영하지 못했다.
 
+## 0.2.0 배포 준비
+
+2026-09-15 사용자 배포 요청으로 0.1.0 이후의 브라우저 작업을 0.2.0으로 준비했다. 기여자 화면을 참여자로 바꾸고, 기능·참여자 상세를 `/features/<S-ID>`·`/contributors/<이메일>` 경로로 옮겼으며, Git 상태 페이지를 다른 페이지와 같은 구조로 다듬고, 1920px 이상에서 루트 글자 크기를 키우는 규칙을 넣었다. 이전 `?feature=`·`?author=` 링크는 리다이렉트하지 않는다. 서버 계약과 저장 형식은 바뀌지 않았다.
+
+`pnpm check`와 `pnpm test:package`를 통과했다. core 16개·contracts 4개·CLI 106개·브라우저 16개·스킬 5개와 workspace 밖 오프라인 설치·실행을 확인했다. CLI 번들 SHA-256은 `667985b8966a625ae6b401d779eb7f6798ea8ff6775a65891a285a493e6727ea`이다. 게시 결과는 아래에 이어서 기록한다.
+
 ## 이전 Tryce 배포 기록
 
 아래 패키지 이름·버전·커밋·무결성은 당시 배포의 사실이다. Gitifact 0.1.0의 게시 결과로 해석하거나 새 이름으로 일괄 치환하지 않는다.

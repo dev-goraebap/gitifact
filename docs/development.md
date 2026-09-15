@@ -6,7 +6,7 @@
 
 새 `gitifact migrate [--dry-run]`이 `.tryce`를 `.gitifact`로 옮기고 줄 첫머리 마커만 바꾼다. CLI는 과거 커밋의 `.tryce` 경로와 `tryce-*` 마커를 읽기만 지원하고, 설계 본문의 이전 참조 마커는 파싱 결과에서 현재 이름으로 정규화해 전환 전후 비교가 비지 않게 한다. 작업 폴더에 `.tryce`만 있으면 모든 명세 명령이 MIGRATION_REQUIRED로 전환을 안내한다. 이전 Tryce 실행의 잠금 파일 이름도 계속 검사한다.
 
-이 빌드를 프로젝트 사용 대상으로 지정한다. 실행은 `node apps/cli/dist/main.js` 또는 `pnpm cli`, 번들 SHA-256은 `9bbe7721595c08c0aa3f7b71427fae34b12f957a25d3e992f312934a9474bfc5`이다. 이전 지정 빌드(3ce78ded…)는 `.tryce`만 쓰므로 이 저장소를 전환한 뒤에는 사용하지 않는다.
+이 빌드를 프로젝트 사용 대상으로 지정한다. 실행은 `node apps/cli/dist/main.js` 또는 `pnpm cli`, 번들 SHA-256은 `9bbe7721595c08c0aa3f7b71427fae34b12f957a25d3e992f312934a9474bfc5`이다. 2026-09-15 0.2.0 배포 준비에서 같은 검증(`pnpm check`·`pnpm test:package`)을 통과한 번들 `667985b8966a625ae6b401d779eb7f6798ea8ff6775a65891a285a493e6727ea`로 지정을 갱신했다. 명세 명령의 동작은 0.1.0과 같고 브라우저만 바뀌었다. 이전 지정 빌드(3ce78ded…)는 `.tryce`만 쓰므로 이 저장소를 전환한 뒤에는 사용하지 않는다.
 
 최종 소스의 `pnpm check`가 통과했다. core 16개·contracts 4개·CLI 106개(새 migrate 3개 포함)·브라우저 16개·스킬 5개와 workspace 밖 오프라인 패키지 설치·실행(`node_modules/gitifact`, `gitifact --version`, init·spec save/commit/read·skills·status·browser)을 확인했다. 새 시험은 전환 전 거부, dry-run 무변경, 마커 재작성과 코드 블록·이유 파일 보존, 전환 커밋의 이유·트레일러 없음, 과거 커밋 읽기와 전환 전후 diff 비어 있음, 전환 뒤 변경의 활동 피드 표시, 구형 JSON·잡파일·이전 잠금·저장소 없음 거부, 두 저장 경로가 섞인 커밋 거부를 검사한다. 첫 전체 check에서 브라우저 검사 1건이 CLI 검사와 동시 실행 중 시간 초과로 실패했고 단독 실행과 재실행에서는 통과했다.
 

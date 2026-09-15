@@ -1,6 +1,6 @@
 # Gitifact CLI
 
-> Target release: `gitifact@0.1.0` (unscoped). This guide describes the renamed package; the code and storage transition must finish before publishing.
+> Current release: `gitifact@0.2.0` (unscoped). Requires Node.js 24.x and Git.
 
 Git-backed requirements and change history for coding agents. New projects use `schemaVersion: 1`, Markdown specifications and per-feature change reasons. Requires Node.js 24.x and Git.
 
