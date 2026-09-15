@@ -47,6 +47,12 @@ Tryce에서 Gitifact로 이름을 바꾼 첫 배포다. 패키지 `gitifact@0.1.
 
 `pnpm check`와 `pnpm test:package`를 통과했다. core 16개·contracts 4개·CLI 106개·브라우저 16개·스킬 5개와 workspace 밖 오프라인 설치·실행을 확인했다. CLI 번들 SHA-256은 지정 빌드와 같은 `9bbe7721595c08c0aa3f7b71427fae34b12f957a25d3e992f312934a9474bfc5`이다. 게시 결과는 아래에 이어서 기록한다.
 
+## 0.1.0 게시 결과
+
+2026-09-15 전환 커밋 abf8c5c까지 main을 새 원격 `dev-goraebap/gitifact`에 fast-forward로 푸시하고 `apps/cli`에서 Git 검사를 유지한 pnpm publish로 공개 게시했다. latest는 0.1.0, 라이선스는 MIT다. 게시 전 모의 실행에서 이전 빌드가 남긴 `dist/skills/tryce-workflow`를 발견해 제거했고, 최종 패키지는 288개 파일이다. 레지스트리 integrity는 `sha512-AJ3RlH3UXLoxUcN6EPHRynMZdCvVkFKB3IasF2SaNscUnfrlsDYEFBMTIvWCfHoRC5Q8aPHeGoEGnNWJP1dY4Q==`, shasum은 `9c8c8cc4aa3081c126cf37e3fddd6e02c74bbbfa`다.
+
+새 폴더에 레지스트리에서 `gitifact@0.1.0`을 설치해 version·help, 새 Git 저장소의 init(`.gitifact/config.json`), spec working·save(`gitifact-spec` 마커), skills install(`gitifact-workflow`), spec commit, spec read를 확인했다. 설치된 main.js의 SHA-256은 지정 빌드와 같은 `9bbe7721…`이다. npm 인증은 기존 로그인 세션을 사용했고 인계 문서의 새 토큰은 실행 정책상 사용자 설정에 반영하지 못했다.
+
 ## 이전 Tryce 배포 기록
 
 아래 패키지 이름·버전·커밋·무결성은 당시 배포의 사실이다. Gitifact 0.1.0의 게시 결과로 해석하거나 새 이름으로 일괄 치환하지 않는다.

@@ -6,7 +6,7 @@
 
 Git 원격은 `https://github.com/dev-goraebap/gitifact.git`로 교체한다. 현재 origin은 이전 tryce 저장소다. 이번 요청은 remote 변경과 새 패키지 배포의 인계이며 `.git` 삭제나 기존 커밋 이력 재작성은 포함하지 않는다. 새 remote에 이미 이력이 있으면 확인하고 강제 푸시하지 않는다.
 
-로고는 브라우저의 `apps/browser/public/gitifact-logo.svg`와 README의 `docs/assets/gitifact-logo.svg`로 연결했다. README·CLI 안내는 전환 후 이름을 사용하며 배포 준비 중임을 표시한다. 실제 코드와 저장 규약은 아직 이전 이름이다.
+로고는 브라우저의 `apps/browser/public/gitifact-logo.svg`와 README의 `docs/assets/gitifact-logo.svg`로 연결했다. README·CLI 안내는 전환 후 이름을 사용한다. 2026-09-15 코드와 저장 규약을 전환하고 gitifact 0.1.0을 게시했다.
 
 ## 구현할 변경
 
