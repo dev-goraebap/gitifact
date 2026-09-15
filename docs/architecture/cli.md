@@ -1,6 +1,6 @@
 # CLI와 공통 코드
 
-> 새 구현은 [MVP 전환 계획](../mvp-transition.md)의 Markdown 명세·최소 보조 기록·Git 기반 조회를 따른다. 승인·note 없는 명세 기록과 커밋 전 점검으로 바꾸며, 기존 CLI 동작은 아직 유지한다. 아래 구형 서버 계약은 호환성과 보안 검토용이다.
+> 새 구현은 [MVP 전환 계획](../mvp-transition.md)의 Markdown 명세·최소 보조 기록·Git 기반 조회를 따른다. 승인·note 없는 명세 기록과 커밋 전 점검으로 바꿨다. 구형 JSON 명령(req·note·mode·brief·commit)과 spec-preview 호환 이름은 제거했다. 아래 서버 설명 중 구형 계약 링크는 당시 보안 검토 기록이다.
 
 
 CLI는 사용자 입력과 실행 환경을 받아 제품 규칙을 실행하는 진입점이다. 터미널 명령과 브라우저 API가 같은 규칙을 사용하도록 구성한다. [제품 기준](../bref.md)의 영속 형식과 개발 예외는 그대로 적용한다.
@@ -69,7 +69,7 @@ core·contracts를 먼저 빌드하고 browser와 cli를 각자의 환경에 맞
 
 ## spec-1 도입과 호환성
 
-새 init은 mode 없는 kind/format/baseline 설정을 만들고 기본값은 spec-1이다. 기존 ProjectConfig 파서는 구형 소비자에서 새 형식을 잘못 해석하지 않도록 유지한다. parseManagedConfig는 초기화·스킬·새 명세 경계에서만 새 형식을 허용하며 구형 요구사항 쓰기와 브라우저는 새 형식을 거부한다.
+init은 schemaVersion 1 설정만 만든다. 기존 ProjectConfig 파서는 구형 설정을 새 형식으로 잘못 해석하지 않고 MIGRATION_REQUIRED 등으로 거부하기 위해 유지한다. parseManagedConfig는 초기화·스킬·명세 경계에서 사용한다.
 
 spec 명령의 출력 계약은 spec/version 1이고 초기화는 project-init/version 3이다. config 원문은 명세 stamp와 커밋 계획에 포함한다. 공개 읽기에서 구형 JSON 커밋을 빈 명세로 숨기지 않는다. 새 형식의 커밋 준비에서만 구형 설정이 검증된 JSON 전용 HEAD를 전환 이전 기준으로 읽는다. 신구 명세가 혼합된 과거 커밋은 거부한다.
 

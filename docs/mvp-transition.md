@@ -303,6 +303,29 @@ Git 커밋 후 실제 tree·부모·브랜치·R-ID 참조·임시 index를 확�
 
 커밋이 거부되고 HEAD가 그대로면 소유한 임시 index와 잠금을 정리하고 원래 index를 유지한다. 파일·명세·정책이 그대로라면 같은 계획으로 재시도할 수 있다. 성공한 계획의 재실행은 HEAD 변경으로 거부하므로 중복 커밋을 만들지 않는다. 실행 후 HEAD가 바뀌었는데 결과 검증에 실패하면 Git 디렉터리의 tryce-spec-commit.lock/recovery.json과 index·명세 잠금을 남기고 재시도를 막는다. 실제 HEAD·원래 index 백업·임시 index를 대조한 뒤 복구하며 이미 생성된 커밋을 자동 reset하지 않는다. 강제 종료·전원 장애 후 자동 복구는 아직 미지원이다.
 
+### 단일 커밋 명령 spec commit
+
+2026-09-15 `spec commit --file <입력.json> [--dry-run]`을 추가했다. `prepare`·`verify`·`commit-plan`·`commit-apply`는 deprecated로 표시하고 0.6.0에서 제거한다. 위 두 절의 저장·검사 규칙은 새 명령에서도 유지한다.
+
+실제 tryce 커밋 두 건(0.4.0 릴리스, 브라우저 MVP)은 네 명령을 스크립트로 연속 호출했다. 이유와 파일 범위는 changes 전에 이미 정해져 있었고 명령 사이에 에이전트 판단이 없었다. 명령을 프로세스별로 나눈 구조 때문에 expected·verification·plan을 넘기며 매번 상태 전체를 다시 읽었다. Windows에서는 한 커밋에 Git 프로세스가 237~265회 실행돼 14~23초가 걸렸다. 측정 방법과 결과는 [개발 환경](development.md#2026-09-15-커밋-성능과-단일-커밋-명령)에 둔다.
+
+```json
+{
+  "reasons": [{ "requirements": ["R-v4n6paz2ce"], "reason": "제목 없이 게시물이 저장되는 것을 방지합니다." }],
+  "paths": [".tryce/spec/posts/requirements.md", ".tryce/spec/posts/history.jsonl", "src/posts.ts"],
+  "message": "게시물 제목을 필수로 처리",
+  "authorization": { "basis": "user-request", "evidence": "현재 작업에 대한 사용자 커밋 요청" }
+}
+```
+
+선택 필드는 requirements·policyFiles·expected다. reasons는 prepare와 같이 남길 미커밋 이유 전체이며, 생략하면 이미 준비된 미커밋 이유를 유지한다. expected를 넘기면 changes 이후의 명세 변경을 거부한다. 기록할 이유가 없는 history.jsonl 선택은 staging에서 건너뛴다. dry-run은 이유 검증·선택 범위·기존 staging 검사까지 수행하고 파일을 쓰거나 커밋하지 않는다.
+
+- **이유 누락은 경고한다.** 요구사항 변경에 이유가 없어도 커밋하고 withoutReason으로 표시한다. 대부분의 커밋에 이유가 있을 것으로 보고, 자료가 없다는 이유로 오류를 만들지 않는다. 불편이 확인되면 다시 검토한다. 거부와 입력 옵션으로 허용하는 방식은 기각했다.
+- **거부된 커밋은 이유 파일을 되돌린다.** HEAD가 그대로면 이번에 쓴 history.jsonl을 실행 전으로 돌려, 명령이 커밋되거나 아무것도 바뀌지 않는 단위가 되게 한다. 그사이 다른 프로세스가 파일을 고쳤으면 되돌리지 않고 명세 잠금과 복구 자료를 남긴다. HEAD가 바뀐 불확실한 결과는 파일·잠금·복구 자료를 모두 보존한다. 이유 파일을 남겨 두는 기존 방식과, 커밋 성공 후에만 작업 폴더에 쓰는 방식은 기각했다. 후자는 작업 폴더를 읽는 훅이 이유 파일을 보지 못하고, 커밋 후 쓰기에 실패하면 작업 폴더가 HEAD와 어긋난다.
+- **줄바꿈은 Git 기준으로 판단한다.** 명세·이유 파일의 변경 여부는 바이트가 아니라 Git이 저장할 blob ID로 비교한다(`git hash-object --stdin-paths` 한 번). core.autocrlf=true 등으로 LF blob이 CRLF로 checkout돼도 변경으로 보지 않고, 같은 내용으로 저장될 이유 파일은 다시 쓰지 않는다. staging 후 필터 검사는 CRLF→LF 줄바꿈 변환만 허용하고 그 밖의 내용 변경은 계속 거부한다. 비교 직전 tryce가 줄바꿈을 직접 무시하는 방식은 .gitattributes·필터 규칙과 어긋날 수 있어 기각했다. `.gitattributes`의 eol=lf로 checkout을 LF로 고정하는 예방책은 init이 사용자 저장소에 파일을 추가하는 결정이라 보류했다. deprecated commit-plan에는 적용하지 않았다.
+- **유지한 검사:** 기존 staging·intent-to-add 보류, 미선택 명세 거부, 명세 잠금 아래 원문·명세 집합·index·HEAD 재대조, 격리 index와 Git 필터 검사, 훅·서명, 커밋 tree·부모·트레일러 검증, 원래 index 보존.
+- **줄인 조회:** 한 명령 안에서 바뀌지 않는 저장소 위치는 명령 단위로 한 번 읽는다. HEAD 확인은 기존 시점을 유지하되 한 번에 Git 프로세스 2개를 동시에 쓴다. spec 명령의 사전 검사는 전체 status 대신 위치·진행 중인 작업·충돌·기준선만 확인한다. 실행 전 계획 전체를 다시 만들지 않는다.
+
 - [x] 제품 기준·문서 위치 개정, docs/specs 제거와 전환 계획 통합.
 - [x] 파일 형식·Git 비교·보조 기록 연결 규칙 확정, 고정 예제 준비.
 - [x] CLI 명세 조회·저장·검사와 커밋 전 점검 구현.

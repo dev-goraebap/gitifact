@@ -9,7 +9,6 @@ import { createRepositoryReader } from '../adapters/git/repository-reader.js';
 import { statusDto } from '../output/repository-status.js';
 import { loadBrowserAssets, contentType } from './assets.js';
 import { createStatusSession } from './status-session.js';
-import { createBrowserProjectReader } from './project-reader.js';
 import { createSpecBrowserReader } from './spec-reader.js';
 
 interface Options {
@@ -46,9 +45,7 @@ export async function startBrowserServer(options: Options) {
   const { session } = store;
   let closing = false;
   let origin = '';
-  const readProject = createBrowserProjectReader(initial.repository.rootPath, options.env);
   const readSpecs = createSpecBrowserReader(initial.repository.rootPath, session.sessionId, options.env);
-  let pendingProject: ReturnType<typeof readProject> | undefined;
   function json(response: ServerResponse, status: number, value: unknown) {
     response.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
     response.end(JSON.stringify(value) + '\n');
@@ -86,7 +83,7 @@ export async function startBrowserServer(options: Options) {
       if (request.headers['sec-fetch-site'] === 'cross-site' && !allowedOrigin) return fail(response, 403, 'FORBIDDEN', '외부 페이지의 요청을 허용하지 않습니다.');
       if (url.search && path !== '/api/v1/specs') return fail(response, 400, 'BAD_REQUEST', '조회 인자를 받지 않습니다.');
       const method = path === '/api/v1/status/refresh' ? 'POST' : 'GET';
-      if (!['/api/v1/session', '/api/v1/status', '/api/v1/status/refresh', '/api/v1/project', '/api/v1/specs'].includes(path)) return fail(response, 404, 'NOT_FOUND', 'API를 찾을 수 없습니다.');
+      if (!['/api/v1/session', '/api/v1/status', '/api/v1/status/refresh', '/api/v1/specs'].includes(path)) return fail(response, 404, 'NOT_FOUND', 'API를 찾을 수 없습니다.');
       if (request.method !== method) {
         response.setHeader('Allow', method);
         return fail(response, 405, 'METHOD_NOT_ALLOWED', '허용하지 않는 메서드입니다.');
@@ -99,16 +96,6 @@ export async function startBrowserServer(options: Options) {
           || !/^(0|[1-9]\d{0,5})$/.test(cursor) || (head !== null && !/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/.test(head))) return fail(response,400,'BAD_REQUEST','조회 범위를 확인하세요.');
         try { json(response,200,await readSpecs(Number(cursor), head ?? undefined)); }
         catch (error) { fail(response,503,'INTERNAL_ERROR',error instanceof Error ? error.message : '명세를 읽지 못했습니다.'); }
-        return;
-      }
-      if (path === '/api/v1/project') {
-        pendingProject ??= readProject().finally(() => { pendingProject = undefined; });
-        const project = await pendingProject;
-        const repository = project.brief.report?.repository;
-        if (repository && (repository.key !== session.repository.key || repository.worktreeKey !== session.repository.worktreeKey)) {
-          return fail(response, 409, 'SESSION_CHANGED', '다른 checkout이 감지됐습니다. 서버를 다시 시작하세요.');
-        }
-        if (!response.destroyed) json(response, 200, project);
         return;
       }
       if (method === 'POST' && !allowedOrigin) return fail(response, 403, 'FORBIDDEN', '새로고침에는 같은 출처의 Origin이 필요합니다.');
@@ -165,7 +152,6 @@ export async function startBrowserServer(options: Options) {
     shutdown = (async () => {
       await new Promise<void>((resolve) => { server.close(() => resolve()); server.closeAllConnections(); });
       await store.pending;
-      await pendingProject?.catch(() => undefined);
       options.signal?.removeEventListener('abort', onAbort);
       options.signal?.removeEventListener('abort', closeOnAbort);
       resolveClosed!();

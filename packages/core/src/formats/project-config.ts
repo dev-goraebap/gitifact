@@ -33,10 +33,3 @@ export function parseProjectConfig(text: string): ProjectConfig {
   } else throw invalid();
   return value as unknown as ProjectConfig;
 }
-
-export function initialConfig(mode: ProjectMode | undefined, commit: string | null, objectFormat: 'sha1' | 'sha256'): ProjectConfig {
-  mode ??= 'auto';
-  if (!['normal', 'prototype', 'auto', 'approval'].includes(mode)) throw new InitError('INVALID_MODE', 'auto 또는 approval 모드를 지정하세요.');
-  return parseProjectConfig(JSON.stringify({ kind: 'tryce-project', format: ['auto', 'approval'].includes(mode) ? 'workflow-1' : 'init-1', mode,
-    baseline: commit ? { kind: 'commit', objectFormat, commit } : { kind: 'empty' } }));
-}

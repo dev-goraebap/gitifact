@@ -12,6 +12,7 @@ const call = (f, args, ok = true) => {
   assert.equal(r.status, ok ? 0 : 1, r.stderr); return ok ? JSON.parse(r.stdout) : r;
 };
 const input = (f, action, data) => { const path = join(f.root, 'input.json'); writeFileSync(path, JSON.stringify(data)); return call(f, ['spec', action, '--file', path]); };
+const legacyConfig = JSON.stringify({ kind: 'tryce-project', format: 'workflow-1', mode: 'auto', baseline: { kind: 'empty' } }, null, 2) + '\n';
 test('spec init dry-run, repeat and skills install preserve existing work and staging', async t => {
   const f = fixture(t); f.write('work', 'user work'); f.git(['add', 'work']);
   const before = fingerprint(f.repo);
@@ -25,9 +26,8 @@ test('spec init dry-run, repeat and skills install preserve existing work and st
   assert.equal(f.git(['diff', '--cached', '--name-only']).stdout.trim(), 'work');
 });
 test('init refuses legacy records and malformed config without mutation', async t => {
-  const f = fixture(t); call(f, ['init', '--mode', 'auto']);
+  const f = fixture(t); mkdirSync(join(f.repo, '.tryce')); f.write('.tryce/config.json', legacyConfig);
   const before = fingerprint(f.repo); assert.match(call(f, ['init'], false).stderr, /MIGRATION_REQUIRED/); assert.deepEqual(fingerprint(f.repo), before);
-  assert.match(call(f, ['req', 'list']).contract, /requirements|workflow/);
   f.write('.tryce/config.json', '{}'); const invalid = fingerprint(f.repo); call(f, ['init'], false); assert.deepEqual(fingerprint(f.repo), invalid);
 });
 test('spec command writes, prepares and commits through initialized format', async t => {
@@ -55,7 +55,7 @@ test('new init rejects orphan data and ignored settings', t => {
 
 test('explicit legacy replacement can prepare and commit deletion without retaining backup files', async t => {
   const f = fixture(t); f.git(['config','user.name','Fixture']); f.git(['config','user.email','fixture@example.invalid']); f.git(['config','commit.gpgsign','false']); f.git(['config','core.autocrlf','false']);
-  call(f,['init','--mode','auto']); mkdirSync(join(f.repo,'.tryce/spec/old'),{recursive:true});
+  mkdirSync(join(f.repo,'.tryce/spec/old'),{recursive:true}); f.write('.tryce/config.json',legacyConfig);
   const oldPath='.tryce/spec/old/tryce.json'; f.write(oldPath,'{"kind":"tryce-requirements","format":"requirements-1","spec":"old","requirements":[],"reviews":[],"decisions":[]}\n'); f.commit('Legacy baseline');
   const config=JSON.parse(readFileSync(join(f.repo,'.tryce/config.json'),'utf8'));
   f.write('.tryce/config.json',JSON.stringify({schemaVersion:1,baseline:config.baseline})+'\n');

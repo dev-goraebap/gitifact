@@ -4,15 +4,15 @@ import { readFileSync, writeFileSync, existsSync, unlinkSync, mkdirSync } from '
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { fixture, fingerprint } from './git-fixture.mjs';
+import { specFixture as fixture, fingerprint } from './git-fixture.mjs';
 const exe=fileURLToPath(new URL('../dist/main.js',import.meta.url));
-const run=(f,args)=>spawnSync(process.execPath,[exe,'spec-preview',...args],{cwd:f.repo,env:f.env,encoding:'utf8',timeout:45000});
+const run=(f,args)=>spawnSync(process.execPath,[exe,'spec',...args.filter(x=>x!=='--experimental')],{cwd:f.repo,env:f.env,encoding:'utf8',timeout:45000});
 const ok=r=>{assert.equal(r.status,0,r.stderr);return JSON.parse(r.stdout);};
 function input(f,action,value){const p=join(f.root,'input.json');writeFileSync(p,JSON.stringify(value));return run(f,[action,'--experimental','--file',p]);}
 const allPaths=['.tryce/spec/posts/requirements.md','.tryce/spec/posts/history.jsonl','app.js','app.test.js'];
 function setup(t,format='sha1'){
  const f=fixture(t,format);f.git(['config','user.name','Tryce fixture']);f.git(['config','user.email','fixture@example.invalid']);f.git(['config','commit.gpgsign','false']);f.git(['config','core.autocrlf','false']);
- mkdirSync(join(f.repo,'.git/hooks'));
+ mkdirSync(join(f.repo,'.git/hooks'));f.commit('Adopt tryce');
  const state=ok(run(f,['working','--experimental']));const created=ok(input(f,'save',{expected:state.stamp,operations:[{type:'create',feature:'posts',title:'게시물'},{type:'add',feature:'posts',title:'저장',body:'제목을 입력해 저장합니다.'}]}));
  f.write('app.js','export const save = title => !!title;\n');f.write('app.test.js','// fixture test source\n');
  const reason=()=>ok(input(f,'prepare',{expected:ok(run(f,['changes','--experimental'])).expected,reasons:[{requirements:[created.results[1].id],reason:'제목 없는 저장을 방지'}]}));
@@ -23,7 +23,7 @@ for(const format of ['sha1','sha256'])test(`combined spec/reason/code/test commi
  const f=setup(t,format);f.write('unrelated.txt','keep outside commit');const before=fingerprint(f.repo);const p=ok(plan(f)).plan;
  assert.deepEqual(fingerprint(f.repo),before);const result=ok(input(f,'commit-apply',p));assert.equal(result.outcome,'committed');
  assert.deepEqual(result.paths,allPaths.slice().sort());assert.equal(f.git(['status','--porcelain']).stdout,'?? unrelated.txt\n');
- assert.deepEqual(f.git(['ls-tree','-r','--name-only','HEAD']).stdout.trim().split('\n'),allPaths.slice().sort());
+ assert.deepEqual(f.git(['ls-tree','-r','--name-only','HEAD']).stdout.trim().split('\n'),[...allPaths,'.tryce/config.json'].sort());
  assert.match(f.git(['log','-1','--format=%B']).stdout,new RegExp('Tryce-Req: '+f.id));
  const head=f.git(['rev-parse','HEAD']).stdout;assert.equal(input(f,'commit-apply',p).status,1);assert.equal(f.git(['rev-parse','HEAD']).stdout,head);
 });
@@ -54,7 +54,7 @@ test('failed pre-commit hook preserves index and allows retry without duplicate 
  const original=existsSync(join(f.repo,'.git/index'))?readFileSync(join(f.repo,'.git/index')):null;
  assert.equal(input(f,'commit-apply',p).status,1);assert.equal(existsSync(join(f.repo,'.git/tryce-spec-commit.lock')),false);assert.equal(existsSync(join(f.repo,'.git/index.lock')),false);
  assert.deepEqual(existsSync(join(f.repo,'.git/index'))?readFileSync(join(f.repo,'.git/index')):null,original);
- unlinkSync(hook);ok(input(f,'commit-apply',p));assert.equal(f.git(['rev-list','--count','HEAD']).stdout.trim(),'1');
+ unlinkSync(hook);ok(input(f,'commit-apply',p));assert.equal(f.git(['rev-list','--count','HEAD']).stdout.trim(),'2');
 });
 test('hook changing the commit leaves recovery evidence and blocks blind retries',t=>{
  const f=setup(t);writeFileSync(join(f.repo,'.git/hooks/pre-commit'),'#!/bin/sh\nprintf extra > extra.txt\ngit add extra.txt\n');const p=ok(plan(f)).plan;

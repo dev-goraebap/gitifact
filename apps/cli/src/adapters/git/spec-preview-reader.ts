@@ -1,5 +1,6 @@
 import { parseSpecPreview, validatePreviewSnapshot, SpecPreviewError, parseProjectConfig, type PreviewSpec } from '@tryce/core';
 import { createGitRunner } from './run-git.js';
+import { commandScoped } from './command-scope.js';
 
 export function specPreviewReader(cwd: string) {
   // Avoid repository/index overrides and replacements when reading immutable commits.
@@ -29,20 +30,34 @@ export function specPreviewReader(cwd: string) {
       }
       return files;
     },
+    async hasUnmerged() {
+      return (await git(['ls-files', '--unmerged', '-z'])).length > 0;
+    },
     async baseline() {
-      const head = decode(await git(['rev-parse', '--verify', '--quiet', 'HEAD'], undefined, [0, 1])).trim();
-      const branch = decode(await git(['symbolic-ref', '--quiet', 'HEAD'], undefined, [0, 1])).trim();
+      // HEAD^{commit} verifies the object type in the same process; a non-commit HEAD falls through to the corruption check.
+      const [headOutput, branchOutput] = await Promise.all([
+        git(['rev-parse', '--verify', '--quiet', '--end-of-options', 'HEAD^{commit}'], undefined, [0, 1]),
+        git(['symbolic-ref', '--quiet', 'HEAD'], undefined, [0, 1]),
+      ]);
+      const head = decode(headOutput).trim(); const branch = decode(branchOutput).trim();
       if (head) {
         if (!/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/.test(head)) throw new SpecPreviewError('HEAD를 확인하지 못했습니다.');
-        await this.resolve(head); return { head, branch: branch || null };
+        return { head, branch: branch || null };
       }
       if (!branch.startsWith('refs/heads/') || (await git(['for-each-ref', '--format=%(refname)', '--', branch])).length) throw new SpecPreviewError('손상된 HEAD를 빈 저장소로 처리하지 않습니다.');
       return { head: null, branch };
     },
-    async location() {
-      const root = decode(await git(['rev-parse', '--show-toplevel'])).trim();
-      const gitDir = decode(await git(['rev-parse', '--absolute-git-dir'])).trim();
-      return { root, gitDir };
+    location() {
+      return commandScoped('spec-location\0' + cwd, async () => {
+        const fields = [['--show-toplevel'], ['--absolute-git-dir'], ['--git-path', 'index'], ['--show-object-format']];
+        const line = (bytes: Buffer) => decode(bytes).replace(/\n$/, '');
+        let values = line(await git(['rev-parse', '--path-format=absolute', ...fields.flat()])).split('\n');
+        // A legal POSIX path can contain newlines. Read fields individually instead of guessing boundaries.
+        if (values.length !== fields.length) values = await Promise.all(fields.map(async flags => line(await git(['rev-parse', '--path-format=absolute', ...flags]))));
+        const [root, gitDir, indexPath, objectFormat] = values.map(value => value.trim()) as [string, string, string, string];
+        if (objectFormat !== 'sha1' && objectFormat !== 'sha256') throw new SpecPreviewError('지원하지 않는 Git 객체 형식입니다.');
+        return { root, gitDir, indexPath, objectFormat };
+      });
     },
     async resolve(ref: string) {
       const oid = (await git(['rev-parse', '--verify', '--end-of-options', ref + '^{commit}'])).toString('ascii').trim();
@@ -72,8 +87,8 @@ export function specPreviewReader(cwd: string) {
       }
       if (files.size > 2000) throw new SpecPreviewError('검토 조회 파일 한도를 초과했습니다.');
       const blobs = new Map<string, string>(); const ids = [...new Set(files.values())]; let totalBytes = 0;
-      for (let i = 0; i < ids.length; i += 16) {
-        const batch = ids.slice(i, i + 16);
+      for (let i = 0; i < ids.length; i += 128) {
+        const batch = ids.slice(i, i + 128);
         const output = await git(['cat-file', '--batch'], Buffer.from(batch.join('\n') + '\n')); let offset = 0;
         for (const id of batch) {
           const end = output.indexOf(10, offset); const header = output.subarray(offset, end).toString('ascii').split(' '); const size = Number(header[2]);

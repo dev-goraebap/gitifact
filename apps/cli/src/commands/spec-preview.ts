@@ -1,26 +1,35 @@
-import { compareSpecPreviews, SpecPreviewError, RepositoryReadError } from '@tryce/core';
-import { specPreviewReader } from '../adapters/git/spec-preview-reader.js';
-import { readWorkingPreview, saveWorkingPreview } from '../adapters/filesystem/spec-preview-store.js';
+import { join } from 'node:path';
 import { readFile, stat } from 'node:fs/promises';
+import { compareSpecPreviews, SpecPreviewError, RepositoryReadError, InitError, parseManagedConfig } from '@tryce/core';
+import { specPreviewReader } from '../adapters/git/spec-preview-reader.js';
+import { withCommandScope } from '../adapters/git/command-scope.js';
+import { readWorkingPreview, saveWorkingPreview } from '../adapters/filesystem/spec-preview-store.js';
 import { prepareWorkingPreview, readFinalPreviewChanges, verifyPreparedPreview } from '../adapters/filesystem/spec-preview-prepare.js';
-import { previewCommit } from './spec-preview-commit.js';
-import { InitError, parseManagedConfig } from '@tryce/core';
-import { readConfigFile } from '../adapters/filesystem/config-file.js';
+import { fileInfo, readConfigFile } from '../adapters/filesystem/config-file.js';
 import { initRepository } from '../adapters/git/init-repository.js';
+import { previewCommit } from './spec-preview-commit.js';
+import { specCommit } from './spec-commit.js';
 
-export async function runSpecPreview(action: 'read' | 'diff' | 'working' | 'save' | 'changes' | 'prepare' | 'verify' | 'commit-plan' | 'commit-apply', options: { experimental?: boolean; ref?: string; from?: string; to?: string; file?: string; staged?: boolean }, managed = false) {
-  const envelope = managed ? { contract: 'spec', version: 1 } : { contract: 'spec-preview', version: 'experimental' };
+type Action = 'read' | 'diff' | 'working' | 'save' | 'changes' | 'prepare' | 'verify' | 'commit-plan' | 'commit-apply' | 'commit';
+type Options = { ref?: string; from?: string; to?: string; file?: string; staged?: boolean; dryRun?: boolean };
+const operations = ['MERGE_HEAD', 'CHERRY_PICK_HEAD', 'REVERT_HEAD', 'rebase-merge', 'rebase-apply', 'sequencer', 'BISECT_START', 'index.lock'];
+
+// One scope per command lets nested reads share the repository location instead of spawning Git again.
+export const runSpecPreview = (action: Action, options: Options) => withCommandScope(() => execute(action, options));
+
+async function execute(action: Action, options: Options) {
+  const envelope = { contract: 'spec', version: 1 };
   try {
-    if (managed) {
-      const repo = initRepository(process.cwd()); const state = await repo.inspect();
-      const raw = await readConfigFile(state.state.repository.rootPath);
-      if (raw === undefined) throw new SpecPreviewError('먼저 tryce init으로 초기화하세요.');
-      const config = parseManagedConfig(raw);
-      if (!('schemaVersion' in config)) throw new SpecPreviewError('기존 프로젝트는 별도 전환이 필요합니다.');
-      await repo.validateBaseline(config, state.state.repository.rootPath, state.state.head.commit, state.state.repository.objectFormat);
-    }
-    if (!options.experimental) throw new SpecPreviewError('--experimental이 필요한 검토용 기능입니다.');
-    if (['working', 'save', 'changes', 'prepare', 'verify', 'commit-plan', 'commit-apply'].includes(action)) {
+    // Same guards as the full repository inspection, using only the Git reads they need.
+    const guard = specPreviewReader(process.cwd()); const { root, gitDir, objectFormat } = await guard.location();
+    for (const marker of operations) if (await fileInfo(join(gitDir, marker))) throw new InitError('GIT_OPERATION_IN_PROGRESS', 'Git 작업이 진행 중입니다: ' + marker);
+    if (await guard.hasUnmerged()) throw new InitError('GIT_OPERATION_IN_PROGRESS', 'Git 충돌을 먼저 해결하세요.');
+    const raw = await readConfigFile(root);
+    if (raw === undefined) throw new SpecPreviewError('먼저 tryce init으로 초기화하세요.');
+    const config = parseManagedConfig(raw);
+    if (!('schemaVersion' in config)) throw new SpecPreviewError('기존 프로젝트는 별도 전환이 필요합니다.');
+    await initRepository(root).validateBaseline(config, root, 'HEAD', objectFormat);
+    if (['working', 'save', 'changes', 'prepare', 'verify', 'commit-plan', 'commit-apply', 'commit'].includes(action)) {
       let result;
       if (action === 'working') result = await readWorkingPreview(process.cwd());
       else if (action === 'changes') result = await readFinalPreviewChanges(process.cwd());
@@ -32,7 +41,8 @@ export async function runSpecPreview(action: 'read' | 'diff' | 'working' | 'save
         let input: unknown;
         try { input = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes)); }
         catch { throw new SpecPreviewError('입력 파일은 UTF-8 JSON이어야 합니다.'); }
-        result = action === 'commit-plan' || action === 'commit-apply' ? await previewCommit(process.cwd(), action === 'commit-plan' ? 'plan' : 'apply', input)
+        result = action === 'commit' ? await specCommit(process.cwd(), input, !!options.dryRun)
+          : action === 'commit-plan' || action === 'commit-apply' ? await previewCommit(process.cwd(), action === 'commit-plan' ? 'plan' : 'apply', input)
           : action === 'prepare' ? await prepareWorkingPreview(process.cwd(), input)
           : action === 'verify' ? await verifyPreparedPreview(process.cwd(), input, !!options.staged)
           : await saveWorkingPreview(process.cwd(), input);

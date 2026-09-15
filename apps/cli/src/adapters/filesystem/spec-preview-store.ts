@@ -10,6 +10,8 @@ const info = async (path: string) => lstat(path).catch(e => { if (e.code === 'EN
 const digest = (value: string) => createHash('sha256').update(value).digest('hex');
 const decode = (bytes: Buffer) => new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(bytes);
 export const generatePreviewId = (prefix: 'S' | 'R' | 'H') => prefix + '-' + [...randomBytes(10)].map(n => 'abcdefghijklmnopqrstuvwxyz234567'[n & 31]).join('');
+/** A failure after Git may have changed HEAD: keep written files and recovery data instead of rolling back. */
+export class PreservedPreviewError extends SpecPreviewError {}
 
 async function snapshot(root: string) {
   const files = new Map<string, string>(); let count = 0; let bytes = 0;
@@ -77,7 +79,7 @@ export type WorkingPreviewSnapshot = Awaited<ReturnType<typeof snapshot>>;
 export const readLockedPreviewState = (root: string) => snapshot(root);
 export async function previewTransaction<T>(cwd: string, expected: string, build: (before: WorkingPreviewSnapshot) => Promise<{
   writes: Map<string, string | null>; data: T; recheck?: () => Promise<void>;
-}>, publish = rename) {
+}>, publish = rename, afterPublish?: (state: WorkingPreviewSnapshot) => Promise<void>) {
   const { root, gitDir } = await specPreviewReader(cwd).location();
   const lock = join(gitDir, 'tryce-spec-preview.lock');
   try { await mkdir(lock); } catch (e) { if ((e as NodeJS.ErrnoException).code === 'EEXIST') fail('명세 저장 잠금 또는 복구 자료가 있습니다.'); throw e; }
@@ -119,8 +121,11 @@ export async function previewTransaction<T>(cwd: string, expected: string, build
     const after = await snapshot(root);
     if (after.stamp !== digest(JSON.stringify([...finalFiles].sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)) + (before.config ?? ''))) fail('저장 중 명세 또는 설정이 변경됐습니다.');
     await result.recheck?.();
+    // Runs while the lock is held; a normal failure here restores the published files like any other failure.
+    await afterPublish?.(after);
     return { ...result.data, stamp: after.stamp, paths: changed.map(c => c.path), specs: after.specs };
   } catch (error) {
+    if (error instanceof PreservedPreviewError) { keepRecovery = true; throw error; }
     for (const c of [...published].reverse()) {
       try {
         const path = join(root, c.path); const stat = await info(path);

@@ -3,7 +3,6 @@ import { execFileSync, spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -38,26 +37,30 @@ try {
   assert.equal(status.ok, true);
   assert.deepEqual(status.head, { state: 'unborn', branch: 'main', commit: null });
   assert.deepEqual(status.checks, { state: 'not-run', reason: 'git-status-only' });
-  const initialized = JSON.parse(pnpm(['--dir', temporaryRoot, 'exec', 'tryce', 'init', '--mode', 'prototype'], temporaryRoot));
+  const initialized = JSON.parse(pnpm(['--dir', temporaryRoot, 'exec', 'tryce', 'init'], temporaryRoot));
   assert.equal(initialized.outcome, 'created');
+  assert.equal(initialized.schemaVersion, 1);
   assert.deepEqual(initialized.baseline, { kind: 'empty' });
   const configBefore = await readFile(join(temporaryRoot, '.tryce', 'config.json'));
-  assert.equal(JSON.parse(pnpm(['--dir', temporaryRoot, 'exec', 'tryce', 'init', '--mode', 'prototype'], temporaryRoot)).outcome, 'already-initialized');
+  assert.equal(JSON.parse(pnpm(['--dir', temporaryRoot, 'exec', 'tryce', 'init'], temporaryRoot)).outcome, 'already-initialized');
   assert.deepEqual(await readFile(join(temporaryRoot, '.tryce', 'config.json')), configBefore);
-  const enabled = JSON.parse(pnpm(['--dir', temporaryRoot, 'exec', 'tryce', 'note', 'enable'], temporaryRoot));
-  assert.equal(enabled.outcome, 'enabled');
-  assert.deepEqual(await readFile(join(temporaryRoot, enabled.backupPath)), configBefore);
-  const added = JSON.parse(pnpm(['--dir', temporaryRoot, 'exec', 'tryce', 'note', 'add', '--type', 'discovery', '--message', 'Packaged CLI writes a note'], temporaryRoot));
-  assert.equal(added.outcome, 'added');
-  const shown = JSON.parse(pnpm(['--dir', temporaryRoot, 'exec', 'tryce', 'note', 'show', added.notes[0].id], temporaryRoot));
-  assert.deepEqual(shown.notes, added.notes);
-  assert.equal(JSON.parse(pnpm(['--dir', temporaryRoot, 'exec', 'tryce', 'note', 'list'], temporaryRoot)).notes.length, 1);
-  const brief = JSON.parse(pnpm(['--dir', temporaryRoot, 'exec', 'tryce', 'brief', '--all'], temporaryRoot));
-  assert.equal(brief.ok, true);
-  assert.equal(brief.report.project.data.mode, 'prototype');
-  assert.equal(brief.report.notes.data.items[0].id, added.notes[0].id);
-  assert.equal(brief.report.notes.data.omitted, 0);
-  assert.equal(brief.report.checks.state, 'not-run');
+  for (const [key, value] of [['user.name', 'Package fixture'], ['user.email', 'package@example.invalid'], ['commit.gpgsign', 'false']]) {
+    execFileSync('git', ['config', key, value], { cwd: temporaryRoot, stdio: 'pipe' });
+  }
+  const specInput = join(temporaryRoot, 'spec-input.json');
+  const spec = async (args, input) => {
+    if (input) await writeFile(specInput, JSON.stringify(input));
+    return JSON.parse(pnpm(['--dir', temporaryRoot, 'exec', 'tryce', 'spec', ...args, ...(input ? ['--file', specInput] : [])], temporaryRoot));
+  };
+  const saved = await spec(['save'], { expected: (await spec(['working'])).stamp, operations: [
+    { type: 'create', feature: 'package', title: '패키지 기능' },
+    { type: 'add', feature: 'package', title: '설치 확인', body: '설치한 CLI로 명세와 코드를 커밋합니다.' }] });
+  await writeFile(join(temporaryRoot, 'feature.txt'), 'packaged feature\n');
+  const committed = await spec(['commit'], { reasons: [{ requirements: [saved.results[1].id], reason: '패키지 검증' }],
+    paths: ['.tryce/config.json', '.tryce/spec/package/requirements.md', '.tryce/spec/package/history.jsonl', 'feature.txt'],
+    message: 'Package fixture commit', authorization: { basis: 'user-request', evidence: 'Package verification fixture' } });
+  assert.equal(committed.outcome, 'committed');
+  assert.equal((await spec(['read'])).specs[0].requirements[0].id, saved.results[1].id);
   const skillSource = join(temporaryRoot, '.agents/skills/tryce-workflow/SKILL.md');
   const skillCopy = join(temporaryRoot, '.claude/skills/tryce-workflow/SKILL.md');
   const installSkills = JSON.parse(pnpm(['--dir', temporaryRoot, 'exec', 'tryce', 'skills', 'install', '--agent', 'claude'], temporaryRoot));
@@ -72,16 +75,6 @@ try {
   pnpm(['--dir', temporaryRoot, 'exec', 'tryce', 'skills', 'remove'], temporaryRoot);
   await assert.rejects(readFile(skillCopy), { code: 'ENOENT' });
   assert.equal(await readFile(skillSource, 'utf8'), sourceBytes + '\nProject customization\n');
-  const workflow = args => JSON.parse(pnpm(['--dir', temporaryRoot, 'exec', 'tryce', ...args], temporaryRoot));
-  assert.equal(workflow(['mode', 'set', 'approval', '--reason', 'Explicit migration in package fixture']).data.mode, 'approval');
-  const requirement = workflow(['req', 'draft', '--spec', 'package', '--title', 'Packaged workflow', '--message', 'Installed CLI preserves requirements', '--author', 'Fixture', '--reason', 'Package verification']).data.result;
-  const review = workflow(['req', 'review', requirement.id]).data.result;
-  workflow(['req', 'approve', review.id, '--by', 'Fixture', '--evidence', 'Explicit fixture confirmation']);
-  const current = workflow(['brief', '--all']);
-  assert.equal(current.report.requirements.data.items[0].path, '.tryce/spec/package/tryce.json');
-  assert.equal(existsSync(join(temporaryRoot, 'specs')), false);
-  assert.equal(current.version, 2); assert.equal(current.report.requirements.data.items[0].approval, 'approved');
-  assert.equal(current.report.notes.data.items[0].id, added.notes[0].id);
   const child = spawn(process.execPath, [join(installedRoot, 'dist', 'main.js'), 'browser'], {
     cwd: temporaryRoot, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true,
   });
@@ -116,7 +109,7 @@ try {
     assert.equal(response.status, 200);
     assert.ok((await response.json()).changes.some(change => change.path === 'browser-created.txt'));
   } finally { child.kill(); await exited; }
-  console.log('PASS: packed CLI installs offline; legacy migration, requirement approval, notes, brief, skills, status and browser run outside the workspace.');
+  console.log('PASS: packed CLI installs offline; init, spec save/commit/read, skills, status and browser run outside the workspace.');
 } finally {
   // Only removes the exact directory returned by mkdtemp for this check.
   await rm(temporaryRoot, { recursive: true, force: true });

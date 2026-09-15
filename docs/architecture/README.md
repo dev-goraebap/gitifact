@@ -72,7 +72,7 @@ apps/cli     ──→ packages/core
 
 개발 중에는 Vite 개발 서버가 API 요청을 로컬 서버로 프록시한다. 배포 시에는 미리 빌드한 브라우저 정적 파일을 CLI 배포물에 포함하고 같은 origin에서 제공하는 방향으로 시작한다. 소스 의존 대신 빌드 산출물을 패키징 단계에서 연결한다. 설치된 CLI가 UI를 보여주기 위해 Vite 개발 서버나 workspace 원본을 필요로 해서는 안 된다.
 
-이력·현재 상태와 브리핑은 공통 모델에서 파생한다. 첫 읽기 전용 화면은 소규모 로컬 기록을 browser-project 버전 1로 묶어 브리핑·요구사항·판단 화면이 공유한다. Git 경로 상태는 별도 계약을 유지한다. 기록 규모가 커지면 필요한 범위의 조회와 페이지네이션을 도입하되 서로 다른 관측 시점을 혼합하지 않는다. 현재 경계는 [로컬 브라우저 계약](https://github.com/dev-goraebap/tryce/blob/479d392a93fa40e7a95993d4979417beae869723/docs/specs/browser-server.md)에 정의한다.
+이력·현재 상태와 브리핑은 공통 모델에서 파생한다. 첫 읽기 전용 화면은 소규모 로컬 기록을 browser-project 버전 1로 묶었으나, 현재 화면은 browser-specs 계약으로 명세와 이력을 읽고 browser-project는 제거했다. Git 경로 상태는 별도 계약을 유지한다. 기록 규모가 커지면 필요한 범위의 조회와 페이지네이션을 도입하되 서로 다른 관측 시점을 혼합하지 않는다. 현재 경계는 [로컬 브라우저 계약](https://github.com/dev-goraebap/tryce/blob/479d392a93fa40e7a95993d4979417beae869723/docs/specs/browser-server.md)에 정의한다.
 
 ## 스킬과 자체 적용
 

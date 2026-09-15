@@ -149,6 +149,7 @@ core의 관측 모델과 contracts의 `repository-status` 버전 1은 개발용�
 - `routeTree.gen.ts`는 Git에서 제외한다. 타입 검사·빌드 전에 다시 생성하며 개발 중에는 Vite 플러그인이 갱신한다.
 - 패키지 설치 스크립트는 esbuild만 허용한다. 확인한 Astryx core 0.6.0의 postinstall은 에이전트 문서 초기화를 권하는 안내이므로 실행하지 않는다. 실제 CSS와 테마는 배포 파일을 사용한다.
 - `node_modules`, `dist`, 브라우저 테스트 결과와 압축 패키지는 Git에서 제외한다. pnpm lockfile은 제외하지 않는다.
+- 2026-09-15부터 루트 `.gitattributes`로 모든 텍스트 파일을 LF로 저장·checkout한다. 운영체제나 core.autocrlf와 관계없이 명세·코드의 바이트를 같게 유지하기 위해서다. 추가 시점에 추적 텍스트 218개가 이미 LF로 커밋돼 있어 정규화 커밋은 필요 없었다. 바이너리 PNG·woff2는 binary로 명시했다. 미커밋 변경을 보존하려고 기존 작업 폴더를 다시 checkout하지 않았으므로 일부 파일은 커밋 전까지 CRLF로 남을 수 있다. init이 사용자 프로젝트에 같은 파일을 만들지는 결정하지 않았다.
 
 빌드는 공통 패키지·브라우저·CLI 순서로 수행한다. CLI에 브라우저 자산을 포함하므로 설치한 패키지만으로 서버를 실행할 수 있다. 패키징 검증은 설치된 CLI의 HTML·JS·CSS·직접 URL과 실제 API 새로고침까지 포함한다.
 
@@ -375,3 +376,44 @@ Outfit/Noto Sans KR 800 로컬 제목 폰트, Hugeicons 메뉴, Gentask 원본 �
 ## 0.4.0 릴리스 사용 빌드
 
 버전과 배포 안내만 변경한 0.4.0 번들을 다시 빌드하고 패키지 오프라인 설치·실행과 커밋 연결·실패 복구 7개 검사를 통과했다. 이 빌드를 프로젝트 사용 대상으로 지정한다. 실행은 `node apps/cli/dist/main.js`, SHA-256은 `8cb0d83197f0721674859c8a20bdad171bfa65d6d66201a3f57653b74d317396`이다. 지원 형식과 기능 범위는 직전 검증 빌드와 같다.
+
+## 2026-09-15 커밋 성능과 단일 커밋 명령
+
+커밋이 오래 걸리는 원인을 측정하고 `spec commit`으로 개선했다. 명령 설계와 결정은 [MVP 전환 계획](mvp-transition.md)의 단일 커밋 명령 절을 따른다.
+
+측정은 `node scripts/benchmark-commit.mjs [--cli 경로] [--flow both|legacy|merged]`로 재현한다. 매 실행마다 독립 fixture 저장소를 복사하며 현재 checkout은 건드리지 않는다. `scripts/benchmark-commit-trace.mjs` preload가 CLI 번들을 바꾸지 않고 Git 프로세스·파일 접근 시간을 기록한다. fixture 준비와 명세 편집은 측정 구간에서 제외했다. 시나리오별 5회를 실행했고 표는 첫 실행을 제외한 중앙값이다. 환경은 Windows 11, AMD Ryzen AI MAX 390, Node.js 24.17.0, Git 2.53.0.windows.1(system core.autocrlf=true)이며 fixture에는 훅과 서명이 없다.
+
+0.4.0 흐름은 changes·prepare·commit-plan·commit-apply와 시작 시 working을 포함한다. Git 프로세스를 237~265회 순서대로 실행했고 시간의 86%가 Git 대기였다(호출당 평균 62ms). 저장소 크기보다 호출 수가 시간을 결정했다. 반복 원인은 명령마다의 사전 검사(status 2회 포함), 한 명령 안에서 반복한 저장소 위치·HEAD 조회, commit-apply의 계획 전체 재구성이었다. 같은 환경에서 `git --version` 한 번은 59ms, CLI 시작은 128ms였다.
+
+| 시나리오 (명세+코드 / 코드만) | 0.4.0 흐름 | 새 빌드의 4단계 흐름 | spec commit | 기본 git add+commit |
+| :--- | :--- | :--- | :--- | :--- |
+| small: 추적 파일 10, 명세 1 | 14.7 / 13.8초 (Git 239 / 237회) | 7.2 / 7.0초 (111 / 109회) | 1.67 / 1.65초 (25 / 24회) | 0.18 / 0.17초 |
+| Tryce 복제: 파일 220, 명세 6 | 15.2 / 15.0초 (239 / 237회) | 7.4 / 6.9초 (111 / 109회) | 1.60 / 1.64초 (25 / 24회) | 0.19 / 0.19초 |
+| medium: 파일 2,000, 명세 20 | 21.0 / 18.1초 (265 / 259회) | 10.0 / 9.6초 (115 / 109회) | 2.13 / 1.93초 (25 / 24회) | 0.28 / 0.24초 |
+| many: medium에서 커밋 파일 124 | 22.0 / 22.6초 (265 / 259회) | 10.4 / 9.4초 (115 / 109회) | 2.60 / 2.50초 (25 / 24회) | 0.52 / 0.44초 |
+
+단독 `changes`는 1.5~1.7초에서 0.64~0.69초(Git 10회)로 줄었다. spec commit의 남은 시간은 대부분 Git 24~25회이며, 커밋 파일이 많으면 파일 지문 계산이 약 0.8초를 더한다. 기본 Git과의 차이는 잠금 아래 재대조·격리 index·결과 검증을 유지한 비용이다. 결과는 이 컴퓨터의 로컬 측정이며 macOS·Linux, 훅·서명이 있는 저장소, 더 큰 명세 집합은 측정하지 않았다. 원자료는 `.tmp/commit-performance/baseline-0.4.0.json`과 `after-single-commit.json`에 있다.
+
+Tryce 복제 시나리오는 autocrlf=false로 복제했다. 기본 autocrlf=true 복제에서는 명세가 CRLF로 checkout돼 commit-plan이 변경되지 않은 명세를 미선택 변경으로 거부했다. 같은 CRLF 복제본에서 새 빌드의 spec commit도 dry-run과 실행 모두 같은 오류로 거부했고 파일은 쓰지 않았다. 별도 결함으로 남기고 이번 범위에서 고치지 않았다.
+
+새 개발 번들 SHA-256은 `9dedcb5f4635a11be8f2cd3c10ef40dc4c2f39a6f72ca8d2fb9cd5644f5f6dc9`이며 프로젝트 사용 빌드로 지정하지 않았다. 0.4.0 지정 바이트는 `.tmp/commit-performance/record-cli-0.4.0.mjs`에 보존했다. 최종 소스의 `pnpm check`가 통과했다. 타입 검사·빌드, core 20개·contracts 7개·CLI 131개(새 spec commit 8개 포함)·브라우저 17개·스킬 동기화 5개와 workspace 밖 패키지 오프라인 설치·실행을 확인했다. 새 테스트는 SHA-1/SHA-256 dry-run 무변경과 단일 커밋, 이유 누락 경고, 생략한 이유 유지, 오래된 expected·미선택 명세·기존 staging·intent-to-add 거부, 훅 거부 후 이유 파일·index 복원과 재시도, 외부 편집 보존, HEAD 변경 후 복구 자료 보존을 검사한다. 루트 커밋·푸시·npm 게시는 하지 않았다.
+
+## 2026-09-15 구형 명령 삭제
+
+사용자 결정에 따라 deprecated였던 `req`·`note`·`mode`·`init --mode`·`spec-preview` 호환 이름과, 표시가 없던 구형 `commit plan/apply`·`brief`를 삭제했다. 이들만 쓰던 저장소·출력 코드, core의 note·요구사항 JSON·brief 모듈, contracts의 brief·notes·workflow·browser-project·project-init v1/v2 계약도 제거했다. 브라우저 화면은 `/api/v1/project`를 호출하지 않아 해당 API와 클라이언트도 제거했다. `spec`의 `prepare`·`verify`·`commit-plan`·`commit-apply`는 0.6.0 제거 일정대로 deprecated 상태로 남긴다.
+
+init은 schemaVersion 1 설정만 만든다. init 실패 출력은 기존 project-init version 1 오류 형태를 유지한다. 구형 설정 파서는 구형 프로젝트를 새 형식으로 오인하지 않고 MIGRATION_REQUIRED 등으로 거부하기 위해 남겼다. spec commit의 구형 기록 삭제 선택도 유지한다. 구형 JSON 프로젝트의 기록은 0.4.0 이하 CLI로 읽는다.
+
+구형 init 테스트는 삭제하지 않고 명세 기반 init으로 옮겼다. 무시 규칙·추적 설정 삭제·진행 중인 Git 작업·링크·병렬 실행·강제 종료·worktree·clone·submodule 검사를 유지했다. 옮기는 중 차이 하나를 확인했다. 초기화 도중 다른 쪽이 config.json을 만들면 구형 init은 기존 설정으로 받아들였지만, 명세 기반 init은 기록 검사가 먼저 실행돼 EXISTING_RECORDS로 거부한다. 두 경우 모두 파일은 덮어쓰지 않는다. 동작은 바꾸지 않고 테스트를 실제 동작에 맞췄다. spec-preview 테스트는 초기화된 fixture와 `spec` 이름으로 옮겼다.
+
+최종 소스의 `pnpm check`가 통과했다. 타입 검사·빌드, core 14개·contracts 4개·CLI 98개·브라우저 17개·스킬 동기화 5개와 workspace 밖 패키지 설치 후 init·spec save/commit/read·skills·status·browser 실행을 확인했다. 테스트 수 감소는 삭제한 명령의 테스트 제거에 따른 것이다. 개발 번들 SHA-256은 `8af110810dd896fa580ca7f91918e8363395b349415bfd15e1a84fe798533d00`이며 프로젝트 사용 빌드로 지정하지 않았다. 이 저장소의 명세는 명령 이름이 아니라 동작을 기술하므로 수정하지 않았다. 루트 커밋·푸시·npm 게시는 하지 않았다.
+
+## 0.5.0 프로젝트 사용 빌드
+
+위 두 절의 변경을 담아 CLI 버전을 0.5.0으로 올렸다. deprecated 명령은 0.6.0에서 제거한다.
+
+같은 버전에 CRLF checkout 결함 수정을 포함했다. core.autocrlf=true로 복제하면 LF 명세가 CRLF로 checkout돼 spec commit이 변경되지 않은 명세를 미선택 변경으로 거부했다. 이제 변경 여부를 Git이 저장할 blob ID로 비교하고, 필터 검사는 줄바꿈 변환만 허용한다. 판단과 기각한 대안은 [MVP 전환 계획](mvp-transition.md)의 단일 커밋 명령 절에 둔다. 실제 Tryce를 autocrlf=true로 복제한 저장소에서 요구사항 수정과 README 변경을 dry-run·커밋했고 커밋 후 작업 폴더가 깨끗했다. 새 테스트는 CRLF checkout에서 건드리지 않은 명세를 다시 쓰지 않고 커밋하는 경우와, 내용을 바꾸는 clean 필터가 계속 거부·복원되는 경우를 검사한다. deprecated commit-plan에는 적용하지 않았다.
+
+최종 소스의 `pnpm check`가 통과했다(core 14개·contracts 4개·CLI 100개·브라우저 17개·스킬 5개, workspace 밖 패키지 설치·실행). `tryce --version`은 0.5.0을 출력하고, 이 저장소에서 `spec working`(명세 6개)과 `spec changes`(변경 0건)가 정상 동작했다.
+
+이 빌드를 프로젝트 사용 대상으로 지정한다. 실행은 `node apps/cli/dist/main.js` 또는 `pnpm cli`, SHA-256은 `41223f684db38ea8d8032d6e30a6535b1dcd75ce96d2421887638acf378e1e83`이다. 커밋은 `spec commit`으로 한다. 직전 0.4.0 지정 바이트는 `.tmp/commit-performance/record-cli-0.4.0.mjs`에 보존했다. npm 게시 전이므로 공개 레지스트리의 최신 버전은 0.4.0이다. 루트 커밋·푸시·npm 게시는 하지 않았다.

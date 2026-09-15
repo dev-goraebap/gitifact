@@ -5,10 +5,10 @@ import { rename } from 'node:fs/promises';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { fixture, fingerprint } from './git-fixture.mjs';
+import { specFixture as fixture, fingerprint } from './git-fixture.mjs';
 import { prepareWorkingPreview } from '../.test-build/adapters/filesystem/spec-preview-prepare.js';
 const exe=fileURLToPath(new URL('../dist/main.js',import.meta.url));
-const run=(f,args)=>spawnSync(process.execPath,[exe,'spec-preview',...args],{cwd:f.repo,env:f.env,encoding:'utf8',timeout:35000});
+const run=(f,args)=>spawnSync(process.execPath,[exe,'spec',...args.filter(x=>x!=='--experimental')],{cwd:f.repo,env:f.env,encoding:'utf8',timeout:35000});
 const ok=result=>{assert.equal(result.status,0,result.stderr);return JSON.parse(result.stdout);};
 function input(f,action,data,extra=[]){const path=join(f.root,'input.json');writeFileSync(path,JSON.stringify(data));return run(f,[action,'--experimental','--file',path,...extra]);}
 const changes=f=>ok(run(f,['changes','--experimental']));

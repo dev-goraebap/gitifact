@@ -8,13 +8,14 @@ import { generatePreviewId, previewTransaction, readWorkingPreviewState } from '
 const fail = (message: string): never => { throw new SpecPreviewError(message); };
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 const expected = (base: unknown, stamp: string) => createHash('sha256').update(JSON.stringify({ base, stamp })).digest('hex');
+export const previewExpected = expected;
 const parseFiles = (files: Map<string, string>) => {
   const specs = [...files].filter(([path]) => path.endsWith('/requirements.md')).map(([path, text]) =>
     parseSpecPreview(path, text, files.get(path.replace(/requirements\.md$/, 'history.jsonl')) ?? ''));
   for (const path of files.keys()) if (path.endsWith('/history.jsonl') && !files.has(path.replace(/history\.jsonl$/, 'requirements.md'))) fail('명세 없는 과거 이유 파일입니다.');
   validatePreviewSnapshot(specs); return specs;
 };
-async function context(cwd: string) {
+export async function readPreviewContext(cwd: string) {
   const reader = specPreviewReader(cwd); const { gitDir } = await reader.location();
   const checkOperation = async () => {
     for (const name of ['MERGE_HEAD', 'CHERRY_PICK_HEAD', 'REVERT_HEAD', 'rebase-merge', 'rebase-apply']) {
@@ -28,8 +29,9 @@ async function context(cwd: string) {
   const files = base.head ? await reader.files(base.head, working.config !== undefined) : new Map<string, string>();
   const specs = parseFiles(files);
   const recheck = async () => { await checkOperation(); if (!same(base, await reader.baseline())) fail('HEAD 또는 브랜치가 변경됐습니다. changes부터 다시 확인하세요.'); };
-  return { reader, base, files, specs, recheck };
+  return { reader, base, files, specs, recheck, working };
 }
+const context = readPreviewContext;
 
 export async function readFinalPreviewChanges(cwd: string) {
   const c = await context(cwd); const current = await readWorkingPreviewState(cwd);

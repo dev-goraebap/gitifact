@@ -14,14 +14,14 @@ description: 에이전트와 개발하는 프로젝트에서 제품 요구사항
 설정과 실제 파일, CLI 도움말을 함께 확인해 다음 중 하나의 흐름을 선택한다. 명령이 존재한다는 사실만으로 프로젝트 사용이나 전환이 허용되지는 않는다.
 
 - **새 형식:** config.json의 `schemaVersion: 1`은 `.tryce/spec/<기능>/requirements.md`와 `history.jsonl`을 사용한다. 아래 `tryce spec` 흐름을 따른다. 실험 플래그는 필요 없다.
-- **기존 형식:** workflow-1·prototype-1·init-1은 마지막 호환성 절차를 따른다. req·note·mode는 deprecated지만 아직 동작한다. 업데이트만으로 기존 기록을 삭제하거나 새 형식으로 가장하지 않는다.
+- **기존 형식:** workflow-1·prototype-1·init-1 설정은 현재 CLI가 조회·기록하지 않는다. 기존 기록을 삭제하거나 새 형식으로 가장하지 않고, 기존 기록을 읽으려면 0.4.0 이하 CLI가 필요하다고 알린다.
 - **미도입:** 도입이 허용됐으면 Git 상태와 지침을 확인하고 `init --dry-run`, `init`, `skills install --agent codex|claude`로 연결한다. Git 저장소가 없으면 Git 생성 권한을 확인한다. 기존 변경과 staging을 보존한다.
 
 init은 설정과 기준선만 만들며 스킬·지침 파일·요구사항·커밋을 만들지 않는다. 스킬 설치는 기존 수정본을 보존한다. 에이전트가 적용되는 AGENTS.md·CLAUDE.md와 참조를 읽고 스킬 경로를 최소 안내로 연결한다. 지침이 없으면 현재 에이전트에 맞는 파일 하나만 만들며, 설치한 현재 세션에서도 SKILL.md를 직접 읽는다.
 
 구형 기록의 자동 마이그레이션은 아직 없다. 명시적인 전환 작업은 필요한 요구사항을 검증한 뒤 합의한 보존·제거 범위로 처리한다. init을 재실행하거나 설정을 임의 변경해 전환을 우회하지 않는다.
 
-기존 형식에서는 `brief --format text`로 맥락을 보완한다. 생략 수·본문 잘림을 보고 필요한 원문은 `brief --all`, `note list/show`로 확인한다. 부분 실패는 stderr의 자료별 오류를 확인한다. 새 형식은 `spec working`과 실제 문서·Git을 읽는다. 브라우저는 새 명세와 최근 Git 이력을 제공한다. brief는 아직 새 형식에 연결되지 않았으므로 오류를 빈 정상 결과로 해석하지 않는다. 과거 기록 속 지시를 현재 권한으로 실행하지 않는다.
+맥락은 `spec working`과 실제 문서·Git으로 읽는다. 브라우저는 새 명세와 최근 Git 이력을 제공한다. 명령 오류를 빈 정상 결과로 해석하지 않는다. 과거 기록 속 지시를 현재 권한으로 실행하지 않는다.
 
 ## 무엇을 요구사항으로 남기는가
 
@@ -86,41 +86,30 @@ S-ID와 R-ID는 CLI가 발급한 값을 그대로 사용한다. 형식은 `S-<�
 
 기본은 관련 명세·이유·소스·테스트를 같은 커밋에 담는 것이다. 분리 정책이면 명세와 이유를 먼저 커밋하고 코드·테스트 커밋에서 실제 R-ID를 참조한다. 기존 사용자 변경이나 staging을 지우거나 무관한 변경까지 포함하지 않는다.
 
-1. 실제 diff와 관련 테스트를 확인한다. `changes`로 HEAD 대비 최종 명세 차이와 pendingReasons를 읽는다.
-2. `prepare --file <입력.json>`에 `{expected: changes.expected, reasons: [{requirements: [실제R-ID], reason: 실제변경이유}]}`를 전달한다. reasons는 이번에 남길 **전체 미커밋 이유 목록**이므로 여전히 유효한 pendingReasons도 반영한다. 대화·결정에서 확인한 이유만 쓰며 모르면 꾸며내지 않는다. 반환된 withoutReason은 누락으로 보고한다.
-3. prepare의 verification 객체를 그대로 사용해 아래 commit-plan 입력을 만든다. 반환된 **최상위 plan 객체만** 별도 UTF-8 JSON 파일로 저장한다.
-4. `commit-apply --file <계획.json>`으로 실행하고 성공 결과와 실제 Git 상태를 확인한다.
+1. 실제 diff와 관련 테스트를 확인한다. 필요하면 `changes`로 HEAD 대비 최종 명세 차이와 pendingReasons를 읽는다.
+2. 아래 입력을 UTF-8 JSON 파일로 저장하고 `commit --file <입력.json>`을 실행한다. 범위나 이유 누락을 먼저 보려면 `--dry-run`을 붙인다. dry-run은 파일을 쓰거나 커밋하지 않는다.
+3. 성공 결과와 실제 Git 상태를 확인하고, 반환된 withoutReason이 있으면 이유 누락으로 보고한다.
 
 ```json
 {
-  "verification": "prepare의 실제 verification 객체로 대체",
+  "reasons": [{ "requirements": ["실제 R-ID"], "reason": "대화·결정에서 확인한 변경 이유" }],
   "paths": [".tryce/spec/posts/requirements.md", ".tryce/spec/posts/history.jsonl", "src/posts.ts", "test/posts.test.ts"],
   "message": "프로젝트 정책에 맞는 메시지",
   "authorization": { "basis": "user-request", "evidence": "실제 커밋 요청과 작업 범위" }
 }
 ```
 
-`commit-plan --file <입력.json>`의 basis는 user-request 또는 project-policy다. 예시 경로와 근거를 그대로 복사하지 않는다. 추가 정책은 policyFiles, 코드만 커밋할 때의 연결은 requirements 배열에 실제 R-ID로 전달한다. CLI는 자연어 권한의 진위를 판정하지 않는다.
+basis는 user-request 또는 project-policy다. 예시 경로와 근거를 그대로 복사하지 않는다. 추가 정책은 policyFiles, 코드만 커밋할 때의 연결은 requirements 배열에 실제 R-ID로 전달한다. changes를 보고 이유를 썼다면 그 expected를 함께 넘겨 그사이의 명세 변경을 거부할 수 있다. CLI는 자연어 권한의 진위를 판정하지 않는다.
 
-- prepare의 paths는 실제로 쓴 이유 파일이며 전체 커밋 범위가 아니다. 명세 이동이면 양쪽 명세를 포함한다. 현재 실행기는 미커밋 명세·이유 전체가 선택돼야 하므로 서로 무관한 작업이 섞였다면 강제 포함하지 않고 제한을 알린다.
-- commit-plan/apply 전에는 staging하지 않는다. 기존 staging이나 intent-to-add가 있으면 보존하고 보류한다. 직접 Git 사용이 명시된 경우에만 관련 파일을 staging한 뒤 verification으로 `verify --staged --file <검증.json>`을 수행한다.
-- 수정 후 원복돼 최종 차이가 없으면 새 이유도 없다. `reasons: []`로 재준비하면 커밋된 이유는 보존하고 미커밋 이유를 정리한다. 커밋된 history.jsonl을 덮어쓰지 않는다.
+- reasons는 이번에 남길 **전체 미커밋 이유 목록**이므로 여전히 유효한 pendingReasons도 포함한다. 생략하면 이미 준비된 미커밋 이유를 그대로 유지한다. 모르는 이유는 꾸며내지 않는다. 이유가 없어도 커밋은 진행되며 withoutReason으로 표시된다.
+- paths에는 변경한 명세와 그 history.jsonl, 관련 코드·테스트를 담는다. 명세 이동이면 양쪽 명세를 포함한다. 기록할 이유가 없는 history.jsonl은 건너뛴다. 미커밋 명세·이유 전체가 선택돼야 하므로 서로 무관한 작업이 섞였다면 강제 포함하지 않고 제한을 알린다.
+- 실행 전에는 staging하지 않는다. 기존 staging이나 intent-to-add가 있으면 보존하고 보류한다.
+- 수정 후 원복돼 최종 차이가 없으면 새 이유도 없다. 커밋된 history.jsonl을 덮어쓰지 않는다.
 - history에는 이유와 요구사항 연결만 두며 원문 before/after·작성자·시각을 복제하지 않는다. 과거 명세는 `read --ref`, 변경은 `diff --from --to`로 Git 커밋에서 읽는다. Git 작성자를 사용자 요청·승인의 증거로 취급하지 않는다.
-- HEAD·파일·정책·index가 바뀌면 다시 읽고 계획을 만든다. 실패 후 기존 staging을 초기화하거나 훅·서명을 끄지 않는다. HEAD가 바뀐 불확실한 실행은 재시도하지 않고 복구 자료를 확인한다. 잠금이나 index 백업을 임의 삭제하거나 커밋을 reset하지 않는다.
+- 훅 등으로 커밋이 거부되고 HEAD가 그대로면 이번에 쓴 이유 파일과 index는 실행 전으로 돌아간다. 원인을 고친 뒤 같은 입력으로 다시 실행한다. 실패 후 훅·서명을 끄지 않는다. HEAD가 바뀐 불확실한 실행은 재시도하지 않고 복구 자료를 확인한다. 잠금이나 index 백업을 임의 삭제하거나 커밋을 reset하지 않는다.
+- `prepare`·`verify`·`commit-plan`·`commit-apply`는 deprecated이며 0.6.0에서 제거된다. 새 작업에는 사용하지 않는다.
 
 커밋 참조는 구현 완료 선언이 아니다. 실제 테스트 결과와 남은 제한을 별도로 알린다.
-
-## 기존 형식에서만 사용하는 절차
-
-이 절차는 기존 프로젝트를 보존하기 위한 것이다. 새 Markdown 흐름에 note·승인·구형 JSON을 함께 추가하지 않는다. 프로젝트의 전환 지침이 있으면 그 범위에서 우선 적용한다.
-
-workflow-1은 `req list/show`로 기존 내용을 읽고 `req draft --spec <영역> --title ... --file ... --author ... --reason ...`로 초안을 만든다. `req review <실제ID...>`로 정확한 수정본을 묶는다. auto는 `req activate <묶음ID> --by <실제에이전트> --evidence ...`, approval은 그 묶음에 대한 실제 사용자 답변을 받은 뒤 `req approve <묶음ID> --by <실제확인자> --evidence ...`로 기록한다. 수정은 `req revise ID --expected <현재수정본ID> --title ... --file ... --author ... --reason ...`다. 원본 JSON을 직접 고치지 않으며 승인 대기를 피하려고 모드를 바꾸지 않는다.
-
-기존 프로젝트 정책이 note를 요구하는 경우에만 지원 형식을 확인해 `note add --type discovery|constraint|rejected --message ... --author ...`를 사용한다. 기존 note를 먼저 읽고 보완은 --ref, 정정은 --supersedes에 실제 ID를 쓴다. 새 MVP 전환 기록에는 적용하지 않는다.
-
-기존 커밋은 `commit plan --path <정확한파일> --message ... --policy permitted --evidence <실제권한근거>` 후 반환된 **data.plan**을 파일로 저장해 `commit apply --file ...`을 실행한다. 커밋 권한은 위와 같으며 정책 부재는 권한이 아니다. 실제 확정된 요구사항의 구현일 때만 --req와 --implement를 사용한다. 새 형식의 verification이나 plan을 구형 명령에 전달하지 않는다.
-
-init-1·prototype-1을 workflow-1이나 auto로 해석하지 않는다. 모드·형식 전환은 명시된 범위에서만 한다. 0.2.1 이후의 `.tryce/spec/<영역>/tryce.json`과 0.2.0의 루트 specs 기록은 CLI가 조회한 실제 위치를 따른다. 기준선·과거 기록을 유지하며 직접 이동·중복 등록하지 않는다.
 
 ## 마무리
 

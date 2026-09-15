@@ -6,14 +6,14 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { fixture, fingerprint } from './git-fixture.mjs';
 import { skillsCommand } from '../.test-build/commands/skills.js';
-import { initializeProject } from '../.test-build/commands/init.js';
+import { initializeSpecProject } from '../.test-build/commands/spec-init.js';
 const source = '.agents/skills/tryce-workflow/SKILL.md';
 const target = '.claude/skills/tryce-workflow/SKILL.md';
 const manifest = '.agents/tryce-skills.local.json';
 const template = '---\nname: tryce-workflow\ndescription: fixture\n---\nOriginal\n';
 async function setup(t) {
   const f = fixture(t);
-  await initializeProject(f.repo, { mode: 'prototype' }, f.env);
+  await initializeSpecProject(f.repo, false, f.env);
   const run = (action, options = {}, controls = {}) => skillsCommand(f.repo, action, options, f.env, { template, ...controls });
   return { ...f, run, read: path => readFileSync(join(f.repo, path), 'utf8') };
 }

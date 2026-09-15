@@ -59,6 +59,13 @@ export function fixture(t, format = 'sha1') {
   };
   return { root, repo, env, git, write, commit, cli, status, failure };
 }
+// Adopts schemaVersion 1 without a baseline commit, as `tryce init` does in an unborn repository.
+export function specFixture(t, format = 'sha1') {
+  const f = fixture(t, format);
+  mkdirSync(join(f.repo, '.tryce'));
+  writeFileSync(join(f.repo, '.tryce', 'config.json'), JSON.stringify({ schemaVersion: 1, baseline: { kind: 'empty' } }, null, 2) + '\n');
+  return f;
+}
 export function fingerprint(root) {
   const result = {};
   function visit(directory, prefix = '') {

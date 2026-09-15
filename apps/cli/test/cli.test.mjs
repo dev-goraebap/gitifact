@@ -38,7 +38,7 @@ test('CLI works outside the workspace and leaves the working directory untouched
     assert.equal(failure.stdout, '');
     assert.match(failure.stderr, /error:/);
   }
-  const init = run('init', '--mode', 'prototype');
+  const init = run('init');
   assert.equal(init.status, 1);
   assert.equal(JSON.parse(init.stderr).error.code, 'NOT_A_REPOSITORY');
   assert.deepEqual(await readdir(cwd), []);
