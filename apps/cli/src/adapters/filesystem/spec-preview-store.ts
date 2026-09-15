@@ -1,7 +1,7 @@
 import { lstat, readdir, readFile, mkdir, writeFile, rename, unlink, rmdir } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import { createHash, randomBytes } from 'node:crypto';
-import { editSpecPreview, parseSpecPreview, renderSpecPreview, validatePreviewSnapshot, SpecPreviewError, parseManagedConfig, type PreviewSpec } from '@tryce/core';
+import { editSpecPreview, parsePreviewFiles, renderDesignPreview, designReferenceWarnings, renderSpecPreview, SpecPreviewError, parseManagedConfig } from '@tryce/core';
 import { specPreviewReader } from '../git/spec-preview-reader.js';
 import { readConfigFile } from './config-file.js';
 
@@ -28,8 +28,8 @@ async function snapshot(root: string) {
       for (const name of (await readdir(join(root, path))).sort()) await visit(path + '/' + name, depth + 1);
     } else {
       if (path.endsWith('/tryce.json')) fail('기존 JSON 형식은 전환하지 않습니다.');
-      if (!/\/(requirements\.md|history\.jsonl)$/.test(path)) return;
-      if (!/^\.tryce\/spec\/[^/]+\/(requirements\.md|history\.jsonl)$/.test(path)) fail('지원하지 않는 명세 경로입니다.');
+      if (!/\/(requirements\.md|design\.md|history\.jsonl)$/.test(path)) return;
+      if (!/^\.tryce\/spec\/[^/]+\/(requirements\.md|design\.md|history\.jsonl)$/.test(path)) fail('지원하지 않는 명세 경로입니다.');
       if (stat.nlink !== 1 || stat.size > 1024 * 1024) fail('하드 링크 또는 1 MiB 한도를 확인하세요.');
       const raw = await readFile(join(root, path)); bytes += raw.length;
       if (raw.length > 1024 * 1024 || bytes > 16 * 1024 * 1024) fail('명세 크기 한도를 초과했습니다.');
@@ -37,12 +37,7 @@ async function snapshot(root: string) {
     }
   }
   await visit('.tryce/spec', 0);
-  const specs: PreviewSpec[] = [];
-  for (const [path, text] of files) {
-    if (path.endsWith('/requirements.md')) specs.push(parseSpecPreview(path, text, files.get(path.replace(/requirements\.md$/, 'history.jsonl')) ?? ''));
-    else if (!files.has(path.replace(/history\.jsonl$/, 'requirements.md'))) fail('명세 없는 보조 기록입니다.');
-  }
-  validatePreviewSnapshot(specs);
+  const specs = parsePreviewFiles(files);
   return { files, specs, config, stamp: digest(JSON.stringify([...files]) + (config ?? '')) };
 }
 
@@ -56,7 +51,7 @@ export async function readWorkingPreviewState(cwd: string) {
 }
 
 export async function readWorkingPreview(cwd: string) {
-  const { stamp, specs } = await readWorkingPreviewState(cwd); return { stamp, specs };
+  const { stamp, specs } = await readWorkingPreviewState(cwd); return { stamp, specs, warnings: designReferenceWarnings(specs) };
 }
 
 export async function saveWorkingPreview(cwd: string, input: unknown, publish = rename) {
@@ -68,7 +63,8 @@ export async function saveWorkingPreview(cwd: string, input: unknown, publish = 
     const writes = new Map<string, string | null>();
     for (const spec of result.specs) {
       const old = before.specs.find(s => s.id === spec.id);
-      if (!old || JSON.stringify(old) !== JSON.stringify(spec)) writes.set(spec.path, renderSpecPreview(spec));
+      if (!old || renderSpecPreview(old) !== renderSpecPreview(spec)) writes.set(spec.path, renderSpecPreview(spec));
+      if (JSON.stringify(old?.design) !== JSON.stringify(spec.design)) writes.set(spec.path.replace(/requirements\.md$/, 'design.md'), spec.design ? renderDesignPreview(spec.id, spec.design) : null);
     }
     return { writes, data: { results: result.results } };
   }, publish);
@@ -96,7 +92,7 @@ export async function previewTransaction<T>(cwd: string, expected: string, build
     if (before.stamp !== expected) fail('읽은 뒤 명세가 변경됐습니다. working으로 다시 읽으세요.');
     const result = await build(before);
     for (const [path, after] of result.writes) {
-      if (!/^\.tryce\/spec\/[^/]+\/(requirements\.md|history\.jsonl)$/.test(path) || path.split('/').some(p => p === '..' || p === '.' || /[\\:\0]/.test(p))) fail('지원하지 않는 저장 경로입니다.');
+      if (!/^\.tryce\/spec\/[^/]+\/(requirements\.md|design\.md|history\.jsonl)$/.test(path) || path.split('/').some(p => p === '..' || p === '.' || /[\\:\0]/.test(p))) fail('지원하지 않는 저장 경로입니다.');
       if (after !== null && Buffer.byteLength(after) > 1024 * 1024) fail('명세 1 MiB 한도를 초과했습니다.');
       changed.push({ path, before: before.files.get(path) ?? null, after });
     }
@@ -123,7 +119,7 @@ export async function previewTransaction<T>(cwd: string, expected: string, build
     await result.recheck?.();
     // Runs while the lock is held; a normal failure here restores the published files like any other failure.
     await afterPublish?.(after);
-    return { ...result.data, stamp: after.stamp, paths: changed.map(c => c.path), specs: after.specs };
+    return { ...result.data, stamp: after.stamp, paths: changed.map(c => c.path), specs: after.specs, warnings: designReferenceWarnings(after.specs) };
   } catch (error) {
     if (error instanceof PreservedPreviewError) { keepRecovery = true; throw error; }
     for (const c of [...published].reverse()) {

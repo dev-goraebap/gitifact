@@ -9,7 +9,7 @@ import { HgiMembers } from '../../../shared/ui/icons/HgiMembers';
 import { HgiGit } from '../../../shared/ui/icons/HgiGit';
 import { HgiInfo } from '../../../shared/ui/icons/HgiInfo';
 const destinations = [
-  ['/', '요구사항 이력', HgiHistory],
+  ['/', '명세 이력', HgiHistory],
   ['/features', '제품 기능', HgiRequirement],
   ['/contributors', '기여자', HgiMembers],
   ['/git', 'Git 상태', HgiGit],

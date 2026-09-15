@@ -1,4 +1,4 @@
-import { parseSpecPreview, validatePreviewSnapshot, SpecPreviewError, parseProjectConfig, type PreviewSpec } from '@tryce/core';
+import { parsePreviewFiles, SpecPreviewError, parseProjectConfig, type PreviewSpec } from '@tryce/core';
 import { createGitRunner } from './run-git.js';
 import { commandScoped } from './command-scope.js';
 
@@ -25,7 +25,7 @@ export function specPreviewReader(cwd: string) {
         if (!match) throw new SpecPreviewError('잘못된 index 항목입니다.');
         const [, mode, oid, stage, path] = match;
         if (!['100644', '100755'].includes(mode!) || stage !== '0') throw new SpecPreviewError('명세 staging에 충돌 또는 링크가 있습니다.');
-        if (!/^\.tryce\/spec\/[^/]+\/(requirements\.md|history\.jsonl)$/.test(path!)) throw new SpecPreviewError('명세 staging에 지원하지 않는 파일이 있습니다.');
+        if (!/^\.tryce\/spec\/[^/]+\/(requirements\.md|design\.md|history\.jsonl)$/.test(path!)) throw new SpecPreviewError('명세 staging에 지원하지 않는 파일이 있습니다.');
         files.set(path!, oid!);
       }
       return files;
@@ -73,12 +73,12 @@ export function specPreviewReader(cwd: string) {
         if (!match) throw new SpecPreviewError('잘못된 Git tree입니다.');
         const [, mode, type, object, path] = match;
         if (!['100644', '100755'].includes(mode!) || type !== 'blob') throw new SpecPreviewError('명세 영역에 링크 또는 서브모듈이 있습니다: ' + path);
-        if (!/(?:requirements\.md|history\.jsonl|tryce\.json)$/.test(path!)) continue;
+        if (!/(?:requirements\.md|design\.md|history\.jsonl|tryce\.json)$/.test(path!)) continue;
         if (path!.endsWith('/tryce.json')) {
           if (!allowLegacyBaseline) throw new SpecPreviewError('기존 JSON 형식은 req 명령으로 조회하세요. 이 명령은 전환하지 않습니다.');
           legacy = true; continue;
         }
-        if (!/^\.tryce\/spec\/[^/]+\/(?:requirements\.md|history\.jsonl)$/.test(path!) || !['100644', '100755'].includes(mode!) || type !== 'blob') throw new SpecPreviewError('지원하지 않는 경로 또는 파일 종류: ' + path);
+        if (!/^\.tryce\/spec\/[^/]+\/(?:requirements\.md|design\.md|history\.jsonl)$/.test(path!) || !['100644', '100755'].includes(mode!) || type !== 'blob') throw new SpecPreviewError('지원하지 않는 경로 또는 파일 종류: ' + path);
         files.set(path!, object!);
       }
       if (legacy) {
@@ -103,16 +103,7 @@ export function specPreviewReader(cwd: string) {
     },
     async read(oid: string): Promise<PreviewSpec[]> {
       const files = await this.files(oid);
-      const specs: PreviewSpec[] = [];
-      for (const [path, source] of files) {
-        if (path.endsWith('/history.jsonl')) {
-          if (!files.has(path.replace(/history\.jsonl$/, 'requirements.md'))) throw new SpecPreviewError('명세 없는 보조 기록: ' + path);
-          continue;
-        }
-        const history = files.get(path.replace(/requirements\.md$/, 'history.jsonl'));
-        specs.push(parseSpecPreview(path, source, history ?? ''));
-      }
-      validatePreviewSnapshot(specs); return specs;
+      return parsePreviewFiles(files);
     },
   };
 }

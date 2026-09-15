@@ -1,1 +1,2 @@
 {"id":"H-rsle3abflc","requirements":["R-7seqwcdwlq","R-dbet7z7kpa","R-wqv343j4kd"],"reason":"사용자가 합의한 새 MVP 방향에 따라 유효한 요구사항을 기능별 Markdown으로 정리하고 구형 JSON·승인·note 형식을 제거한다. 단기 초안 변경 대신 Git에 커밋된 최종 명세와 변경 이유를 추적한다."}
+{"id":"H-5hjzkfar5j","requirements":["R-wqv343j4kd"],"designs":["S-4snufavmgg"],"reason":"요구사항과 설계를 함께 작성하고 설계만 바뀐 이력도 구분해 볼 수 있도록 합의한 범위를 반영했다. 사용자 요청에 따라 이 기능의 현재 구현 구조와 제한을 설계 문서로 정리했다."}

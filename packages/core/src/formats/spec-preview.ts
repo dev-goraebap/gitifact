@@ -3,17 +3,63 @@ export class SpecPreviewError extends Error {
   readonly code = 'INVALID_SPEC_PREVIEW';
 }
 export interface PreviewRequirement { id: string; title: string; body: string }
-export interface PreviewReason { id: string; requirements: string[]; reason: string }
+export interface PreviewReason { id: string; requirements: string[]; designs?: string[]; reason: string }
+export interface PreviewDesign { title: string; body: string; requirements: string[] }
 export interface PreviewSpec {
   id: string; path: string; title: string; description: string;
-  requirements: PreviewRequirement[]; history: PreviewReason[];
+  requirements: PreviewRequirement[]; history: PreviewReason[]; design?: PreviewDesign;
 }
 const token = '[a-z2-7]{10}';
 const reqId = new RegExp(`^R-${token}$`);
 const fail = (message: string): never => { throw new SpecPreviewError(message); };
 const normalized = (value: string) => value.replace(/\r\n/g, '\n').trim();
 
-export function parseSpecPreview(path: string, source: string, history = ''): PreviewSpec {
+export function renderDesignPreview(id: string, design: {title: string; body: string}): string {
+  return `<!-- tryce-design: ${id} -->\n\n# ${design.title}\n\n${design.body}\n`;
+}
+
+/** References are explicit annotations outside fenced code; prose and examples are not identifiers. */
+export function parseDesignPreview(source: string, specId: string): PreviewDesign {
+  if (source.includes('\0') || /\r(?!\n)/.test(source)) fail('잘못된 설계 문자입니다.');
+  const lines = normalized(source).split('\n');
+  if (lines.shift() !== `<!-- tryce-design: ${specId} -->`) fail('설계의 tryce-design ID는 같은 기능의 S-ID여야 합니다.');
+  while (lines[0] === '') lines.shift();
+  const heading = lines.shift();
+  if (!heading?.startsWith('# ') || !heading.slice(2).trim()) fail('설계 제목이 필요합니다.');
+  const title = heading!.slice(2).trim(); const body = normalized(lines.join('\n'));
+  if (!body) fail('설계 본문이 필요합니다.');
+  const references = new Set<string>(); let fence: {char: string; size: number} | undefined;
+  for (const line of body.split('\n')) {
+    if (fence) { if (new RegExp(`^ {0,3}${fence.char}{${fence.size},}\\s*$`).test(line)) fence = undefined; continue; }
+    const open = /^ {0,3}(`{3,}|~{3,})(.*)$/.exec(line);
+    if (open) { fence = {char: open[1]![0]!, size: open[1]!.length}; continue; }
+    if (/^#\s/.test(line)) fail('설계 최상위 제목은 하나만 씁니다.');
+    if (line.includes('<!-- tryce-')) {
+      const ref = /^<!-- tryce-ref: (R-[a-z2-7]{10}(?:, R-[a-z2-7]{10})*) -->$/.exec(line);
+      if (!ref) fail('설계의 참조 주석 형식을 확인하세요.');
+      for (const id of ref![1]!.split(', ')) references.add(id);
+    }
+  }
+  if (fence) fail('설계 코드 블록이 닫히지 않았습니다.');
+  return {title, body, requirements: [...references]};
+}
+
+export function designReferenceWarnings(specs: PreviewSpec[]) {
+  const known = new Set(specs.flatMap(s => s.requirements.map(r => r.id)));
+  return specs.flatMap(s => (s.design?.requirements ?? []).filter(id => !known.has(id)).map(id => ({specId: s.id, requirement: id, code: 'MISSING_DESIGN_REFERENCE' as const})));
+}
+
+export function parsePreviewFiles(files: ReadonlyMap<string, string>): PreviewSpec[] {
+  const specs: PreviewSpec[] = [];
+  for (const [path, source] of files) {
+    if (path.endsWith('/requirements.md')) {
+      specs.push(parseSpecPreview(path, source, files.get(path.replace(/requirements\.md$/, 'history.jsonl')) ?? '', files.get(path.replace(/requirements\.md$/, 'design.md'))));
+    } else if (!files.has(path.replace(/(?:history\.jsonl|design\.md)$/, 'requirements.md'))) fail('요구사항 문서 없는 설계 또는 이유 파일: ' + path);
+  }
+  validatePreviewSnapshot(specs); return specs;
+}
+
+export function parseSpecPreview(path: string, source: string, history = '', designSource?: string): PreviewSpec {
   if (!/^\.tryce\/spec\/[^/]+\/requirements\.md$/.test(path)) fail('지원하지 않는 명세 경로: ' + path);
   if (source.includes('\0') || source.includes('\r') && /\r(?!\n)/.test(source)) fail('잘못된 명세 문자: ' + path);
   const lines = normalized(source).split('\n');
@@ -65,7 +111,7 @@ export function parseSpecPreview(path: string, source: string, history = ''): Pr
     if (!r.body || ids.has(r.id)) fail('빈 본문 또는 중복 요구사항 ID: ' + r.id);
     ids.add(r.id);
   }
-  return { id: specMatch![1]!, path, title, description: normalized(description), requirements, history: parsePreviewHistory(history) };
+  return { id: specMatch![1]!, path, title, description: normalized(description), requirements, history: parsePreviewHistory(history), ...(designSource === undefined ? {} : { design: parseDesignPreview(designSource, specMatch![1]!) }) };
 }
 
 export function parsePreviewHistory(source: string): PreviewReason[] {
@@ -76,13 +122,14 @@ export function parsePreviewHistory(source: string): PreviewReason[] {
     try { value = JSON.parse(line); } catch { fail('보조 기록 JSONL을 해석하지 못했습니다.'); }
     if (!value || typeof value !== 'object' || Array.isArray(value)) fail('잘못된 보조 기록입니다.');
     const r = value as Record<string, unknown>;
-    if (Object.keys(r).sort().join(',') !== 'id,reason,requirements'
+    if (!['id,reason,requirements', 'designs,id,reason,requirements'].includes(Object.keys(r).sort().join(','))
       || typeof r.id !== 'string' || !new RegExp(`^H-${token}$`).test(r.id)
       || ids.has(r.id) || typeof r.reason !== 'string' || !r.reason.trim()
-      || !Array.isArray(r.requirements) || !r.requirements.length
+      || !Array.isArray(r.requirements) || (!r.requirements.length && !Array.isArray(r.designs))
+      || (r.designs !== undefined && (!Array.isArray(r.designs) || !r.designs.length || r.designs.some(id => typeof id !== 'string' || !/^S-[a-z2-7]{10}$/.test(id)) || new Set(r.designs).size !== r.designs.length))
       || r.requirements.some(id => typeof id !== 'string' || !reqId.test(id))
       || new Set(r.requirements).size !== r.requirements.length) fail('보조 기록의 필드·ID·대상이 잘못됐습니다.');
-    ids.add(r.id as string); records.push({ id: r.id as string, requirements: r.requirements as string[], reason: r.reason as string });
+    ids.add(r.id as string); records.push({ id: r.id as string, requirements: r.requirements as string[], ...(r.designs === undefined ? {} : { designs: r.designs as string[] }), reason: r.reason as string });
   }
   return records;
 }
@@ -105,6 +152,7 @@ export function compareSpecPreviews(before: PreviewSpec[], after: PreviewSpec[])
   validatePreviewSnapshot(before); validatePreviewSnapshot(after);
   const index = (specs: PreviewSpec[]) => new Map(specs.flatMap(s => s.requirements.map(r => [r.id, { ...r, specId: s.id, path: s.path }] as const)));
   const prev = index(before); const next = index(after);
+  for (const [specs, map] of [[before, prev], [after, next]] as const) for (const s of specs) if (s.design) map.set(s.id, { id: s.id, title: s.design.title, body: s.design.body, specId: s.id, path: s.path.replace(/requirements\.md$/, 'design.md') });
   const previousHistory = new Map(before.flatMap(s => s.history.map(h => [h.id, h] as const)));
   const reasons = after.flatMap(s => s.history).filter(h => {
     const old = previousHistory.get(h.id);
@@ -116,13 +164,13 @@ export function compareSpecPreviews(before: PreviewSpec[], after: PreviewSpec[])
     const types: ('created' | 'deleted' | 'moved' | 'modified')[] = [];
     if (!from) types.push('created'); else if (!to) types.push('deleted');
     else {
-      if (from.specId !== to.specId) types.push('moved');
+      if (from.specId !== to.specId || (id.startsWith('S-') && from.path !== to.path)) types.push('moved');
       if (from.title !== to.title || from.body !== to.body) types.push('modified');
     }
-    return types.length ? [{ id, types, before: from, after: to, reasons: reasons.filter(h => h.requirements.includes(id)) }] : [];
+    return types.length ? [{ id, types, before: from, after: to, kind: id.startsWith('S-') ? 'design' as const : 'requirement' as const, reasons: reasons.filter(h => [...h.requirements, ...(h.designs ?? [])].includes(id)) }] : [];
   });
   const changed = new Set(changes.map(c => c.id));
-  for (const h of reasons) if (h.requirements.some(id => !changed.has(id))) fail('새 보조 기록이 이번 요구사항 변경과 연결되지 않습니다: ' + h.id);
+  for (const h of reasons) if ([...h.requirements, ...(h.designs ?? [])].some(id => !changed.has(id))) fail('새 보조 기록이 이번 요구사항 변경과 연결되지 않습니다: ' + h.id);
   const prevSpecs = new Map(before.map(s => [s.id, s])); const nextSpecs = new Map(after.map(s => [s.id, s]));
   const specChanges = [...new Set([...prevSpecs.keys(), ...nextSpecs.keys()])].sort().flatMap(id => {
     const from = prevSpecs.get(id); const to = nextSpecs.get(id);

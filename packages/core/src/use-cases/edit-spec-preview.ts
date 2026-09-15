@@ -1,4 +1,4 @@
-import { parseSpecPreview, SpecPreviewError, validatePreviewSnapshot, type PreviewSpec } from '../formats/spec-preview.js';
+import { parseSpecPreview, renderDesignPreview, parseDesignPreview, SpecPreviewError, validatePreviewSnapshot, type PreviewSpec } from '../formats/spec-preview.js';
 
 const fail = (message: string): never => { throw new SpecPreviewError(message); };
 const featurePattern = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
@@ -35,6 +35,7 @@ export function editSpecPreview(original: PreviewSpec[], input: unknown, generat
       create: ['type', 'feature', 'title', 'description'], add: ['type', 'feature', 'title', 'body'],
       update: ['type', 'id', 'title', 'body'], move: ['type', 'id', 'feature'],
       'rename-spec': ['type', 'id', 'title'],
+      'set-design': ['type', 'feature', 'title', 'body'], 'delete-design': ['type', 'feature'],
     };
     const type = String(op.type); const fields = schemas[type];
     if (!fields || Object.keys(op).some(k => !fields.includes(k))) fail('지원하지 않는 편집 필드입니다.');
@@ -57,6 +58,11 @@ export function editSpecPreview(original: PreviewSpec[], input: unknown, generat
     } else if (type === 'add') {
       const spec = target(); const req = { id: allocate('R'), title: str('title'), body: str('body') };
       spec.requirements.push(req); results.push({ type, id: req.id });
+    } else if (type === 'set-design' || type === 'delete-design') {
+      const spec = target();
+      if (type === 'delete-design') { if (!spec.design) fail('삭제할 설계가 없습니다.'); delete spec.design; }
+      else spec.design = parseDesignPreview(renderDesignPreview(spec.id, {title: str('title'), body: str('body')}), spec.id);
+      results.push({type, id: spec.id});
     } else if (type === 'rename-spec') {
       const spec = specs.find(s => s.id === str('id')) ?? fail('명세 ID가 없습니다.');
       spec.title = str('title'); results.push({ type, id: spec.id });
@@ -73,7 +79,7 @@ export function editSpecPreview(original: PreviewSpec[], input: unknown, generat
   }
   // Round-trip checks prevent a supplied body from injecting headings or identities.
   for (const spec of specs) {
-    const parsed = parseSpecPreview(spec.path, renderSpecPreview(spec));
+    const parsed = parseSpecPreview(spec.path, renderSpecPreview(spec), '', spec.design ? renderDesignPreview(spec.id, spec.design) : undefined);
     if (JSON.stringify({ ...parsed, history: spec.history }) !== JSON.stringify(spec)) fail('본문이 명세 구조를 변경합니다.');
   }
   validatePreviewSnapshot(specs);

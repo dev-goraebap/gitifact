@@ -42,6 +42,7 @@ export async function previewCommit(cwd: string, action: 'plan' | 'apply', input
     const delta = await readFinalPreviewChanges(cwd);
     const references = request.requirements ?? [];
     if (!Array.isArray(references) || references.length > 1000 || references.some(r => typeof r !== 'string')) fail('잘못된 요구사항 참조입니다.');
+    if (delta.changes.some(c => c.kind === 'design')) fail('설계 변경은 spec commit을 사용하세요.');
     const known = new Set([...state.specs.flatMap(s => s.requirements.map(r => r.id)), ...delta.changes.map(c => c.id)]);
     if ((references as string[]).some(r => !known.has(r))) fail('실제 요구사항 ID만 참조하세요.');
     const extra = request.policyFiles === undefined ? [] : paths(request.policyFiles, 1024);

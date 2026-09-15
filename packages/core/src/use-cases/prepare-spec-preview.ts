@@ -32,12 +32,13 @@ export function prepareSpecPreview(before: PreviewSpec[], current: PreviewSpec[]
   for (const value of input as unknown[]) {
     if (!value || typeof value !== 'object' || Array.isArray(value)) fail('잘못된 이유 입력입니다.');
     const raw = value as Record<string, unknown>;
-    if (Object.keys(raw).sort().join(',') !== 'reason,requirements' || typeof raw.reason !== 'string' || !raw.reason.trim()
-      || raw.reason.includes('\0') || raw.reason.length > 16000 || !Array.isArray(raw.requirements) || !raw.requirements.length) fail('이유와 대상 요구사항을 확인하세요.');
+    if (!['reason,requirements', 'designs,reason,requirements'].includes(Object.keys(raw).sort().join(',')) || typeof raw.reason !== 'string' || !raw.reason.trim()
+      || raw.reason.includes('\0') || raw.reason.length > 16000 || !Array.isArray(raw.requirements) || (raw.designs !== undefined && !Array.isArray(raw.designs)) || !(raw.requirements.length || (raw.designs as unknown[] | undefined)?.length)) fail('이유와 대상 요구사항을 확인하세요.');
     const reason = (raw.reason as string).trim(); const groups = new Map<string, string[]>();
-    for (const value of raw.requirements as unknown[]) {
+    for (const value of [...raw.requirements as unknown[], ...(raw.designs as unknown[] | undefined ?? [])]) {
       if (typeof value !== 'string') fail('잘못된 이유 대상입니다.');
       const id = value as string;
+      if ((raw.requirements as unknown[]).includes(id) ? !/^R-[a-z2-7]{10}$/.test(id) : !/^S-[a-z2-7]{10}$/.test(id)) fail('이유 대상 종류를 확인하세요.');
       if (typeof id !== 'string' || covered.has(id)) fail('이유 대상이 잘못됐거나 중복됩니다.');
       const change = delta.changes.find(c => c.id === id) ?? fail('최종 변경이 없는 요구사항에 이유를 붙일 수 없습니다: ' + id);
       const specId = (change.after ?? change.before)!.specId;
@@ -45,17 +46,17 @@ export function prepareSpecPreview(before: PreviewSpec[], current: PreviewSpec[]
       covered.add(id); groups.set(specId, [...(groups.get(specId) ?? []), id]);
     }
     for (const [specId, ids] of groups) {
-      const requirements = ids.sort(); const spec = current.find(s => s.id === specId)!;
+      const requirements = ids.filter(id => id.startsWith('R-')).sort(); const designs = ids.filter(id => id.startsWith('S-')).sort(); const spec = current.find(s => s.id === specId)!;
       const oldCount = before.find(s => s.id === specId)?.history.length ?? 0;
-      const reusable = spec.history.slice(oldCount).find(h => h.reason === reason && equal([...h.requirements].sort(), requirements));
-      const record = { id: reusable?.id ?? allocate(), requirements, reason };
+      const reusable = spec.history.slice(oldCount).find(h => h.reason === reason && equal([...h.requirements].sort(), requirements) && equal([...(h.designs ?? [])].sort(), designs));
+      const record = { id: reusable?.id ?? allocate(), requirements, ...(designs.length ? {designs} : {}), reason };
       pending.set(specId, [...(pending.get(specId) ?? []), record]);
     }
   }
   for (const spec of current) {
     const old = before.find(s => s.id === spec.id);
     const base = old ? baseFiles.get(historyPath(old)) : undefined;
-    const records = (pending.get(spec.id) ?? []).sort((a, b) => a.requirements[0]! < b.requirements[0]! ? -1 : 1);
+    const records = (pending.get(spec.id) ?? []).sort((a, b) => (a.requirements[0] ?? a.designs![0]!) < (b.requirements[0] ?? b.designs![0]!) ? -1 : 1);
     // Committed bytes form the immutable prefix, including their original line endings.
     let text = base ?? '';
     if (records.length) text += (text && !text.endsWith('\n') ? '\n' : '') + records.map(h => JSON.stringify(h) + '\n').join('');

@@ -45,7 +45,7 @@ export async function specCommit(cwd: string, input: unknown, dryRun: boolean) {
   if (request.expected !== undefined && request.expected !== previewExpected(c.base, current.stamp)) fail('입력이 오래됐습니다. changes부터 다시 확인하세요.');
   // Omitted reasons keep the uncommitted reasons already written; an explicit list replaces them.
   const reasons = request.reasons ?? current.specs.flatMap(s => s.history.slice(c.specs.find(p => p.id === s.id)?.history.length ?? 0)
-    .map(h => ({ requirements: h.requirements, reason: h.reason })));
+    .map(h => ({ requirements: h.requirements, ...(h.designs ? {designs: h.designs} : {}), reason: h.reason })));
   const prepared = prepareSpecPreview(c.specs, current.specs, c.files, current.files, reasons, () => generatePreviewId('H'));
   // Judge changes by the blob Git would store, so a CRLF checkout of an LF blob (core.autocrlf, eol attributes) is not a change.
   const blobId = (text: string) => { const bytes = Buffer.from(text); return createHash(objectFormat).update(`blob ${bytes.length}\0`).update(bytes).digest('hex'); };
@@ -64,9 +64,9 @@ export async function specCommit(cwd: string, input: unknown, dryRun: boolean) {
   await checkLegacySelection(root, selected);
   // A selected reason file with nothing to record is skipped instead of failing `git add`.
   const stageable = selected.filter(p => !record(p) || finalFiles.has(p) || c.files.has(p));
-  const known = new Set([...current.specs.flatMap(s => s.requirements.map(r => r.id)), ...prepared.changes.map(x => x.id)]);
+  const known = new Set([...current.specs.flatMap(s => s.requirements.map(r => r.id)), ...prepared.changes.filter(x => x.kind === 'requirement').map(x => x.id)]);
   if ((references as string[]).some(r => !known.has(r))) fail('실제 요구사항 ID만 참조하세요.');
-  const requirements = [...new Set([...references as string[], ...prepared.changes.map(x => x.id)])].sort();
+  const requirements = [...new Set([...references as string[], ...prepared.changes.filter(x => x.kind === 'requirement').map(x => x.id)])].sort();
   const contextPaths = [...new Set([...policyPaths(selected), ...extra])].sort();
   const hashes = async (list: string[]) => new Map(await Promise.all(list.map(async p => [p, await fingerprint(root, p)] as const)));
   // Policies and files read by the agent are bound now; reason files are bound after they are written.
@@ -75,7 +75,7 @@ export async function specCommit(cwd: string, input: unknown, dryRun: boolean) {
     reasons: prepared.reasons, withoutReason: prepared.withoutReason, historyPaths: [...writes.keys()].sort() };
   if (dryRun) { await c.recheck(); return { outcome: 'dry-run' as const, committed: false, ...summary }; }
 
-  const trailers = requirements.map(id => 'Tryce-Req: ' + id);
+  const trailers = [...requirements.map(id => 'Tryce-Req: ' + id), ...prepared.changes.filter(c => c.kind === 'design').map(c => 'Tryce-Design: ' + c.id)];
   const temporary = join(gitDir, 'tryce-commit-index-' + randomUUID());
   let owned = false; let uncertain = false; let indexLock: Awaited<ReturnType<typeof open>> | undefined;
   let committed: { commit: string; paths: string[] } | undefined;

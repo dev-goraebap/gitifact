@@ -20,7 +20,7 @@ export function ContributorsView({people,events,features,search,change}: {people
  {key:'latest',header:'최근 활동',width:proportional(2),renderCell:p=><Text type="supporting">{new Date(p.latest).toLocaleDateString()}</Text>}]}/>}
  </VStack>{selected&&<VStack as="aside" aria-label="기여자 상세" padding={5} gap={4} className={styles.detail}>
  <Button label="상세 닫기" size="sm" onClick={()=>change({...search,author:undefined})}/><Person name={selected.name} email={selected.email}/><Text>{selected.email}</Text>
- <Link to="/" search={{author:selected.email}}>이 기여자의 요구사항 이력 →</Link><Heading level={3}>최근 불러온 명세 활동</Heading>
+ <Link to="/" search={{author:selected.email}}>이 기여자의 명세 이력 →</Link><Heading level={3}>최근 불러온 명세 활동</Heading>
  {[...new Set(activities.flatMap(e=>[e.before?.specId,e.after?.specId]).filter(Boolean))].map(id=><Link key={id} to="/features" search={{feature:id}}>{features.find(f=>f.id===id)?.title??id}</Link>)}
  {activities.slice(0,10).map(e=><Link key={e.key} to="/" search={{selected:e.key}}>{(e.after??e.before)?.title}</Link>)}
  {!activities.length&&<Text>불러온 범위에 명세 활동이 없습니다. 코드 커밋 참여와 명세 활동은 다를 수 있습니다.</Text>}

@@ -7,7 +7,7 @@ export const fail = (message: string): never => { throw new SpecPreviewError(mes
 export const hash = (value: Buffer | string) => createHash('sha256').update(value).digest('hex');
 export const optional = (path: string) => readFile(path).catch(e => { if (e.code === 'ENOENT') return null; throw e; });
 export const info = (path: string) => lstat(path).catch(e => { if (e.code === 'ENOENT') return undefined; throw e; });
-export const record = (path: string) => /^\.tryce\/spec\/[^/]+\/(requirements\.md|history\.jsonl)$/.test(path);
+export const record = (path: string) => /^\.tryce\/spec\/[^/]+\/(requirements\.md|design\.md|history\.jsonl)$/.test(path);
 export function validPath(path: string) {
   if (typeof path !== 'string' || path.length > 1000 || /[\\:\x00-\x1f\x7f]/.test(path)
     || path.split('/').some(p => !p || p === '.' || p === '..' || p.toLowerCase() === '.git')) fail('저장소 상대 경로의 명세 또는 일반 파일만 선택하세요.');

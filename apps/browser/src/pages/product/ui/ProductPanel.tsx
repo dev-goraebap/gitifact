@@ -20,13 +20,14 @@ export function ProductPanel({session,view,search,change}:ProductProps&{session:
  const disconnected=query.error instanceof ApiError && query.error.code==='SESSION_CHANGED';
  const first=disconnected?undefined:query.data?.pages[0];
  const events=[...new Map((query.data?.pages.flatMap(p=>p.events)??[]).map(e=>[e.key,e])).values()];
- const title={history:'요구사항 이력',features:'제품 기능',contributors:'기여자'}[view];
+ const title={history:'명세 이력',features:'제품 기능',contributors:'기여자'}[view];
  return <VStack gap={0} className={styles.page}>
- <HStack padding={5} gap={4} wrap="wrap" className={styles.header}><VStack gap={1}><Text type="supporting" color="secondary">TRYCE / 로컬 프로젝트</Text><Heading level={1}>{title}</Heading><Text color="secondary">{view==='history'?'제품이 어떻게 달라져 왔는지, 한 줄씩.':view==='features'?'기능별로 모인 현재 요구사항과 수용 조건.':'함께 제품을 만들어온 사람들과 기록.'}</Text></VStack><Button label={query.isFetching?'조회 중…':'새로고침'} isDisabled={query.isFetching} onClick={()=>{void query.refetch();}}/></HStack>
+ <HStack padding={5} gap={4} wrap="wrap" className={styles.header}><VStack gap={1}><Text type="supporting" color="secondary">TRYCE / 로컬 프로젝트</Text><Heading level={1}>{title}</Heading><Text color="secondary">{view==='history'?'제품이 어떻게 달라져 왔는지, 한 줄씩.':view==='features'?'기능별로 모인 요구사항과 구현 설계.':'함께 제품을 만들어온 사람들과 기록.'}</Text></VStack><Button label={query.isFetching?'조회 중…':'새로고침'} isDisabled={query.isFetching} onClick={()=>{void query.refetch();}}/></HStack>
  {query.error&&first&&<VStack padding={4} role="alert"><Text>{query.error.message}</Text><Text>이전 조회 자료입니다. 현재 상태로 확정하지 마세요.</Text></VStack>}
  {!first&&<RequestState error={query.error} retry={()=>{if(disconnected)window.location.reload();else void query.refetch();}}/>}
  {first&&<>{view!=='features'&&<HStack gap={3} padding={4} wrap="wrap"><TextInput label="검색" isLabelHidden placeholder="이름 또는 ID 검색" value={search.q??''} hasClear onChange={q=>change({...search,q:q||undefined},true)}/>
  {view==='history'&&<><Selector label="기능 필터" isLabelHidden value={search.feature??''} options={[{value:'',label:'모든 기능'},...first.features.map(f=>({value:f.id,label:f.title}))]} onChange={feature=>change({...search,feature:feature||undefined})}/>
+ <Selector label="명세 종류" isLabelHidden value={search.document??''} options={[{value:'',label:'전체 명세'},{value:'requirement',label:'요구사항'},{value:'design',label:'설계'}]} onChange={document=>change({...search,document:document||undefined})}/>
  <Selector label="변경 종류" isLabelHidden value={search.kind??''} options={[{value:'',label:'모든 변경'},{value:'created',label:'생성'},{value:'modified',label:'수정'},{value:'moved',label:'이동'},{value:'deleted',label:'삭제'}]} onChange={kind=>change({...search,kind:kind||undefined})}/>
  <Selector label="작성자 필터" isLabelHidden value={search.author??''} options={[{value:'',label:'모든 작성자'},...first.contributors.map(p=>({value:p.email,label:p.name}))]} onChange={author=>change({...search,author:author||undefined})}/></>}
  </HStack>}<VStack gap={3} className={styles.content}>

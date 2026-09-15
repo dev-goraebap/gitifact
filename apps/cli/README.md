@@ -57,3 +57,9 @@ Legacy JSON projects are not converted automatically and are not read by this CL
 ## License
 
 MIT. Bundled dependency notices are included in `dist/THIRD_PARTY_NOTICES.txt`.
+
+## Feature designs
+
+The development build supports optional `design.md` next to requirements.md. The workflow skill creates both by default for new features. Add `{type: "set-design", feature, title, body}` to spec save operations; use `{type: "delete-design", feature}` to remove it. The CLI writes the owning S-ID, while explicit `tryce-ref` annotations link actual R-IDs. Missing current references return warnings.
+
+Commit reasons may add `designs: ["S-…"]` alongside `requirements`. For a design-only reason, use `requirements: []`. Design changes have `kind: "design"` and do not become requirement changes. Use spec commit; deprecated commit-plan/apply do not accept new design changes. The browser displays designs in feature tabs and specification history. This extension is not yet published.

@@ -7,8 +7,8 @@ test('history links to current features and contributors with URL restoration',a
  const detail=page.getByRole('complementary',{name:'기능 명세'});await expect(detail).toContainText('기대 동작:');await page.reload();await expect(detail).toBeVisible();
  await page.getByRole('link',{name:'기여자',exact:true}).click();await page.getByRole('button',{name:'Fixture',exact:true}).click();
  await expect(page.getByRole('complementary',{name:'기여자 상세'})).toContainText('최근 불러온 명세 활동');
- await page.getByRole('link',{name:'이 기여자의 요구사항 이력 →'}).click();await expect(page).toHaveURL(/author=/);
- await page.getByRole('textbox',{name:'검색',exact:true}).fill('없는 항목');await expect(page.getByText('표시할 요구사항 이력이 없습니다.',{exact:false})).toBeVisible();
+ await page.getByRole('link',{name:'이 기여자의 명세 이력 →'}).click();await expect(page).toHaveURL(/author=/);
+ await page.getByRole('textbox',{name:'검색',exact:true}).fill('없는 항목');await expect(page.getByText('표시할 명세 이력이 없습니다.',{exact:false})).toBeVisible();
 });
 test('reload failure labels previous snapshot and malformed responses are rejected',async({page})=>{
  await mockApi(page);await page.goto('/');await expect(page.getByText('검색어 입력',{exact:true})).toBeVisible();
@@ -27,14 +27,14 @@ test('mobile dark theme preserves safe Markdown and navigation',async({page})=>{
 
 test('relationship graph connects repeated requirement IDs without expanding its width',async({page})=>{
  await mockApi(page);const repeated=structuredClone(specs);const older=structuredClone(repeated.events[0]!);older.key='d'.repeat(40)+':R-abcdefghij';older.commit='d'.repeat(40);repeated.events.push(older);
- await page.route('**/api/v1/specs*',r=>r.fulfill({json:repeated}));await page.goto('/');const graph=page.getByRole('img',{name:'같은 요구사항의 변경 관계'});await expect(graph.locator('circle')).toHaveCount(2);await expect(graph.locator('path')).toHaveCount(1);expect((await graph.boundingBox())!.width).toBeLessThanOrEqual(88);
+ await page.route('**/api/v1/specs*',r=>r.fulfill({json:repeated}));await page.goto('/');const graph=page.getByRole('img',{name:'같은 명세의 변경 관계'});await expect(graph.locator('circle')).toHaveCount(2);await expect(graph.locator('path')).toHaveCount(1);expect((await graph.boundingBox())!.width).toBeLessThanOrEqual(88);
 });
 
 test('unconnected history hides graph and mixed history only draws connected nodes', async ({page}) => {
  await mockApi(page);
  await page.goto('/');
  await expect(page.getByText('검색어 입력', {exact:true})).toBeVisible();
- const graph = page.getByRole('img', {name:'같은 요구사항의 변경 관계'});
+ const graph = page.getByRole('img', {name:'같은 명세의 변경 관계'});
  await expect(graph).toHaveCount(0);
  const mixed = structuredClone(specs);
  const older = structuredClone(mixed.events[0]!);
@@ -70,14 +70,14 @@ test('initial request shows delayed skeleton then the Gentask empty illustration
  await page.goto('/');
  await expect(page.getByRole('status',{name:'프로젝트 불러오는 중'})).toHaveCSS('opacity','1');
  release();
- await expect(page.getByRole('heading',{name:'표시할 요구사항 이력이 없습니다.'})).toBeVisible();
+ await expect(page.getByRole('heading',{name:'표시할 명세 이력이 없습니다.'})).toBeVisible();
  await expect(page.locator('img[aria-hidden="true"]').first()).toBeVisible();
  await expect(page.getByRole('status',{name:'프로젝트 불러오는 중'})).toHaveCount(0);
 });
 
 test('reading pane keeps avatars and can be resized from the keyboard', async ({page}) => {
  await mockApi(page);await page.goto('/');
- await expect(page.getByRole('columnheader',{name:'요구사항 · 변경 후'})).toBeVisible();
+ await expect(page.getByRole('columnheader',{name:'명세 · 변경 후'})).toBeVisible();
  await page.getByText('검색어 입력',{exact:true}).click();
  const pane=page.getByRole('region',{name:'읽기 패널'});
  await expect(pane.getByRole('heading',{name:'변경 후',exact:true})).toBeVisible();

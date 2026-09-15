@@ -34,7 +34,7 @@ export function createSpecBrowserReader(root: string, sessionId: string, inherit
     if (!base.head) return browserSpecsV1.parse({ contract: 'browser-specs', version: 1, sessionId, head: null, observedAt: new Date().toISOString(), working: features.length > 0, features, events: [], contributors: [], contributorsLimited: false, nextCursor: null, boundary: false });
     const head = base.head;
     const [rows, dirty] = await Promise.all([
-      git(['log', '--first-parent', '--date-order', '--format=%H%x00%P%x00%aN%x00%aE%x00%aI%x00%cN%x00%s', '--max-count=11', '--skip=' + cursor, head, '--', ':(glob).tryce/spec/*/requirements.md', ':(glob).tryce/spec/*/history.jsonl']),
+      git(['log', '--first-parent', '--date-order', '--format=%H%x00%P%x00%aN%x00%aE%x00%aI%x00%cN%x00%s', '--max-count=11', '--skip=' + cursor, head, '--', ':(glob).tryce/spec/*/requirements.md', ':(glob).tryce/spec/*/design.md', ':(glob).tryce/spec/*/history.jsonl']),
       git(['status', '--porcelain=v1', '--', '.tryce/spec']),
     ]);
     // Git mailmap may change without a new HEAD; refresh names with every observation.
@@ -58,7 +58,7 @@ export function createSpecBrowserReader(root: string, sessionId: string, inherit
         catch (error) { if (error instanceof SpecPreviewError && error.message.includes('기존 JSON')) boundary = true; else throw error; }
       }
       return compareSpecPreviews(before, after).changes.map(c => ({ key: commit + ':' + c.id, commit, author, email, date, committer, message,
-        id: c.id, types: c.types, before: c.before, after: c.after, reasons: c.reasons.map(r => r.reason) }));
+        id: c.id, kind: c.kind, types: c.types, before: c.before, after: c.after, reasons: c.reasons.map(r => r.reason) }));
     }));
     if (await readHead() !== head || (await readWorkingPreviewState(root)).stamp !== current.stamp) throw new SpecPreviewError('조회 중 프로젝트가 바뀌었습니다. 새로고침하세요.');
     return browserSpecsV1.parse({ contract: 'browser-specs', version: 1, sessionId, head, observedAt: new Date().toISOString(), working: !!dirty.trim(), features,

@@ -1,7 +1,7 @@
 import { lstat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
-import { compareSpecPreviews, finalSpecPreviewChanges, parseSpecPreview, prepareSpecPreview, SpecPreviewError, validatePreviewSnapshot } from '@tryce/core';
+import { compareSpecPreviews, finalSpecPreviewChanges, parsePreviewFiles, prepareSpecPreview, SpecPreviewError, validatePreviewSnapshot } from '@tryce/core';
 import { specPreviewReader } from '../git/spec-preview-reader.js';
 import { generatePreviewId, previewTransaction, readWorkingPreviewState } from './spec-preview-store.js';
 
@@ -9,12 +9,7 @@ const fail = (message: string): never => { throw new SpecPreviewError(message); 
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 const expected = (base: unknown, stamp: string) => createHash('sha256').update(JSON.stringify({ base, stamp })).digest('hex');
 export const previewExpected = expected;
-const parseFiles = (files: Map<string, string>) => {
-  const specs = [...files].filter(([path]) => path.endsWith('/requirements.md')).map(([path, text]) =>
-    parseSpecPreview(path, text, files.get(path.replace(/requirements\.md$/, 'history.jsonl')) ?? ''));
-  for (const path of files.keys()) if (path.endsWith('/history.jsonl') && !files.has(path.replace(/history\.jsonl$/, 'requirements.md'))) fail('명세 없는 과거 이유 파일입니다.');
-  validatePreviewSnapshot(specs); return specs;
-};
+const parseFiles = parsePreviewFiles;
 export async function readPreviewContext(cwd: string) {
   const reader = specPreviewReader(cwd); const { gitDir } = await reader.location();
   const checkOperation = async () => {

@@ -6,6 +6,8 @@ import { Text } from '@astryxdesign/core/Text';
 import { TextInput } from '@astryxdesign/core/TextInput';
 import { Button } from '@astryxdesign/core/Button';
 import { Markdown } from '@astryxdesign/core/Markdown';
+import { TabList, Tab } from '@astryxdesign/core/TabList';
+import { DesignDocument } from './DesignDocument';
 import { List, ListItem } from '@astryxdesign/core/List';
 import { Link } from '@tanstack/react-router';
 import type { ProductSearch } from '../model/search';
@@ -18,6 +20,7 @@ export function FeatureView({ features, search, change }: {
   change: (s: ProductSearch) => void;
 }) {
   const selected = features.find(f => f.id === search.feature || f.requirements.some(r => r.id === search.selected));
+  const tab = search.tab === 'design' ? 'design' : 'requirements';
   const filtered = features.filter(f => !search.q || [f.title, f.id, ...f.requirements.map(r => r.title + ' ' + r.id)].join(' ').toLowerCase().includes(search.q.toLowerCase()));
 
   return (
@@ -50,6 +53,13 @@ export function FeatureView({ features, search, change }: {
               <Link to="/" search={{ feature: selected.id }}>기능 변경 이력 →</Link>
             </HStack>
           </VStack>
+          <TabList role="tablist" value={tab} onChange={tab => change({...search, tab, selected: undefined})} hasDivider>
+            <Tab value="requirements" label="요구사항" panelId="feature-requirements"/>
+            <Tab value="design" label="설계" panelId="feature-design"/>
+          </TabList>
+          {tab === 'design' ? <VStack id="feature-design" role="tabpanel" aria-label="설계" padding={5} gap={4}>
+            {selected.design ? <DesignDocument design={selected.design} features={features}/> : <PageState isCompact title="아직 작성된 설계가 없습니다." description="에이전트와 구현 방식을 정리하면 이곳에서 볼 수 있습니다."/>}
+          </VStack> : <VStack id="feature-requirements" role="tabpanel" aria-label="요구사항" gap={0}>
           <VStack as="nav" aria-label="명세 목차" gap={2} className={styles.documentIndex}>
             <Text type="supporting" color="secondary">이 명세의 요구사항</Text>
             {selected.requirements.map((r, index) => <a key={r.id} href={`#${r.id}`}>{String(index + 1).padStart(2, '0')}　{r.title}</a>)}
@@ -66,6 +76,7 @@ export function FeatureView({ features, search, change }: {
             </VStack>
           ))}
           {!selected.requirements.length && <Text>현재 요구사항이 없는 기능입니다.</Text>}
+          </VStack>}
         </VStack>
       ) : <VStack className={styles.documentEmpty}><PageState title="제품의 기능을 살펴보세요." description="왼쪽에서 기능을 선택하면 요구사항과 수용 조건을 읽을 수 있습니다."/></VStack>}
     </VStack>
