@@ -26,7 +26,7 @@ export function BrowserShell() {
       mobileNav={{ breakpoint: 'lg' }}
       sideNav={
         <SideNav
-          style={{ width: '15rem' }}
+          resizable={{ defaultWidth: 240, minWidth: 200, maxWidth: 400, autoSaveId: 'gitifact-sidenav' }}
           header={<Link to="/" className="gitifact-wordmark" aria-label="GITIFACT 홈" />}
           footer={
             <VStack padding={4} gap={2}>

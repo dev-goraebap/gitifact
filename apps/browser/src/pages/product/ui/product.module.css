@@ -2,28 +2,26 @@
 @media(width<64rem){.split{grid-template-columns:minmax(0,1fr)}.split>.list,.split>.timeline{display:none}.detail{border-inline-start:0}}
 .detail p { white-space:pre-line; }
 
-/* Feature documents own the main reading area; the list is a navigation rail. */
-.featureWorkspace { display:grid; grid-template-columns:19rem minmax(0,1fr); min-height:calc(100vh - 14rem); border:1px solid var(--color-border); border-radius:var(--radius-container); overflow:hidden; align-items:stretch; }
-.featureList { min-width:0; background:var(--color-background-body); border-inline-end:1px solid var(--color-border); }
-.featureList ul { gap:0; }
-.featureList li { padding:var(--spacing-5); border-radius:0; }
-.featureList li[aria-selected=true] { box-shadow:inset 3px 0 var(--color-text-accent); }
-.specDocument { min-width:0; padding:var(--spacing-8); overflow-wrap:anywhere; background:var(--color-background-surface); }
-.documentToolbar { justify-content:space-between; }
-.documentHeading { padding-block:var(--spacing-6); }
-.documentHeading h2 { font-size:1.75rem; line-height:1.4; letter-spacing:-.025em; }
+/* Feature list: a table in the centered column; the detail page replaces the list at the same width. */
+.featureTable table { border-radius:0; }
+.featureTable tbody tr { cursor:pointer; }
+.featureTitle { color:var(--color-text-primary); font-weight:600; text-decoration:none; }
+.featureTitle:hover { text-decoration:underline; }
+.featureDetail { min-width:0; overflow-wrap:anywhere; padding-inline:var(--spacing-5); }
+.featureBack { align-self:flex-start; font-size:.8125rem; text-decoration:none; color:var(--color-text-secondary); }
+.featureBack:hover { text-decoration:underline; }
+.documentHeading { padding-block:var(--spacing-4) var(--spacing-6); }
+.documentHeading h1 { font-size:1.75rem; line-height:1.4; letter-spacing:-.025em; }
+.featureDetail { padding-top:var(--spacing-6); }
 .documentIndex { padding-block:var(--spacing-5); border-block:1px solid var(--color-border); }
 .documentIndex a { padding-block:var(--spacing-1); text-decoration:none; }
-.specDocument a:hover { text-decoration:underline; }
-.requirementSection { padding-block:var(--spacing-7); border-bottom:1px solid var(--color-border); scroll-margin-top:var(--spacing-6); }
+.featureDetail a:hover { text-decoration:underline; }
+.requirementSection { padding-block:var(--spacing-7); border-bottom:1px solid var(--color-border); scroll-margin-top:calc(var(--gitifact-topbar-height) + var(--spacing-4)); }
 .requirementSection h3 { font-size:1.25rem; line-height:1.5; }
 .requirementSection p,.requirementSection li { line-height:1.9; }
 .requirementSection a,.documentHeading a { font-size:.8125rem; }
-.documentEmpty { justify-content:center; align-items:center; text-align:center; min-height:24rem; }
-@media(width>=90rem){.featureWorkspace{grid-template-columns:21rem minmax(0,1fr)}.specDocument{padding-inline:var(--spacing-10)}}
-@media(width<64rem){.featureWorkspace{grid-template-columns:minmax(0,1fr)}.featureSelected>.featureList{display:none}.featureList{border-inline-end:0}.specDocument{padding:var(--spacing-5)}.documentEmpty{display:none}.documentHeading h2{font-size:1.5rem}}
-@media(width>=64rem){.featureWorkspace{height:calc(100dvh - 12rem);min-height:0}.featureList,.specDocument{min-height:0;overflow-y:auto}.specDocument>*{flex-shrink:0}}
-@media(width<64rem){.specDocument>*{flex-shrink:0}}
+@media(width<64rem){.documentHeading h1{font-size:1.5rem}}
+
 .historyPagination { align-items:center; border-top:1px solid var(--color-border); }
 .readingPane {min-width:0;background:var(--color-background-surface);overflow-wrap:anywhere}
 .readingPane>*{flex-shrink:0}

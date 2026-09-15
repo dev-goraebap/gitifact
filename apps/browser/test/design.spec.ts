@@ -28,6 +28,6 @@ test('optional design empty state and mobile safe Markdown',async({page})=>{
  await mockApi(page);await page.goto('/features?feature=S-abcdefghij&tab=design');await expect(page.getByRole('heading',{name:'아직 작성된 설계가 없습니다.'})).toBeVisible();
  const payload=data();payload.features[0]!.design.body+='<script>window.bad=true</script>\n[bad](javascript:alert(1))';
  await page.route('**/api/v1/specs*',r=>r.fulfill({json:payload}));await page.setViewportSize({width:390,height:844});await page.emulateMedia({colorScheme:'dark'});await page.reload();
- await expect(page.getByRole('tabpanel',{name:'설계'})).toContainText('검색 색인');await expect(page.locator('aside script,aside a[href^="javascript:"]')).toHaveCount(0);
+ await expect(page.getByRole('tabpanel',{name:'설계'})).toContainText('검색 색인');await expect(page.locator('article script,article a[href^="javascript:"]')).toHaveCount(0);
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });

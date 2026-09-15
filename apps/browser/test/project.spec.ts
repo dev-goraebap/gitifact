@@ -4,7 +4,7 @@ test('history links to current features and contributors with URL restoration',a
  await mockApi(page);await page.goto('/');await page.getByText('검색어 입력',{exact:true}).click();
  await expect(page.getByRole('dialog',{name:'검색어 입력'})).toContainText('사용자가 검색을 요청했습니다.');
  await page.getByRole('link',{name:'현재 기능 명세 보기 →'}).click();
- const detail=page.getByRole('complementary',{name:'기능 명세'});await expect(detail).toContainText('기대 동작:');await page.reload();await expect(detail).toBeVisible();
+ const detail=page.getByRole('article',{name:'기능 명세'});await expect(detail).toContainText('기대 동작:');await page.reload();await expect(detail).toBeVisible();
  await page.getByRole('link',{name:'기여자',exact:true}).click();await page.getByRole('button',{name:'Fixture',exact:true}).click();
  await expect(page.getByRole('complementary',{name:'기여자 상세'})).toContainText('최근 불러온 명세 활동');
  await page.getByRole('link',{name:'이 기여자의 활동 →'}).click();await expect(page).toHaveURL(/author=/);
@@ -19,9 +19,9 @@ test('mobile dark theme preserves safe Markdown and navigation',async({page})=>{
  await mockApi(page);await page.setViewportSize({width:390,height:844});await page.emulateMedia({colorScheme:'dark'});
  const unsafe=structuredClone(specs);unsafe.features[0]!.requirements[0]!.body='<script>window.bad=true</script>\n\n[bad](javascript:alert(1))\n\n**읽을 내용**';
  await page.route('**/api/v1/specs*',r=>r.fulfill({json:unsafe}));await page.goto('/features?feature=S-abcdefghij&selected=R-abcdefghij');
- const detail=page.getByRole('complementary',{name:'기능 명세'});await expect(detail).toContainText('읽을 내용');await expect(detail.locator('script,a[href^="javascript:"]')).toHaveCount(0);
+ const detail=page.getByRole('article',{name:'기능 명세'});await expect(detail).toContainText('읽을 내용');await expect(detail.locator('script,a[href^="javascript:"]')).toHaveCount(0);
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
- await detail.getByRole('button',{name:'상세 닫기'}).click();await expect(detail).toHaveCount(0);
+ await detail.getByRole('link',{name:'제품 기능'}).click();await expect(detail).toHaveCount(0);await expect(page.getByRole('table')).toBeVisible();
  await page.getByRole('button',{name:'탐색 열기',exact:true}).click();await page.getByRole('link',{name:'기여자',exact:true}).click();await expect(page).toHaveURL(/contributors/);
 });
 

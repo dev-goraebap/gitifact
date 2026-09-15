@@ -30,9 +30,20 @@ export function createSpecBrowserReader(root: string, sessionId: string, inherit
     const base = { head: await readHead() };
     if (cursor > 0 && expectedHead !== base.head) throw new SpecPreviewError('이력이 바뀌었습니다. 새로고침 후 다시 조회하세요.');
     const current = await readWorkingPreviewState(root);
-    const features = current.specs.map(({ history: _history, ...s }) => s);
-    if (!base.head) return browserSpecsV1.parse({ contract: 'browser-specs', version: 1, sessionId, head: null, observedAt: new Date().toISOString(), working: features.length > 0, features, events: [], contributors: [], contributorsLimited: false, nextCursor: null, boundary: false });
+    const bare = current.specs.map(({ history: _history, ...s }) => ({ ...s, contributors: [] as BrowserSpecsV1['contributors'], updatedAt: null as string | null }));
+    if (!base.head) return browserSpecsV1.parse({ contract: 'browser-specs', version: 1, sessionId, head: null, observedAt: new Date().toISOString(), working: bare.length > 0, features: bare, events: [], contributors: [], contributorsLimited: false, nextCursor: null, boundary: false });
     const head = base.head;
+    // Authors per feature folder, following the folder through the store rename; capped so a long history stays bounded.
+    const features = await Promise.all(bare.map(async feature => {
+      const folder = feature.path.replace(/^\.(?:gitifact|tryce)\/(spec\/[^/]+)\/requirements\.md$/, '$1');
+      const lines = (await git(['log', '--format=%aN%x00%aE%x00%aI', '--max-count=2000', head, '--', `.gitifact/${folder}`, `.tryce/${folder}`])).trim().split('\n').filter(Boolean);
+      const people = new Map<string, BrowserSpecsV1['contributors'][number]>();
+      for (const line of lines) {
+        const [name, email, latest] = line.split('\0'); if (!name || !email || !latest) throw new SpecPreviewError('Git 작성자를 읽지 못했습니다.');
+        const person = people.get(email); if (person) person.commits++; else people.set(email, { name, email, latest, commits: 1 });
+      }
+      return { ...feature, contributors: [...people.values()].sort((a, b) => b.commits - a.commits), updatedAt: lines[0]?.split('\0')[2] ?? null };
+    }));
     const [rows, dirty] = await Promise.all([
       git(['log', '--first-parent', '--date-order', '--format=%H%x00%P%x00%aN%x00%aE%x00%aI%x00%cN%x00%s', '--max-count=11', '--skip=' + cursor, head, '--', ...['.gitifact', '.tryce'].flatMap(d => [`:(glob)${d}/spec/*/requirements.md`, `:(glob)${d}/spec/*/design.md`, `:(glob)${d}/spec/*/history.jsonl`])]),
       git(['status', '--porcelain=v1', '--', '.gitifact/spec']),
