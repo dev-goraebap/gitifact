@@ -1,0 +1,1 @@
+{"id":"H-pwxt254ji6","requirements":["R-hjteu77gki","R-oh4oevufr3","R-rtualqkge6","R-y5tidh72gk"],"designs":["S-7ymbd7bqzf"],"reason":"기능 명세와 별도로 제품 목적과 구현 지침을 관리하고, 에이전트의 문서 참조와 브라우저 열람·변경 이력을 같은 Git 기록으로 연결한다."}

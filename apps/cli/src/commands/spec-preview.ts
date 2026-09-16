@@ -1,6 +1,6 @@
 import { join } from 'node:path';
 import { readFile, stat } from 'node:fs/promises';
-import { compareSpecPreviews, SpecPreviewError, RepositoryReadError, InitError, parseManagedConfig } from '@gitifact/core';
+import { comparePreviewBundles, SpecPreviewError, RepositoryReadError, InitError, parseManagedConfig } from '@gitifact/core';
 import { specPreviewReader } from '../adapters/git/spec-preview-reader.js';
 import { withCommandScope } from '../adapters/git/command-scope.js';
 import { readWorkingPreview, saveWorkingPreview } from '../adapters/filesystem/spec-preview-store.js';
@@ -52,12 +52,12 @@ async function execute(action: Action, options: Options) {
     const reader = specPreviewReader(process.cwd());
     if (action === 'read') {
       const commit = await reader.resolve(options.ref ?? 'HEAD');
-      const specs = await reader.read(commit);
-      process.stdout.write(JSON.stringify({ ...envelope, ok: true, commit, specs }) + '\n');
+      const bundle = await reader.readBundle(commit);
+      process.stdout.write(JSON.stringify({ ...envelope, ok: true, commit, specs: bundle.specs, documents: bundle.documents }) + '\n');
     } else {
       const [from, to] = await Promise.all([reader.resolve(options.from!), reader.resolve(options.to!)]);
-      const [before, after] = await Promise.all([reader.read(from), reader.read(to)]);
-      process.stdout.write(JSON.stringify({ ...envelope, ok: true, from, to, ...compareSpecPreviews(before, after) }) + '\n');
+      const [before, after] = await Promise.all([reader.readBundle(from), reader.readBundle(to)]);
+      process.stdout.write(JSON.stringify({ ...envelope, ok: true, from, to, ...comparePreviewBundles(before, after) }) + '\n');
     }
   } catch (error) {
     const known = error instanceof SpecPreviewError || error instanceof RepositoryReadError || error instanceof InitError;

@@ -7,11 +7,15 @@ import { HgiHistory } from '../../../shared/ui/icons/HgiHistory';
 import { HgiRequirement } from '../../../shared/ui/icons/HgiRequirement';
 import { HgiMembers } from '../../../shared/ui/icons/HgiMembers';
 import { HgiGit } from '../../../shared/ui/icons/HgiGit';
+import { HgiProduct } from '../../../shared/ui/icons/HgiProduct';
+import { HgiBook } from '../../../shared/ui/icons/HgiBook';
 import { HgiInfo } from '../../../shared/ui/icons/HgiInfo';
 import styles from './app-shell.module.css';
 const destinations = [
   ['/', '활동', HgiHistory],
+  ['/product', '제품 개요', HgiProduct],
   ['/features', '제품 기능', HgiRequirement],
+  ['/guides', '지침', HgiBook],
   ['/contributors', '참여자', HgiMembers],
   ['/git', 'Git 상태', HgiGit],
 ] as const;
@@ -44,7 +48,7 @@ export function BrowserShell() {
                 label={label}
                 icon={<MenuIcon/>}
                 href={to}
-                isSelected={pathname === to}
+                isSelected={to === '/' ? pathname === '/' : pathname === to || pathname.startsWith(to + '/')}
                 onClick={(event) => {
                   if (
                     !event.metaKey &&

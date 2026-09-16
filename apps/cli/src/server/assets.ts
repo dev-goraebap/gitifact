@@ -26,5 +26,8 @@ export function contentType(path: string): string {
   if (path.endsWith('.svg')) return 'image/svg+xml';
   if (path.endsWith('.woff2')) return 'font/woff2';
   if (path.endsWith('.png')) return 'image/png';
+  if (/\.jpe?g$/.test(path)) return 'image/jpeg';
+  if (path.endsWith('.gif')) return 'image/gif';
+  if (path.endsWith('.webp')) return 'image/webp';
   return 'application/octet-stream';
 }

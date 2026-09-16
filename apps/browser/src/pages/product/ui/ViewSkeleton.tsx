@@ -5,7 +5,7 @@ import styles from './product.module.css';
 
 const rows = [0, 1, 2, 3, 4];
 /** Placeholder shaped like the view it stands in for, so the swap to real data keeps the same layout. */
-export function ViewSkeleton({ view }: { view: 'history' | 'features' | 'contributors' }) {
+export function ViewSkeleton({ view }: { view: 'history' | 'features' | 'contributors' | 'product' | 'guides' }) {
   return <VStack gap={0} role="status" aria-label="프로젝트 불러오는 중" aria-busy="true" className={styles.skeleton}>
     <HStack gap={3} wrap="wrap" className={styles.filters} aria-hidden="true">
       <Skeleton width="11rem" height="var(--spacing-8)" radius={2}/>

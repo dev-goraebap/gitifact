@@ -67,11 +67,11 @@ gitifact는 개인이나 팀이 **하나의 Git 저장소 안에서 제품을 �
 
 이전 Tryce 프로젝트는 `gitifact migrate`로 저장 형식을 전환합니다. `.tryce`를 `.gitifact`로 옮기고 마커만 바꾸며 ID·이유·이력은 보존합니다. 전환 결과는 `gitifact spec commit`으로 커밋하고, 과거 커밋의 기록은 그대로 읽습니다. 기존 기록을 삭제하거나 설정을 덮어쓰지 마세요. 브라우저 편집, 구현 완료 판정과 전체 Git 이력 검사는 지원하지 않습니다.
 
-확정 사항과 남은 설계 항목은 [제품·설계 기준](docs/bref.md)에서 확인할 수 있습니다.
+제품의 목적·원칙·범위는 [제품 개요](.gitifact/product/PRODUCT.md)에서, 기능별 요구사항과 설계는 `.gitifact/spec/`에서 확인할 수 있습니다.
 
 ## gitifact 개발에 참여하려면
 
-실행·빌드·검증은 [개발 환경](docs/development.md), 코드 구조는 [아키텍처 기준](docs/architecture/README.md)을 참고하세요. [이름 전환 계획](docs/gitifact-transition.md)에 새 패키지·저장 형식·배포 작업을 정리했습니다.
+실행·빌드·검증은 [개발 환경](docs/development.md), 코드 구조는 [아키텍처 지침](.gitifact/guides/architecture.md)을 참고하세요. [이름 전환 계획](docs/gitifact-transition.md)에 새 패키지·저장 형식·배포 작업을 정리했습니다.
 
 ## 라이선스
 

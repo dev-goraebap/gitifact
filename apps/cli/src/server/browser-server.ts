@@ -2,7 +2,9 @@ import { createServer } from 'node:http';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import { readRepositoryStatus } from '@gitifact/core';
+import { lstat, readFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import { readRepositoryStatus, isProductAssetPath } from '@gitifact/core';
 import { browserHttpErrorV1 } from '@gitifact/contracts';
 import type { RepositoryStatusSuccessV1 } from '@gitifact/contracts';
 import { createRepositoryReader } from '../adapters/git/repository-reader.js';
@@ -82,6 +84,18 @@ export async function startBrowserServer(options: Options) {
     if (api) {
       if (request.headers['sec-fetch-site'] === 'cross-site' && !allowedOrigin) return fail(response, 403, 'FORBIDDEN', '외부 페이지의 요청을 허용하지 않습니다.');
       if (url.search && path !== '/api/v1/specs') return fail(response, 400, 'BAD_REQUEST', '조회 인자를 받지 않습니다.');
+      // Images beside PRODUCT.md, by plain file name only: <img> requests carry no session header, so the route stays read-only and narrow.
+      if (path.startsWith('/api/v1/product/assets/')) {
+        const name = path.slice('/api/v1/product/assets/'.length);
+        if (request.method !== 'GET') { response.setHeader('Allow', 'GET'); return fail(response, 405, 'METHOD_NOT_ALLOWED', '허용하지 않는 메서드입니다.'); }
+        if (!isProductAssetPath('.gitifact/product/' + name)) return fail(response, 404, 'NOT_FOUND', '제품 이미지를 찾을 수 없습니다.');
+        const file = join(initial.repository.rootPath, '.gitifact', 'product', name);
+        const stat = await lstat(file).catch(() => undefined);
+        if (!stat?.isFile() || stat.isSymbolicLink() || stat.size > 5 * 1024 * 1024) return fail(response, 404, 'NOT_FOUND', '제품 이미지를 찾을 수 없습니다.');
+        const bytes = await readFile(file);
+        response.writeHead(200, { 'Content-Type': contentType(name.toLowerCase()), 'Cache-Control': 'no-cache', 'Content-Length': bytes.length });
+        response.end(bytes); return;
+      }
       const method = path === '/api/v1/status/refresh' ? 'POST' : 'GET';
       if (!['/api/v1/session', '/api/v1/status', '/api/v1/status/refresh', '/api/v1/specs'].includes(path)) return fail(response, 404, 'NOT_FOUND', 'API를 찾을 수 없습니다.');
       if (request.method !== method) {

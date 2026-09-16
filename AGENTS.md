@@ -4,7 +4,7 @@
 
 현재 프로젝트는 `.gitifact/config.json`의 `schemaVersion: 1` 저장 규약이다. 2026-09-15 제품 이름을 Tryce에서 Gitifact로 바꾸며 저장 경로 `.tryce`와 `tryce-*` 마커를 `.gitifact`와 `gitifact-*`로 전환했다. 과거 커밋의 `.tryce` 기록과 `Tryce-Req` 트레일러는 CLI가 계속 읽으며 새로 쓰지 않는다. 모드·승인 묶음·note를 새로 작성하지 않는다. 개발 작업에는 [.agents/skills/gitifact-workflow/SKILL.md](.agents/skills/gitifact-workflow/SKILL.md)를 읽고 적용한다. 원본만 커밋하며 Claude 복사본은 `pnpm skills:sync`로 생성하고 직접 편집된 복사본을 보존한다.
 
-프로젝트 사용 빌드와 해시는 [개발 환경](docs/development.md)의 최신 지정을 따른다. 시작할 때 `pnpm cli spec working`과 Git 상태를 읽고 필요한 명세·아키텍처 문서를 원문으로 확인한다. browser는 요구사항 이력·제품 기능·기여자를 읽기 전용으로 제공한다. 구형 req·note·mode·brief·commit 명령은 개발 빌드에서 제거했다.
+프로젝트 사용 빌드와 해시는 [개발 환경](docs/development.md)의 최신 지정을 따른다. 시작할 때 `pnpm cli spec working`과 Git 상태를 읽고 필요한 명세·지침 문서를 원문으로 확인한다. browser는 요구사항 이력·제품 기능·기여자를 읽기 전용으로 제공한다. 구형 req·note·mode·brief·commit 명령은 개발 빌드에서 제거했다.
 
 명세는 `spec working/save`로 관리하고 커밋 요청 시 `spec commit`을 사용한다. deprecated인 `spec prepare/verify/commit-plan/commit-apply`는 새 작업에 쓰지 않는다. 관련 명세·이유·코드·테스트를 함께 담되 기존 staging과 무관한 변경은 보존한다. 자동 기록은 커밋 권한이 아니며 사용자 요청 또는 명시적 프로젝트 정책에 따라 커밋한다. 푸시는 별도 권한을 따른다.
 
@@ -17,13 +17,13 @@
 ## 작업을 시작할 때
 
 1. `git status`와 현재 브랜치·작업 경로를 확인한다. 기존 변경과 다른 에이전트의 작업을 보존한다.
-2. [제품·설계 기준](docs/bref.md)을 읽고 해당 작업의 확정·합의·보류 상태를 확인한다. 이후 작성된 관련 명세도 읽는다.
-   코드 구조와 기술 선택은 [아키텍처 기준](docs/architecture/README.md)을 따른다. CLI 또는 브라우저를 작업할 때는 해당 상세 문서도 읽는다. 브라우저 작업 전에는 반드시 [apps/browser/AGENTS.md](apps/browser/AGENTS.md)의 Astryx 생성 지침과 [프론트엔드 지침](docs/architecture/frontend/README.md)을 직접 읽는다. 자동 첨부 여부에 의존하지 않고, 사용할 컴포넌트의 설치 버전 API를 Astryx CLI로 확인한다.
+2. [제품 개요](.gitifact/product/PRODUCT.md)를 읽고 이번 작업이 제품의 목적·원칙·범위 안에 있는지 확인한다. 관련 기능 명세(`.gitifact/spec/`)도 읽는다.
+   코드 구조와 기술 선택은 [아키텍처 지침](.gitifact/guides/architecture.md)을 따른다. CLI 작업은 [CLI 지침](.gitifact/guides/cli.md), 브라우저 작업은 [브라우저 지침](.gitifact/guides/browser.md)과 `.gitifact/guides/frontend/`의 문서, [apps/browser/AGENTS.md](apps/browser/AGENTS.md)의 Astryx 생성 지침을 직접 읽는다. 설계 문서 규약은 [기능 설계 문서](.gitifact/guides/design-documents.md)다. 자동 첨부 여부에 의존하지 않고, 사용할 컴포넌트의 설치 버전 API를 Astryx CLI로 확인한다.
 3. 실제 파일과 실행 가능한 명령을 확인한다. README나 설계 문서에 등장한다는 이유만으로 기능이 구현됐다고 가정하지 않는다.
    실행 방법과 검증 범위는 [개발 환경](docs/development.md)을 확인한다. 현재 통합 검증 명령은 `pnpm check`다.
 4. 이번 작업의 범위, 관련 문서, 검증 방법을 정하고 진행한다.
 
-`.tmp/`는 로컬 조사·논의 자료다. 새 체크아웃에 없어도 작업을 시작할 수 있어야 한다. 구현에 필요한 결정은 `docs/`의 관련 문서에 남긴다. 새 문서는 [제품·설계 기준](docs/bref.md)에서 찾을 수 있도록 연결한다.
+`.tmp/`는 로컬 조사·논의 자료다. 새 체크아웃에 없어도 작업을 시작할 수 있어야 한다. 구현 규칙과 결정은 `.gitifact/guides/`의 지침에, 제품의 목적·원칙·범위는 `.gitifact/product/PRODUCT.md`에 남긴다. 둘 다 spec save로 저장하고 커밋 시 변경 이유를 붙인다. 날짜별 작업·검증·배포 기록만 `docs/`에 둔다.
 
 ## 항상 지킬 원칙
 

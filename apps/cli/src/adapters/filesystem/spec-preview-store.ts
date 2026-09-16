@@ -1,7 +1,7 @@
 import { lstat, readdir, readFile, mkdir, writeFile, rename, unlink, rmdir } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import { createHash, randomBytes } from 'node:crypto';
-import { editSpecPreview, parsePreviewFiles, renderDesignPreview, designReferenceWarnings, renderSpecPreview, SpecPreviewError, parseManagedConfig } from '@gitifact/core';
+import { editSpecPreview, parsePreviewBundle, renderDesignPreview, designReferenceWarnings, renderSpecPreview, renderDocument, recordPathPattern, DOCUMENT_DIRS, SpecPreviewError, parseManagedConfig } from '@gitifact/core';
 import { specPreviewReader } from '../git/spec-preview-reader.js';
 import { readConfigFile } from './config-file.js';
 
@@ -14,7 +14,7 @@ export async function failOnLegacyLock(gitDir: string) {
   for (const name of LEGACY_LOCKS) if (await info(join(gitDir, name))) fail('이전 Tryce 실행의 잠금 또는 복구 자료가 있습니다: ' + join(gitDir, name));
 }
 const decode = (bytes: Buffer) => new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(bytes);
-export const generatePreviewId = (prefix: 'S' | 'R' | 'H') => prefix + '-' + [...randomBytes(10)].map(n => 'abcdefghijklmnopqrstuvwxyz234567'[n & 31]).join('');
+export const generatePreviewId = (prefix: 'S' | 'R' | 'H' | 'P' | 'G') => prefix + '-' + [...randomBytes(10)].map(n => 'abcdefghijklmnopqrstuvwxyz234567'[n & 31]).join('');
 /** A failure after Git may have changed HEAD: keep written files and recovery data instead of rolling back. */
 export class PreservedPreviewError extends SpecPreviewError {}
 
@@ -25,26 +25,29 @@ async function snapshot(root: string) {
   if (!parent && await info(join(root, '.tryce'))) fail('.tryce 저장소입니다. gitifact migrate로 .gitifact에 전환한 뒤 사용하세요.');
   const config = await readConfigFile(root);
   if ((config !== undefined && !('schemaVersion' in parseManagedConfig(config))) || await info(join(root, 'specs'))) fail('기존 프로젝트 형식은 별도 전환이 필요합니다.');
-  async function visit(path: string, depth: number) {
+  // Spec folders are one level deep; document folders may nest, and only Markdown plus the root reason file are read there.
+  async function visit(path: string, depth: number, documents: boolean) {
     const stat = await info(join(root, path)); if (!stat) return;
     if (stat.isSymbolicLink() || (!stat.isDirectory() && !stat.isFile())) fail('링크·특수 파일은 지원하지 않습니다: ' + path);
     if (++count > 4000) fail('명세 파일 수 한도를 초과했습니다.');
     if (stat.isDirectory()) {
-      if (depth > 1) fail('중첩 명세 폴더는 지원하지 않습니다: ' + path);
-      for (const name of (await readdir(join(root, path))).sort()) await visit(path + '/' + name, depth + 1);
+      if (depth > (documents ? 8 : 1)) fail('중첩 폴더 깊이 한도를 초과했습니다: ' + path);
+      for (const name of (await readdir(join(root, path))).sort()) await visit(path + '/' + name, depth + 1, documents);
     } else {
       if (path.endsWith('/tryce.json')) fail('기존 JSON 형식은 전환하지 않습니다.');
-      if (!/\/(requirements\.md|design\.md|history\.jsonl)$/.test(path)) return;
-      if (!/^\.gitifact\/spec\/[^/]+\/(requirements\.md|design\.md|history\.jsonl)$/.test(path)) fail('지원하지 않는 명세 경로입니다.');
+      if (documents ? !(path.endsWith('.md') || (depth === 1 && path.endsWith('/history.jsonl'))) : !/\/(requirements\.md|design\.md|history\.jsonl)$/.test(path)) return;
+      if (!recordPathPattern.test(path) || path.startsWith('.tryce/')) fail('지원하지 않는 명세 경로입니다: ' + path);
       if (stat.nlink !== 1 || stat.size > 1024 * 1024) fail('하드 링크 또는 1 MiB 한도를 확인하세요.');
       const raw = await readFile(join(root, path)); bytes += raw.length;
       if (raw.length > 1024 * 1024 || bytes > 16 * 1024 * 1024) fail('명세 크기 한도를 초과했습니다.');
       files.set(path, decode(raw));
     }
   }
-  await visit('.gitifact/spec', 0);
-  const specs = parsePreviewFiles(files);
-  return { files, specs, config, stamp: digest(JSON.stringify([...files]) + (config ?? '')) };
+  await visit('.gitifact/spec', 0, false);
+  for (const dir of Object.values(DOCUMENT_DIRS)) await visit(dir, 0, true);
+  const bundle = parsePreviewBundle(files);
+  // Entries are sorted so the stamp does not depend on the order the store folders were visited.
+  return { files, specs: bundle.specs, documents: bundle.documents, bundle, config, stamp: digest(JSON.stringify([...files].sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)) + (config ?? '')) };
 }
 
 export async function readWorkingPreviewState(cwd: string) {
@@ -58,7 +61,7 @@ export async function readWorkingPreviewState(cwd: string) {
 }
 
 export async function readWorkingPreview(cwd: string) {
-  const { stamp, specs } = await readWorkingPreviewState(cwd); return { stamp, specs, warnings: designReferenceWarnings(specs) };
+  const { stamp, specs, documents } = await readWorkingPreviewState(cwd); return { stamp, specs, documents, warnings: designReferenceWarnings(specs) };
 }
 
 export async function saveWorkingPreview(cwd: string, input: unknown, publish = rename) {
@@ -66,13 +69,21 @@ export async function saveWorkingPreview(cwd: string, input: unknown, publish = 
   const request = input as Record<string, unknown>;
   if (Object.keys(request).sort().join(',') !== 'expected,operations' || typeof request.expected !== 'string') fail('expected와 operations가 필요합니다.');
   return previewTransaction(cwd, request.expected as string, async before => {
-    const result = editSpecPreview(before.specs, request.operations, generatePreviewId);
+    const result = editSpecPreview(before.bundle, request.operations, generatePreviewId);
     const writes = new Map<string, string | null>();
     for (const spec of result.specs) {
       const old = before.specs.find(s => s.id === spec.id);
       if (!old || renderSpecPreview(old) !== renderSpecPreview(spec)) writes.set(spec.path, renderSpecPreview(spec));
       if (JSON.stringify(old?.design) !== JSON.stringify(spec.design)) writes.set(spec.path.replace(/requirements\.md$/, 'design.md'), spec.design ? renderDesignPreview(spec.id, spec.design) : null);
     }
+    // A moved document leaves its old path and appears at the new one; a deleted one only leaves.
+    const previousDocs = before.documents.flatMap(s => s.documents); const nextDocs = result.documents.flatMap(s => s.documents);
+    for (const doc of nextDocs) {
+      const old = previousDocs.find(d => d.id === doc.id);
+      if (old && old.path !== doc.path) writes.set(old.path, null);
+      if (!old || renderDocument(old) !== renderDocument(doc) || old.path !== doc.path) writes.set(doc.path, renderDocument(doc));
+    }
+    for (const old of previousDocs) if (!nextDocs.some(d => d.id === old.id)) writes.set(old.path, null);
     return { writes, data: { results: result.results } };
   }, publish);
 }
@@ -100,7 +111,7 @@ export async function previewTransaction<T>(cwd: string, expected: string, build
     if (before.stamp !== expected) fail('읽은 뒤 명세가 변경됐습니다. working으로 다시 읽으세요.');
     const result = await build(before);
     for (const [path, after] of result.writes) {
-      if (!/^\.gitifact\/spec\/[^/]+\/(requirements\.md|design\.md|history\.jsonl)$/.test(path) || path.split('/').some(p => p === '..' || p === '.' || /[\\:\0]/.test(p))) fail('지원하지 않는 저장 경로입니다.');
+      if (!recordPathPattern.test(path) || path.startsWith('.tryce/') || path.split('/').some(p => p === '..' || p === '.' || /[\\:\0]/.test(p))) fail('지원하지 않는 저장 경로입니다.');
       if (after !== null && Buffer.byteLength(after) > 1024 * 1024) fail('명세 1 MiB 한도를 초과했습니다.');
       changed.push({ path, before: before.files.get(path) ?? null, after });
     }
@@ -127,7 +138,7 @@ export async function previewTransaction<T>(cwd: string, expected: string, build
     await result.recheck?.();
     // Runs while the lock is held; a normal failure here restores the published files like any other failure.
     await afterPublish?.(after);
-    return { ...result.data, stamp: after.stamp, paths: changed.map(c => c.path), specs: after.specs, warnings: designReferenceWarnings(after.specs) };
+    return { ...result.data, stamp: after.stamp, paths: changed.map(c => c.path), specs: after.specs, documents: after.documents, warnings: designReferenceWarnings(after.specs) };
   } catch (error) {
     if (error instanceof PreservedPreviewError) { keepRecovery = true; throw error; }
     for (const c of [...published].reverse()) {

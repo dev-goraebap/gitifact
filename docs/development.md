@@ -1,5 +1,16 @@
 # 개발 환경
 
+## 2026-09-16 제품·지침 문서
+
+`.gitifact/product`와 `.gitifact/guides`를 기능 명세와 같은 기록으로 다루는 기능을 추가했다. 범위와 결정은 [제품·지침 문서 명세](../.gitifact/spec/documents/requirements.md)와 설계를 따른다. spec save에 set-product·delete-product와 create-doc·update-doc·move-doc·delete-doc, spec commit의 reasons에 documents 대상, 브라우저에 제품(PRODUCT.md 한 페이지)·지침(열 보기·목록 보기) 메뉴를 넣었다. 처음에는 제품도 폴더 탐색이었으나 사용자 요청으로 한 파일·한 페이지로 바꿨다. 스킬은 요구사항·설계 전에 제품 문서 전체와 관련 지침을 읽도록 안내한다.
+
+같은 날 이 저장소의 docs/architecture와 docs/bref.md를 `.gitifact/guides`(지침 7건)와 `.gitifact/product/PRODUCT.md`로 옮기고 원본을 삭제했다. 날짜별 경위는 옮기지 않고 현재 규칙만 담았으며 옛 문서의 변경 경위는 Git 이력에 남아 있다. AGENTS.md·CLAUDE.md·README의 연결을 새 위치로 바꿨다.
+
+커밋 전 `pnpm check`를 통과했다. 타입 검사·전체 빌드, core 19개·contracts 4개·CLI 110개·브라우저 19개·스킬 5개와 workspace 밖 패키지 오프라인 설치·실행을 확인했다. 제품·지침 커밋의 훅 거부 후 두 이유 파일·index·HEAD·문서 원문 보존과 정상 재시도를 검사하는 테스트를 추가하고, 해당 파일의 5개 검사를 별도로 통과했다. 전체 check는 추가 전 테스트 집합을 실행했으며 CLI 검증 범위는 합계 111개다.
+
+검증한 로컬 개발 빌드를 제품·지침 문서의 저장·조회·비교·커밋과 기존 기능의 프로젝트 사용 대상으로 지정한다. 실행은 `node apps/cli/dist/main.js` 또는 `pnpm cli`, SHA-256은 `e8f6f054f5f811c6da65681958fdacd46efc930ac36f87ef6384f5245714b74e`다. 버전 문자열은 0.2.0이지만 공개 npm의 같은 버전과 다른 번들이며 게시하지 않았다. DEV-01로 이 검증·지정 기록을 직접 작성했고, 제품·지침 문서 쓰기는 이제 지정 빌드를 사용한다.
+
+
 ## 2026-09-15 Gitifact 전환 사용 빌드
 
 제품 이름을 Gitifact로 바꾸고 공개 패키지를 `gitifact@0.1.0`(실행 명령 `gitifact`)으로 전환했다. 내부 workspace는 `@gitifact/core`·`@gitifact/contracts`·`@gitifact/browser`, 스킬은 `gitifact-workflow`, 저장 경로는 `.gitifact`, 마커는 `gitifact-spec/req/design/ref`, 트레일러는 `Gitifact-Req`·`Gitifact-Design`, 잠금·임시 파일 접두어는 `gitifact-*`, 환경 변수는 `GITIFACT_API_PORT`, 세션 헤더는 `X-Gitifact-Session`이다. 범위와 결정은 [이름 전환 계획](gitifact-transition.md)을 따른다.

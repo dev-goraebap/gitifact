@@ -80,3 +80,17 @@
 .compareHandle:hover::after { background:var(--color-background-yellow); }
 .compare[data-dragging] .compareBefore { transition:none; }
 @media (prefers-reduced-motion: no-preference) { .compareBefore { transition:clip-path .12s ease-out; } }
+
+/* Guides: Finder-style columns inside the shared reading column; the trailing filler keeps the empty space from looking bare. */
+.columns { align-items:stretch; overflow-x:auto; min-height:22rem; border:1px solid var(--color-border); border-radius:var(--radius-element); }
+.browserColumn { flex:0 0 14rem; min-width:14rem; border-inline-end:1px solid var(--color-border); padding:var(--spacing-2); overflow-y:auto; }
+.browserColumn [aria-selected="true"] { background:var(--color-background-muted, var(--color-background-surface)); }
+.columnFiller { flex:1 1 12rem; min-width:10rem; align-items:center; justify-content:center; padding:var(--spacing-5); text-align:center; }
+.crumb { font-size:.8125rem; color:var(--color-text-secondary); text-decoration:none; }
+.crumb:hover { text-decoration:underline; }
+.documentBody { padding-block:var(--spacing-2) var(--spacing-8); overflow-wrap:anywhere; }
+.documentBody p, .documentBody li { line-height:1.9; }
+.productBody { padding-block:var(--spacing-2) var(--spacing-8); overflow-wrap:anywhere; }
+.productBody p, .productBody li { line-height:1.9; }
+.productBody img { max-width:100%; height:auto; border-radius:var(--radius-element); }
+@media(width<64rem){ .browserColumn { flex-basis:11rem; min-width:11rem; } }

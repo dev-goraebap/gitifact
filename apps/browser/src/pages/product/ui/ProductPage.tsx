@@ -3,7 +3,7 @@ import { sessionOptions } from '../../../entities/project';
 import { ProductPanel } from './ProductPanel';
 import type { ProductSearch } from '../model/search';
 import { RequestState } from '../../../shared/ui/request-state';
-export type ProductProps = {view:'history'|'features'|'contributors';featureId?:string|undefined;email?:string|undefined;search:ProductSearch;change:(s:ProductSearch,replace?:boolean)=>void};
+export type ProductProps = {view:'history'|'features'|'contributors'|'product'|'guides';featureId?:string|undefined;email?:string|undefined;documentId?:string|undefined;search:ProductSearch;change:(s:ProductSearch,replace?:boolean)=>void};
 export function ProductPage(props:ProductProps) {
  const session=useQuery(sessionOptions());
  if(!session.data||session.error)return <RequestState error={session.error} retry={()=>{void session.refetch();}}/>;

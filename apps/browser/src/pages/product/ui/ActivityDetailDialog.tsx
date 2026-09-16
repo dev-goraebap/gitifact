@@ -6,11 +6,12 @@ import { useMediaQuery } from '@astryxdesign/core/hooks';
 import { EventDetail } from './EventDetail';
 import styles from './product.module.css';
 const names={created:'추가',modified:'변경',deleted:'제거',moved:'이동'};
+const kinds={requirement:'요구사항',design:'설계',product:'제품 문서',guide:'지침 문서'} as const;
 /** Detail drawer: full screen below the desktop breakpoint, otherwise a resizable panel docked to the end edge. The dialog itself scrolls; the header stays pinned. */
 export function ActivityDetailDialog({event:e,features,close}: {event:SpecEvent;features:SpecFeature[];close:()=>void}) {
   const narrow=useMediaQuery('(max-width: 1023px)');
   const pane=useResizable({defaultSize:700,minSize:420,maxSize:1100,autoSaveId:'gitifact-activity-detail'});
-  const subtitle=`${e.kind==='design'?'설계':'요구사항'} ${e.types.map(t=>names[t]).join(' · ')} · ${e.id} · ${e.commit.slice(0,7)}`;
+  const subtitle=`${kinds[e.kind??'requirement']} ${e.types.map(t=>names[t]).join(' · ')} · ${e.id} · ${e.commit.slice(0,7)}`;
   const onOpenChange=(open:boolean)=>{if(!open)close();};
   const docked=narrow?{variant:'fullscreen' as const}:{variant:'standard' as const,width:pane.size,position:{end:0,top:0},className:styles.drawer};
   return <Dialog isOpen onOpenChange={onOpenChange} purpose="info" padding={0} maxHeight="100dvh" {...docked}>

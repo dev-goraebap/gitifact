@@ -1,0 +1,1 @@
+{"id":"H-kga4mwwpf6","requirements":[],"documents":["G-6xx4lo2ojb","G-hx2vdtqiys","G-nnbppll2p5","G-r7rkd66hry","G-v3gs3pgnvt","G-v3x7s5ogd6","G-zg7nohwo2w"],"reason":"기존 docs/architecture의 현재 구현 규칙을 지침 문서로 옮겨 에이전트와 브라우저가 같은 기준을 읽게 한다. 날짜별 경위는 Git 이력과 docs에 남긴다."}

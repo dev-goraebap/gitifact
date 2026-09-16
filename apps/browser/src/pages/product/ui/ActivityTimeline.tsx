@@ -9,6 +9,8 @@ import { Person } from './Person';
 import styles from './product.module.css';
 const names = {created:'추가',modified:'변경',deleted:'제거',moved:'이동'};
 const colors = {created:'green',modified:'blue',deleted:'red',moved:'purple'} as const;
+const kinds = {requirement:'요구사항',design:'설계',product:'제품 문서',guide:'지침 문서'} as const;
+
 /** Vertical timeline: one rail on the left, each entry's avatar sits on the rail. */
 export function ActivityTimeline({events,features,selected}: {events:SpecEvent[];features:SpecFeature[];selected:SpecEvent|undefined}) {
  return <VStack as="ol" aria-label="활동 목록" gap={0} className={styles.timeline}>
@@ -25,10 +27,11 @@ export function ActivityTimeline({events,features,selected}: {events:SpecEvent[]
      </HStack>
      <HStack gap={2} wrap="wrap" className={styles.entryLine}>
       <Token label={e.types.map(t=>names[t]).join(' · ')} color={colors[kind]}/>
-      <Text type="supporting" color="secondary">{e.kind==='design'?'설계':'요구사항'}</Text>
+      <Text type="supporting" color="secondary">{kinds[e.kind??'requirement']}</Text>
       <Link to="/" search={s=>({...s,selected:e.key})} className={styles.entryTitle}>{spec?.title??e.id}</Link>
       {feature&&<Text type="supporting" color="secondary">·</Text>}
       {feature&&<Link to="/features/$featureId" params={{featureId:feature.id}} className={styles.entryFeature}>{feature.title}</Link>}
+      {e.kind==='guide'&&e.after&&<><Text type="supporting" color="secondary">·</Text><Link to="/guides/$documentId" params={{documentId:e.id}} className={styles.entryFeature}>{e.after.path.replace(/^\.gitifact\/guides\//,'')}</Link></>}
      </HStack>
      <HStack gap={2} className={styles.entryLine}>
       <Text type="code" color="secondary">{e.commit.slice(0,7)}</Text>

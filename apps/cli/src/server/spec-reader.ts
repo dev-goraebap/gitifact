@@ -1,4 +1,4 @@
-import { compareSpecPreviews, SpecPreviewError, parseManagedConfig, type PreviewSpec } from '@gitifact/core';
+import { comparePreviewBundles, SpecPreviewError, parseManagedConfig, DOCUMENT_DIRS, type PreviewBundle } from '@gitifact/core';
 import { browserSpecsV1, type BrowserSpecsV1 } from '@gitifact/contracts';
 import { createGitRunner } from '../adapters/git/run-git.js';
 import { specPreviewReader } from '../adapters/git/spec-preview-reader.js';
@@ -15,10 +15,10 @@ export function createSpecBrowserReader(root: string, sessionId: string, inherit
     if (!head) await reader.baseline();
     return head || null;
   };
-  const snapshots = new Map<string, Promise<PreviewSpec[]>>();
+  const snapshots = new Map<string, Promise<PreviewBundle>>();
   const snapshot = (oid: string) => {
     let value = snapshots.get(oid);
-    if (!value) { value = reader.read(oid).catch(e => { snapshots.delete(oid); throw e; }); snapshots.set(oid, value); }
+    if (!value) { value = reader.readBundle(oid).catch(e => { snapshots.delete(oid); throw e; }); snapshots.set(oid, value); }
     if (snapshots.size > 128) snapshots.delete(snapshots.keys().next().value!);
     return value;
   };
@@ -31,7 +31,8 @@ export function createSpecBrowserReader(root: string, sessionId: string, inherit
     if (cursor > 0 && expectedHead !== base.head) throw new SpecPreviewError('이력이 바뀌었습니다. 새로고침 후 다시 조회하세요.');
     const current = await readWorkingPreviewState(root);
     const bare = current.specs.map(({ history: _history, ...s }) => ({ ...s, contributors: [] as BrowserSpecsV1['contributors'], updatedAt: null as string | null }));
-    if (!base.head) return browserSpecsV1.parse({ contract: 'browser-specs', version: 1, sessionId, head: null, observedAt: new Date().toISOString(), working: bare.length > 0, features: bare, events: [], contributors: [], contributorsLimited: false, nextCursor: null, boundary: false });
+    const bareDocuments = current.documents.flatMap(set => set.documents).map(d => ({ ...d, updatedAt: null as string | null }));
+    if (!base.head) return browserSpecsV1.parse({ contract: 'browser-specs', version: 1, sessionId, head: null, observedAt: new Date().toISOString(), working: bare.length > 0 || bareDocuments.length > 0, features: bare, documents: bareDocuments, events: [], contributors: [], contributorsLimited: false, nextCursor: null, boundary: false });
     const head = base.head;
     // Authors per feature folder, following the folder through the store rename; capped so a long history stays bounded.
     const features = await Promise.all(bare.map(async feature => {
@@ -44,9 +45,14 @@ export function createSpecBrowserReader(root: string, sessionId: string, inherit
       }
       return { ...feature, contributors: [...people.values()].sort((a, b) => b.commits - a.commits), updatedAt: lines[0]?.split('\0')[2] ?? null };
     }));
+    // Documents record their latest commit by current path; a moved document restarts at the move commit.
+    const documents = await Promise.all(bareDocuments.map(async doc => ({ ...doc, updatedAt: (await git(['log', '--format=%aI', '--max-count=1', head, '--', doc.path])).trim() || null })));
+    const documentDirs = Object.values(DOCUMENT_DIRS);
     const [rows, dirty] = await Promise.all([
-      git(['log', '--first-parent', '--date-order', '--format=%H%x00%P%x00%aN%x00%aE%x00%aI%x00%cN%x00%s', '--max-count=11', '--skip=' + cursor, head, '--', ...['.gitifact', '.tryce'].flatMap(d => [`:(glob)${d}/spec/*/requirements.md`, `:(glob)${d}/spec/*/design.md`, `:(glob)${d}/spec/*/history.jsonl`])]),
-      git(['status', '--porcelain=v1', '--', '.gitifact/spec']),
+      git(['log', '--first-parent', '--date-order', '--format=%H%x00%P%x00%aN%x00%aE%x00%aI%x00%cN%x00%s', '--max-count=11', '--skip=' + cursor, head, '--',
+        ...['.gitifact', '.tryce'].flatMap(d => [`:(glob)${d}/spec/*/requirements.md`, `:(glob)${d}/spec/*/design.md`, `:(glob)${d}/spec/*/history.jsonl`]),
+        ...documentDirs.flatMap(d => [`:(glob)${d}/**/*.md`, `:(glob)${d}/history.jsonl`])]),
+      git(['status', '--porcelain=v1', '--', '.gitifact/spec', ...documentDirs]),
     ]);
     // Git mailmap may change without a new HEAD; refresh names with every observation.
     {
@@ -62,17 +68,17 @@ export function createSpecBrowserReader(root: string, sessionId: string, inherit
     const groups = await Promise.all(commits.slice(0, 10).map(async row => {
       const [commit, parents, author, email, date, committer, message] = row.split('\0');
       if (!commit || author === undefined || email === undefined || !date || committer === undefined || message === undefined) throw new SpecPreviewError('Git 이력 형식을 읽지 못했습니다.');
-      const after = await snapshot(commit); let before: PreviewSpec[] = [];
+      const after = await snapshot(commit); let before: PreviewBundle = { specs: [], documents: [{ kind: 'product', documents: [], history: [] }, { kind: 'guide', documents: [], history: [] }] };
       const parent = parents?.split(' ')[0];
       if (parent) {
         try { before = await snapshot(parent); }
         catch (error) { if (error instanceof SpecPreviewError && error.message.includes('기존 JSON')) boundary = true; else throw error; }
       }
-      return compareSpecPreviews(before, after).changes.map(c => ({ key: commit + ':' + c.id, commit, author, email, date, committer, message,
+      return comparePreviewBundles(before, after).changes.map(c => ({ key: commit + ':' + c.id, commit, author, email, date, committer, message,
         id: c.id, kind: c.kind, types: c.types, before: c.before, after: c.after, reasons: c.reasons.map(r => r.reason) }));
     }));
     if (await readHead() !== head || (await readWorkingPreviewState(root)).stamp !== current.stamp) throw new SpecPreviewError('조회 중 프로젝트가 바뀌었습니다. 새로고침하세요.');
-    return browserSpecsV1.parse({ contract: 'browser-specs', version: 1, sessionId, head, observedAt: new Date().toISOString(), working: !!dirty.trim(), features,
+    return browserSpecsV1.parse({ contract: 'browser-specs', version: 1, sessionId, head, observedAt: new Date().toISOString(), working: !!dirty.trim(), features, documents,
       events: groups.flat(), contributors: peopleCache.data, contributorsLimited: peopleCache.limited, nextCursor: commits.length > 10 ? cursor + 10 : null, boundary });
   }
   return (cursor = 0, head?: string) => {

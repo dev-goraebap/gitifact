@@ -1,4 +1,7 @@
-import { parsePreviewFiles, SpecPreviewError, parseProjectConfig, recordPathPattern, STORE_DIRS, type PreviewSpec } from '@gitifact/core';
+import { parsePreviewFiles, parsePreviewBundle, SpecPreviewError, parseProjectConfig, recordPathPattern, STORE_DIRS, DOCUMENT_DIRS, type PreviewSpec, type PreviewBundle } from '@gitifact/core';
+
+/** Every path prefix Git reads for the record set: spec folders in both store names plus the document folders. */
+export const RECORD_PATHSPECS = [...STORE_DIRS.map(d => d + '/spec/'), ...Object.values(DOCUMENT_DIRS).map(d => d + '/')];
 import { createGitRunner } from './run-git.js';
 import { commandScoped } from './command-scope.js';
 
@@ -18,14 +21,15 @@ export function specPreviewReader(cwd: string) {
   };
   return {
     async index() {
-      const output = decode(await git(['ls-files', '--stage', '-z', '--', ...STORE_DIRS.map(d => d + '/spec/')]));
+      const output = decode(await git(['ls-files', '--stage', '-z', '--', ...RECORD_PATHSPECS]));
       const files = new Map<string, string>();
       for (const row of output.split('\0').filter(Boolean)) {
         const match = /^(\d+) ([a-f0-9]+) ([0-3])\t([\s\S]+)$/.exec(row);
         if (!match) throw new SpecPreviewError('잘못된 index 항목입니다.');
         const [, mode, oid, stage, path] = match;
         if (!['100644', '100755'].includes(mode!) || stage !== '0') throw new SpecPreviewError('명세 staging에 충돌 또는 링크가 있습니다.');
-        if (!recordPathPattern.test(path!)) throw new SpecPreviewError('명세 staging에 지원하지 않는 파일이 있습니다.');
+        // Non-Markdown files in the document folders are outside the record set and simply ignored.
+        if (!recordPathPattern.test(path!)) { if (/^\.gitifact\/(?:product|guides)\//.test(path!)) continue; throw new SpecPreviewError('명세 staging에 지원하지 않는 파일이 있습니다.'); }
         files.set(path!, oid!);
       }
       return files;
@@ -65,7 +69,7 @@ export function specPreviewReader(cwd: string) {
       return oid;
     },
     async files(oid: string, allowLegacyBaseline = false): Promise<Map<string, string>> {
-      const entries = decode(await git(['ls-tree', '--full-tree', '-r', '-z', oid, '--', ...STORE_DIRS.map(d => d + '/spec/')]));
+      const entries = decode(await git(['ls-tree', '--full-tree', '-r', '-z', oid, '--', ...RECORD_PATHSPECS]));
       const files = new Map<string, string>();
       let legacy: string | undefined;
       for (const row of entries.split('\0').filter(Boolean)) {
@@ -73,7 +77,7 @@ export function specPreviewReader(cwd: string) {
         if (!match) throw new SpecPreviewError('잘못된 Git tree입니다.');
         const [, mode, type, object, path] = match;
         if (!['100644', '100755'].includes(mode!) || type !== 'blob') throw new SpecPreviewError('명세 영역에 링크 또는 서브모듈이 있습니다: ' + path);
-        if (!/(?:requirements\.md|design\.md|history\.jsonl|tryce\.json)$/.test(path!)) continue;
+        if (!recordPathPattern.test(path!) && !path!.endsWith('/tryce.json')) continue;
         if (path!.endsWith('/tryce.json')) {
           if (!allowLegacyBaseline) throw new SpecPreviewError('기존 JSON 형식은 req 명령으로 조회하세요. 이 명령은 전환하지 않습니다.');
           legacy = path!.split('/')[0]; continue;
@@ -105,6 +109,9 @@ export function specPreviewReader(cwd: string) {
     async read(oid: string): Promise<PreviewSpec[]> {
       const files = await this.files(oid);
       return parsePreviewFiles(files);
+    },
+    async readBundle(oid: string): Promise<PreviewBundle> {
+      return parsePreviewBundle(await this.files(oid));
     },
   };
 }

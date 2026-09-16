@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { mkdir, open, readFile, rename, rmdir, unlink, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { prepareSpecPreview } from '@gitifact/core';
+import { prepareSpecPreview, pendingPreviewReasons } from '@gitifact/core';
 import { createGitRunner } from '../adapters/git/run-git.js';
 import { previewExpected, readPreviewContext } from '../adapters/filesystem/spec-preview-prepare.js';
 import { failOnLegacyLock, generatePreviewId, PreservedPreviewError, previewTransaction, readLockedPreviewState } from '../adapters/filesystem/spec-preview-store.js';
@@ -45,9 +45,9 @@ export async function specCommit(cwd: string, input: unknown, dryRun: boolean) {
   const current = c.working;
   if (request.expected !== undefined && request.expected !== previewExpected(c.base, current.stamp)) fail('입력이 오래됐습니다. changes부터 다시 확인하세요.');
   // Omitted reasons keep the uncommitted reasons already written; an explicit list replaces them.
-  const reasons = request.reasons ?? current.specs.flatMap(s => s.history.slice(c.specs.find(p => p.id === s.id)?.history.length ?? 0)
-    .map(h => ({ requirements: h.requirements, ...(h.designs ? {designs: h.designs} : {}), reason: h.reason })));
-  const prepared = prepareSpecPreview(c.specs, current.specs, c.files, current.files, reasons, () => generatePreviewId('H'));
+  const reasons = request.reasons ?? pendingPreviewReasons(c.bundle, current.bundle)
+    .map(h => ({ requirements: h.requirements, ...(h.designs ? {designs: h.designs} : {}), ...(h.documents ? {documents: h.documents} : {}), reason: h.reason }));
+  const prepared = prepareSpecPreview(c.bundle, current.bundle, c.files, current.files, reasons, () => generatePreviewId('H'));
   // Judge changes by the blob Git would store, so a CRLF checkout of an LF blob (core.autocrlf, eol attributes) is not a change.
   const blobId = (text: string) => { const bytes = Buffer.from(text); return createHash(objectFormat).update(`blob ${bytes.length}\0`).update(bytes).digest('hex'); };
   const present = [...current.files.keys()];
@@ -76,7 +76,8 @@ export async function specCommit(cwd: string, input: unknown, dryRun: boolean) {
     reasons: prepared.reasons, withoutReason: prepared.withoutReason, historyPaths: [...writes.keys()].sort() };
   if (dryRun) { await c.recheck(); return { outcome: 'dry-run' as const, committed: false, ...summary }; }
 
-  const trailers = [...requirements.map(id => 'Gitifact-Req: ' + id), ...prepared.changes.filter(c => c.kind === 'design').map(c => 'Gitifact-Design: ' + c.id)];
+  const trailers = [...requirements.map(id => 'Gitifact-Req: ' + id), ...prepared.changes.filter(c => c.kind === 'design').map(c => 'Gitifact-Design: ' + c.id),
+    ...prepared.changes.filter(c => c.kind === 'product' || c.kind === 'guide').map(c => 'Gitifact-Doc: ' + c.id)];
   const temporary = join(gitDir, 'gitifact-commit-index-' + randomUUID());
   let owned = false; let uncertain = false; let indexLock: Awaited<ReturnType<typeof open>> | undefined;
   let committed: { commit: string; paths: string[] } | undefined;

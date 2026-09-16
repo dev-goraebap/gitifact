@@ -1,7 +1,7 @@
 import { lstat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
-import { compareSpecPreviews, finalSpecPreviewChanges, parsePreviewFiles, prepareSpecPreview, SpecPreviewError, validatePreviewSnapshot } from '@gitifact/core';
+import { comparePreviewBundles, finalSpecPreviewChanges, parsePreviewBundle, pendingPreviewReasons, prepareSpecPreview, SpecPreviewError } from '@gitifact/core';
 import { specPreviewReader } from '../git/spec-preview-reader.js';
 import { generatePreviewId, previewTransaction, readWorkingPreviewState } from './spec-preview-store.js';
 
@@ -9,7 +9,6 @@ const fail = (message: string): never => { throw new SpecPreviewError(message); 
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 const expected = (base: unknown, stamp: string) => createHash('sha256').update(JSON.stringify({ base, stamp })).digest('hex');
 export const previewExpected = expected;
-const parseFiles = parsePreviewFiles;
 export async function readPreviewContext(cwd: string) {
   const reader = specPreviewReader(cwd); const { gitDir } = await reader.location();
   const checkOperation = async () => {
@@ -22,17 +21,16 @@ export async function readPreviewContext(cwd: string) {
   const base = await reader.baseline();
   const working = await readWorkingPreviewState(cwd);
   const files = base.head ? await reader.files(base.head, working.config !== undefined) : new Map<string, string>();
-  const specs = parseFiles(files);
+  const bundle = parsePreviewBundle(files); const specs = bundle.specs;
   const recheck = async () => { await checkOperation(); if (!same(base, await reader.baseline())) fail('HEAD 또는 브랜치가 변경됐습니다. changes부터 다시 확인하세요.'); };
-  return { reader, base, files, specs, recheck, working };
+  return { reader, base, files, specs, bundle, recheck, working };
 }
 const context = readPreviewContext;
 
 export async function readFinalPreviewChanges(cwd: string) {
   const c = await context(cwd); const current = await readWorkingPreviewState(cwd);
-  const delta = finalSpecPreviewChanges(c.specs, current.specs); await c.recheck();
-  const pendingReasons = current.specs.flatMap(s => s.history.slice(c.specs.find(p => p.id === s.id)?.history.length ?? 0)
-    .map(h => ({ specId: s.id, path: s.path.replace(/requirements\.md$/, 'history.jsonl'), ...h })));
+  const delta = finalSpecPreviewChanges(c.bundle, current.bundle); await c.recheck();
+  const pendingReasons = pendingPreviewReasons(c.bundle, current.bundle);
   return { base: c.base, expected: expected(c.base, current.stamp), stamp: current.stamp, pendingReasons, ...delta };
 }
 
@@ -44,7 +42,7 @@ export async function prepareWorkingPreview(cwd: string, input: unknown, publish
   if (request.expected !== expected(c.base, current.stamp)) fail('준비 입력이 오래됐습니다. changes부터 다시 확인하세요.');
   const result = await previewTransaction(cwd, current.stamp, async before => {
     await c.recheck();
-    const prepared = prepareSpecPreview(c.specs, before.specs, c.files, before.files, request.reasons, () => generatePreviewId('H'));
+    const prepared = prepareSpecPreview(c.bundle, before.bundle, c.files, before.files, request.reasons, () => generatePreviewId('H'));
     return { writes: prepared.writes, data: { changes: prepared.changes, specChanges: prepared.specChanges, reasons: prepared.reasons, withoutReason: prepared.withoutReason }, recheck: c.recheck };
   }, publish);
   return { ...result, base: c.base, expected: expected(c.base, result.stamp), verification: { base: c.base, stamp: result.stamp } };
@@ -56,7 +54,7 @@ export async function verifyPreparedPreview(cwd: string, input: unknown, staged:
   if (Object.keys(request).sort().join(',') !== 'base,stamp' || typeof request.stamp !== 'string') fail('prepare가 반환한 verification 객체가 필요합니다.');
   const c = await context(cwd); const current = await readWorkingPreviewState(cwd);
   if (!same(request.base, c.base) || request.stamp !== current.stamp) fail('준비 뒤 HEAD 또는 명세가 변경됐습니다. 다시 준비하세요.');
-  finalSpecPreviewChanges(c.specs, current.specs); compareSpecPreviews(c.specs, current.specs);
+  finalSpecPreviewChanges(c.bundle, current.bundle); comparePreviewBundles(c.bundle, current.bundle);
   if (staged) {
     const index = await c.reader.index();
     if (index.size !== current.files.size) fail('staging의 명세 범위가 준비한 원문과 다릅니다.');

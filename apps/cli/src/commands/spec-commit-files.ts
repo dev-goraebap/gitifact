@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { lstat, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { SpecPreviewError, recordPathPattern } from '@gitifact/core';
+import { SpecPreviewError, recordPathPattern, isProductAssetPath } from '@gitifact/core';
 
 export const fail = (message: string): never => { throw new SpecPreviewError(message); };
 export const hash = (value: Buffer | string) => createHash('sha256').update(value).digest('hex');
@@ -47,6 +47,8 @@ export async function checkLegacySelection(root: string, selected: string[]) {
   // Old JSON records (in either store) may only be selected for deletion; after `gitifact migrate` the whole `.tryce` store leaves the same way.
   const legacyJson = /^\.(?:gitifact|tryce)\/(?:spec\/[^/]+\/tryce\.json|notes\/N-[a-f0-9-]+\.json|mode-[a-f0-9-]+\.json|config\.(?:init-1|prototype-1)\.[a-f0-9]+\.json)$/;
   for (const p of selected.filter(p => p.startsWith('.gitifact/') && !record(p) && p !== '.gitifact/config.json')) {
+    // Images beside PRODUCT.md travel with the description; they are committed, not parsed.
+    if (isProductAssetPath(p)) continue;
     if (!legacyJson.test(p) || await fingerprint(root, p) !== null) fail('.gitifact의 구형 기록은 삭제만 선택할 수 있습니다: ' + p);
   }
   for (const p of selected.filter(p => p.startsWith('.tryce/'))) {
