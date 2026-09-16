@@ -58,7 +58,7 @@ test('bundled CLI serves a real checkout and refreshes changed files in the brow
     await expect(page.getByText('gitifact 요구사항 검사는 아직 실행하지 않습니다.')).toBeVisible();
     await page.goto(new URL('/about', url).href);
     await page.reload();
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText('gitifact 소개');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Gitifact 소개');
     await page.getByRole('link', { name: 'Git 상태', exact: true }).click();
     await expect(page.getByRole('cell', { name: 'actual-file.txt', exact: true })).toBeVisible();
     expect(await readFile(join(directory, '.git', 'HEAD'))).toEqual(beforeHead);

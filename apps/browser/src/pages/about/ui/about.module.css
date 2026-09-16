@@ -1,0 +1,6 @@
+/* About: the same centered reading column as the product pages. */
+.page { min-width:0; }
+.column { width:100%; max-width:64rem; margin-inline:auto; min-width:0; }
+.pageTitle { padding-inline:var(--spacing-5); padding-block:var(--spacing-6) var(--spacing-2); }
+.body { padding:var(--spacing-2) var(--spacing-5) var(--spacing-8); min-width:0; overflow-wrap:anywhere; }
+.body p, .body li { line-height:1.9; }

@@ -81,16 +81,46 @@
 .compare[data-dragging] .compareBefore { transition:none; }
 @media (prefers-reduced-motion: no-preference) { .compareBefore { transition:clip-path .12s ease-out; } }
 
-/* Guides: Finder-style columns inside the shared reading column; the trailing filler keeps the empty space from looking bare. */
-.columns { align-items:stretch; overflow-x:auto; min-height:22rem; border:1px solid var(--color-border); border-radius:var(--radius-element); }
+/* Header: the observed time sits left of the refresh button. */
+.headerActions { align-items:center; flex-shrink:0; white-space:nowrap; }
+
+/* Guides: Finder-style columns across the whole content area; the page fills the card so the columns and preview scroll on their own. */
+.pageFill { min-width:0; min-height:100%; }
+.fill { flex:1; min-height:0; min-width:0; }
+.fillContent { flex:1; min-height:0; min-width:0; animation:reveal .22s ease-out both; }
+.columns { flex:1; align-items:stretch; overflow-x:auto; min-height:22rem; }
 .browserColumn { flex:0 0 14rem; min-width:14rem; border-inline-end:1px solid var(--color-border); padding:var(--spacing-2); overflow-y:auto; }
 .browserColumn [aria-selected="true"] { background:var(--color-background-muted, var(--color-background-surface)); }
 .columnFiller { flex:1 1 12rem; min-width:10rem; align-items:center; justify-content:center; padding:var(--spacing-5); text-align:center; }
+.preview { flex:1 1 24rem; min-width:20rem; min-height:0; overflow-y:auto; overflow-wrap:anywhere; scrollbar-width:thin; }
+.previewHead { position:sticky; top:0; z-index:1; justify-content:space-between; align-items:flex-start; padding:var(--spacing-4) var(--spacing-5) var(--spacing-3); background:var(--color-background-surface); border-bottom:1px solid var(--color-border); }
+.previewTitle { min-width:0; flex:1; }
+.previewTitle h2 { font-size:1.25rem; line-height:1.4; }
+.previewBody { padding:var(--spacing-3) var(--spacing-5) var(--spacing-8); }
+.previewBody p, .previewBody li { line-height:1.8; }
 .crumb { font-size:.8125rem; color:var(--color-text-secondary); text-decoration:none; }
 .crumb:hover { text-decoration:underline; }
+
+/* Product dashboard: headline tiles, then charts, then the product text. Text stays in text tokens; only marks carry series color. */
+.dashboard { min-width:0; padding:var(--spacing-2) var(--spacing-1) var(--spacing-6); }
+.dashboardHead { padding-block:var(--spacing-4) var(--spacing-2); }
+.dashboardHead h1 { font-size:1.75rem; line-height:1.4; letter-spacing:-.025em; }
+.dashboard h3 { font-size:1rem; line-height:1.5; }
+.stackedBar { display:block; border-radius:var(--radius-element); overflow:hidden; }
+.stackedSegment { stroke:var(--color-background-surface); stroke-width:2px; paint-order:stroke; }
+.legend, .barRows, .recentList { list-style:none; margin:0; padding:0; }
+.legendItem { align-items:center; }
+.barRowHead { justify-content:space-between; align-items:baseline; min-width:0; }
+.barRowHead a { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.recentRow { align-items:center; padding-block:var(--spacing-2); border-bottom:1px solid var(--color-border); min-width:0; }
+.recentRow:last-child { border-bottom:0; }
+.recentBody { flex:1; min-width:0; align-items:center; }
+@media(width<64rem){ .dashboardHead h1{font-size:1.5rem} .preview{ min-width:16rem; } }
 .documentBody { padding-block:var(--spacing-2) var(--spacing-8); overflow-wrap:anywhere; }
 .documentBody p, .documentBody li { line-height:1.9; }
 .productBody { padding-block:var(--spacing-2) var(--spacing-8); overflow-wrap:anywhere; }
 .productBody p, .productBody li { line-height:1.9; }
 .productBody img { max-width:100%; height:auto; border-radius:var(--radius-element); }
 @media(width<64rem){ .browserColumn { flex-basis:11rem; min-width:11rem; } }
+/* Narrow screens: the observed time yields to the breadcrumb, and the guide columns stack above the preview instead of scrolling sideways. */
+@media(width<48rem){ .headerTime{ display:none; } .columns{ flex-direction:column; overflow-x:visible; } .browserColumn{ flex:0 0 auto; min-width:0; max-height:14rem; border-inline-end:0; border-bottom:1px solid var(--color-border); } .preview{ flex:1 1 auto; min-width:0; } }

@@ -1,9 +1,11 @@
 import { Button } from '@astryxdesign/core/Button';
 import { IconButton } from '@astryxdesign/core/IconButton';
+import { Banner } from '@astryxdesign/core/Banner';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { BrowserSessionV1, RepositoryStatusSuccessV1 } from '@gitifact/contracts';
+import { Link } from '@tanstack/react-router';
 import { ApiError } from '../../../shared/api/client';
-import { refreshStatus, statusKey, statusOptions } from '../../../entities/project';
+import { refreshStatus, statusKey, statusOptions, useWorkingChanges } from '../../../entities/project';
 import { VStack } from '@astryxdesign/core/VStack';
 import { HStack } from '@astryxdesign/core/HStack';
 import { Heading } from '@astryxdesign/core/Heading';
@@ -41,6 +43,7 @@ function submoduleNote(change: Change) {
 export function RepositoryPanel({ session, reconnect }: { session: BrowserSessionV1; reconnect: () => void }) {
   const client = useQueryClient();
   const query = useQuery(statusOptions(session));
+  const working = useWorkingChanges();
   const refresh = useMutation({
     mutationFn: () => refreshStatus(session),
     retry: false,
@@ -66,14 +69,18 @@ export function RepositoryPanel({ session, reconnect }: { session: BrowserSessio
   ] as const : [];
   return (
     <VStack gap={0} className={styles.page} aria-busy={busy}>
-      <PageHeader trail={[{ label: 'Git 상태' }]} actions={<IconButton label={busy ? '조회 중…' : '상태 새로고침'} icon={<HgiRefresh />} variant="ghost" size="sm" isLoading={busy} isDisabled={busy || needsReconnect} onClick={() => refresh.mutate()} />} />
+      <PageHeader trail={[{ label: 'Git 상태' }]} actions={<HStack gap={3} className={styles.headerActions}>
+        {data && <Text type="supporting" color="secondary" className={styles.headerTime}><time dateTime={data.observation.completedAt}>{new Date(data.observation.completedAt).toLocaleString()}</time> 조회</Text>}
+        <IconButton label={busy ? '조회 중…' : '상태 새로고침'} icon={<HgiRefresh />} variant="ghost" size="sm" isLoading={busy} isDisabled={busy || needsReconnect} onClick={() => refresh.mutate()} />
+      </HStack>} />
       <VStack gap={0} className={styles.column}>
         <VStack gap={1} className={styles.pageTitle}><Heading level={1}>Git 상태</Heading></VStack>
         <VStack gap={5} className={styles.content} aria-label="저장소 상태">
+          {working && <Banner status="warning" container="card" collapsible={false} title="미커밋 명세 변경이 있습니다" description={<Text type="supporting">요구사항·제품 개요·지침 화면은 작업 중인 내용이고, 활동은 커밋된 내용입니다. 커밋은 에이전트에게 요청하세요. <Link to="/features">요구사항 보기 →</Link></Text>} />}
           {error && (
             <VStack role="alert" gap={3}>
               <Text>{error.message}</Text>
-              {needsReconnect ? <HStack><Button label="다시 연결" onClick={reconnect} /></HStack> : data && <Text type="supporting" color="secondary">이전 조회 결과입니다. 마지막 확인 시각을 참고하세요.</Text>}
+              {needsReconnect ? <HStack><Button label="다시 연결" onClick={reconnect} /></HStack> : data && <Text type="supporting" color="secondary">이전 조회 결과입니다. 상단의 조회 시각을 참고하세요.</Text>}
             </VStack>
           )}
           {!data && query.isPending && <Text role="status" type="supporting" color="secondary">저장소 상태를 읽고 있습니다.</Text>}
@@ -83,7 +90,6 @@ export function RepositoryPanel({ session, reconnect }: { session: BrowserSessio
                 <MetadataListItem label="브랜치">{data.head.branch ?? 'detached HEAD'}</MetadataListItem>
                 <MetadataListItem label="HEAD">{data.head.commit ? <Text className={styles.code}>{data.head.commit.slice(0, 10)}</Text> : '아직 커밋이 없습니다'}</MetadataListItem>
                 <MetadataListItem label="저장소"><Text className={styles.path}>{data.repository.rootPath}</Text></MetadataListItem>
-                <MetadataListItem label="마지막 확인"><time dateTime={data.observation.completedAt}>{new Date(data.observation.completedAt).toLocaleString()}</time></MetadataListItem>
               </MetadataList>
               <HStack gap={6} wrap="wrap" aria-label="변경 집계" className={styles.summary}>
                 {summary.map(([label, count]) => <HStack key={label} gap={2} className={styles.summaryItem}><Text type="supporting" color="secondary">{label}</Text><Text weight="semibold">{count}</Text></HStack>)}

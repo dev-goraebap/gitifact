@@ -1,2 +1,3 @@
 {"id":"H-kga4mwwpf6","requirements":[],"documents":["G-6xx4lo2ojb","G-hx2vdtqiys","G-nnbppll2p5","G-r7rkd66hry","G-v3gs3pgnvt","G-v3x7s5ogd6","G-zg7nohwo2w"],"reason":"기존 docs/architecture의 현재 구현 규칙을 지침 문서로 옮겨 에이전트와 브라우저가 같은 기준을 읽게 한다. 날짜별 경위는 Git 이력과 docs에 남긴다."}
 {"id":"H-3yum6ratyx","requirements":[],"documents":["G-hx2vdtqiys","G-nnbppll2p5"],"reason":"스킬 어댑터·스킬 자산·.agents/skills 원본 항목을 제거하고 지침 원본 위치(apps/cli/assets/docs)와 이 저장소의 자체 적용 방식(블록은 pnpm cli init이 쓰고 CLAUDE.md는 @AGENTS.md import)을 기록했다."}
+{"id":"H-lhb5sh3hrb","requirements":[],"documents":["G-6xx4lo2ojb"],"reason":"브라우저 메뉴 순서·이름, 헤더 조회 시각, 지침 열 보기·미리보기, 미커밋 표시 출처(명세 캐시와 Git 상태의 .gitifact 경로), 차트 색·범례 규칙을 현재 구현에 맞췄다. 셸이 명세 API를 직접 부르는 방식은 gitifact 저장소가 없는 프로젝트에서 503을 남겨 쓰지 않는다."}

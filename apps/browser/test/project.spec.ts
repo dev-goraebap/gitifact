@@ -21,7 +21,7 @@ test('mobile dark theme preserves safe Markdown and navigation',async({page})=>{
  await page.route('**/api/v1/specs*',r=>r.fulfill({json:unsafe}));await page.goto('/features/S-abcdefghij?selected=R-abcdefghij');
  const detail=page.getByRole('article',{name:'기능 명세'});await expect(detail).toContainText('읽을 내용');await expect(detail.locator('script,a[href^="javascript:"]')).toHaveCount(0);
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
- await detail.getByRole('link',{name:'제품 기능'}).click();await expect(detail).toHaveCount(0);await expect(page.getByRole('table')).toBeVisible();
+ await detail.getByRole('link',{name:'← 요구사항'}).click();await expect(detail).toHaveCount(0);await expect(page.getByRole('table')).toBeVisible();
  await page.getByRole('button',{name:'탐색 열기',exact:true}).click();await page.getByRole('link',{name:'참여자',exact:true}).click();await expect(page).toHaveURL(/contributors/);
 });
 

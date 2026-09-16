@@ -26,9 +26,9 @@ test('built app loads Astryx and supports navigation, reload, and history', asyn
   await expect(button).toBeFocused();
   await page.keyboard.press('Enter');
   await expect(page).toHaveURL(/\/about$/);
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('gitifact 소개');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Gitifact 소개');
   await page.reload();
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('gitifact 소개');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Gitifact 소개');
   await page.goBack();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('활동');
   expect(errors).toEqual([]);

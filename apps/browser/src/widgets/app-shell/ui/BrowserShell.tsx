@@ -1,8 +1,11 @@
+import type { MouseEvent } from 'react';
 import { AppShell } from '@astryxdesign/core/AppShell';
 import { SideNav, SideNavItem, SideNavSection } from '@astryxdesign/core/SideNav';
+import { StatusDot } from '@astryxdesign/core/StatusDot';
 import { VStack } from '@astryxdesign/core/VStack';
 import { Text } from '@astryxdesign/core/Text';
 import { Link, Outlet, useNavigate, useRouterState } from '@tanstack/react-router';
+import { useWorkingChanges } from '../../../entities/project';
 import { HgiHistory } from '../../../shared/ui/icons/HgiHistory';
 import { HgiRequirement } from '../../../shared/ui/icons/HgiRequirement';
 import { HgiMembers } from '../../../shared/ui/icons/HgiMembers';
@@ -12,16 +15,19 @@ import { HgiBook } from '../../../shared/ui/icons/HgiBook';
 import { HgiInfo } from '../../../shared/ui/icons/HgiInfo';
 import styles from './app-shell.module.css';
 const destinations = [
-  ['/', '활동', HgiHistory],
   ['/product', '제품 개요', HgiProduct],
-  ['/features', '제품 기능', HgiRequirement],
+  ['/features', '요구사항', HgiRequirement],
   ['/guides', '지침', HgiBook],
+  ['/', '활동', HgiHistory],
   ['/contributors', '참여자', HgiMembers],
   ['/git', 'Git 상태', HgiGit],
 ] as const;
+const plainClick = (event: MouseEvent) => !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey && event.button === 0;
 export function BrowserShell() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
+  const working = useWorkingChanges();
+  const go = (to: string) => (event: MouseEvent) => { if (plainClick(event)) { event.preventDefault(); void navigate({ to }); } };
   return (
     <AppShell
       height="fill"
@@ -49,40 +55,14 @@ export function BrowserShell() {
                 icon={<MenuIcon/>}
                 href={to}
                 isSelected={to === '/' ? pathname === '/' : pathname === to || pathname.startsWith(to + '/')}
-                onClick={(event) => {
-                  if (
-                    !event.metaKey &&
-                    !event.ctrlKey &&
-                    !event.shiftKey &&
-                    !event.altKey &&
-                    event.button === 0
-                  ) {
-                    event.preventDefault();
-                    void navigate({ to });
-                  }
-                }}
+                // The uncommitted-spec indicator lives on the Git menu; the Git page carries the explanation.
+                endContent={to === '/git' && working ? <StatusDot variant="warning" label="미커밋 명세 변경 있음" tooltip="미커밋 명세 변경 있음 · Git 상태에서 확인"/> : undefined}
+                onClick={go(to)}
               />
             ))}
           </SideNavSection>
           <SideNavSection title="GITIFACT">
-            <SideNavItem
-              label="소개"
-              icon={<HgiInfo/>}
-              href="/about"
-              isSelected={pathname === '/about'}
-              onClick={(event) => {
-                if (
-                  !event.metaKey &&
-                  !event.ctrlKey &&
-                  !event.shiftKey &&
-                  !event.altKey &&
-                  event.button === 0
-                ) {
-                  event.preventDefault();
-                  void navigate({ to: '/about' });
-                }
-              }}
-            />
+            <SideNavItem label="소개" icon={<HgiInfo/>} href="/about" isSelected={pathname === '/about'} onClick={go('/about')}/>
           </SideNavSection>
         </SideNav>
       }

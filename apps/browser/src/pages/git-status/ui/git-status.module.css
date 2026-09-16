@@ -10,3 +10,5 @@
 .code { font-family:var(--font-family-mono, monospace); }
 .changes table { border-radius:0; }
 .path { min-width:0; overflow-wrap:anywhere; }
+.headerActions { align-items:center; flex-shrink:0; white-space:nowrap; }
+@media(width<48rem){ .headerTime{ display:none; } }

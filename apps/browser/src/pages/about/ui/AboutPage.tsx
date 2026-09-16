@@ -1,22 +1,70 @@
 import { VStack } from '@astryxdesign/core/VStack';
-import { PageHeader } from '../../../widgets/page-header';
 import { Heading } from '@astryxdesign/core/Heading';
-import { Text } from '@astryxdesign/core/Text';
+import { Markdown } from '@astryxdesign/core/Markdown';
+import { PageHeader } from '../../../widgets/page-header';
+import styles from './about.module.css';
+
+// Mirrors the README of the gitifact repository; repository-relative links point at the browser pages or GitHub instead.
+const body = `제품을 만드는 대화가 요구사항과 결정의 기록으로 이어지도록 돕는 도구입니다.
+
+Gitifact가 지향하는 것은 사용자가 자신의 제품을 만드는 일에 집중하는 환경입니다. 평소처럼 에이전트와 무엇을 만들지 고민하고, 구현하고, 고쳐나가세요. 그 과정에서 요구사항과 변경 이유가 Git에 쌓이고, 사람과 에이전트가 같은 기록을 보며 제품의 상태를 이해할 수 있도록 만들고 있습니다.
+
+## 에이전트에게 시작을 맡기세요
+
+아래 프롬프트를 프로젝트에서 사용하는 에이전트에게 전달하세요.
+
+\`\`\`text
+이 프로젝트에 gitifact가 없으면 npm install -g gitifact@latest로 설치하고 gitifact init을 실행하세요.
+init이 AGENTS.md 등에 쓴 GITIFACT 블록을 읽고 이번 세션부터 따르세요.
+\`\`\`
+
+Node.js 24.x와 Git이 필요합니다. \`init\`은 프로젝트의 AGENTS.md 같은 에이전트 지침 파일에 작업 규칙 블록을 씁니다. 그 뒤로는 평소처럼 제품을 설명하고 개발을 이어가면 됩니다. CLI를 업데이트했다면 \`init\`을 다시 실행해 블록을 갱신하세요. 명령 목록은 [CLI 안내](https://github.com/dev-goraebap/gitifact/blob/main/apps/cli/README.md)에 있습니다.
+
+## 제품에 집중할 수 있도록
+
+Gitifact는 스펙 주도 개발과 Anthropic의 [AI-Native SDLC Playbook](https://academy.claude.com/courses/ai-native-sdlc-playbook)에서 영감을 받았습니다. 요구사항을 정리하고 변경을 추적한다는 기본 원리를 따르되, 사용자가 이 개념들을 먼저 공부하거나 정해진 개발 절차에 익숙해져야 할 필요는 없도록 하려 합니다.
+
+CLI, 데스크탑 앱, VS Code 어디에서 에이전트와 대화하든 자신에게 익숙한 방식으로 제품을 만들 수 있어야 합니다. 개발자뿐 아니라 로컬 에이전트와 대화하며 제품을 만드는 비개발자와 바이브 코더도 같은 대상입니다.
+
+에이전트는 대화의 맥락에서 요구사항과 결정을 식별하고, Gitifact는 그 기록을 프로젝트의 Git 이력에 연결합니다. 사용자가 매번 기록할 항목과 명령을 지정하지 않아도 필요한 맥락이 남는 것이 목표입니다.
+
+## 커밋된 명세를 기준으로
+
+작업 중 에이전트와 대화하며 명세를 다듬고, 커밋할 때 최종 변경과 맞는지 확인하는 방식입니다. 초안의 모든 수정 과정을 따로 보존하지 않고 Git에 남은 버전에서 과거 내용과 변경 전후를 읽습니다. 자동 기록은 자동 커밋·푸시 권한이 아니며 프로젝트의 정책을 따릅니다.
+
+## 처음부터 완벽하게 정리하지 않아도
+
+기존 프로젝트에는 도입한 시점부터 기록을 쌓아가면 됩니다. 유지보수하거나 기능을 추가하면서 해당 영역의 요구사항을 정리하면 되고, 과거 전체를 먼저 문서화해야 시작할 수 있는 흐름은 요구하지 않습니다. 원한다면 에이전트에게 기존 기능을 살펴보고 요구사항과 설계 초안을 함께 정리하도록 맡길 수 있습니다.
+
+새 프로젝트라면 처음 아이디어를 나누는 대화부터 시작하면 됩니다. 만들고 싶은 제품을 구체화하는 동안 에이전트가 요구사항과 구현 설계를 함께 정리하고 불명확한 제품 동작을 질문합니다.
+
+## 적용 범위와 한계
+
+Gitifact는 개인이나 팀이 **하나의 Git 저장소 안에서 제품을 만드는 환경**을 전제로 합니다. 하나의 제품을 여러 저장소로 나누어 운영하는 멀티 레포의 통합 요구사항 관리는 지원하지 않습니다. 이슈 트래커 연계는 검토한 적이 있지만 개발 여부와 일정은 미정입니다.
+
+## 프로젝트 상태
+
+공개 버전은 \`gitifact@0.3.0\`입니다. Markdown 요구사항·설계와 커밋 시점의 변경 이유를 Git에 연결하고, 읽기 전용 브라우저에서 활동·요구사항·참여자를 볼 수 있습니다. 에이전트에게 "gitifact 브라우저를 열어주세요"라고 요청하세요. 이전 Tryce 프로젝트는 \`gitifact migrate\`로 전환합니다.
+
+0.3.0은 0.2.0의 스킬 설치(\`skills install\`)를 \`init\`이 쓰는 지침 블록과 \`gitifact docs\`로 대체했습니다. 0.2.0으로 설치한 스킬 파일은 직접 삭제하고 \`init\`을 다시 실행하세요.
+
+제품의 목적·원칙·범위는 [제품 개요](/product)에서, 기능별 요구사항과 설계는 [요구사항](/features)에서 확인할 수 있습니다.
+
+## Gitifact 개발에 참여하려면
+
+실행·빌드·검증과 코드 구조는 [GitHub 저장소](https://github.com/dev-goraebap/gitifact)의 개발 환경 문서와 아키텍처 지침을 참고하세요.
+
+## 라이선스
+
+[MIT](https://github.com/dev-goraebap/gitifact/blob/main/LICENSE). 배포물에 포함된 의존성의 라이선스 고지는 \`dist/THIRD_PARTY_NOTICES.txt\`에 제공합니다.`;
+
 export function AboutPage() {
   return (
-    <VStack gap={0}>
-      <PageHeader trail={[{ label: 'gitifact 소개' }]} />
-      <VStack padding={6} gap={5} maxWidth="48rem">
-      <Heading level={1}>gitifact 소개</Heading>
-      <Text>gitifact는 에이전트와 함께 만드는 프로젝트의 요구사항과 결정 이력을 Git에 남기는 도구입니다.</Text>
-      <Text>
-        사용자는 제품에 집중하고, 에이전트는 대화에서 요구사항과 판단을 정리합니다. 이 화면에서 같은 기록을
-        읽고 변경의 맥락을 살펴보세요.
-      </Text>
-      <Text color="secondary">
-        현재는 요구사항·확인 이력·판단 기록과 Git 상태를 읽습니다. 전체 커밋 연결, 검사 결과, 스킬 탐색은 이후
-        범위입니다.
-      </Text>
+    <VStack gap={0} className={styles.page}>
+      <PageHeader trail={[{ label: 'Gitifact 소개' }]} />
+      <VStack gap={0} className={styles.column}>
+        <VStack gap={1} className={styles.pageTitle}><Heading level={1}>Gitifact 소개</Heading></VStack>
+        <VStack as="article" aria-label="Gitifact 소개" gap={0} className={styles.body}><Markdown headingLevelStart={2}>{body}</Markdown></VStack>
       </VStack>
     </VStack>
   );

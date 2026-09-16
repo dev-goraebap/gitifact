@@ -21,7 +21,7 @@ import { PageState } from '../../../shared/ui/page-state';
 export function FeatureView({ features, featureId, search, change }: { features: SpecFeature[]; featureId?: string | undefined; search: ProductSearch; change: (s: ProductSearch) => void }) {
   if (!featureId) return <FeatureList features={features} search={search}/>;
   const selected = features.find(f => f.id === featureId);
-  if (!selected) return <PageState kind="not-found" title="기능을 찾을 수 없습니다" description={`${featureId}는 현재 명세에 없습니다. 이름이 바뀌었거나 제거된 기능일 수 있습니다.`} actions={<Link to="/features">제품 기능 목록으로</Link>}/>;
+  if (!selected) return <PageState kind="not-found" title="기능을 찾을 수 없습니다" description={`${featureId}는 현재 명세에 없습니다. 이름이 바뀌었거나 제거된 기능일 수 있습니다.`} actions={<Link to="/features">요구사항 목록으로</Link>}/>;
   return <FeatureDetail feature={selected} features={features} search={search} change={change}/>;
 }
 
@@ -63,7 +63,7 @@ function FeatureList({ features, search }: { features: SpecFeature[]; search: Pr
 function FeatureDetail({ feature: selected, features, search, change }: { feature: SpecFeature; features: SpecFeature[]; search: ProductSearch; change: (s: ProductSearch) => void }) {
   const tab = search.tab === 'design' ? 'design' : 'requirements';
   return <VStack as="article" aria-label="기능 명세" gap={0} className={styles.featureDetail}>
-    <Link to="/features" search={{ q: search.q }} className={styles.featureBack}>← 제품 기능</Link>
+    <Link to="/features" search={{ q: search.q }} className={styles.featureBack}>← 요구사항</Link>
     <VStack gap={4} className={styles.documentHeading}>
       <Heading level={1}>{selected.title}</Heading>
       {selected.description && <Markdown>{selected.description}</Markdown>}
