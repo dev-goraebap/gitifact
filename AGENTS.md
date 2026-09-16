@@ -1,8 +1,41 @@
 # gitifact 개발 지침
 
+<!-- GITIFACT:START -->
+gitifact v0.3.0 · 저장 규약 schemaVersion 1
+CLI: 모든 명령은 `gitifact <cmd>`로 실행한다. 프로젝트 지침이 다른 실행 방법을 지정하면 그것을 따른다.
+
+시작할 때:
+- `gitifact spec working`으로 제품 설명·지침·기능 명세를 읽고 git status와 기존 staging을 확인한다.
+- 이 블록은 요약이다. 상세 형식은 `gitifact docs <topic>`으로 읽고 기억으로 채우지 않는다.
+
+무엇을 요구사항으로 남기는가 (제품 동작과 유지할 제약만):
+| 요청 | 처리 |
+| --- | --- |
+| 게시물을 삭제할 수 있게 해주세요 | 요구사항으로 정리한다 |
+| 이 내부 함수 이름을 바꿔주세요 | 일반 구현 변경이다 |
+| 지금 푸시해주세요 | 작업 지시다. 등록하지 않는다 |
+| 외부 서비스 없이 동작해야 합니다 | 제품 제약으로 명세에 반영한다 |
+
+규칙:
+- 명세를 저장하기 전에 `gitifact docs spec`을 읽는다. ID는 CLI가 발급한 값만 쓴다.
+- 새 기능은 requirements.md와 design.md를 함께 정리한다(`gitifact docs design`). 요구사항만 요청받으면 따른다.
+- 커밋 요청을 받으면 `gitifact docs commit`을 읽고 명세·이유·코드·테스트를 함께 커밋한다.
+- 자동 기록은 커밋 권한이 아니다. 사용자 요청이나 명시적 프로젝트 정책이 있을 때만 커밋하고 푸시는 별도 요청을 따른다.
+- 불명확한 제품 동작만 질문하고 독립적인 작업은 진행한다. 기존 기능 전체 도출은 요청받았을 때 한다.
+- SELF-CHECK: save·commit 입력을 만들기 전에 해당 docs를 다시 읽고 형식을 대조한다. 확실하지 않으면 추측하지 말고 `gitifact docs <topic>`을 실행한다.
+
+MORE CLI:
+  docs <topic>     workflow, spec, design, product, commit
+  spec working     현재 명세·제품·지침 전체와 stamp
+  spec save        --file <json>: 요구사항·설계·문서 저장
+  spec commit      --file <json>: 변경 이유 기록과 커밋을 한 번에
+  browser          읽기 전용 브라우저 열기
+  init             다시 실행하면 이 블록을 갱신한다
+<!-- GITIFACT:END -->
+
 이 저장소는 gitifact를 개발하면서 프로젝트 자체에도 적용한다. 제품의 기록 원칙을 따르되, 아직 구현되지 않은 기능은 아래 대체 절차로 수행한다. 이 예외는 gitifact 개발 저장소에만 적용하며 제품의 기본 동작으로 확장하지 않는다.
 
-현재 프로젝트는 `.gitifact/config.json`의 `schemaVersion: 1` 저장 규약이다. 2026-09-15 제품 이름을 Tryce에서 Gitifact로 바꾸며 저장 경로 `.tryce`와 `tryce-*` 마커를 `.gitifact`와 `gitifact-*`로 전환했다. 과거 커밋의 `.tryce` 기록과 `Tryce-Req` 트레일러는 CLI가 계속 읽으며 새로 쓰지 않는다. 모드·승인 묶음·note를 새로 작성하지 않는다. 개발 작업에는 이 파일 끝의 GITIFACT 블록과 `pnpm cli docs <topic>`을 읽고 적용한다. 블록은 `pnpm cli init`이 쓰고 갱신하며 마커 사이를 직접 편집하지 않는다. 블록 안의 `gitifact`는 이 저장소에서 `pnpm cli`를 뜻한다. 지침 원본은 `apps/cli/assets/docs/`에만 두고 두 번째 편집본을 만들지 않는다.
+현재 프로젝트는 `.gitifact/config.json`의 `schemaVersion: 1` 저장 규약이다. 2026-09-15 제품 이름을 Tryce에서 Gitifact로 바꾸며 저장 경로 `.tryce`와 `tryce-*` 마커를 `.gitifact`와 `gitifact-*`로 전환했다. 과거 커밋의 `.tryce` 기록과 `Tryce-Req` 트레일러는 CLI가 계속 읽으며 새로 쓰지 않는다. 모드·승인 묶음·note를 새로 작성하지 않는다. 개발 작업에는 이 파일 첫머리의 GITIFACT 블록과 `pnpm cli docs <topic>`을 읽고 적용한다. 블록은 `pnpm cli init`이 쓰고 갱신하며 마커 사이를 직접 편집하지 않는다. 블록 안의 `gitifact`는 이 저장소에서 `pnpm cli`를 뜻한다. 지침 원본은 `apps/cli/assets/docs/`에만 두고 두 번째 편집본을 만들지 않는다.
 
 프로젝트 사용 빌드와 해시는 [개발 환경](docs/development.md)의 최신 지정을 따른다. 시작할 때 `pnpm cli spec working`과 Git 상태를 읽고 필요한 명세·지침 문서를 원문으로 확인한다. browser는 요구사항 이력·제품 기능·기여자를 읽기 전용으로 제공한다. 구형 req·note·mode·brief·commit 명령은 개발 빌드에서 제거했다.
 
@@ -78,36 +111,3 @@ gitifact 자신의 check 결과만으로 구현이 맞다고 판단하지 않는
 ## 문체
 
 문서는 짧고 담백하게 작성한다. 목적과 동작을 먼저 설명하고, 필요한 근거와 대가를 덧붙인다. 과장된 확신, 반복적인 강조, 불필요한 구호를 피한다. 확정된 내용과 제안·미결 사항을 구분하고, 구현되지 않은 기능은 계획으로 표시한다.
-
-<!-- GITIFACT:START -->
-gitifact v0.3.0 · 저장 규약 schemaVersion 1
-CLI: 모든 명령은 `gitifact <cmd>`로 실행한다. 프로젝트 지침이 다른 실행 방법을 지정하면 그것을 따른다.
-
-시작할 때:
-- `gitifact spec working`으로 제품 설명·지침·기능 명세를 읽고 git status와 기존 staging을 확인한다.
-- 이 블록은 요약이다. 상세 형식은 `gitifact docs <topic>`으로 읽고 기억으로 채우지 않는다.
-
-무엇을 요구사항으로 남기는가 (제품 동작과 유지할 제약만):
-| 요청 | 처리 |
-| --- | --- |
-| 게시물을 삭제할 수 있게 해주세요 | 요구사항으로 정리한다 |
-| 이 내부 함수 이름을 바꿔주세요 | 일반 구현 변경이다 |
-| 지금 푸시해주세요 | 작업 지시다. 등록하지 않는다 |
-| 외부 서비스 없이 동작해야 합니다 | 제품 제약으로 명세에 반영한다 |
-
-규칙:
-- 명세를 저장하기 전에 `gitifact docs spec`을 읽는다. ID는 CLI가 발급한 값만 쓴다.
-- 새 기능은 requirements.md와 design.md를 함께 정리한다(`gitifact docs design`). 요구사항만 요청받으면 따른다.
-- 커밋 요청을 받으면 `gitifact docs commit`을 읽고 명세·이유·코드·테스트를 함께 커밋한다.
-- 자동 기록은 커밋 권한이 아니다. 사용자 요청이나 명시적 프로젝트 정책이 있을 때만 커밋하고 푸시는 별도 요청을 따른다.
-- 불명확한 제품 동작만 질문하고 독립적인 작업은 진행한다. 기존 기능 전체 도출은 요청받았을 때 한다.
-- SELF-CHECK: save·commit 입력을 만들기 전에 해당 docs를 다시 읽고 형식을 대조한다. 확실하지 않으면 추측하지 말고 `gitifact docs <topic>`을 실행한다.
-
-MORE CLI:
-  docs <topic>     workflow, spec, design, product, commit
-  spec working     현재 명세·제품·지침 전체와 stamp
-  spec save        --file <json>: 요구사항·설계·문서 저장
-  spec commit      --file <json>: 변경 이유 기록과 커밋을 한 번에
-  browser          읽기 전용 브라우저 열기
-  init             다시 실행하면 이 블록을 갱신한다
-<!-- GITIFACT:END -->
