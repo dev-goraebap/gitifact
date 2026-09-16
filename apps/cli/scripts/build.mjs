@@ -17,6 +17,12 @@ const skillSource = new URL('../../../.agents/skills/gitifact-workflow/SKILL.md'
 const skillDestination = new URL('../dist/skills/gitifact-workflow/', import.meta.url);
 await mkdir(skillDestination, { recursive: true });
 await writeFile(new URL('SKILL.md', skillDestination), await readFile(skillSource));
+const docsSource = fileURLToPath(new URL('../assets/docs/', import.meta.url));
+const docsDestination = fileURLToPath(new URL('../dist/docs/', import.meta.url));
+await readFile(join(docsSource, 'workflow.md'));
+if (relative(packageRoot, docsDestination) !== join('dist', 'docs')) throw new Error('Unexpected docs asset destination');
+await rm(docsDestination, { recursive: true, force: true });
+await cp(docsSource, docsDestination, { recursive: true });
 await writeNotices();
 const options = {
   absWorkingDir: packageRoot,

@@ -3,6 +3,7 @@ import { runStatus } from './commands/status.js';
 import { runBrowser, parsePort } from './commands/browser.js';
 import { runInit } from './commands/init.js';
 import { runSkills } from './commands/skills.js';
+import { runDocs } from './commands/docs.js';
 import { runSpecPreview } from './commands/spec-preview.js';
 import { runMigrate } from './commands/migrate.js';
 
@@ -35,6 +36,12 @@ program.command('init')
   .option('--dry-run', '파일을 만들지 않고 초기화 계획 확인')
   .addOption(new Option('--format <format>', '출력 형식').choices(['json', 'text']).default('json'))
   .action(runInit);
+
+program.command('docs')
+  .description('에이전트용 작업 지침 출력 (주제 없이 실행하면 목록)')
+  .argument('[topic]', 'workflow, spec, design, product, commit 중 하나')
+  .allowExcessArguments(false)
+  .action(async (topic?: string) => { await runDocs(topic); });
 
 program.command('migrate')
   .description('.tryce 저장소를 .gitifact로 전환 (경로와 마커만 바꾸고 ID·이유·이력은 보존)')

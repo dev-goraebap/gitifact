@@ -61,6 +61,9 @@ try {
     message: 'Package fixture commit', authorization: { basis: 'user-request', evidence: 'Package verification fixture' } });
   assert.equal(committed.outcome, 'committed');
   assert.equal((await spec(['read'])).specs[0].requirements[0].id, saved.results[1].id);
+  assert.match(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', 'docs'], temporaryRoot), /^workflow /m);
+  assert.equal(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', 'docs', 'spec'], temporaryRoot),
+    await readFile(join(workspace, 'apps/cli/assets/docs/spec.md'), 'utf8'), 'Bundled docs must match the asset source.');
   const skillSource = join(temporaryRoot, '.agents/skills/gitifact-workflow/SKILL.md');
   const skillCopy = join(temporaryRoot, '.claude/skills/gitifact-workflow/SKILL.md');
   const installSkills = JSON.parse(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', 'skills', 'install', '--agent', 'claude'], temporaryRoot));
