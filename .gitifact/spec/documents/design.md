@@ -20,7 +20,7 @@
 
 spec working이 명세와 함께 두 폴더의 문서를 반환한다. spec save의 operations에 제품용 `set-product`(title·body)·`delete-product`와 지침용 `create-doc`(path·title·body), `update-doc`(id·title·body), `move-doc`(id·path), `delete-doc`(id)를 추가한다. set-product는 PRODUCT.md를 만들거나 갱신하며 기존 P-ID를 유지한다. path는 지침 폴더 안 상대 경로이며 `.md`로 끝난다. core가 문서를 다시 렌더링해 파싱하는 왕복 검사로 본문이 제목·ID를 바꾸지 못하게 한다. 파일 어댑터의 잠금·복구·stamp 대조는 명세와 같다.
 
-스킬은 요구사항·설계를 정리하기 전에 product 문서 전체와 작업 영역의 guides 문서를 읽도록 안내한다. 포함 규칙 메타데이터는 두지 않는다. 문서가 없는 프로젝트에서는 없다고 보고 진행한다.
+지침 블록과 `gitifact docs workflow`는 요구사항·설계를 정리하기 전에 product 문서 전체와 작업 영역의 guides 문서를 읽도록 안내한다. 포함 규칙 메타데이터는 두지 않는다. 문서가 없는 프로젝트에서는 없다고 보고 진행한다.
 
 ## 이력과 비교
 <!-- gitifact-ref: R-rtualqkge6 -->

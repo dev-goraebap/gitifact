@@ -13,8 +13,6 @@ apps/
 packages/
   core/           명세·문서·이력 규칙과 유스케이스
   contracts/      버전이 있는 외부 DTO·검증 계약
-.agents/
-  skills/         이 프로젝트가 관리하는 스킬 원본
 .gitifact/
   product/        제품 개요(PRODUCT.md)와 이미지
   guides/         구현 지침(이 문서들)
@@ -59,6 +57,8 @@ apps/cli     ──→ packages/core
 
 개발 중에는 Vite 개발 서버가 `/api`를 로컬 서버로 프록시한다. 배포 시에는 미리 빌드한 브라우저 정적 파일을 CLI 배포물에 포함하고 같은 origin에서 제공한다. 설치된 CLI가 UI를 보여주기 위해 Vite 개발 서버나 workspace 원본을 필요로 해서는 안 된다. 기록 규모가 커지면 필요한 범위의 조회와 페이지네이션을 도입하되 서로 다른 관측 시점을 혼합하지 않는다.
 
-## 스킬과 자체 적용
+## 에이전트 지침과 자체 적용
 
-스킬 원본은 `.agents/skills/gitifact-workflow/SKILL.md` 하나다. 두 번째 편집 원본을 만들지 않으며 에이전트용 복사본은 `pnpm skills:sync`로 로컬 생성한다. CLI 배포에는 빌드 과정에서 원본을 배포 자산으로 수집한다. 이 저장소 자체의 기록에는 지정된 CLI 빌드를 쓰고 대체 절차는 루트 AGENTS.md를 따른다.
+에이전트에게 전달하는 지침 텍스트의 편집 원본은 `apps/cli/assets/docs/`의 Markdown 하나뿐이다. 두 번째 편집 원본을 만들지 않는다. 빌드가 이를 `dist/docs`로 수집하고, `gitifact init`이 AGENTS.md 등 지침 파일에 마커 블록을 쓰며 `gitifact docs <topic>`이 원문을 출력한다. 스킬 파일은 배포하지 않는다.
+
+이 저장소 자체에도 같은 방식을 적용한다. 루트 AGENTS.md의 GITIFACT 블록은 `pnpm cli init`이 쓰고 갱신하며 마커 사이를 직접 편집하지 않는다. CLAUDE.md는 `@AGENTS.md` 한 줄로 같은 파일을 가져와 블록을 중복하지 않는다. 이 저장소 자체의 기록에는 지정된 CLI 빌드를 쓰고 대체 절차는 루트 AGENTS.md를 따른다.

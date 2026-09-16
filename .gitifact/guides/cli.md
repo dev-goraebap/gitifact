@@ -11,8 +11,7 @@ apps/cli/src/
   main.ts            프로세스 시작과 명령 연결 (Commander)
   commands/          인자 해석, 유스케이스 호출
   adapters/git/      Git 실행과 스냅샷 읽기
-  adapters/filesystem/  파일·잠금·보존·복구
-  adapters/skills/   스킬 탐색과 관리 대상 배포
+  adapters/filesystem/  파일·잠금·보존·복구 (설정·지침 파일 어댑터)
   output/            core 결과를 버전 있는 DTO·텍스트로 변환
   server/            HTTP·정적 파일 제공과 실행 수명
 packages/core/src/
@@ -56,7 +55,7 @@ ID는 CLI가 발급하는 소문자 base32 10자다. 명세 S-, 요구사항 R-,
 
 ## 빌드·배포·테스트
 
-core·contracts를 먼저 빌드하고 browser, cli 순으로 빌드한다. CLI 패키징은 필요한 내부 코드를 번들하고 브라우저 정적 파일과 스킬 자산을 수집한다. 배포 검증은 packed artifact를 새 임시 폴더에 설치해 수행한다(`pnpm test:package`).
+core·contracts를 먼저 빌드하고 browser, cli 순으로 빌드한다. CLI 패키징은 필요한 내부 코드를 번들하고 브라우저 정적 파일과 `apps/cli/assets/docs`의 지침 Markdown을 `dist/docs`로 수집한다. 배포 검증은 packed artifact를 새 임시 폴더에 설치해 수행한다(`pnpm test:package`).
 
 - core는 고정 입력으로 형식·상태 전이·진단을 시험한다.
 - Git·파일 어댑터는 임시 저장소에서 index·작업 트리·이력·worktree를 구분해 시험한다.
