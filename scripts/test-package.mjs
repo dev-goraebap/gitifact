@@ -64,20 +64,19 @@ try {
   assert.match(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', 'docs'], temporaryRoot), /^workflow /m);
   assert.equal(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', 'docs', 'spec'], temporaryRoot),
     await readFile(join(workspace, 'apps/cli/assets/docs/spec.md'), 'utf8'), 'Bundled docs must match the asset source.');
-  const skillSource = join(temporaryRoot, '.agents/skills/gitifact-workflow/SKILL.md');
-  const skillCopy = join(temporaryRoot, '.claude/skills/gitifact-workflow/SKILL.md');
-  const installSkills = JSON.parse(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', 'skills', 'install', '--agent', 'claude'], temporaryRoot));
-  assert.equal(installSkills.outcome, 'installed');
-  const sourceBytes = await readFile(skillSource, 'utf8');
-  assert.match(sourceBytes, /name: gitifact-workflow/);
-  assert.equal(sourceBytes, await readFile(join(workspace, '.agents/skills/gitifact-workflow/SKILL.md'), 'utf8'), 'Installed skill must match the current source.');
-  assert.equal(await readFile(skillCopy, 'utf8'), sourceBytes);
-  await writeFile(skillSource, sourceBytes + '\nProject customization\n');
-  pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', 'skills', 'sync'], temporaryRoot);
-  assert.equal(await readFile(skillCopy, 'utf8'), sourceBytes + '\nProject customization\n');
-  pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', 'skills', 'remove'], temporaryRoot);
-  await assert.rejects(readFile(skillCopy), { code: 'ENOENT' });
-  assert.equal(await readFile(skillSource, 'utf8'), sourceBytes + '\nProject customization\n');
+  const agentsPath = join(temporaryRoot, 'AGENTS.md');
+  const agents = await readFile(agentsPath, 'utf8');
+  assert.deepEqual(initialized.agentDocs, { mode: 'install', paths: ['AGENTS.md'] });
+  assert.match(agents, /^# AGENTS\.md\n\nProject-specific guidance for AI coding agents\.\n\n<!-- GITIFACT:START -->\n/);
+  assert.ok(agents.includes('gitifact v' + version + ' · 저장 규약 schemaVersion 1'), 'Block must carry the installed version.');
+  assert.ok(agents.includes('gitifact docs spec'), 'Block must point at the bundled docs.');
+  assert.match(agents, /<!-- GITIFACT:END -->\n$/);
+  await writeFile(agentsPath, agents + '\n## Project rules\n\nKeep me.\n');
+  assert.equal(JSON.parse(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', 'init'], temporaryRoot)).outcome, 'already-initialized');
+  assert.equal(await readFile(agentsPath, 'utf8'), agents + '\n## Project rules\n\nKeep me.\n');
+  const removed = JSON.parse(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', 'init', '--remove-agents'], temporaryRoot));
+  assert.deepEqual(removed.agentDocs, { mode: 'remove', paths: ['AGENTS.md'] });
+  assert.equal(await readFile(agentsPath, 'utf8'), '# AGENTS.md\n\nProject-specific guidance for AI coding agents.\n\n## Project rules\n\nKeep me.\n');
   const child = spawn(process.execPath, [join(installedRoot, 'dist', 'main.js'), 'browser'], {
     cwd: temporaryRoot, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true,
   });
@@ -112,7 +111,7 @@ try {
     assert.equal(response.status, 200);
     assert.ok((await response.json()).changes.some(change => change.path === 'browser-created.txt'));
   } finally { child.kill(); await exited; }
-  console.log('PASS: packed CLI installs offline; init, spec save/commit/read, skills, status and browser run outside the workspace.');
+  console.log('PASS: packed CLI installs offline; init with the AGENTS.md block, docs, spec save/commit/read, status and browser run outside the workspace.');
 } finally {
   // Only removes the exact directory returned by mkdtemp for this check.
   await rm(temporaryRoot, { recursive: true, force: true });

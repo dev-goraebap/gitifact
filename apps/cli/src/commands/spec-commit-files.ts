@@ -39,7 +39,7 @@ export function paths(value: unknown, limit = 128): string[] {
   const list = [...new Set(value as string[])].sort(); list.forEach(validPath); return list;
 }
 export function policyPaths(files: string[]) {
-  const all = new Set(['AGENTS.md', 'CLAUDE.md', '.agents/skills/gitifact-workflow/SKILL.md', '.gitignore', '.gitattributes', '.gitifact/config.json', '.tryce/config.json']);
+  const all = new Set(['AGENTS.md', 'CLAUDE.md', '.gitignore', '.gitattributes', '.gitifact/config.json', '.tryce/config.json']);
   for (const file of files) { const parts = file.split('/'); for (let i = 1; i < parts.length; i++) for (const name of ['AGENTS.md', 'CLAUDE.md', '.gitignore', '.gitattributes']) all.add(parts.slice(0, i).join('/') + '/' + name); }
   return [...all].sort();
 }

@@ -66,17 +66,3 @@ export async function managedWrite(root: string, path: string, previous: string 
     if (now?.ino === tempOwner.ino && now.dev === tempOwner.dev) await unlink(temp);
   }
 }
-export async function managedLock<T>(root: string, path: string, action: () => Promise<T>) {
-  const full = await managedPath(root, path, true);
-  const handle = await open(full, 'wx').catch(error => {
-    if (error.code === 'EEXIST') throw new InitError('SKILLS_BUSY', '스킬 작업 잠금이 있습니다. 실행 상태를 확인하세요.');
-    throw error;
-  });
-  const owner = await handle.stat(); await handle.close();
-  try { return await action(); }
-  finally {
-    await managedPath(root, path);
-    const now = await fileInfo(full);
-    if (now?.ino === owner.ino && now.dev === owner.dev) await unlink(full);
-  }
-}

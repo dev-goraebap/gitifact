@@ -67,7 +67,7 @@ export async function migrateStore(cwd: string, dryRun = false) {
     rewritten: rewrites.map(r => r.path), legacyRecords,
     next: ['변경을 확인한 뒤 gitifact spec commit으로 .tryce 삭제와 .gitifact 추가를 함께 커밋하세요.',
       ...(legacyRecords.length ? ['구형 JSON 명세(tryce.json)는 읽지 않습니다. 내용을 Markdown 명세로 옮긴 뒤 삭제를 spec commit에 선택하세요.'] : []),
-      '.agents/skills/tryce-workflow와 .claude 복사본이 있으면 정리하고 gitifact skills install로 다시 설치하세요.',
+      '.agents/skills/tryce-workflow와 .claude 복사본이 있으면 정리하고 gitifact init을 다시 실행해 AGENTS.md 등의 GITIFACT 블록을 갱신하세요.',
       '.gitignore·AGENTS.md·CLAUDE.md의 .tryce·tryce-workflow 언급을 새 이름으로 맞추세요.'] });
   if (dryRun) return result('planned');
   await rename(from, to);

@@ -34,11 +34,6 @@ export function initRepository(cwd: string, inherited: NodeJS.ProcessEnv = proce
       return { state, trackedConfig: staged.length > 0 || committed.length > 0,
         stamp: JSON.stringify({ repository: state.repository, head: state.head, index: createHash('sha256').update(index).digest('hex') }) };
     },
-    async trackedPaths(root: string, prefix: string, commit: string | null) {
-      const indexed = await git(['ls-files', '-z', '--', prefix], root);
-      const committed = commit ? await git(['ls-tree', '-r', '--name-only', '-z', commit, '--', prefix], root) : Buffer.alloc(0);
-      return [...new Set(Buffer.concat([indexed, committed]).toString('utf8').split('\0').filter(Boolean))];
-    },
     async checkIgnore(root: string, path = '.gitifact/config.json') {
       const output = (await git(['check-ignore', '--no-index', '-v', '-z', '--stdin'], root, [0, 1], Buffer.from(path + '\0'))).toString('utf8');
       const fields = output.split('\0');

@@ -2,7 +2,6 @@ import { Command, Option } from 'commander';
 import { runStatus } from './commands/status.js';
 import { runBrowser, parsePort } from './commands/browser.js';
 import { runInit } from './commands/init.js';
-import { runSkills } from './commands/skills.js';
 import { runDocs } from './commands/docs.js';
 import { agentPresetNames } from './commands/agent-block.js';
 import { runSpecPreview } from './commands/spec-preview.js';
@@ -52,14 +51,6 @@ program.command('migrate')
   .allowExcessArguments(false)
   .option('--dry-run', '파일을 바꾸지 않고 전환 계획 확인')
   .action(runMigrate);
-
-const outputOption = () => new Option('--format <format>', '출력 형식').choices(['json', 'text']).default('json');
-const skills = program.command('skills').description('프로젝트 스킬 원본 설치와 로컬 복사본 관리');
-for (const action of ['install', 'sync', 'remove'] as const) {
-  const command = skills.command(action).allowExcessArguments(false).option('--dry-run', '파일을 쓰지 않고 계획 확인').addOption(outputOption());
-  if (action !== 'remove') command.addOption(new Option('--agent <agent>', '사용할 에이전트').choices(['codex', 'claude']));
-  command.action(options => runSkills(action, options));
-}
 
 const spec = program.command('spec').description('Markdown 명세 작성·조회·Git 기록');
 const replaced = 'Deprecated: 0.6.0에서 제거 예정. spec commit을 사용하세요.';
