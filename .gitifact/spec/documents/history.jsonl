@@ -1,1 +1,2 @@
 {"id":"H-pwxt254ji6","requirements":["R-hjteu77gki","R-oh4oevufr3","R-rtualqkge6","R-y5tidh72gk"],"designs":["S-7ymbd7bqzf"],"reason":"기능 명세와 별도로 제품 목적과 구현 지침을 관리하고, 에이전트의 문서 참조와 브라우저 열람·변경 이력을 같은 Git 기록으로 연결한다."}
+{"id":"H-yp6wb7ho47","requirements":["R-hjteu77gki","R-oh4oevufr3","R-rtualqkge6","R-y5tidh72gk"],"reason":"사용자 요청에 따라 요구사항 본문에 역할·목표·이유를 담은 사용자 스토리를 도입한다. 배포 스킬의 규칙과 예시로 다른 사용자 프로젝트에도 전달하고, 자체 명세는 기존 ID·제약·조건 및 기대 동작 형식을 보존해 정리한다."}
