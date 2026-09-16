@@ -4,12 +4,13 @@
 
 Git-backed requirements and change history for coding agents. New projects use `schemaVersion: 1`, Markdown specifications and per-feature change reasons. Requires Node.js 24.x and Git.
 
-Install with `npm install -g gitifact`. Load the installed gitifact-workflow skill in the current agent session.
+Install with `npm install -g gitifact`. Run `gitifact init`, then read the GITIFACT block it writes into the project's agent instruction file and follow it in the current session.
 
 ```sh
 gitifact init --dry-run
 gitifact init
-gitifact skills install --agent codex
+gitifact docs
+gitifact docs spec
 gitifact spec working
 gitifact spec save --file input.json
 gitifact spec changes
@@ -19,11 +20,13 @@ gitifact spec read --ref HEAD
 gitifact spec diff --from BEFORE --to AFTER
 ```
 
-Initialization creates only configuration and the Git adoption baseline. It requires Git, accepts an unborn repository, preserves unrelated work and staging, and never performs a commit. Existing legacy configuration requires an explicit separate transition. Skill installation preserves edited sources; the agent handles AGENTS.md/CLAUDE.md linkage and reads the installed skill in the current session.
+Initialization creates the configuration and the Git adoption baseline, then installs a managed block between `<!-- GITIFACT:START -->` and `<!-- GITIFACT:END -->` in the agent instruction files. Existing `AGENTS.md`, `CLAUDE.md`, `.claude/CLAUDE.md`, `.cursorrules`, `.hermes.md` and `HERMES.md` all receive the block, except files that only `@`-import another one; when none exist, `AGENTS.md` is created. `--agent claude|cursor|codex|hermes|all` targets one tool's file instead, `--remove-agents` removes the block, and `--skip-agents` leaves instruction files alone. Text outside the markers is never touched; re-running `init` refreshes the block after a CLI update and refuses files with a broken marker pair. Initialization requires Git, accepts an unborn repository, preserves unrelated work and staging, and never performs a commit. Existing legacy configuration requires an explicit separate transition.
+
+`gitifact docs` lists the guidance topics (`workflow`, `spec`, `design`, `product`, `commit`) and `gitifact docs <topic>` prints the bundled Markdown for one. The block summarises the rules and points agents at these topics for the exact input formats.
 
 The legacy `req`, `note`, `mode`, `brief`, `commit plan/apply` and `init --mode` commands and the `spec-preview` alias have been removed. Historical JSON projects require the old `gitifact@0.4.0` or earlier. `browser` serves requirement history, current features and contributors from Markdown/Git.
 
-The `spec` commands use the same input objects described by the installed workflow skill. Their output envelope is `contract: "spec", version: 1`. For a project with schemaVersion 1, config bytes are bound to working stamps and commit plans. Creation and edits never imply user approval or implementation completion.
+The `spec` commands use the input objects described by `gitifact docs spec` and `gitifact docs commit`. Their output envelope is `contract: "spec", version: 1`. For a project with schemaVersion 1, config bytes are bound to working stamps and commit plans. Creation and edits never imply user approval or implementation completion.
 
 ## Browser
 
@@ -62,6 +65,6 @@ MIT. Bundled dependency notices are included in `dist/THIRD_PARTY_NOTICES.txt`.
 
 ## Feature designs
 
-The development build supports optional `design.md` next to requirements.md. The workflow skill creates both by default for new features. Add `{type: "set-design", feature, title, body}` to spec save operations; use `{type: "delete-design", feature}` to remove it. The CLI writes the owning S-ID, while explicit `gitifact-ref` annotations link actual R-IDs. Missing current references return warnings.
+The development build supports optional `design.md` next to requirements.md. `gitifact docs design` tells agents to create both by default for new features. Add `{type: "set-design", feature, title, body}` to spec save operations; use `{type: "delete-design", feature}` to remove it. The CLI writes the owning S-ID, while explicit `gitifact-ref` annotations link actual R-IDs. Missing current references return warnings.
 
 Commit reasons may add `designs: ["S-…"]` alongside `requirements`. For a design-only reason, use `requirements: []`. Design changes have `kind: "design"` and do not become requirement changes. Use spec commit; deprecated commit-plan/apply do not accept new design changes. The browser displays designs in feature tabs and specification history. This extension is not yet published.
