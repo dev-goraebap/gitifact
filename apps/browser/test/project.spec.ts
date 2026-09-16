@@ -82,6 +82,9 @@ test('history rows preview change reasons and mark missing ones', async ({page})
  await expect(rows.nth(1)).toContainText('변경 이유가 기록되지 않았습니다.');
  await rows.nth(0).getByRole('link',{name:'검색 결과 정렬'}).click();
  const pane=page.getByRole('dialog',{name:'검색 결과 정렬'});
- await expect(pane.getByRole('heading',{name:'변경 후',exact:true})).toBeVisible();
+ await expect(pane.getByRole('heading',{name:'변경 내용',exact:true})).toBeVisible();
  await expect(pane).toContainText('정렬 본문입니다.');
+ const reveal=pane.getByRole('separator',{name:'변경 전 드러내기'});await expect(reveal).toBeVisible();
+ const before=pane.getByLabel('변경 전',{exact:true});expect(await before.evaluate(el=>getComputedStyle(el).clipPath)).toContain('100%');
+ await pane.getByRole('button',{name:'변경 전',exact:true}).click();await expect.poll(async()=>before.evaluate(el=>getComputedStyle(el).clipPath)).toContain('0px');
 });

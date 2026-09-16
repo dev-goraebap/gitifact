@@ -132,7 +132,7 @@ pnpm cli browser --dev --port 4317
 pnpm dev
 ```
 
-Vite 주소는 `http://127.0.0.1:5173`이다. `/api`를 CLI 서버로 전달한다. API 포트를 바꾸려면 Vite 실행 환경의 `TRYCE_API_PORT`도 맞춘다. 통합 실행은 `--dev` 없이 사용한다. 상세 계약은 [로컬 브라우저 서버](https://github.com/dev-goraebap/tryce/blob/479d392a93fa40e7a95993d4979417beae869723/docs/specs/browser-server.md)를 따른다.
+Vite 주소는 `http://127.0.0.1:5173`이다. `/api`를 CLI 서버로 전달한다. API 포트를 바꾸려면 Vite 실행 환경의 `GITIFACT_API_PORT`도 맞춘다. Vite만 켜고 CLI 서버가 없으면 화면은 열리지만 세션 요청이 502로 실패해 불러오지 못했다는 상태가 뜬다. 통합 실행은 `--dev` 없이 사용한다. 상세 계약은 [로컬 브라우저 서버](https://github.com/dev-goraebap/tryce/blob/479d392a93fa40e7a95993d4979417beae869723/docs/specs/browser-server.md)를 따른다.
 
 ```sh
 pnpm build
