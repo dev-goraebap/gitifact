@@ -4,6 +4,7 @@ import { runBrowser, parsePort } from './commands/browser.js';
 import { runInit } from './commands/init.js';
 import { runSkills } from './commands/skills.js';
 import { runDocs } from './commands/docs.js';
+import { agentPresetNames } from './commands/agent-block.js';
 import { runSpecPreview } from './commands/spec-preview.js';
 import { runMigrate } from './commands/migrate.js';
 
@@ -31,11 +32,14 @@ program.command('browser')
   .action(runBrowser);
 
 program.command('init')
-  .description('프로젝트 설정과 도입 기준선 생성 (스킬·훅 제외)')
+  .description('프로젝트 설정·기준선 생성과 에이전트 지침 파일의 GITIFACT 블록 설치 (재실행 시 블록 갱신)')
   .allowExcessArguments(false)
   .option('--dry-run', '파일을 만들지 않고 초기화 계획 확인')
+  .addOption(new Option('--agent <agent>', '지침 파일 대상 (기본: 기존 파일 전부, 없으면 AGENTS.md)').choices([...agentPresetNames]))
+  .addOption(new Option('--remove-agents', 'GITIFACT 블록을 제거').conflicts('skipAgents'))
+  .option('--skip-agents', '지침 파일을 건드리지 않음')
   .addOption(new Option('--format <format>', '출력 형식').choices(['json', 'text']).default('json'))
-  .action(runInit);
+  .action(options => runInit(options, __CLI_VERSION__));
 
 program.command('docs')
   .description('에이전트용 작업 지침 출력 (주제 없이 실행하면 목록)')

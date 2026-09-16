@@ -13,17 +13,28 @@ const call = (f, args, ok = true) => {
 };
 const input = (f, action, data) => { const path = join(f.root, 'input.json'); writeFileSync(path, JSON.stringify(data)); return call(f, ['spec', action, '--file', path]); };
 const legacyConfig = JSON.stringify({ kind: 'tryce-project', format: 'workflow-1', mode: 'auto', baseline: { kind: 'empty' } }, null, 2) + '\n';
-test('spec init dry-run, repeat and skills install preserve existing work and staging', async t => {
+test('spec init dry-run, repeat and agent docs block preserve existing work and staging', async t => {
   const f = fixture(t); f.write('work', 'user work'); f.git(['add', 'work']);
   const before = fingerprint(f.repo);
-  assert.equal(call(f, ['init', '--dry-run']).outcome, 'planned'); assert.deepEqual(fingerprint(f.repo), before);
+  const planned = call(f, ['init', '--dry-run']);
+  assert.deepEqual([planned.outcome, planned.agentDocs], ['planned', { mode: 'install', paths: ['AGENTS.md'] }]); assert.deepEqual(fingerprint(f.repo), before);
   assert.equal(call(f, ['init']).schemaVersion, 1);
   const config = readFileSync(join(f.repo, '.gitifact/config.json'), 'utf8');
   assert.equal(JSON.parse(config).mode, undefined);
+  const agents = readFileSync(join(f.repo, 'AGENTS.md'), 'utf8');
+  assert.match(agents, /^# AGENTS\.md\n\nProject-specific guidance for AI coding agents\.\n\n<!-- GITIFACT:START -->\ngitifact v\d+\.\d+\.\d+/);
+  assert.match(agents, /<!-- GITIFACT:END -->\n$/);
   assert.equal(call(f, ['init']).outcome, 'already-initialized'); assert.equal(readFileSync(join(f.repo, '.gitifact/config.json'), 'utf8'), config);
-  assert.equal(call(f, ['skills', 'install', '--agent', 'claude']).outcome, 'installed');
-  assert.equal(readFileSync(join(f.repo, '.agents/skills/gitifact-workflow/SKILL.md'), 'utf8'), readFileSync(join(f.repo, '.claude/skills/gitifact-workflow/SKILL.md'), 'utf8'));
+  assert.equal(readFileSync(join(f.repo, 'AGENTS.md'), 'utf8'), agents);
   assert.equal(f.git(['diff', '--cached', '--name-only']).stdout.trim(), 'work');
+  assert.deepEqual(call(f, ['init', '--remove-agents']).agentDocs, { mode: 'remove', paths: ['AGENTS.md'] });
+  assert.equal(existsSync(join(f.repo, 'AGENTS.md')), false);
+  assert.equal(call(f, ['init', '--remove-agents', '--skip-agents'], false).status, 1);
+  const g = fixture(t);
+  assert.deepEqual(call(g, ['init', '--skip-agents']).agentDocs, { mode: 'skip', paths: [] });
+  assert.equal(existsSync(join(g.repo, 'AGENTS.md')), false);
+  assert.deepEqual(call(g, ['init', '--agent', 'claude']).agentDocs, { mode: 'install', paths: ['.claude/CLAUDE.md'] });
+  assert.match(readFileSync(join(g.repo, '.claude/CLAUDE.md'), 'utf8'), /^# CLAUDE\n/);
 });
 test('init refuses legacy records and malformed config without mutation', async t => {
   const f = fixture(t); mkdirSync(join(f.repo, '.gitifact')); f.write('.gitifact/config.json', legacyConfig);
@@ -32,7 +43,7 @@ test('init refuses legacy records and malformed config without mutation', async 
 });
 test('spec command writes, prepares and commits through initialized format', async t => {
   const f = fixture(t); f.git(['config', 'user.name', 'Fixture']); f.git(['config', 'user.email', 'fixture@example.invalid']); f.git(['config', 'commit.gpgsign', 'false']); f.git(['config', 'core.autocrlf', 'false']);
-  call(f, ['spec', 'working'], false); call(f, ['init']);
+  call(f, ['spec', 'working'], false); call(f, ['init', '--skip-agents']);
   const saved = input(f, 'save', { expected: call(f, ['spec', 'working']).stamp, operations: [{type:'create', feature:'posts', title:'게시물 관리'}, {type:'add',feature:'posts',title:'게시물 생성',body:'제목을 입력한다.'}] });
   const id = saved.results[1].id;
   const prepared = input(f, 'prepare', { expected: call(f, ['spec','changes']).expected, reasons:[{ requirements:[id], reason:'기능 도입'}] });

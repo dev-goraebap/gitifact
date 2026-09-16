@@ -17,12 +17,41 @@ test('dry-run is read-only; unborn init is complete, repeatable and preserves by
   assert.equal((await init(f, { dryRun: true })).outcome, 'planned');
   assert.deepEqual(fingerprint(f.repo), before);
   const created = await init(f);
-  assert.equal(created.outcome, 'created'); assert.equal(created.version, 3); assert.deepEqual(created.baseline, { kind: 'empty' });
+  assert.equal(created.outcome, 'created'); assert.equal(created.version, 4); assert.deepEqual(created.baseline, { kind: 'empty' });
+  assert.deepEqual(created.agentDocs, { mode: 'skip', paths: [] });
   preserved(before, fingerprint(f.repo));
   assert.deepEqual(readdirSync(join(f.repo, '.gitifact')), ['config.json']);
   const bytes = readFileSync(path(f));
   assert.equal((await init(f)).outcome, 'already-initialized');
   assert.deepEqual(readFileSync(path(f)), bytes);
+});
+
+test('agent docs block is planned, created, refreshed and removed through init', async t => {
+  const f = fixture(t); f.write('CLAUDE.md', '# Team\n\nRules.\n');
+  const docs = (extra = {}) => ({ version: '0.0.0-test', ...extra });
+  const run = (repo, dryRun, options) => initializeSpecProject(repo.repo, dryRun, repo.env, undefined, options);
+  const before = fingerprint(f.repo);
+  const planned = await run(f, true, docs());
+  assert.deepEqual([planned.outcome, planned.agentDocs], ['planned', { mode: 'install', paths: ['CLAUDE.md'] }]);
+  assert.deepEqual(fingerprint(f.repo), before);
+  const created = await run(f, false, docs());
+  assert.deepEqual([created.outcome, created.agentDocs.paths], ['created', ['CLAUDE.md']]);
+  const text = readFileSync(join(f.repo, 'CLAUDE.md'), 'utf8');
+  assert.match(text, /^# Team\n\nRules\.\n\n<!-- GITIFACT:START -->\ngitifact v0\.0\.0-test /);
+  assert.equal(existsSync(join(f.repo, 'AGENTS.md')), false);
+  const again = await run(f, false, docs({ version: '0.0.1-test' }));
+  assert.equal(again.outcome, 'already-initialized');
+  assert.equal(readFileSync(join(f.repo, 'CLAUDE.md'), 'utf8'), text.replace('v0.0.0-test', 'v0.0.1-test'));
+  assert.equal((await run(f, true, docs({ version: '0.0.2-test' }))).outcome, 'already-initialized');
+  assert.equal(readFileSync(join(f.repo, 'CLAUDE.md'), 'utf8'), text.replace('v0.0.0-test', 'v0.0.1-test'));
+  const removed = await run(f, false, docs({ remove: true }));
+  assert.deepEqual(removed.agentDocs, { mode: 'remove', paths: ['CLAUDE.md'] });
+  assert.equal(readFileSync(join(f.repo, 'CLAUDE.md'), 'utf8'), '# Team\n\nRules.\n');
+  const g = fixture(t); g.write('AGENTS.md', '<!-- GITIFACT:START -->\nbroken\n');
+  const untouched = fingerprint(g.repo);
+  await assert.rejects(run(g, false, docs()), { code: 'AGENT_DOCS_MALFORMED' });
+  assert.deepEqual(fingerprint(g.repo), untouched);
+  assert.equal(existsSync(join(g.repo, '.gitifact')), false);
 });
 
 test('SHA-1 and SHA-256 baselines survive new commits and detached subdirectory execution', async t => {

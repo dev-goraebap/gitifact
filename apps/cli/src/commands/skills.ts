@@ -4,7 +4,7 @@ import { InitError, parseManagedConfig } from '@gitifact/core';
 import { skillsV1 } from '@gitifact/contracts';
 import { initRepository } from '../adapters/git/init-repository.js';
 import { readConfigFile } from '../adapters/filesystem/config-file.js';
-import { skillLock, skillRead, skillWrite } from '../adapters/filesystem/skill-files.js';
+import { managedLock, managedRead, managedWrite } from '../adapters/filesystem/managed-file.js';
 
 const source = '.agents/skills/gitifact-workflow/SKILL.md';
 const target = '.claude/skills/gitifact-workflow/SKILL.md';
@@ -40,10 +40,10 @@ export async function skillsCommand(cwd: string, action: Action, options: Option
     if ((await repo.inspect()).stamp !== first.stamp || await readConfigFile(root) !== configText) throw new InitError('INPUT_CHANGED', 'Git 또는 프로젝트 설정이 변경됐습니다.');
   };
   const execute = async () => {
-    const original = await skillRead(root, source);
-    const saved = await skillRead(root, manifest);
+    const original = await managedRead(root, source);
+    const saved = await managedRead(root, manifest);
     const state = parseState(saved);
-    const copy = await skillRead(root, target);
+    const copy = await managedRead(root, target);
     if (copy !== null && !state) throw new InitError('UNMANAGED_SKILL', '기존 Claude 복사본은 관리 대상이 아닙니다. 보존하고 출처를 확인하세요.');
     if (state && !state.accepted.includes(digest(copy))) throw new InitError('SKILL_MODIFIED', 'Claude 복사본이 수정되거나 삭제됐습니다. 원본과 비교하고 보존하세요.');
     const tracked = await repo.trackedPaths(root, '.agents/', first.state.head.commit);
@@ -57,7 +57,7 @@ export async function skillsCommand(cwd: string, action: Action, options: Option
     if (action === 'install' && wanted === null) wanted = controls.template ?? await readFile(new URL('./skills/gitifact-workflow/SKILL.md', import.meta.url), 'utf8');
     if (wanted !== null && (!wanted.startsWith('---') || !/^name: gitifact-workflow\r?$/m.test(wanted) || Buffer.byteLength(wanted) > 65536)) throw new InitError('INVALID_SKILL', 'gitifact-workflow 원본 형식을 확인하세요.');
     const nextCopy = agent === 'claude' ? wanted : null;
-    const ignoreBefore = await skillRead(root, '.gitignore');
+    const ignoreBefore = await managedRead(root, '.gitignore');
     const lines = (ignoreBefore ?? '').split(/\r?\n/);
     const missing = ignores.filter(line => !lines.includes(line));
     const ignoreAfter = (ignoreBefore ?? '') + (ignoreBefore && !ignoreBefore.endsWith('\n') ? '\n' : '') + missing.join('\n') + (missing.length ? '\n' : '');
@@ -67,7 +67,7 @@ export async function skillsCommand(cwd: string, action: Action, options: Option
     if (action === 'remove' && !state) { await recheck(); return result('not-installed'); }
     await repo.checkIgnore(root, source);
     if (options.dryRun) { await recheck(); return result('planned'); }
-    if (missing.length) await skillWrite(root, '.gitignore', ignoreBefore, ignoreAfter, recheck);
+    if (missing.length) await managedWrite(root, '.gitignore', ignoreBefore, ignoreAfter, recheck);
     // Confirm local-only rules actually take effect, including nested negations.
     for (const path of [manifest, lock, target]) {
       let ignored = false;
@@ -78,18 +78,18 @@ export async function skillsCommand(cwd: string, action: Action, options: Option
     const journal = stateText([...new Set([digest(copy), digest(nextCopy)])]);
     const inputs = async () => {
       await recheck();
-      if (await skillRead(root, source) !== original || await skillRead(root, target) !== copy) throw new InitError('INPUT_CHANGED', '스킬 입력이 변경됐습니다.');
+      if (await managedRead(root, source) !== original || await managedRead(root, target) !== copy) throw new InitError('INPUT_CHANGED', '스킬 입력이 변경됐습니다.');
     };
-    await skillWrite(root, manifest, saved, journal, inputs);
+    await managedWrite(root, manifest, saved, journal, inputs);
     await controls.afterJournal?.();
-    if (original === null && wanted !== null) await skillWrite(root, source, null, wanted, recheck);
-    if (copy !== nextCopy) await skillWrite(root, target, copy, nextCopy, recheck);
-    await skillWrite(root, manifest, journal, stateText([digest(nextCopy)]), recheck);
+    if (original === null && wanted !== null) await managedWrite(root, source, null, wanted, recheck);
+    if (copy !== nextCopy) await managedWrite(root, target, copy, nextCopy, recheck);
+    await managedWrite(root, manifest, journal, stateText([digest(nextCopy)]), recheck);
     await recheck();
-    if (await skillRead(root, source) !== wanted || await skillRead(root, target) !== nextCopy) throw new InitError('INPUT_CHANGED', '게시 후 스킬이 변경됐습니다. 다시 조회하세요.');
+    if (await managedRead(root, source) !== wanted || await managedRead(root, target) !== nextCopy) throw new InitError('INPUT_CHANGED', '게시 후 스킬이 변경됐습니다. 다시 조회하세요.');
     return result(action === 'remove' ? 'removed' : action === 'install' ? 'installed' : 'synced');
   };
-  return options.dryRun ? execute() : skillLock(root, lock, execute);
+  return options.dryRun ? execute() : managedLock(root, lock, execute);
 }
 export async function runSkills(action: Action, options: Options) {
   try {
