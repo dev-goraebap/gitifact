@@ -71,6 +71,12 @@ Tryce에서 Gitifact로 이름을 바꾼 첫 배포다. 패키지 `gitifact@0.1.
 
 스킬 제거 커밋 07f155b까지 `pnpm check`를 통과했다. core 19개·contracts 4개·CLI 110개·브라우저와 workspace 밖 오프라인 설치에서 init의 블록 생성·사용자 문단 보존·제거와 `docs spec` 출력이 자산 원본과 같음을 확인했다. 버전을 0.3.0으로 올린 뒤 `pnpm check`를 다시 통과했고 루트 AGENTS.md의 블록도 `pnpm cli init`으로 v0.3.0 줄로 갱신했다. CLI 번들 SHA-256은 `60f85715430e819b14143c4b1dfee103bb63e5389efd9b0dc4d22d324607f4ab`이다. 게시 결과는 아래에 이어서 기록한다.
 
+## 0.3.0 게시 완료
+
+2026-09-16 릴리스 준비 커밋 `723f609`까지 main을 푸시하고 apps/cli에서 Git 검사를 유지한 `pnpm publish --access public --tag latest --publish-branch main --json`을 실행했다. npm은 접수 후 몇 분 뒤 공개했다. latest는 0.3.0, 라이선스는 MIT다. 실제 게시와 레지스트리의 integrity는 `sha512-TgWs+d3A9gqWOH+DzRxut8h4RTu8jYmZC3Nz0RGCm+PzIHPuNTZPpaDM6SQJQXrIr/sbV8zzLQJUaXZ9YPFp2Q==`, shasum은 `5936ecd1c4637a974a187b7203d3cd5a64ab7aa4`이며 패키지는 51개 파일이다. 모의 실행의 integrity(`sha512-gXPD52…`)는 pnpm이 매니페스트를 다시 쓰는 순서 차이로 달랐고 파일 목록은 같았다. 배포물에 `dist/skills`는 없고 `dist/docs`의 지침 다섯 편이 들어 있다.
+
+레지스트리에서 새 임시 폴더에 설치한 CLI 번들의 SHA-256이 검증 빌드 `60f85715…`와 같았다. 설치본으로 version, 새 Git 저장소의 init(config.json 생성과 AGENTS.md의 `gitifact v0.3.0` 블록), `docs` 목록과 `docs spec` 출력을 확인했고 제거한 `skills` 명령은 인자 오류를 반환했다. 기존 인증 세션으로 게시했으며 인증 파일과 토큰은 조회·변경하지 않았다.
+
 ## 이전 Tryce 배포 기록
 
 아래 패키지 이름·버전·커밋·무결성은 당시 배포의 사실이다. Gitifact 0.1.0의 게시 결과로 해석하거나 새 이름으로 일괄 치환하지 않는다.
