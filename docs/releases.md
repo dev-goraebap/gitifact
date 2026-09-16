@@ -83,6 +83,12 @@ Tryce에서 Gitifact로 이름을 바꾼 첫 배포다. 패키지 `gitifact@0.1.
 
 버전을 0.3.1로 올린 뒤 `pnpm check`를 통과했다. core 19개·contracts 4개·CLI 110개·브라우저 21개와 workspace 밖 오프라인 설치·실행을 확인했고 루트 AGENTS.md의 블록도 `pnpm cli init`으로 v0.3.1 줄로 갱신했다. CLI 번들 SHA-256은 `a35ef9c94b0362ce5ec7c2b67f93727908a529dc037453b4933d36128cf0da58`이다. 모의 게시(`--dry-run --no-git-checks`, 미커밋 상태의 패키징 확인용)는 51개 파일, integrity `sha512-ETaJt1okgvBSSACpr0bU2kwFcmaSsfbyA7Y5FsQor75sPDK5NB7SedB7VEl0k3PasdVkCwZieYhfa0rOG7KthA==`이며 dist·README·LICENSE·package.json만 포함했다. 게시 결과는 아래에 이어서 기록한다.
 
+## 0.3.1 게시 완료
+
+2026-09-17 릴리스 준비 커밋 `b31d412`까지 main을 푸시하고 apps/cli에서 Git 검사를 유지한 `pnpm publish --access public --tag latest --publish-branch main --json`을 실행했다. npm은 접수 후 몇 분 뒤 공개했다. latest는 0.3.1, 라이선스는 MIT다. 실제 게시와 레지스트리의 integrity는 `sha512-KYe0Z1eey71AiY1I4m2ZnNkRrMcNTvPhCZ1x95MwsZrHNNAtfB9JkGb+sL0+ZF3R3BqL7PDxonO4E7bxwm+upw==`, shasum은 `5af517c18a79a852d8e8c91447eb6b03de370be5`이며 패키지는 51개 파일이다. 모의 실행의 integrity(`sha512-ETaJt1…`)는 0.3.0 때와 같이 매니페스트 기록 순서 차이로 달랐고 파일 목록은 같았다.
+
+레지스트리에서 새 임시 폴더에 설치한 CLI 번들의 SHA-256이 검증 빌드 `a35ef9c9…`와 같았다. 설치본으로 version, 새 Git 저장소의 init(config.json 생성과 AGENTS.md의 `gitifact v0.3.1` 블록), `docs` 목록을 확인했다. 기존 인증 세션으로 게시했으며 인증 파일과 토큰은 조회·변경하지 않았다.
+
 ## 이전 Tryce 배포 기록
 
 아래 패키지 이름·버전·커밋·무결성은 당시 배포의 사실이다. Gitifact 0.1.0의 게시 결과로 해석하거나 새 이름으로 일괄 치환하지 않는다.
