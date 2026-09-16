@@ -77,6 +77,12 @@ Tryce에서 Gitifact로 이름을 바꾼 첫 배포다. 패키지 `gitifact@0.1.
 
 레지스트리에서 새 임시 폴더에 설치한 CLI 번들의 SHA-256이 검증 빌드 `60f85715…`와 같았다. 설치본으로 version, 새 Git 저장소의 init(config.json 생성과 AGENTS.md의 `gitifact v0.3.0` 블록), `docs` 목록과 `docs spec` 출력을 확인했고 제거한 `skills` 명령은 인자 오류를 반환했다. 기존 인증 세션으로 게시했으며 인증 파일과 토큰은 조회·변경하지 않았다.
 
+## 0.3.1 배포 준비
+
+2026-09-17 사용자 푸시·배포 요청으로 브라우저 정리 커밋 `fdeae24`를 패치 버전 0.3.1로 준비했다. 제품 개요 대시보드, 지침 열 보기·미리보기, 요구사항 메뉴 이름과 순서, 헤더 조회 시각, Git 상태 메뉴의 미커밋 표시, Gitifact 소개 페이지를 포함한다. CLI 명령·서버 계약·저장 형식은 바뀌지 않았다. 내용은 [개발 환경](development.md#2026-09-17-브라우저-정리와-제품-개요-대시보드)을 따른다.
+
+버전을 0.3.1로 올린 뒤 `pnpm check`를 통과했다. core 19개·contracts 4개·CLI 110개·브라우저 21개와 workspace 밖 오프라인 설치·실행을 확인했고 루트 AGENTS.md의 블록도 `pnpm cli init`으로 v0.3.1 줄로 갱신했다. CLI 번들 SHA-256은 `a35ef9c94b0362ce5ec7c2b67f93727908a529dc037453b4933d36128cf0da58`이다. 모의 게시(`--dry-run --no-git-checks`, 미커밋 상태의 패키징 확인용)는 51개 파일, integrity `sha512-ETaJt1okgvBSSACpr0bU2kwFcmaSsfbyA7Y5FsQor75sPDK5NB7SedB7VEl0k3PasdVkCwZieYhfa0rOG7KthA==`이며 dist·README·LICENSE·package.json만 포함했다. 게시 결과는 아래에 이어서 기록한다.
+
 ## 이전 Tryce 배포 기록
 
 아래 패키지 이름·버전·커밋·무결성은 당시 배포의 사실이다. Gitifact 0.1.0의 게시 결과로 해석하거나 새 이름으로 일괄 치환하지 않는다.

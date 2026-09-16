@@ -1,6 +1,6 @@
 # Gitifact CLI
 
-> Current release: `gitifact@0.3.0` (unscoped). Requires Node.js 24.x and Git.
+> Current release: `gitifact@0.3.1` (unscoped). Requires Node.js 24.x and Git.
 
 Git-backed requirements and change history for coding agents. New projects use `schemaVersion: 1`, Markdown specifications and per-feature change reasons. Requires Node.js 24.x and Git.
 
