@@ -65,6 +65,12 @@ Tryce에서 Gitifact로 이름을 바꾼 첫 배포다. 패키지 `gitifact@0.1.
 
 레지스트리에서 새 임시 폴더에 설치한 CLI 번들의 SHA-256이 지정 빌드 `667985b8…`와 같았다. 설치본으로 version, init dry-run·init, spec working을 실행했고 브라우저 정적 자산과 스킬 원본이 포함됨을 확인했다.
 
+## 0.3.0 배포 준비
+
+2026-09-16 사용자 배포 요청으로 스킬 배포를 에이전트 지침 파일의 관리 블록으로 바꾼 변경을 0.3.0으로 준비했다. `init`이 AGENTS.md·CLAUDE.md·`.cursorrules` 등에 `GITIFACT:START/END` 블록을 쓰고 재실행 시 갱신하며 `--agent`·`--remove-agents`·`--skip-agents`를 받는다. 새 `docs <topic>` 명령이 번들된 지침 Markdown 다섯 편을 출력한다. `skills install/sync/remove`와 배포 스킬 파일은 제거했고 `project-init` 계약은 version 4가 됐다. 1.0.0 이전이므로 0.2.0 스킬 설치본의 호환·자동 정리는 제공하지 않는다. README는 도입 프롬프트를 두 문장으로 줄였다.
+
+스킬 제거 커밋 07f155b까지 `pnpm check`를 통과했다. core 19개·contracts 4개·CLI 110개·브라우저와 workspace 밖 오프라인 설치에서 init의 블록 생성·사용자 문단 보존·제거와 `docs spec` 출력이 자산 원본과 같음을 확인했다. 버전을 0.3.0으로 올린 뒤 `pnpm check`를 다시 통과했고 루트 AGENTS.md의 블록도 `pnpm cli init`으로 v0.3.0 줄로 갱신했다. CLI 번들 SHA-256은 `60f85715430e819b14143c4b1dfee103bb63e5389efd9b0dc4d22d324607f4ab`이다. 게시 결과는 아래에 이어서 기록한다.
+
 ## 이전 Tryce 배포 기록
 
 아래 패키지 이름·버전·커밋·무결성은 당시 배포의 사실이다. Gitifact 0.1.0의 게시 결과로 해석하거나 새 이름으로 일괄 치환하지 않는다.
