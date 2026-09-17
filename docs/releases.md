@@ -151,6 +151,12 @@ Tryce에서 Gitifact로 이름을 바꾼 첫 배포다. 패키지 `gitifact@0.1.
 
 `pnpm check`를 통과했다. contracts 7개·core 27개·intro 3개·CLI 129개·브라우저 28개와 workspace 밖 오프라인 설치·실행을 확인했다. 루트 AGENTS.md의 블록은 `pnpm cli update`로 v0.4.3 줄로 갱신했다. CLI 번들 SHA-256은 `51b995df11d7b710c39f445f7b2bd7bfed196bd4d0c55b81745b3b4722332380`이다. 게시 결과는 아래에 이어서 기록한다.
 
+## 0.4.3 게시 완료
+
+2026-09-17 릴리스 커밋 `02622ca`까지 main을 푸시하고 apps/cli에서 Git 검사를 유지한 `pnpm publish --access public --tag latest --publish-branch main --json`을 실행했다. latest는 0.4.3, 라이선스는 MIT다. 실제 게시와 레지스트리의 integrity는 `sha512-Ef4+8bv8Hgqzd/e1i4fO8n3R+U5FGotljWduCj3BJjkO3J+LYRvEEGwj5crG1YO5myLJRxju75tD45X91AjLow==`, shasum은 `d5e3f1a89da6231eecb2c965c01a0d3c1cc517ff`이며 패키지는 68개 파일이다. 모의 실행의 integrity(`sha512-ikLAeu…`)는 이전 릴리스처럼 매니페스트 기록 순서 차이로 달랐고 파일 수는 같았다.
+
+레지스트리에서 새 임시 폴더에 로컬로 설치한 dist 65개 파일이 검증 빌드와 모두 같았고, 브라우저 자산에 수정한 안내 창의 코드 블록 제목이 포함됐다. 설치본의 version은 0.4.3이다. 이 PC의 npm 전역 설치는 사용자의 새 버전 안내 시험을 위해 0.4.0으로 남겼다. 기존 인증 세션으로 게시했으며 인증 파일과 토큰은 조회·변경하지 않았다.
+
 ## 이전 Tryce 배포 기록
 
 아래 패키지 이름·버전·커밋·무결성은 당시 배포의 사실이다. Gitifact 0.1.0의 게시 결과로 해석하거나 새 이름으로 일괄 치환하지 않는다.
