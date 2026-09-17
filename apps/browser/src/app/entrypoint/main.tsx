@@ -2,9 +2,10 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { AppProviders } from '../providers/AppProviders';
 import '../styles/global.css';
+import { t } from '../../shared/i18n';
 
 const root = document.getElementById('root');
-if (!root) throw new Error('앱을 표시할 root 요소가 없습니다.');
+if (!root) throw new Error(t('app.rootMissing'));
 
 createRoot(root).render(
   <StrictMode>

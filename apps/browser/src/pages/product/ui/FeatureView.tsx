@@ -17,17 +17,18 @@ import { avatarSource, contributorHref } from './Person';
 import type { ProductSearch } from '../model/search';
 import styles from './product.module.css';
 import { PageState } from '../../../shared/ui/page-state';
+import { t } from '../../../shared/i18n';
 
 export function FeatureView({ features, featureId, search, change }: { features: SpecFeature[]; featureId?: string | undefined; search: ProductSearch; change: (s: ProductSearch) => void }) {
   if (!featureId) return <FeatureList features={features} search={search}/>;
   const selected = features.find(f => f.id === featureId);
-  if (!selected) return <PageState kind="not-found" title="기능을 찾을 수 없습니다" description={`${featureId}는 현재 명세에 없습니다. 이름이 바뀌었거나 제거된 기능일 수 있습니다.`} actions={<Link to="/features">요구사항 목록으로</Link>}/>;
+  if (!selected) return <PageState kind="not-found" title={t('features.notFoundTitle')} description={t('features.notFoundDescription', { id: featureId })} actions={<Link to="/features">{t('features.backToList')}</Link>}/>;
   return <FeatureDetail feature={selected} features={features} search={search} change={change}/>;
 }
 
 /** Overlapping author avatars; the fourth and later collapse into a "+N" count. */
 function Contributors({ people }: { people: SpecFeature['contributors'] }) {
-  if (!people.length) return <Text type="supporting" color="secondary">미커밋</Text>;
+  if (!people.length) return <Text type="supporting" color="secondary">{t('common.uncommitted')}</Text>;
   const shown = people.slice(0, 3);
   return <AvatarGroup size="sm" shape="circle">
     {shown.map(p => <Avatar key={p.email} name={p.name} src={avatarSource(p.email)} href={contributorHref(p.email)}/>)}
@@ -41,63 +42,63 @@ function FeatureList({ features, search }: { features: SpecFeature[]; search: Pr
   const filtered = features.filter(f => !search.q || [f.title, f.id, ...f.requirements.map(r => r.title + ' ' + r.id)].join(' ').toLowerCase().includes(search.q.toLowerCase()));
   const open = (f: SpecFeature) => { void navigate({ to: '/features/$featureId', params: { featureId: f.id }, search: { q: search.q } }); };
   const columns: TableColumn<SpecFeature>[] = [
-    { key: 'title', header: '기능', width: proportional(1, { minWidth: 160 }), renderCell: f => <VStack gap={1}>
+    { key: 'title', header: t('features.column.feature'), width: proportional(1, { minWidth: 160 }), renderCell: f => <VStack gap={1}>
       <Link to="/features/$featureId" params={{ featureId: f.id }} search={{ q: search.q }} className={styles.featureTitle}>{f.title}</Link>
       <Text type="supporting" color="secondary" maxLines={1}>{f.description ? f.description.replace(/[#*_`]/g, '').replace(/\s+/g, ' ').trim() : f.id}</Text>
     </VStack> },
-    { key: 'requirements', header: '요구사항', width: pixel(mobile ? 64 : 88), align: 'end', renderCell: f => <Text>{f.requirements.length}</Text> },
+    { key: 'requirements', header: t('features.column.requirements'), width: pixel(mobile ? 64 : 88), align: 'end', renderCell: f => <Text>{f.requirements.length}</Text> },
   ];
-  if (!mobile) columns.push({ key: 'design', header: '설계', width: pixel(80), renderCell: f => <Token label={f.design ? '있음' : '없음'} color={f.design ? 'green' : 'default'}/> });
-  columns.push({ key: 'contributors', header: '참여자', width: pixel(mobile ? 88 : 120), renderCell: f => <Contributors people={f.contributors}/> });
-  if (!mobile) columns.push({ key: 'updatedAt', header: '최근 변경', width: pixel(110), align: 'end', renderCell: f => f.updatedAt ? <Timestamp value={f.updatedAt} format="relative"/> : <Text type="supporting" color="secondary">작업 중</Text> });
+  if (!mobile) columns.push({ key: 'design', header: t('features.column.design'), width: pixel(80), renderCell: f => <Token label={f.design ? t('features.hasDesign') : t('features.noDesign')} color={f.design ? 'green' : 'default'}/> });
+  columns.push({ key: 'contributors', header: t('features.column.contributors'), width: pixel(mobile ? 88 : 120), renderCell: f => <Contributors people={f.contributors}/> });
+  if (!mobile) columns.push({ key: 'updatedAt', header: t('common.recentChange'), width: pixel(110), align: 'end', renderCell: f => f.updatedAt ? <Timestamp value={f.updatedAt} format="relative"/> : <Text type="supporting" color="secondary">{t('common.inProgress')}</Text> });
   const interaction: TablePlugin<SpecFeature> = { transformBodyRow: (props, item) => ({ ...props, htmlProps: { ...props.htmlProps, tabIndex: 0,
     // Links inside the row (title, contributor avatars) navigate on their own; only bare surface clicks open the feature.
     onClick: (event: { target: EventTarget | null }) => { if (!(event.target as HTMLElement | null)?.closest('a, button')) open(item); }, onKeyDown: event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); open(item); } } } }) };
-  if (!filtered.length) return <PageState kind={features.length ? 'search' : 'empty'} title="일치하는 기능이 없습니다." description={features.length ? '검색어를 바꿔 보세요.' : '에이전트와 기능 명세를 정리하고 커밋하면 이곳에서 볼 수 있습니다.'}/>;
+  if (!filtered.length) return <PageState kind={features.length ? 'search' : 'empty'} title={t('features.emptyTitle')} description={features.length ? t('features.changeSearch') : t('features.emptyDescription')}/>;
   return <VStack gap={3} className={styles.featureTable}>
-    <Text type="supporting" color="secondary">기능 명세 {filtered.length}개 · 참여자와 최근 변경은 커밋된 기록 기준입니다.</Text>
+    <Text type="supporting" color="secondary">{t('features.count', { count: filtered.length })}</Text>
     <Table data={filtered} idKey="id" columns={columns} plugins={{ interaction }} density="compact" dividers="rows" hasHover textOverflow="truncate"/>
   </VStack>;
 }
 
 function FeatureDetail({ feature: selected, features, search, change }: { feature: SpecFeature; features: SpecFeature[]; search: ProductSearch; change: (s: ProductSearch) => void }) {
   const tab = search.tab === 'design' ? 'design' : 'requirements';
-  return <VStack as="article" aria-label="기능 명세" gap={0} className={styles.featureDetail}>
-    <Link to="/features" search={{ q: search.q }} className={styles.featureBack}>← 요구사항</Link>
+  return <VStack as="article" aria-label={t('features.detail')} gap={0} className={styles.featureDetail}>
+    <Link to="/features" search={{ q: search.q }} className={styles.featureBack}>{t('features.back')}</Link>
     <VStack gap={4} className={styles.documentHeading}>
       <Heading level={1}>{selected.title}</Heading>
       {selected.description && <Markdown>{selected.description}</Markdown>}
       <HStack gap={4} wrap="wrap" className={styles.entryLine}>
         <Text type="supporting" color="secondary">{selected.id}</Text>
-        <Text type="supporting" color="secondary">요구사항 {selected.requirements.length}개</Text>
+        <Text type="supporting" color="secondary">{t('features.requirementCount', { count: selected.requirements.length })}</Text>
         <Contributors people={selected.contributors}/>
         {selected.updatedAt && <Timestamp value={selected.updatedAt} format="relative"/>}
-        <Link to="/" search={{ feature: selected.id }}>기능 변경 이력 →</Link>
+        <Link to="/" search={{ feature: selected.id }}>{t('features.history')}</Link>
       </HStack>
     </VStack>
     <TabList role="tablist" value={tab} onChange={tab => change({ ...search, tab, selected: undefined })} hasDivider>
-      <Tab value="requirements" label="요구사항" panelId="feature-requirements"/>
-      <Tab value="design" label="설계" panelId="feature-design"/>
+      <Tab value="requirements" label={t('features.tab.requirements')} panelId="feature-requirements"/>
+      <Tab value="design" label={t('features.tab.design')} panelId="feature-design"/>
     </TabList>
-    {tab === 'design' ? <VStack id="feature-design" role="tabpanel" aria-label="설계" gap={4} className={styles.designPanel}>
-      {selected.design ? <DesignDocument design={selected.design} features={features}/> : <PageState isCompact title="아직 작성된 설계가 없습니다." description="에이전트와 구현 방식을 정리하면 이곳에서 볼 수 있습니다."/>}
-    </VStack> : <VStack id="feature-requirements" role="tabpanel" aria-label="요구사항" gap={0}>
-      <VStack as="nav" aria-label="명세 목차" gap={2} className={styles.documentIndex}>
-        <Text type="supporting" color="secondary">이 명세의 요구사항</Text>
+    {tab === 'design' ? <VStack id="feature-design" role="tabpanel" aria-label={t('features.tab.design')} gap={4} className={styles.designPanel}>
+      {selected.design ? <DesignDocument design={selected.design} features={features}/> : <PageState isCompact title={t('features.noDesignTitle')} description={t('features.noDesignDescription')}/>}
+    </VStack> : <VStack id="feature-requirements" role="tabpanel" aria-label={t('features.tab.requirements')} gap={0}>
+      <VStack as="nav" aria-label={t('features.index')} gap={2} className={styles.documentIndex}>
+        <Text type="supporting" color="secondary">{t('features.indexTitle')}</Text>
         {selected.requirements.map((r, index) => <a key={r.id} href={`#${r.id}`}>{String(index + 1).padStart(2, '0')}　{r.title}</a>)}
       </VStack>
       {selected.requirements.map((r, index) => (
         <VStack key={r.id} id={r.id} gap={4} className={`${styles.requirementSection} ${r.id === search.selected ? styles.highlight : ''}`}>
           <VStack gap={2}>
-            <Text type="supporting" color="secondary">요구사항 {String(index + 1).padStart(2, '0')}</Text>
+            <Text type="supporting" color="secondary">{t('features.requirementNumber', { number: String(index + 1).padStart(2, '0') })}</Text>
             <Heading level={3}>{r.title}</Heading>
             <Text type="supporting" color="secondary">{r.id}</Text>
           </VStack>
           <Markdown headingLevelStart={4}>{r.body.replace(/\r?\n([ \t]+)(기대 동작:)/g, '  \n$1$2')}</Markdown>
-          <Link to="/" search={{ feature: selected.id, q: r.id }}>이 요구사항의 이력 →</Link>
+          <Link to="/" search={{ feature: selected.id, q: r.id }}>{t('features.requirementHistory')}</Link>
         </VStack>
       ))}
-      {!selected.requirements.length && <Text>현재 요구사항이 없는 기능입니다.</Text>}
+      {!selected.requirements.length && <Text>{t('features.noRequirements')}</Text>}
     </VStack>}
   </VStack>;
 }

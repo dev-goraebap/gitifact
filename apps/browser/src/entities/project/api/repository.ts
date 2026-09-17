@@ -2,12 +2,13 @@ import { queryOptions } from '@tanstack/react-query';
 import { browserSessionV1, browserHttpErrorV1, repositoryStatusV1 } from '@gitifact/contracts';
 import type { BrowserSessionV1, RepositoryStatusSuccessV1 } from '@gitifact/contracts';
 import { ApiError, requestJson } from '../../../shared/api/client';
+import { t } from '../../../shared/i18n';
 
 export const sessionKey = ['browser-session', 1, window.location.origin] as const;
 export function httpFailure(data: unknown): never {
   const parsed = browserHttpErrorV1.safeParse(data);
   if (parsed.success) throw new ApiError(parsed.data.error.message, parsed.data.error.code);
-  throw new ApiError('서버 응답이 지원하는 계약과 일치하지 않습니다.', 'INVALID_RESPONSE');
+  throw new ApiError(t('api.invalidContract'), 'INVALID_RESPONSE');
 }
 export const sessionOptions = () =>
   queryOptions({
@@ -20,7 +21,7 @@ export const sessionOptions = () =>
       const { response, data } = await requestJson('/api/v1/session', { signal });
       if (!response.ok) return httpFailure(data);
       const parsed = browserSessionV1.safeParse(data);
-      if (!parsed.success) throw new ApiError('서버 세션 형식이 호환되지 않습니다.', 'INVALID_RESPONSE');
+      if (!parsed.success) throw new ApiError(t('api.invalidSession'), 'INVALID_RESPONSE');
       return parsed.data;
     },
   });
@@ -47,12 +48,12 @@ async function fetchStatus(
   const result = repositoryStatusV1.safeParse(data);
   if (!result.success) return httpFailure(data);
   if (!result.data.ok) throw new ApiError(result.data.error.message, result.data.error.code);
-  if (!response.ok) throw new ApiError('서버 상태와 응답 결과가 일치하지 않습니다.', 'INVALID_RESPONSE');
+  if (!response.ok) throw new ApiError(t('api.statusMismatch'), 'INVALID_RESPONSE');
   if (
     result.data.repository.key !== session.repository.key ||
     result.data.repository.worktreeKey !== session.repository.worktreeKey
   ) {
-    throw new ApiError('다른 checkout의 응답입니다. 다시 연결하세요.', 'SESSION_CHANGED');
+    throw new ApiError(t('api.otherCheckout'), 'SESSION_CHANGED');
   }
   return result.data;
 }

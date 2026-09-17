@@ -14,13 +14,14 @@ import { HgiProduct } from '../../../shared/ui/icons/HgiProduct';
 import { HgiBook } from '../../../shared/ui/icons/HgiBook';
 import { HgiInfo } from '../../../shared/ui/icons/HgiInfo';
 import styles from './app-shell.module.css';
+import { t } from '../../../shared/i18n';
 const destinations = [
-  ['/product', '제품 개요', HgiProduct],
-  ['/features', '요구사항', HgiRequirement],
-  ['/guides', '지침', HgiBook],
-  ['/', '활동', HgiHistory],
-  ['/contributors', '참여자', HgiMembers],
-  ['/git', 'Git 상태', HgiGit],
+  ['/product', t('nav.product'), HgiProduct],
+  ['/features', t('nav.features'), HgiRequirement],
+  ['/guides', t('nav.guides'), HgiBook],
+  ['/', t('nav.history'), HgiHistory],
+  ['/contributors', t('nav.contributors'), HgiMembers],
+  ['/git', t('nav.git'), HgiGit],
 ] as const;
 const plainClick = (event: MouseEvent) => !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey && event.button === 0;
 export function BrowserShell() {
@@ -37,12 +38,12 @@ export function BrowserShell() {
       sideNav={
         <SideNav
           resizable={{ defaultWidth: 240, minWidth: 200, maxWidth: 400, autoSaveId: 'gitifact-sidenav' }}
-          header={<Link to="/" className="gitifact-wordmark" aria-label="GITIFACT 홈" />}
+          header={<Link to="/" className="gitifact-wordmark" aria-label={t('shell.home')} />}
           footer={
             <VStack padding={4} gap={2}>
-              <Text type="supporting">로컬 프로젝트 · 읽기 전용</Text>
+              <Text type="supporting">{t('shell.readOnly')}</Text>
               <Text type="supporting" color="secondary">
-                변경할 내용은 에이전트와 이야기하세요.
+                {t('shell.askAgent')}
               </Text>
             </VStack>
           }
@@ -56,13 +57,13 @@ export function BrowserShell() {
                 href={to}
                 isSelected={to === '/' ? pathname === '/' : pathname === to || pathname.startsWith(to + '/')}
                 // The uncommitted-spec indicator lives on the Git menu; the Git page carries the explanation.
-                endContent={to === '/git' && working ? <StatusDot variant="warning" label="미커밋 명세 변경 있음" tooltip="미커밋 명세 변경 있음 · Git 상태에서 확인"/> : undefined}
+                endContent={to === '/git' && working ? <StatusDot variant="warning" label={t('shell.workingChanges')} tooltip={t('shell.workingChangesTooltip')}/> : undefined}
                 onClick={go(to)}
               />
             ))}
           </SideNavSection>
           <SideNavSection title="GITIFACT">
-            <SideNavItem label="소개" icon={<HgiInfo/>} href="/about" isSelected={pathname === '/about'} onClick={go('/about')}/>
+            <SideNavItem label={t('nav.about')} icon={<HgiInfo/>} href="/about" isSelected={pathname === '/about'} onClick={go('/about')}/>
           </SideNavSection>
         </SideNav>
       }

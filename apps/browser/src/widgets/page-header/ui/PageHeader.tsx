@@ -6,13 +6,14 @@ import { Link } from '@tanstack/react-router';
 import { ProjectName } from '../../../entities/project';
 import { HgiFolder } from '../../../shared/ui/icons/HgiFolder';
 import styles from './page-header.module.css';
+import { t } from '../../../shared/i18n';
 
 /** One breadcrumb level after the project root; levels with a route render as links, the last one as plain text. */
 export interface Crumb { label: string; to?: string; search?: Record<string, string | undefined> }
 
 export function PageHeader({ trail, actions }: { trail: Crumb[]; actions?: ReactNode }) {
   return (
-    <HStack as="header" aria-label="현재 위치" gap={3} className={styles.bar}>
+    <HStack as="header" aria-label={t('header.location')} gap={3} className={styles.bar}>
       <HStack gap={2} className={styles.trail}>
         <HgiFolder />
         <ProjectName />

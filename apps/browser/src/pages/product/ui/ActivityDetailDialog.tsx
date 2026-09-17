@@ -5,18 +5,19 @@ import { ResizeHandle, useResizable } from '@astryxdesign/core/Resizable';
 import { useMediaQuery } from '@astryxdesign/core/hooks';
 import { EventDetail } from './EventDetail';
 import styles from './product.module.css';
-const names={created:'추가',modified:'변경',deleted:'제거',moved:'이동'};
-const kinds={requirement:'요구사항',design:'설계',product:'제품 문서',guide:'지침 문서'} as const;
+import { t } from '../../../shared/i18n';
+const names={created:t('change.created'),modified:t('change.modified'),deleted:t('change.deleted'),moved:t('change.moved')};
+const kinds={requirement:t('kind.requirement'),design:t('kind.design'),product:t('kind.product'),guide:t('kind.guide')};
 /** Detail drawer: full screen below the desktop breakpoint, otherwise a resizable panel docked to the end edge. The dialog itself scrolls; the header stays pinned. */
 export function ActivityDetailDialog({event:e,features,close}: {event:SpecEvent;features:SpecFeature[];close:()=>void}) {
   const narrow=useMediaQuery('(max-width: 1023px)');
   const pane=useResizable({defaultSize:700,minSize:420,maxSize:1100,autoSaveId:'gitifact-activity-detail'});
-  const subtitle=`${kinds[e.kind??'requirement']} ${e.types.map(t=>names[t]).join(' · ')} · ${e.id} · ${e.commit.slice(0,7)}`;
+  const subtitle=`${kinds[e.kind??'requirement']} ${e.types.map(type=>names[type]).join(' · ')} · ${e.id} · ${e.commit.slice(0,7)}`;
   const onOpenChange=(open:boolean)=>{if(!open)close();};
   const docked=narrow?{variant:'fullscreen' as const}:{variant:'standard' as const,width:pane.size,position:{end:0,top:0},className:styles.drawer};
   return <Dialog isOpen onOpenChange={onOpenChange} purpose="info" padding={0} maxHeight="100dvh" {...docked}>
     <VStack gap={0} className={styles.drawerHeader}><DialogHeader title={(e.after??e.before)?.title??e.id} subtitle={subtitle} onOpenChange={onOpenChange}/></VStack>
     <VStack padding={6} gap={0}><EventDetail event={e} features={features}/></VStack>
-    {!narrow&&<VStack gap={0} className={styles.drawerHandle}><ResizeHandle resizable={pane.props} isReversed hasDivider label="변경 상세 너비 조절"/></VStack>}
+    {!narrow&&<VStack gap={0} className={styles.drawerHandle}><ResizeHandle resizable={pane.props} isReversed hasDivider label={t('activity.resizeDetail')}/></VStack>}
   </Dialog>;
 }

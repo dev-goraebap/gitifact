@@ -8,6 +8,7 @@ import { RepositoryPanel } from './RepositoryPanel';
 import { PageHeader } from '../../../widgets/page-header';
 import { RequestState } from '../../../shared/ui/request-state';
 import styles from './git-status.module.css';
+import { t } from '../../../shared/i18n';
 
 export function GitStatusPage() {
   const session = useQuery(sessionOptions());
@@ -23,10 +24,10 @@ export function GitStatusPage() {
     return <RepositoryPanel key={session.data.sessionId + ':' + connection} session={session.data} reconnect={() => { void reconnect(); }} />;
   return (
     <VStack gap={0} className={styles.page}>
-      <PageHeader trail={[{ label: 'Git 상태' }]} />
+      <PageHeader trail={[{ label: t('nav.git') }]} />
       <VStack gap={0} className={styles.column}>
-        <VStack gap={1} className={styles.pageTitle}><Heading level={1}>Git 상태</Heading></VStack>
-        {session.isPending && <VStack padding={5}><Text role="status" type="supporting" color="secondary">로컬 서버에 연결하고 있습니다.</Text></VStack>}
+        <VStack gap={1} className={styles.pageTitle}><Heading level={1}>{t('nav.git')}</Heading></VStack>
+        {session.isPending && <VStack padding={5}><Text role="status" type="supporting" color="secondary">{t('git.connecting')}</Text></VStack>}
         {session.error && <RequestState error={session.error} retry={() => { void reconnect(); }} />}
       </VStack>
     </VStack>
