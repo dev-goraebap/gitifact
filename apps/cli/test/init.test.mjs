@@ -28,7 +28,9 @@ test('dry-run is read-only; unborn init is complete, repeatable and preserves by
 
 test('agent docs block is planned, created, refreshed and removed through init', async t => {
   const f = fixture(t); f.write('CLAUDE.md', '# Team\n\nRules.\n');
-  const docs = (extra = {}) => ({ version: '0.0.0-test', ...extra });
+  // The block body ships as Markdown beside the built entry point, so this reads the source instead.
+  const source = readFileSync(fileURLToPath(new URL('../src/shared/i18n/ko/block.md', import.meta.url)), 'utf8');
+  const docs = (extra = {}) => ({ version: '0.0.0-test', readBlock: async () => source, ...extra });
   const run = (repo, dryRun, options) => initializeSpecProject(repo.repo, dryRun, repo.env, undefined, options);
   const before = fingerprint(f.repo);
   const planned = await run(f, true, docs());

@@ -13,12 +13,13 @@ await readFile(join(browserSource, 'index.html'));
 if (relative(packageRoot, browserDestination) !== join('dist', 'browser')) throw new Error('Unexpected browser asset destination');
 await rm(browserDestination, { recursive: true, force: true });
 await cp(browserSource, browserDestination, { recursive: true });
-const docsSource = fileURLToPath(new URL('../assets/docs/', import.meta.url));
-const docsDestination = fileURLToPath(new URL('../dist/docs/', import.meta.url));
-await readFile(join(docsSource, 'workflow.md'));
-if (relative(packageRoot, docsDestination) !== join('dist', 'docs')) throw new Error('Unexpected docs asset destination');
-await rm(docsDestination, { recursive: true, force: true });
-await cp(docsSource, docsDestination, { recursive: true });
+const i18nSource = fileURLToPath(new URL('../src/shared/i18n/', import.meta.url));
+const i18nDestination = fileURLToPath(new URL('../dist/i18n/', import.meta.url));
+await readFile(join(i18nSource, 'ko', 'docs', 'workflow.md'));
+if (relative(packageRoot, i18nDestination) !== join('dist', 'i18n')) throw new Error('Unexpected i18n asset destination');
+await rm(i18nDestination, { recursive: true, force: true });
+// Only the long-form Markdown ships as a file; messages.json is bundled into main.js by esbuild.
+await cp(i18nSource, i18nDestination, { recursive: true, filter: source => !source.endsWith('.ts') && !source.endsWith('.json') });
 await writeNotices();
 const options = {
   absWorkingDir: packageRoot,

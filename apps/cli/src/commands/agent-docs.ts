@@ -1,7 +1,7 @@
 import { managedRead, managedWrite } from '../adapters/filesystem/managed-file.js';
-import { agentPresets, boilerplateFor, candidatePaths, findBlock, injectBlock, isWrapperFile, removeBlock, renderAgentBlock, resolveAgentPaths, type AgentPreset, type CandidatePath } from './agent-block.js';
+import { agentPresets, boilerplateFor, candidatePaths, findBlock, injectBlock, isWrapperFile, removeBlock, renderAgentBlock, resolveAgentPaths, type AgentBlockControls, type AgentPreset, type CandidatePath } from './agent-block.js';
 
-export interface AgentDocsOptions { version: string; agent?: AgentPreset | undefined; remove?: boolean | undefined; skip?: boolean | undefined }
+export interface AgentDocsOptions extends AgentBlockControls { version: string; agent?: AgentPreset | undefined; remove?: boolean | undefined; skip?: boolean | undefined }
 export interface AgentDocsWrite { path: CandidatePath; previous: string | null; next: string | null }
 export interface AgentDocsPlan { mode: 'install' | 'remove' | 'skip'; paths: CandidatePath[]; writes: AgentDocsWrite[] }
 export const skippedAgentDocs: AgentDocsPlan = { mode: 'skip', paths: [], writes: [] };
@@ -27,7 +27,7 @@ export async function planAgentDocs(root: string, options: AgentDocsOptions): Pr
     }
     return { mode: 'remove', paths, writes };
   }
-  const block = renderAgentBlock(options.version);
+  const block = await renderAgentBlock(options.version, options);
   const { inject, create } = resolveAgentPaths(options.agent, existing);
   for (const path of inject) {
     const previous = existing.get(path)!;

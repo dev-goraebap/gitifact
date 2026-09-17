@@ -4,31 +4,57 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { AGENT_END, AGENT_START, boilerplateFor, injectBlock, isWrapperFile, parseAgentBlock, removeBlock, renderAgentBlock, resolveAgentPaths } from '../.test-build/commands/agent-block.js';
 import { applyAgentDocs, planAgentDocs } from '../.test-build/commands/agent-docs.js';
+import { fileURLToPath } from 'node:url';
 import { fixture, fingerprint } from './git-fixture.mjs';
 
-const block = renderAgentBlock('1.2.3');
+// The block body ships as Markdown next to the built entry point, so unit tests read the source instead.
+const source = readFileSync(fileURLToPath(new URL('../src/shared/i18n/ko/block.md', import.meta.url)), 'utf8');
+const controls = { readBlock: async () => source };
+const render = version => renderAgentBlock(version, controls);
+const plan = (root, options) => planAgentDocs(root, { ...options, ...controls });
+const block = await render('1.2.3');
 const agents = boilerplateFor('AGENTS.md');
 const noop = async () => {};
 
 test('rendered block is versioned, marker-delimited and about thirty lines', () => {
   const lines = block.split('\n');
   assert.equal(lines[0], AGENT_START); assert.equal(lines.at(-1), AGENT_END);
-  assert.equal(lines[1], 'gitifact v1.2.3 · 저장 규약 schemaVersion 1');
+  assert.equal(lines[1], 'gitifact v1.2.3 · ko · 저장 규약 schemaVersion 1');
   assert.ok(lines.length >= 25 && lines.length <= 40, String(lines.length));
-  assert.deepEqual(parseAgentBlock(block), { version: '1.2.3', schemaVersion: 1 });
+  assert.deepEqual(parseAgentBlock(block), { version: '1.2.3', language: 'ko', schemaVersion: 1 });
   assert.equal(parseAgentBlock('no block'), null);
   for (const topic of ['docs spec', 'docs commit', 'docs <topic>', 'spec working', 'SELF-CHECK']) assert.ok(block.includes(topic), topic);
   assert.equal(boilerplateFor('.claude/CLAUDE.md'), '# CLAUDE\n\nProject-specific guidance for AI coding agents.\n');
   assert.equal(boilerplateFor('.cursorrules'), '# cursorrules\n\nProject-specific guidance for AI coding agents.\n');
 });
 
-test('inject creates, appends, replaces idempotently and keeps CRLF', () => {
+test('the header parses with and without the language token', () => {
+  // Blocks written before the language token existed are Korean; they must stay readable.
+  assert.deepEqual(parseAgentBlock('gitifact v0.3.1 · 저장 규약 schemaVersion 1'), { version: '0.3.1', language: 'ko', schemaVersion: 1 });
+  assert.deepEqual(parseAgentBlock('gitifact v0.3.1 · ko · 저장 규약 schemaVersion 1'), { version: '0.3.1', language: 'ko', schemaVersion: 1 });
+  // The text between the language and schemaVersion is localized, so a future language still parses.
+  assert.deepEqual(parseAgentBlock('gitifact v1.0.0 · en · storage schemaVersion 2'), { version: '1.0.0', language: 'en', schemaVersion: 2 });
+  assert.equal(parseAgentBlock('gitifact 0.3.1 schemaVersion 1'), null);
+});
+
+test('the block summary matches the workflow document it summarizes', () => {
+  // The block abbreviates the handling column, so only the example requests are compared. A request that
+  // exists in the block but not in the source table would teach agents a rule the full document never states.
+  const workflow = readFileSync(fileURLToPath(new URL('../src/shared/i18n/ko/docs/workflow.md', import.meta.url)), 'utf8');
+  const requests = text => text.split('\n').filter(line => line.startsWith('| ') && !line.startsWith('| ---')).map(line => line.split(' | ')[0]);
+  const rows = block.split('\n').filter(line => line.startsWith('| ') && !line.startsWith('| ---') && !line.startsWith('| 요청 '));
+  assert.equal(rows.length, 4);
+  const sourceRequests = requests(workflow);
+  for (const request of requests(rows.join('\n'))) assert.ok(sourceRequests.includes(request), request);
+});
+
+test('inject creates, appends, replaces idempotently and keeps CRLF', async () => {
   const created = injectBlock(null, block, agents);
   assert.equal(created, agents + '\n' + block + '\n');
   const appended = injectBlock('# Mine\n\nKeep this.\n\n\n', block, agents);
   assert.equal(appended, '# Mine\n\nKeep this.\n\n' + block + '\n');
   assert.equal(injectBlock(appended, block, agents), appended);
-  const newer = renderAgentBlock('2.0.0');
+  const newer = await render('2.0.0');
   const replaced = injectBlock(appended + '\n## After\n', newer, agents);
   assert.equal(replaced, '# Mine\n\nKeep this.\n\n' + newer + '\n\n## After\n');
   assert.equal(injectBlock('', block, agents), block + '\n');
@@ -74,63 +100,63 @@ test('wrapper detection and preset resolution follow the search order', () => {
 
 test('plan and apply write the block, refresh in place and preserve user text', async t => {
   const f = fixture(t);
-  const plan = await planAgentDocs(f.repo, { version: '1.2.3' });
-  assert.deepEqual([plan.mode, plan.paths], ['install', ['AGENTS.md']]);
-  assert.deepEqual(await applyAgentDocs(f.repo, plan, noop), ['AGENTS.md']);
+  const installed = await plan(f.repo, { version: '1.2.3' });
+  assert.deepEqual([installed.mode, installed.paths], ['install', ['AGENTS.md']]);
+  assert.deepEqual(await applyAgentDocs(f.repo, installed, noop), ['AGENTS.md']);
   const first = readFileSync(join(f.repo, 'AGENTS.md'), 'utf8');
   assert.equal(first, agents + '\n' + block + '\n');
-  const again = await planAgentDocs(f.repo, { version: '1.2.3' });
+  const again = await plan(f.repo, { version: '1.2.3' });
   assert.deepEqual([again.paths, again.writes], [['AGENTS.md'], []]);
   f.write('AGENTS.md', first + '\n## Team rules\n\nNever push.\n');
   const before = fingerprint(f.repo);
-  const upgraded = await planAgentDocs(f.repo, { version: '2.0.0' });
+  const upgraded = await plan(f.repo, { version: '2.0.0' });
   await applyAgentDocs(f.repo, upgraded, noop);
   const text = readFileSync(join(f.repo, 'AGENTS.md'), 'utf8');
-  assert.equal(text, agents + '\n' + renderAgentBlock('2.0.0') + '\n\n## Team rules\n\nNever push.\n');
+  assert.equal(text, agents + '\n' + await render('2.0.0') + '\n\n## Team rules\n\nNever push.\n');
   assert.notDeepEqual(fingerprint(f.repo), before);
   assert.deepEqual(Object.keys(fingerprint(f.repo)).filter(k => !k.startsWith('.git/')), ['AGENTS.md']);
-  const removal = await planAgentDocs(f.repo, { version: '2.0.0', remove: true });
+  const removal = await plan(f.repo, { version: '2.0.0', remove: true });
   assert.deepEqual([removal.mode, removal.paths], ['remove', ['AGENTS.md']]);
   await applyAgentDocs(f.repo, removal, noop);
   assert.equal(readFileSync(join(f.repo, 'AGENTS.md'), 'utf8'), agents + '\n## Team rules\n\nNever push.\n');
-  await applyAgentDocs(f.repo, await planAgentDocs(f.repo, { version: '2.0.0' }), noop);
-  f.write('AGENTS.md', agents + '\n' + renderAgentBlock('2.0.0') + '\n');
-  await applyAgentDocs(f.repo, await planAgentDocs(f.repo, { version: '2.0.0', remove: true }), noop);
+  await applyAgentDocs(f.repo, await plan(f.repo, { version: '2.0.0' }), noop);
+  f.write('AGENTS.md', agents + '\n' + await render('2.0.0') + '\n');
+  await applyAgentDocs(f.repo, await plan(f.repo, { version: '2.0.0', remove: true }), noop);
   assert.equal(existsSync(join(f.repo, 'AGENTS.md')), false);
-  assert.deepEqual(await planAgentDocs(f.repo, { version: '2.0.0', remove: true }), { mode: 'remove', paths: [], writes: [] });
-  assert.deepEqual(await planAgentDocs(f.repo, { version: '2.0.0', skip: true }), { mode: 'skip', paths: [], writes: [] });
+  assert.deepEqual(await plan(f.repo, { version: '2.0.0', remove: true }), { mode: 'remove', paths: [], writes: [] });
+  assert.deepEqual(await plan(f.repo, { version: '2.0.0', skip: true }), { mode: 'skip', paths: [], writes: [] });
 });
 
 test('presets, wrappers and malformed files on disk', async t => {
   const f = fixture(t);
   f.write('CLAUDE.md', '@AGENTS.md\n');
-  await applyAgentDocs(f.repo, await planAgentDocs(f.repo, { version: '1.0.0' }), noop);
+  await applyAgentDocs(f.repo, await plan(f.repo, { version: '1.0.0' }), noop);
   assert.equal(readFileSync(join(f.repo, 'CLAUDE.md'), 'utf8'), '@AGENTS.md\n');
   assert.ok(readFileSync(join(f.repo, 'AGENTS.md'), 'utf8').includes(AGENT_START));
-  const claude = await planAgentDocs(f.repo, { version: '1.0.0', agent: 'claude' });
+  const claude = await plan(f.repo, { version: '1.0.0', agent: 'claude' });
   assert.deepEqual(claude.paths, ['CLAUDE.md']);
   await applyAgentDocs(f.repo, claude, noop);
-  assert.equal(readFileSync(join(f.repo, 'CLAUDE.md'), 'utf8'), '@AGENTS.md\n\n' + renderAgentBlock('1.0.0') + '\n');
+  assert.equal(readFileSync(join(f.repo, 'CLAUDE.md'), 'utf8'), '@AGENTS.md\n\n' + await render('1.0.0') + '\n');
   // The next unscoped run takes the block back out of the wrapper.
-  const cleanup = await planAgentDocs(f.repo, { version: '1.0.0' });
+  const cleanup = await plan(f.repo, { version: '1.0.0' });
   assert.deepEqual([cleanup.paths, cleanup.writes.map(w => w.path)], [['AGENTS.md'], ['CLAUDE.md']]);
   await applyAgentDocs(f.repo, cleanup, noop);
   assert.equal(readFileSync(join(f.repo, 'CLAUDE.md'), 'utf8'), '@AGENTS.md\n');
-  const cursor = await planAgentDocs(f.repo, { version: '1.0.0', agent: 'cursor' });
+  const cursor = await plan(f.repo, { version: '1.0.0', agent: 'cursor' });
   assert.deepEqual(cursor.paths, ['AGENTS.md']);
   const g = fixture(t);
-  const nested = await planAgentDocs(g.repo, { version: '1.0.0', agent: 'claude' });
+  const nested = await plan(g.repo, { version: '1.0.0', agent: 'claude' });
   await applyAgentDocs(g.repo, nested, noop);
-  assert.equal(readFileSync(join(g.repo, '.claude/CLAUDE.md'), 'utf8'), boilerplateFor('.claude/CLAUDE.md') + '\n' + renderAgentBlock('1.0.0') + '\n');
+  assert.equal(readFileSync(join(g.repo, '.claude/CLAUDE.md'), 'utf8'), boilerplateFor('.claude/CLAUDE.md') + '\n' + await render('1.0.0') + '\n');
   assert.equal(existsSync(join(g.repo, 'AGENTS.md')), false);
   const h = fixture(t);
   h.write('AGENTS.md', AGENT_START + '\nbroken\n');
   const before = fingerprint(h.repo);
-  await assert.rejects(planAgentDocs(h.repo, { version: '1.0.0' }), { code: 'AGENT_DOCS_MALFORMED' });
+  await assert.rejects(plan(h.repo, { version: '1.0.0' }), { code: 'AGENT_DOCS_MALFORMED' });
   assert.deepEqual(fingerprint(h.repo), before);
   mkdirSync(join(h.repo, 'link-target'));
   writeFileSync(join(h.repo, 'AGENTS.md'), '# ok\n');
   const { symlinkSync } = await import('node:fs');
   symlinkSync(join(h.repo, 'link-target'), join(h.repo, '.claude'), 'junction');
-  await assert.rejects(planAgentDocs(h.repo, { version: '1.0.0', agent: 'claude' }), { code: 'PATH_CONFLICT' });
+  await assert.rejects(plan(h.repo, { version: '1.0.0', agent: 'claude' }), { code: 'PATH_CONFLICT' });
 });

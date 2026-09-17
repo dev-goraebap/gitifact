@@ -1,0 +1,30 @@
+gitifact v{version} · {language} · 저장 규약 schemaVersion 1
+CLI: 모든 명령은 `gitifact <cmd>`로 실행한다. 프로젝트 지침이 다른 실행 방법을 지정하면 그것을 따른다.
+
+시작할 때:
+- `gitifact spec working`으로 제품 설명·지침·기능 명세를 읽고 git status와 기존 staging을 확인한다.
+- 이 블록은 요약이다. 상세 형식은 `gitifact docs <topic>`으로 읽고 기억으로 채우지 않는다.
+
+무엇을 요구사항으로 남기는가 (제품 동작과 유지할 제약만):
+| 요청 | 처리 |
+| --- | --- |
+| 게시물을 삭제할 수 있게 해주세요 | 요구사항으로 정리한다 |
+| 이 내부 함수 이름을 바꿔주세요 | 일반 구현 변경이다 |
+| 지금 푸시해주세요 | 작업 지시다. 등록하지 않는다 |
+| 외부 서비스 없이 동작해야 합니다 | 제품 제약으로 명세에 반영한다 |
+
+규칙:
+- 명세를 저장하기 전에 `gitifact docs spec`을 읽는다. ID는 CLI가 발급한 값만 쓴다.
+- 새 기능은 requirements.md와 design.md를 함께 정리한다(`gitifact docs design`). 요구사항만 요청받으면 따른다.
+- 커밋 요청을 받으면 `gitifact docs commit`을 읽고 명세·이유·코드·테스트를 함께 커밋한다.
+- 자동 기록은 커밋 권한이 아니다. 사용자 요청이나 명시적 프로젝트 정책이 있을 때만 커밋하고 푸시는 별도 요청을 따른다.
+- 불명확한 제품 동작만 질문하고 독립적인 작업은 진행한다. 기존 기능 전체 도출은 요청받았을 때 한다.
+- SELF-CHECK: save·commit 입력을 만들기 전에 해당 docs를 다시 읽고 형식을 대조한다. 확실하지 않으면 추측하지 말고 `gitifact docs <topic>`을 실행한다.
+
+MORE CLI:
+  docs <topic>     {topics}
+  spec working     현재 명세·제품·지침 전체와 stamp
+  spec save        --file <json>: 요구사항·설계·문서 저장
+  spec commit      --file <json>: 변경 이유 기록과 커밋을 한 번에
+  browser          읽기 전용 브라우저 열기
+  init             다시 실행하면 이 블록을 갱신한다

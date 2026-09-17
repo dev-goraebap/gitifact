@@ -9,7 +9,8 @@ import { fileURLToPath } from 'node:url';
 import { docTopics, listDocTopics, runDocs } from '../.test-build/commands/docs.js';
 
 const entry = fileURLToPath(new URL('../dist/main.js', import.meta.url));
-const assets = fileURLToPath(new URL('../assets/docs/', import.meta.url));
+const assets = fileURLToPath(new URL('../src/shared/i18n/ko/docs/', import.meta.url));
+const bundled = fileURLToPath(new URL('../dist/i18n/ko/docs/', import.meta.url));
 const run = (cwd, ...args) => {
   const result = spawnSync(process.execPath, [entry, 'docs', ...args], { cwd, encoding: 'utf8', timeout: 10_000 });
   assert.ifError(result.error); return result;
@@ -19,6 +20,7 @@ test('bundled docs match the asset source and list every topic', async t => {
   const cwd = await mkdtemp(join(tmpdir(), 'gitifact-docs-'));
   t.after(() => rm(cwd, { recursive: true, force: true }));
   assert.deepEqual(readdirSync(assets).sort(), [...docTopics].map(topic => topic + '.md').sort());
+  assert.deepEqual(readdirSync(bundled).sort(), [...docTopics].map(topic => topic + '.md').sort());
   const list = run(cwd);
   assert.equal(list.status, 0, list.stderr); assert.equal(list.stderr, '');
   assert.equal(list.stdout, listDocTopics());
