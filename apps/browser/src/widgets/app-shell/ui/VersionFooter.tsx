@@ -15,7 +15,7 @@ export function VersionFooter() {
   if (!session.data) return null;
   const { cliVersion, update } = session.data;
   return (
-    <HStack gap={1} vAlign="center" wrap="wrap">
+    <HStack gap={1} padding={3} hAlign="start" vAlign="center" wrap="wrap">
       <Button label={t('shell.version', { version: cliVersion })} variant="ghost" size="sm" href="/changelog" as={RouterLink} tooltip={t('shell.versionTooltip')} />
       {update.status === 'available' && update.latestVersion && <>
         <Button label={t('shell.updateAvailable', { version: update.latestVersion })} variant="secondary" size="sm" onClick={() => setOpen(true)} />

@@ -3,7 +3,6 @@ import { AppShell } from '@astryxdesign/core/AppShell';
 import { SideNav, SideNavItem, SideNavSection } from '@astryxdesign/core/SideNav';
 import { StatusDot } from '@astryxdesign/core/StatusDot';
 import { VStack } from '@astryxdesign/core/VStack';
-import { Text } from '@astryxdesign/core/Text';
 import { Link, Outlet, useNavigate, useRouterState } from '@tanstack/react-router';
 import { useWorkingChanges } from '../../../entities/project';
 import { HgiHistory } from '../../../shared/ui/icons/HgiHistory';
@@ -40,15 +39,7 @@ export function BrowserShell() {
         <SideNav
           resizable={{ defaultWidth: 240, minWidth: 200, maxWidth: 400, autoSaveId: 'gitifact-sidenav' }}
           header={<Link to="/" className="gitifact-wordmark" aria-label={t('shell.home')} />}
-          footer={
-            <VStack padding={4} gap={2}>
-              <Text type="supporting">{t('shell.readOnly')}</Text>
-              <Text type="supporting" color="secondary">
-                {t('shell.askAgent')}
-              </Text>
-              <VersionFooter />
-            </VStack>
-          }
+          footer={<VersionFooter />}
         >
           <SideNavSection title="WORKSPACE">
             {destinations.map(([to, label, MenuIcon]) => (
