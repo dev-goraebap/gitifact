@@ -13,6 +13,7 @@ apps/
 packages/
   core/           명세·문서·이력 규칙과 유스케이스
   contracts/      버전이 있는 외부 DTO·검증 계약
+  intro/          언어별 제품 소개 글(README·소개 페이지·랜딩 사이트 공용 원본)
 .gitifact/
   product/        제품 개요(PRODUCT.md)와 이미지
   guides/         구현 지침(이 문서들)
@@ -42,6 +43,7 @@ docs/             날짜별 개발·배포·도입 기록
 
 ```text
 apps/browser ──→ packages/contracts
+apps/browser ──→ packages/intro
 apps/cli     ──→ packages/contracts
 apps/cli     ──→ packages/core
 ```

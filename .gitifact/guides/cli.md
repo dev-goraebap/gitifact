@@ -41,11 +41,11 @@ stdout에는 선택한 출력 형식만 내보내고 로그·진행 상황은 st
 | :--- | :--- |
 | 명령·옵션 설명, 텍스트 출력, 오류 메시지, 화면 문구 | `<lang>/messages.json` |
 | 에이전트 지침, GITIFACT 블록, 패치노트 (CLI) | `<lang>/docs/*.md`, `<lang>/block.md`, `<lang>/changelog.md` |
-| 소개 페이지 본문 (브라우저) | `<lang>/about.md` |
+| 제품 소개 글 (브라우저 소개 페이지·README·랜딩 사이트 공용) | `packages/intro/<lang>/intro.md` |
 
 - 문구는 `t(key, values)`로 가져온다. 키는 `init.inputChanged`처럼 점으로 구분한 평평한 문자열이고, 값은 `{name}` 자리에 넣으며 문장을 코드에서 이어 붙이지 않는다. 브라우저에서 `<time>`·`<Link>` 같은 요소가 문장 안에 들어가면 `tNodes()`를 쓴다.
 - 키 타입은 JSON에서 파생하므로 없는 키는 컴파일 오류다. 새 언어는 `Record<MessageKey, string>`으로 선언해 누락을 잡는다. 패키지마다 테스트가 호출별 자리 이름과 쓰지 않는 키를 검사한다.
-- 같은 내용을 두 곳에 두지 않는다. 블록은 지침의 요약이므로 요청 분류 예시가 workflow 원문에 있는지 테스트로 대조한다. 버전 번호는 package.json과 패치노트에만 두고 README·소개 페이지에 적지 않는다.
+- 같은 내용을 두 곳에 두지 않는다. 블록은 지침의 요약이므로 요청 분류 예시가 workflow 원문에 있는지 테스트로 대조한다. 버전 번호는 package.json과 패치노트에만 두고 README·소개 글에 적지 않는다. 영문 README와 gitifact.xyz 사이트가 생기기 전까지 README.md는 `packages/intro/ko/intro.md`를 로고 블록까지 그대로 복사해 두며, 패키지 테스트가 두 파일이 같은지 확인한다. 로고 파일도 `packages/intro/assets/`에 둔다. 소개 글의 링크는 GitHub·사이트·브라우저에서 같게 읽히도록 절대 URL만 쓰고, 브라우저 소개 페이지는 원시 HTML을 렌더링하지 않으므로 맨 앞 로고 블록을 번들한 로고 이미지로 바꾸고, 제품 개요·요구사항 링크만 앱 안 경로로 바꾼다.
 - 오류는 반드시 `code`를 갖고, 코드는 언어와 무관하다. 호출 코드와 에이전트는 코드나 오류 타입으로 분기하며 메시지 본문을 비교하지 않는다.
 - 명령·옵션 설명은 `main.ts`에만 둔다. 요구사항 본문 문법(`조건:`·`기대 동작:`)은 화면 문구가 아니므로 카탈로그로 옮기지 않는다. Astryx 컴포넌트 자체 문구는 Astryx의 `InternationalizationProvider` 카탈로그를 따른다.
 - 언어는 각 `index.ts`의 `defaultLanguage` 상수로 정한다. 두 번째 언어를 추가할 때 `.gitifact/config.json`의 선택 필드 `language`와 `init --lang`을 도입한다. 환경변수·전역 설정 파일은 사람마다 값이 달라 같은 프로젝트의 블록 언어가 오갈 수 있어 기각했다. 블록 첫 줄의 언어 토큰(`gitifact vX · ko · …`)으로 init 재실행이 기존 언어를 읽을 수 있고, 토큰이 없는 과거 블록은 한국어로 읽는다.

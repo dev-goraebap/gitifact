@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="packages/intro/assets/gitifact-logo.svg" alt="GITIFACT" width="720" />
+</p>
+
 제품을 만드는 대화가 요구사항과 결정의 기록으로 이어지도록 돕는 도구입니다.
 
 Gitifact가 지향하는 것은 사용자가 자신의 제품을 만드는 일에 집중하는 환경입니다. 평소처럼 에이전트와 무엇을 만들지 고민하고, 구현하고, 고쳐나가세요. 그 과정에서 요구사항과 변경 이유가 Git에 쌓이고, 사람과 에이전트가 같은 기록을 보며 제품의 상태를 이해할 수 있도록 만들고 있습니다.
@@ -41,11 +45,11 @@ Markdown 요구사항·설계와 커밋 시점의 변경 이유를 Git에 연결
 
 최신 공개 버전은 [npm](https://www.npmjs.com/package/gitifact)에서, 버전별 변경 내역은 [패치노트](https://github.com/dev-goraebap/gitifact/blob/main/apps/cli/src/shared/i18n/ko/changelog.md)에서 확인하세요.
 
-제품의 목적·원칙·범위는 [제품 개요](/product)에서, 기능별 요구사항과 설계는 [요구사항](/features)에서 확인할 수 있습니다.
+제품의 목적·원칙·범위는 [제품 개요](https://github.com/dev-goraebap/gitifact/blob/main/.gitifact/product/PRODUCT.md)에서, 기능별 요구사항과 설계는 [요구사항](https://github.com/dev-goraebap/gitifact/tree/main/.gitifact/spec)에서 확인할 수 있습니다.
 
 ## Gitifact 개발에 참여하려면
 
-실행·빌드·검증과 코드 구조는 [GitHub 저장소](https://github.com/dev-goraebap/gitifact)의 개발 환경 문서와 아키텍처 지침을 참고하세요.
+실행·빌드·검증은 [개발 환경](https://github.com/dev-goraebap/gitifact/blob/main/docs/development.md), 코드 구조는 [아키텍처 지침](https://github.com/dev-goraebap/gitifact/blob/main/.gitifact/guides/architecture.md)을 참고하세요.
 
 ## 라이선스
 

@@ -26,6 +26,9 @@ importers:
       '@gitifact/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@gitifact/intro':
+        specifier: workspace:*
+        version: link:../../packages/intro
       '@hugeicons/core-free-icons':
         specifier: 4.3.0
         version: 4.3.0
@@ -92,6 +95,8 @@ importers:
         version: 4.6.4
 
   packages/core: {}
+
+  packages/intro: {}
 
 packages:
 

@@ -1,10 +1,10 @@
 <p align="center">
-  <img src="docs/assets/gitifact-logo.svg" alt="GITIFACT" width="720" />
+  <img src="packages/intro/assets/gitifact-logo.svg" alt="GITIFACT" width="720" />
 </p>
 
 제품을 만드는 대화가 요구사항과 결정의 기록으로 이어지도록 돕는 도구입니다.
 
-gitifact가 지향하는 것은 사용자가 자신의 제품을 만드는 일에 집중하는 환경입니다. 평소처럼 에이전트와 무엇을 만들지 고민하고, 구현하고, 고쳐나가세요. 그 과정에서 요구사항과 변경 이유가 Git에 쌓이고, 사람과 에이전트가 같은 기록을 보며 제품의 상태를 이해할 수 있도록 만들고 있습니다.
+Gitifact가 지향하는 것은 사용자가 자신의 제품을 만드는 일에 집중하는 환경입니다. 평소처럼 에이전트와 무엇을 만들지 고민하고, 구현하고, 고쳐나가세요. 그 과정에서 요구사항과 변경 이유가 Git에 쌓이고, 사람과 에이전트가 같은 기록을 보며 제품의 상태를 이해할 수 있도록 만들고 있습니다.
 
 ## 에이전트에게 시작을 맡기세요
 
@@ -15,15 +15,15 @@ gitifact가 지향하는 것은 사용자가 자신의 제품을 만드는 일�
 init이 AGENTS.md 등에 쓴 GITIFACT 블록을 읽고 이번 세션부터 따르세요.
 ```
 
-Node.js 24.x와 Git이 필요합니다. `init`은 프로젝트의 AGENTS.md 같은 에이전트 지침 파일에 작업 규칙 블록을 씁니다. 그 뒤로는 평소처럼 제품을 설명하고 개발을 이어가면 됩니다. CLI를 업데이트했다면 `init`을 다시 실행해 블록을 갱신하세요. 명령 목록은 [CLI 안내](apps/cli/README.md)에 있습니다.
+Node.js 24.x와 Git이 필요합니다. `init`은 프로젝트의 AGENTS.md 같은 에이전트 지침 파일에 작업 규칙 블록을 씁니다. 그 뒤로는 평소처럼 제품을 설명하고 개발을 이어가면 됩니다. CLI를 업데이트했다면 `init`을 다시 실행해 블록을 갱신하세요. 명령 목록은 [CLI 안내](https://github.com/dev-goraebap/gitifact/blob/main/apps/cli/README.md)에 있습니다.
 
 ## 제품에 집중할 수 있도록
 
-gitifact는 스펙 주도 개발과 Anthropic의 [AI-Native SDLC Playbook](https://academy.claude.com/courses/ai-native-sdlc-playbook)에서 영감을 받았습니다. 요구사항을 정리하고 변경을 추적한다는 기본 원리를 따르되, 사용자가 이 개념들을 먼저 공부하거나 정해진 개발 절차에 익숙해져야 할 필요는 없도록 하려 합니다.
+Gitifact는 스펙 주도 개발과 Anthropic의 [AI-Native SDLC Playbook](https://academy.claude.com/courses/ai-native-sdlc-playbook)에서 영감을 받았습니다. 요구사항을 정리하고 변경을 추적한다는 기본 원리를 따르되, 사용자가 이 개념들을 먼저 공부하거나 정해진 개발 절차에 익숙해져야 할 필요는 없도록 하려 합니다.
 
 CLI, 데스크탑 앱, VS Code 어디에서 에이전트와 대화하든 자신에게 익숙한 방식으로 제품을 만들 수 있어야 합니다. 개발자뿐 아니라 로컬 에이전트와 대화하며 제품을 만드는 비개발자와 바이브 코더도 같은 대상입니다.
 
-에이전트는 대화의 맥락에서 요구사항과 결정을 식별하고, gitifact는 그 기록을 프로젝트의 Git 이력에 연결합니다. 사용자가 매번 기록할 항목과 명령을 지정하지 않아도 필요한 맥락이 남는 것이 목표입니다.
+에이전트는 대화의 맥락에서 요구사항과 결정을 식별하고, Gitifact는 그 기록을 프로젝트의 Git 이력에 연결합니다. 사용자가 매번 기록할 항목과 명령을 지정하지 않아도 필요한 맥락이 남는 것이 목표입니다.
 
 ## 커밋된 명세를 기준으로
 
@@ -37,20 +37,20 @@ CLI, 데스크탑 앱, VS Code 어디에서 에이전트와 대화하든 자신�
 
 ## 적용 범위와 한계
 
-gitifact는 개인이나 팀이 **하나의 Git 저장소 안에서 제품을 만드는 환경**을 전제로 합니다. 하나의 제품을 여러 저장소로 나누어 운영하는 멀티 레포의 통합 요구사항 관리는 지원하지 않습니다. 이슈 트래커 연계는 검토한 적이 있지만 개발 여부와 일정은 미정입니다.
+Gitifact는 개인이나 팀이 **하나의 Git 저장소 안에서 제품을 만드는 환경**을 전제로 합니다. 하나의 제품을 여러 저장소로 나누어 운영하는 멀티 레포의 통합 요구사항 관리는 지원하지 않습니다. 이슈 트래커 연계는 검토한 적이 있지만 개발 여부와 일정은 미정입니다.
 
 ## 프로젝트 상태
 
 Markdown 요구사항·설계와 커밋 시점의 변경 이유를 Git에 연결하고, 읽기 전용 브라우저에서 활동·요구사항·참여자를 볼 수 있습니다. 에이전트에게 "gitifact 브라우저를 열어주세요"라고 요청하세요. 이전 Tryce 프로젝트는 `gitifact migrate`로 전환합니다.
 
-최신 공개 버전은 [npm](https://www.npmjs.com/package/gitifact)에서, 버전별 변경 내역은 [패치노트](apps/cli/src/shared/i18n/ko/changelog.md)에서 확인하세요.
+최신 공개 버전은 [npm](https://www.npmjs.com/package/gitifact)에서, 버전별 변경 내역은 [패치노트](https://github.com/dev-goraebap/gitifact/blob/main/apps/cli/src/shared/i18n/ko/changelog.md)에서 확인하세요.
 
-제품의 목적·원칙·범위는 [제품 개요](.gitifact/product/PRODUCT.md)에서, 기능별 요구사항과 설계는 `.gitifact/spec/`에서 확인할 수 있습니다.
+제품의 목적·원칙·범위는 [제품 개요](https://github.com/dev-goraebap/gitifact/blob/main/.gitifact/product/PRODUCT.md)에서, 기능별 요구사항과 설계는 [요구사항](https://github.com/dev-goraebap/gitifact/tree/main/.gitifact/spec)에서 확인할 수 있습니다.
 
-## gitifact 개발에 참여하려면
+## Gitifact 개발에 참여하려면
 
-실행·빌드·검증은 [개발 환경](docs/development.md), 코드 구조는 [아키텍처 지침](.gitifact/guides/architecture.md)을 참고하세요.
+실행·빌드·검증은 [개발 환경](https://github.com/dev-goraebap/gitifact/blob/main/docs/development.md), 코드 구조는 [아키텍처 지침](https://github.com/dev-goraebap/gitifact/blob/main/.gitifact/guides/architecture.md)을 참고하세요.
 
 ## 라이선스
 
-[MIT](LICENSE). 배포물에 포함된 의존성의 라이선스 고지는 `dist/THIRD_PARTY_NOTICES.txt`에 제공합니다.
+[MIT](https://github.com/dev-goraebap/gitifact/blob/main/LICENSE). 배포물에 포함된 의존성의 라이선스 고지는 `dist/THIRD_PARTY_NOTICES.txt`에 제공합니다.

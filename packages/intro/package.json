@@ -1,0 +1,17 @@
+{
+  "name": "@gitifact/intro",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./ko/intro.md": "./ko/intro.md",
+    "./assets/gitifact-logo.svg": "./assets/gitifact-logo.svg"
+  },
+  "files": [
+    "ko",
+    "assets"
+  ],
+  "scripts": {
+    "test:built": "node --test test/*.test.mjs"
+  }
+}

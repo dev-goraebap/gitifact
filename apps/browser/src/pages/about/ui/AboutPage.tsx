@@ -3,11 +3,21 @@ import { Heading } from '@astryxdesign/core/Heading';
 import { Markdown } from '@astryxdesign/core/Markdown';
 import { PageHeader } from '../../../widgets/page-header';
 import { localDocument, t } from '../../../shared/i18n';
+import logoUrl from '@gitifact/intro/assets/gitifact-logo.svg?url';
 import styles from './about.module.css';
 
-// The body mirrors the README of the gitifact repository; repository-relative links point at the browser pages or GitHub instead.
+// The intro is shared with the README and the landing site and links to GitHub. Inside the browser, the product
+// overview and requirements links open the matching pages instead.
+const repository = 'https://github.com/dev-goraebap/gitifact';
+const inAppLinks: [string, string][] = [
+  ['](' + repository + '/blob/main/.gitifact/product/PRODUCT.md)', '](/product)'],
+  ['](' + repository + '/tree/main/.gitifact/spec)', '](/features)'],
+];
+// The README opens with an HTML logo block, which Markdown here does not render; it becomes an image of the bundled file.
+const logoBlock = /^<p align="center">\s*<img src="[^"]*" alt="([^"]*)"[^>]*\/>\s*<\/p>\s*/;
 export function AboutPage() {
-  const body = localDocument('about');
+  const intro = localDocument('about').replace(logoBlock, (_block, alt: string) => '![' + alt + '](' + logoUrl + ')\n\n');
+  const body = inAppLinks.reduce((text, [from, to]) => text.replaceAll(from, to), intro);
   return (
     <VStack gap={0} className={styles.page}>
       <PageHeader trail={[{ label: t('about.title') }]} />

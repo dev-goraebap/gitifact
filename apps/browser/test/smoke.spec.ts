@@ -27,6 +27,13 @@ test('built app loads Astryx and supports navigation, reload, and history', asyn
   await page.keyboard.press('Enter');
   await expect(page).toHaveURL(/\/about$/);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Gitifact 소개');
+  // The shared intro links to GitHub; inside the browser these two open the matching pages.
+  const intro = page.getByRole('article', { name: 'Gitifact 소개' });
+  await expect(intro.getByRole('img', { name: 'GITIFACT' })).toBeVisible();
+  await expect(intro).not.toContainText('<p align');
+  await expect(intro.getByRole('link', { name: '제품 개요' })).toHaveAttribute('href', '/product');
+  await expect(intro.getByRole('link', { name: '요구사항' })).toHaveAttribute('href', '/features');
+  await expect(intro.getByRole('link', { name: '개발 환경' })).toHaveAttribute('href', /^https:\/\/github\.com\//);
   await page.reload();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Gitifact 소개');
   await page.goBack();

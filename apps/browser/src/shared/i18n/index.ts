@@ -1,15 +1,16 @@
 import { createElement, Fragment, type ReactNode } from 'react';
 import ko from './ko/messages.json' with { type: 'json' };
-import aboutKo from './ko/about.md?raw';
+import introKo from '@gitifact/intro/ko/intro.md?raw';
 
-// One language is one folder. Screen copy lives in <lang>/messages.json; long page bodies are Markdown beside it.
+// One language is one folder. Screen copy lives in <lang>/messages.json. The product intro is shared with the
+// README and the landing site, so its source is packages/intro.
 // Astryx component strings come from its own InternationalizationProvider catalog, not from here.
 export const defaultLanguage = 'ko' as const;
 export type Language = typeof defaultLanguage;
 export type MessageKey = keyof typeof ko;
 // A new language is declared as Record<MessageKey, string> so a missing key is a compile error.
 const catalogs: Record<Language, Record<MessageKey, string>> = { ko };
-const documents: Record<Language, { about: string }> = { ko: { about: aboutKo } };
+const documents: Record<Language, { about: string }> = { ko: { about: introKo } };
 
 const placeholder = /\{(\w+)\}/g;
 
