@@ -2,6 +2,7 @@ import { RepositoryReadError } from '@gitifact/core';
 import type { RepositoryObservation } from '@gitifact/core';
 import { repositoryStatusFailureV1, repositoryStatusSuccessV1 } from '@gitifact/contracts';
 import type { RepositoryStatusSuccessV1 } from '@gitifact/contracts';
+import { t } from '../shared/i18n/index.js';
 
 export function statusDto(observation: RepositoryObservation) {
   return repositoryStatusSuccessV1.parse({
@@ -28,11 +29,11 @@ export function escapeTerminal(value: string): string {
 export function statusText(value: RepositoryStatusSuccessV1): string {
   const { head, summary } = value;
   const lines = [
-    '저장소: ' + escapeTerminal(value.repository.rootPath),
+    t('status.text.repository', { path: escapeTerminal(value.repository.rootPath) }),
     'HEAD: ' + head.state + (head.branch ? ' ' + escapeTerminal(head.branch) : '') + (head.commit ? ' ' + head.commit : ''),
-    'Git 변경 경로 ' + value.changes.length + '개, gitifact 검사 미실행',
+    t('status.text.changes', { count: value.changes.length }),
     'staged ' + summary.staged + ' / unstaged ' + summary.unstaged + ' / untracked ' + summary.untracked + ' / conflicted ' + summary.conflicted,
-    '관측: ' + value.observation.completedAt + ' (best-effort, 파일 내용 스냅샷 아님)',
+    t('status.text.observed', { at: value.observation.completedAt }),
   ];
   for (const change of value.changes) {
     let line = (change.xy ?? '??') + ' ' + escapeTerminal(change.path);

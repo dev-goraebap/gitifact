@@ -6,71 +6,72 @@ import { runDocs } from './commands/docs.js';
 import { agentPresetNames } from './commands/agent-block.js';
 import { runSpecPreview } from './commands/spec-preview.js';
 import { runMigrate } from './commands/migrate.js';
+import { t } from './shared/i18n/index.js';
 
 declare const __CLI_VERSION__: string;
 
 const program = new Command()
   .name('gitifact')
-  .description('프로젝트의 요구사항과 결정 이력을 Git에 남기는 도구')
+  .description(t('help.program'))
   .version(__CLI_VERSION__)
   .allowExcessArguments(false)
-  .addHelpText('after', '\n전체 이력 검사와 GUI 요구사항 편집은 아직 제공하지 않습니다.')
+  .addHelpText('after', '\n' + t('help.notYet'))
   .action(() => program.outputHelp());
 
 program.command('status')
-  .description('현재 checkout의 Git 상태 조회 (gitifact 검사 미실행)')
+  .description(t('help.status'))
   .allowExcessArguments(false)
-  .addOption(new Option('--format <format>', '출력 형식').choices(['json', 'text']).default('json'))
+  .addOption(new Option('--format <format>', t('help.format')).choices(['json', 'text']).default('json'))
   .action(async (options: { format: 'json' | 'text' }) => { await runStatus(options.format); });
 
 program.command('browser')
-  .description('현재 checkout의 Git 상태를 로컬 브라우저로 조회')
+  .description(t('help.browser'))
   .allowExcessArguments(false)
-  .option('--port <port>', '수신 포트 (0은 자동 선택)', parsePort, 0)
-  .option('--dev', 'Vite 개발 서버 Origin 허용')
+  .option('--port <port>', t('help.browserPort'), parsePort, 0)
+  .option('--dev', t('help.browserDev'))
   .action(runBrowser);
 
 program.command('init')
-  .description('프로젝트 설정·기준선 생성과 에이전트 지침 파일의 GITIFACT 블록 설치 (재실행 시 블록 갱신)')
+  .description(t('help.init'))
   .allowExcessArguments(false)
-  .option('--dry-run', '파일을 만들지 않고 초기화 계획 확인')
-  .addOption(new Option('--agent <agent>', '지침 파일 대상 (기본: 기존 파일 전부, 없으면 AGENTS.md)').choices([...agentPresetNames]))
-  .addOption(new Option('--remove-agents', 'GITIFACT 블록을 제거').conflicts('skipAgents'))
-  .option('--skip-agents', '지침 파일을 건드리지 않음')
-  .addOption(new Option('--format <format>', '출력 형식').choices(['json', 'text']).default('json'))
+  .option('--dry-run', t('help.initDryRun'))
+  .addOption(new Option('--agent <agent>', t('help.initAgent')).choices([...agentPresetNames]))
+  .addOption(new Option('--remove-agents', t('help.initRemoveAgents')).conflicts('skipAgents'))
+  .option('--skip-agents', t('help.initSkipAgents'))
+  .addOption(new Option('--format <format>', t('help.format')).choices(['json', 'text']).default('json'))
   .action(options => runInit(options, __CLI_VERSION__));
 
 program.command('docs')
-  .description('에이전트용 작업 지침 출력 (주제 없이 실행하면 목록)')
-  .argument('[topic]', 'workflow, spec, design, product, commit 중 하나')
+  .description(t('help.docs'))
+  .argument('[topic]', t('help.docsTopic'))
   .allowExcessArguments(false)
   .action(async (topic?: string) => { await runDocs(topic); });
 
 program.command('migrate')
-  .description('.tryce 저장소를 .gitifact로 전환 (경로와 마커만 바꾸고 ID·이유·이력은 보존)')
+  .description(t('help.migrate'))
   .allowExcessArguments(false)
-  .option('--dry-run', '파일을 바꾸지 않고 전환 계획 확인')
+  .option('--dry-run', t('help.migrateDryRun'))
   .action(runMigrate);
 
-const spec = program.command('spec').description('Markdown 명세 작성·조회·Git 기록');
-const replaced = 'Deprecated: 0.6.0에서 제거 예정. spec commit을 사용하세요.';
-spec.command('commit').description('변경 이유 기록과 관련 파일 커밋을 한 번에 실행').allowExcessArguments(false)
-  .requiredOption('--file <path>', 'reasons·paths·message·authorization을 담은 JSON 파일')
-  .option('--dry-run', '파일을 쓰거나 커밋하지 않고 결과만 확인').action(o => runSpecPreview('commit', o));
+const spec = program.command('spec').description(t('help.spec'));
+const replaced = t('help.deprecated');
+spec.command('commit').description(t('help.specCommit')).allowExcessArguments(false)
+  .requiredOption('--file <path>', t('help.specCommitFile'))
+  .option('--dry-run', t('help.specCommitDryRun')).action(o => runSpecPreview('commit', o));
 for (const action of ['commit-plan', 'commit-apply'] as const) spec.command(action).description(replaced).allowExcessArguments(false)
-  .requiredOption('--file <path>', '커밋 입력 또는 계획 JSON 파일').action(o => runSpecPreview(action, o));
-spec.command('changes').allowExcessArguments(false).action(o => runSpecPreview('changes', o));
+  .requiredOption('--file <path>', t('help.specCommitPlanFile')).action(o => runSpecPreview(action, o));
+spec.command('changes').description(t('help.specChanges')).allowExcessArguments(false).action(o => runSpecPreview('changes', o));
 spec.command('prepare').description(replaced).allowExcessArguments(false)
-  .requiredOption('--file <path>', 'expected와 최종 reasons를 담은 JSON 파일').action(o => runSpecPreview('prepare', o));
+  .requiredOption('--file <path>', t('help.specPrepareFile')).action(o => runSpecPreview('prepare', o));
 spec.command('verify').description(replaced).allowExcessArguments(false)
-  .requiredOption('--file <path>', 'prepare의 verification 객체를 담은 JSON 파일').option('--staged', 'index 원문도 비교')
+  .requiredOption('--file <path>', t('help.specVerifyFile')).option('--staged', t('help.specVerifyStaged'))
   .action(o => runSpecPreview('verify', o));
-spec.command('working').allowExcessArguments(false).action(o => runSpecPreview('working', o));
-spec.command('save').allowExcessArguments(false)
-  .requiredOption('--file <path>', 'expected와 operations를 담은 UTF-8 JSON 파일').action(o => runSpecPreview('save', o));
-spec.command('read').allowExcessArguments(false).option('--ref <commit>', '읽을 커밋', 'HEAD').action(o => runSpecPreview('read', o));
-spec.command('diff').allowExcessArguments(false)
-  .requiredOption('--from <commit>', '이전 커밋').requiredOption('--to <commit>', '이후 커밋')
+spec.command('working').description(t('help.specWorking')).allowExcessArguments(false).action(o => runSpecPreview('working', o));
+spec.command('save').description(t('help.specSave')).allowExcessArguments(false)
+  .requiredOption('--file <path>', t('help.specSaveFile')).action(o => runSpecPreview('save', o));
+spec.command('read').description(t('help.specRead')).allowExcessArguments(false).option('--ref <commit>', t('help.specReadRef'), 'HEAD').action(o => runSpecPreview('read', o));
+spec.command('diff').description(t('help.specDiff')).allowExcessArguments(false)
+  .requiredOption('--from <commit>', t('help.specDiffFrom')).requiredOption('--to <commit>', t('help.specDiffTo'))
   .action(o => runSpecPreview('diff', o));
 
 await program.parseAsync();

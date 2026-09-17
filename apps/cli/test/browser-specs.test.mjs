@@ -43,3 +43,13 @@ test('history pagination covers every changed commit without duplicates',async t
  const second=await read(first.nextCursor,first.head);assert.equal(second.events.length,2);assert.equal(second.nextCursor,null);
  assert.equal(new Set([...first.events,...second.events].map(e=>e.key)).size,12);
 });
+
+test('history stops at the legacy JSON boundary instead of failing', async t => {
+  const f=fixture(t);await initializeSpecProject(f.repo,false,f.env);mkdirSync(join(f.repo,'.gitifact/spec/posts'),{recursive:true});
+  f.write('.gitifact/spec/posts/tryce.json','{}');f.commit('Legacy');
+  f.git(['rm','-q','.gitifact/spec/posts/tryce.json']);mkdirSync(join(f.repo,'.gitifact/spec/posts'),{recursive:true});
+  f.write('.gitifact/spec/posts/requirements.md','<!-- gitifact-spec: S-abcdefghij -->\n# Posts\n\n## Save\n<!-- gitifact-req: R-abcdefghij -->\n\nBody\n');f.commit('Convert');
+  const result=await createSpecBrowserReader(f.repo,'fixture',f.env)();
+  // The conversion commit is shown against an empty history rather than the unreadable legacy parent.
+  assert.equal(result.boundary,true);assert.deepEqual(result.events.map(e=>[e.message,e.types]),[['Convert',['created']]]);
+});

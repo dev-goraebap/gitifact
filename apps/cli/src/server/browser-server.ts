@@ -12,6 +12,7 @@ import { statusDto } from '../output/repository-status.js';
 import { loadBrowserAssets, contentType } from './assets.js';
 import { createStatusSession } from './status-session.js';
 import { createSpecBrowserReader } from './spec-reader.js';
+import { t } from '../shared/i18n/index.js';
 
 interface Options {
   cwd: string;
@@ -60,66 +61,66 @@ export async function startBrowserServer(options: Options) {
     response.setHeader('X-Frame-Options', 'DENY');
     response.setHeader('Referrer-Policy', 'no-referrer');
     response.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'");
-    if (closing) return fail(response, 503, 'SERVER_CLOSING', '서버를 종료하고 있습니다.');
-    if (request.headers.host !== new URL(origin).host) return fail(response, 403, 'FORBIDDEN', '허용하지 않는 Host입니다.');
+    if (closing) return fail(response, 503, 'SERVER_CLOSING', t('server.closing'));
+    if (request.headers.host !== new URL(origin).host) return fail(response, 403, 'FORBIDDEN', t('server.forbiddenHost'));
     const requestOrigin = request.headers.origin;
     const allowedOrigin = requestOrigin === origin || (options.dev && requestOrigin === 'http://127.0.0.1:5173');
-    if (requestOrigin && !allowedOrigin) return fail(response, 403, 'FORBIDDEN', '허용하지 않는 Origin입니다.');
+    if (requestOrigin && !allowedOrigin) return fail(response, 403, 'FORBIDDEN', t('server.forbiddenOrigin'));
     const raw = request.url ?? '/';
-    if (!raw.startsWith('/') || raw.startsWith('//') || raw.includes('\\')) return fail(response, 400, 'BAD_REQUEST', '잘못된 경로입니다.');
+    if (!raw.startsWith('/') || raw.startsWith('//') || raw.includes('\\')) return fail(response, 400, 'BAD_REQUEST', t('server.badPath'));
     let url: URL;
     let path: string;
     try {
       url = new URL(raw, origin);
       path = decodeURIComponent(url.pathname);
-    } catch { return fail(response, 400, 'BAD_REQUEST', '잘못된 경로입니다.'); }
+    } catch { return fail(response, 400, 'BAD_REQUEST', t('server.badPath')); }
     if (path.includes('\0') || path.includes('\\') || path.split('/').some((part) => part === '..' || part === '.')) {
-      return fail(response, 400, 'BAD_REQUEST', '잘못된 경로입니다.');
+      return fail(response, 400, 'BAD_REQUEST', t('server.badPath'));
     }
     if (request.headers['transfer-encoding'] || (request.headers['content-length'] && request.headers['content-length'] !== '0')) {
       request.resume();
-      return fail(response, 400, 'BAD_REQUEST', '요청 본문을 받지 않습니다.');
+      return fail(response, 400, 'BAD_REQUEST', t('server.noBody'));
     }
     const api = path === '/api' || path.startsWith('/api/');
     if (api) {
-      if (request.headers['sec-fetch-site'] === 'cross-site' && !allowedOrigin) return fail(response, 403, 'FORBIDDEN', '외부 페이지의 요청을 허용하지 않습니다.');
-      if (url.search && path !== '/api/v1/specs') return fail(response, 400, 'BAD_REQUEST', '조회 인자를 받지 않습니다.');
+      if (request.headers['sec-fetch-site'] === 'cross-site' && !allowedOrigin) return fail(response, 403, 'FORBIDDEN', t('server.crossSite'));
+      if (url.search && path !== '/api/v1/specs') return fail(response, 400, 'BAD_REQUEST', t('server.noQuery'));
       // Images beside PRODUCT.md, by plain file name only: <img> requests carry no session header, so the route stays read-only and narrow.
       if (path.startsWith('/api/v1/product/assets/')) {
         const name = path.slice('/api/v1/product/assets/'.length);
-        if (request.method !== 'GET') { response.setHeader('Allow', 'GET'); return fail(response, 405, 'METHOD_NOT_ALLOWED', '허용하지 않는 메서드입니다.'); }
-        if (!isProductAssetPath('.gitifact/product/' + name)) return fail(response, 404, 'NOT_FOUND', '제품 이미지를 찾을 수 없습니다.');
+        if (request.method !== 'GET') { response.setHeader('Allow', 'GET'); return fail(response, 405, 'METHOD_NOT_ALLOWED', t('server.methodNotAllowed')); }
+        if (!isProductAssetPath('.gitifact/product/' + name)) return fail(response, 404, 'NOT_FOUND', t('server.productImageNotFound'));
         const file = join(initial.repository.rootPath, '.gitifact', 'product', name);
         const stat = await lstat(file).catch(() => undefined);
-        if (!stat?.isFile() || stat.isSymbolicLink() || stat.size > 5 * 1024 * 1024) return fail(response, 404, 'NOT_FOUND', '제품 이미지를 찾을 수 없습니다.');
+        if (!stat?.isFile() || stat.isSymbolicLink() || stat.size > 5 * 1024 * 1024) return fail(response, 404, 'NOT_FOUND', t('server.productImageNotFound'));
         const bytes = await readFile(file);
         response.writeHead(200, { 'Content-Type': contentType(name.toLowerCase()), 'Cache-Control': 'no-cache', 'Content-Length': bytes.length });
         response.end(bytes); return;
       }
       const method = path === '/api/v1/status/refresh' ? 'POST' : 'GET';
-      if (!['/api/v1/session', '/api/v1/status', '/api/v1/status/refresh', '/api/v1/specs'].includes(path)) return fail(response, 404, 'NOT_FOUND', 'API를 찾을 수 없습니다.');
+      if (!['/api/v1/session', '/api/v1/status', '/api/v1/status/refresh', '/api/v1/specs'].includes(path)) return fail(response, 404, 'NOT_FOUND', t('server.apiNotFound'));
       if (request.method !== method) {
         response.setHeader('Allow', method);
-        return fail(response, 405, 'METHOD_NOT_ALLOWED', '허용하지 않는 메서드입니다.');
+        return fail(response, 405, 'METHOD_NOT_ALLOWED', t('server.methodNotAllowed'));
       }
       if (path === '/api/v1/session') return json(response, 200, session);
-      if (request.headers['x-gitifact-session'] !== session.sessionId) return fail(response, 409, 'SESSION_CHANGED', '서버 세션이 변경됐습니다. 다시 연결하세요.');
+      if (request.headers['x-gitifact-session'] !== session.sessionId) return fail(response, 409, 'SESSION_CHANGED', t('server.sessionChanged'));
       if (path === '/api/v1/specs') {
         const cursor = url.searchParams.get('cursor') ?? '0'; const head = url.searchParams.get('head');
         if ([...url.searchParams.keys()].some(k => !['cursor','head'].includes(k)) || url.searchParams.getAll('cursor').length > 1 || url.searchParams.getAll('head').length > 1
-          || !/^(0|[1-9]\d{0,5})$/.test(cursor) || (head !== null && !/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/.test(head))) return fail(response,400,'BAD_REQUEST','조회 범위를 확인하세요.');
+          || !/^(0|[1-9]\d{0,5})$/.test(cursor) || (head !== null && !/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/.test(head))) return fail(response,400,'BAD_REQUEST',t('server.badRange'));
         try { json(response,200,await readSpecs(Number(cursor), head ?? undefined)); }
-        catch (error) { fail(response,503,'INTERNAL_ERROR',error instanceof Error ? error.message : '명세를 읽지 못했습니다.'); }
+        catch (error) { fail(response,503,'INTERNAL_ERROR',error instanceof Error ? error.message : t('server.specsUnreadable')); }
         return;
       }
-      if (method === 'POST' && !allowedOrigin) return fail(response, 403, 'FORBIDDEN', '새로고침에는 같은 출처의 Origin이 필요합니다.');
+      if (method === 'POST' && !allowedOrigin) return fail(response, 403, 'FORBIDDEN', t('server.refreshOrigin'));
       const value = method === 'POST' ? await store.refresh() : store.latest;
       if (!response.destroyed) json(response, value.ok ? 200 : 503, value);
       return;
     }
     if (request.method !== 'GET' && request.method !== 'HEAD') {
       response.setHeader('Allow', 'GET, HEAD');
-      return fail(response, 405, 'METHOD_NOT_ALLOWED', '허용하지 않는 메서드입니다.');
+      return fail(response, 405, 'METHOD_NOT_ALLOWED', t('server.methodNotAllowed'));
     }
     let asset = assets.get(path === '/' ? '/index.html' : path);
     let assetPath = path === '/' ? '/index.html' : path;
@@ -128,13 +129,13 @@ export async function startBrowserServer(options: Options) {
       asset = assets.get('/index.html');
       assetPath = '/index.html';
     }
-    if (!asset) return fail(response, 404, 'NOT_FOUND', '파일을 찾을 수 없습니다.');
+    if (!asset) return fail(response, 404, 'NOT_FOUND', t('server.fileNotFound'));
     response.writeHead(200, { 'Content-Type': contentType(assetPath), 'Cache-Control': 'no-cache', 'Content-Length': asset.length });
     response.end(request.method === 'HEAD' ? undefined : asset);
   }
   const server = createServer({ requestTimeout: 5000, headersTimeout: 5000, maxHeaderSize: 8192 }, (request, response) => {
     void handle(request, response).catch(() => {
-      if (!response.headersSent && !response.destroyed) fail(response, 500, 'INTERNAL_ERROR', '요청을 처리하지 못했습니다.');
+      if (!response.headersSent && !response.destroyed) fail(response, 500, 'INTERNAL_ERROR', t('server.internal'));
       else response.destroy();
     });
   });
@@ -150,11 +151,11 @@ export async function startBrowserServer(options: Options) {
   } catch (error) {
     options.signal?.removeEventListener('abort', onAbort);
     controller.abort();
-    if ((error as NodeJS.ErrnoException).code === 'EADDRINUSE') throw new Error('요청한 포트가 사용 중입니다. 다른 포트를 선택하세요.');
+    if ((error as NodeJS.ErrnoException).code === 'EADDRINUSE') throw new Error(t('server.portInUse'));
     throw error;
   }
   const address = server.address();
-  if (!address || typeof address === 'string') throw new Error('서버 주소를 확인하지 못했습니다.');
+  if (!address || typeof address === 'string') throw new Error(t('server.addressUnknown'));
   origin = 'http://127.0.0.1:' + address.port;
   let resolveClosed: () => void;
   const closed = new Promise<void>((resolve) => { resolveClosed = resolve; });

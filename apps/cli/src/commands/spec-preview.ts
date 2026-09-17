@@ -9,6 +9,7 @@ import { fileInfo, readConfigFile } from '../adapters/filesystem/config-file.js'
 import { initRepository } from '../adapters/git/init-repository.js';
 import { previewCommit } from './spec-preview-commit.js';
 import { specCommit } from './spec-commit.js';
+import { t } from '../shared/i18n/index.js';
 
 type Action = 'read' | 'diff' | 'working' | 'save' | 'changes' | 'prepare' | 'verify' | 'commit-plan' | 'commit-apply' | 'commit';
 type Options = { ref?: string; from?: string; to?: string; file?: string; staged?: boolean; dryRun?: boolean };
@@ -22,12 +23,12 @@ async function execute(action: Action, options: Options) {
   try {
     // Same guards as the full repository inspection, using only the Git reads they need.
     const guard = specPreviewReader(process.cwd()); const { root, gitDir, objectFormat } = await guard.location();
-    for (const marker of operations) if (await fileInfo(join(gitDir, marker))) throw new InitError('GIT_OPERATION_IN_PROGRESS', 'Git 작업이 진행 중입니다: ' + marker);
-    if (await guard.hasUnmerged()) throw new InitError('GIT_OPERATION_IN_PROGRESS', 'Git 충돌을 먼저 해결하세요.');
+    for (const marker of operations) if (await fileInfo(join(gitDir, marker))) throw new InitError('GIT_OPERATION_IN_PROGRESS', t('git.operationInProgress', { marker }));
+    if (await guard.hasUnmerged()) throw new InitError('GIT_OPERATION_IN_PROGRESS', t('git.resolveConflicts'));
     const raw = await readConfigFile(root);
-    if (raw === undefined) throw new SpecPreviewError('먼저 gitifact init으로 초기화하세요.');
+    if (raw === undefined) throw new SpecPreviewError(t('preview.notInitialized'));
     const config = parseManagedConfig(raw);
-    if (!('schemaVersion' in config)) throw new SpecPreviewError('기존 프로젝트는 별도 전환이 필요합니다.');
+    if (!('schemaVersion' in config)) throw new SpecPreviewError(t('preview.legacyProject'));
     await initRepository(root).validateBaseline(config, root, 'HEAD', objectFormat);
     if (['working', 'save', 'changes', 'prepare', 'verify', 'commit-plan', 'commit-apply', 'commit'].includes(action)) {
       let result;
@@ -35,12 +36,12 @@ async function execute(action: Action, options: Options) {
       else if (action === 'changes') result = await readFinalPreviewChanges(process.cwd());
       else {
         const source = await stat(options.file!);
-        if (!source.isFile() || source.size > 1024 * 1024) throw new SpecPreviewError('입력은 1 MiB 이하의 JSON 파일이어야 합니다.');
+        if (!source.isFile() || source.size > 1024 * 1024) throw new SpecPreviewError(t('preview.inputFile'));
         const bytes = await readFile(options.file!);
-        if (bytes.length > 1024 * 1024) throw new SpecPreviewError('입력 크기를 초과했습니다.');
+        if (bytes.length > 1024 * 1024) throw new SpecPreviewError(t('preview.inputSize'));
         let input: unknown;
         try { input = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes)); }
-        catch { throw new SpecPreviewError('입력 파일은 UTF-8 JSON이어야 합니다.'); }
+        catch { throw new SpecPreviewError(t('preview.inputJson')); }
         result = action === 'commit' ? await specCommit(process.cwd(), input, !!options.dryRun)
           : action === 'commit-plan' || action === 'commit-apply' ? await previewCommit(process.cwd(), action === 'commit-plan' ? 'plan' : 'apply', input)
           : action === 'prepare' ? await prepareWorkingPreview(process.cwd(), input)
@@ -61,7 +62,7 @@ async function execute(action: Action, options: Options) {
     }
   } catch (error) {
     const known = error instanceof SpecPreviewError || error instanceof RepositoryReadError || error instanceof InitError;
-    process.stderr.write(JSON.stringify({ ...envelope, ok: false, error: { code: known ? error.code : 'SPEC_PREVIEW_FAILED', message: known ? error.message : '검토 명세 작업에 실패했습니다.' } }) + '\n');
+    process.stderr.write(JSON.stringify({ ...envelope, ok: false, error: { code: known ? error.code : 'SPEC_PREVIEW_FAILED', message: known ? error.message : t('preview.failed') } }) + '\n');
     process.exitCode = 1;
   }
 }

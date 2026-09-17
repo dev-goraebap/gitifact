@@ -1,8 +1,9 @@
 import { InvalidArgumentError } from 'commander';
 import { startBrowserServer } from '../server/browser-server.js';
+import { t } from '../shared/i18n/index.js';
 
 export function parsePort(value: string): number {
-  if (!/^\d+$/.test(value) || Number(value) > 65535) throw new InvalidArgumentError('포트는 0부터 65535 사이의 정수여야 합니다.');
+  if (!/^\d+$/.test(value) || Number(value) > 65535) throw new InvalidArgumentError(t('browser.invalidPort'));
   return Number(value);
 }
 export async function runBrowser(options: { port: number; dev?: boolean }) {
@@ -18,7 +19,7 @@ export async function runBrowser(options: { port: number; dev?: boolean }) {
     await server.closed;
   } catch (error) {
     if (!controller.signal.aborted) {
-      process.stderr.write((error instanceof Error ? error.message : '브라우저 서버를 실행하지 못했습니다.') + '\n');
+      process.stderr.write((error instanceof Error ? error.message : t('browser.failed')) + '\n');
       process.exitCode = 1;
     }
   } finally {

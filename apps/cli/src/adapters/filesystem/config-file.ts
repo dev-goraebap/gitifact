@@ -2,13 +2,14 @@ import { lstat, readFile, realpath, mkdir, open, link, unlink } from 'node:fs/pr
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { InitError, parseManagedConfig } from '@gitifact/core';
+import { t } from '../../shared/i18n/index.js';
 
 const missing = (error: unknown) => (error as NodeJS.ErrnoException).code === 'ENOENT';
 export const fileInfo = (path: string) => lstat(path).catch(error => { if (missing(error)) return undefined; throw error; });
 export async function configDirectory(root: string) {
   const path = join(root, '.gitifact');
   const info = await fileInfo(path);
-  if (info && (!info.isDirectory() || info.isSymbolicLink())) throw new InitError('PATH_CONFLICT', '.gitifact는 링크가 아닌 일반 디렉터리여야 합니다.');
+  if (info && (!info.isDirectory() || info.isSymbolicLink())) throw new InitError('PATH_CONFLICT', t('config.storeNotDirectory'));
   return info;
 }
 export async function readConfigFile(root: string): Promise<string | undefined> {
@@ -16,18 +17,18 @@ export async function readConfigFile(root: string): Promise<string | undefined> 
   const path = join(root, '.gitifact', 'config.json');
   const info = await fileInfo(path);
   if (!info) {
-    if (await fileInfo(join(root, '.tryce', 'config.json'))) throw new InitError('MIGRATION_REQUIRED', '.tryce 저장소입니다. gitifact migrate로 .gitifact에 전환하세요.');
+    if (await fileInfo(join(root, '.tryce', 'config.json'))) throw new InitError('MIGRATION_REQUIRED', t('config.migrateFirst'));
     return undefined;
   }
-  if (!info.isFile() || info.isSymbolicLink() || info.size > 65536) throw new InitError('PATH_CONFLICT', 'config.json은 64 KiB 이하의 일반 파일이어야 합니다.');
+  if (!info.isFile() || info.isSymbolicLink() || info.size > 65536) throw new InitError('PATH_CONFLICT', t('config.fileShape'));
   const bytes = await readFile(path);
   const after = await fileInfo(path);
   await configDirectory(root);
   if (!after || after.ino !== info.ino || after.dev !== info.dev || after.mtimeMs !== info.mtimeMs || bytes.length > 65536) {
-    throw new InitError('INPUT_CHANGED', '설정 파일이 조회 중 변경됐습니다. 다시 실행하세요.');
+    throw new InitError('INPUT_CHANGED', t('config.changedWhileReading'));
   }
   try { return new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(bytes); }
-  catch { throw new InitError('INVALID_CONFIG', '설정은 UTF-8 JSON이어야 합니다.'); }
+  catch { throw new InitError('INVALID_CONFIG', t('config.notUtf8Json')); }
 }
 
 // A hard link publishes the complete file without replacing an existing destination.
@@ -40,7 +41,7 @@ export async function publishConfig(root: string, text: string, recheck: () => P
   const unchanged = async () => {
     const current = await configDirectory(root);
     if (!owner || !current || current.ino !== owner.ino || current.dev !== owner.dev || await realpath(directory) !== canonical) {
-      throw new InitError('INPUT_CHANGED', '설정 디렉터리가 변경됐습니다. 임시 파일을 확인하세요.');
+      throw new InitError('INPUT_CHANGED', t('config.directoryChanged'));
     }
   };
   const temporary = join(directory, '.init-' + randomUUID() + '.tmp');
@@ -56,7 +57,7 @@ export async function publishConfig(root: string, text: string, recheck: () => P
     await recheck();
     await unchanged();
     const bytes = await readFile(temporary, 'utf8');
-    if (bytes !== text) throw new InitError('INPUT_CHANGED', '임시 설정이 변경됐습니다.');
+    if (bytes !== text) throw new InitError('INPUT_CHANGED', t('config.temporaryChanged'));
     parseManagedConfig(bytes);
     await link(temporary, join(directory, 'config.json'));
   } finally {

@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { InitError } from '@gitifact/core';
-import { defaultLanguage, type Language } from '../shared/i18n/index.js';
+import { defaultLanguage, t, type Language } from '../shared/i18n/index.js';
 import { docTopics } from './docs.js';
 
 // Pure text logic for the managed GITIFACT block in agent instruction files. No filesystem access.
@@ -40,12 +40,12 @@ export function parseAgentBlock(text: string) {
 export function findBlock(text: string) {
   const start = text.indexOf(AGENT_START);
   if (start === -1) {
-    if (text.includes(AGENT_END)) throw new InitError('AGENT_DOCS_MALFORMED', '시작 마커 없이 종료 마커만 있습니다. 블록을 정리한 뒤 다시 실행하세요.');
+    if (text.includes(AGENT_END)) throw new InitError('AGENT_DOCS_MALFORMED', t('agentBlock.endWithoutStart'));
     return null;
   }
   const end = text.indexOf(AGENT_END, start + AGENT_START.length);
-  if (end === -1) throw new InitError('AGENT_DOCS_MALFORMED', '종료 마커가 없는 GITIFACT 블록이 있습니다. 블록을 정리한 뒤 다시 실행하세요.');
-  if (text.indexOf(AGENT_START, start + AGENT_START.length) !== -1) throw new InitError('AGENT_DOCS_MALFORMED', 'GITIFACT 시작 마커가 여러 개입니다. 중복 블록을 정리한 뒤 다시 실행하세요.');
+  if (end === -1) throw new InitError('AGENT_DOCS_MALFORMED', t('agentBlock.startWithoutEnd'));
+  if (text.indexOf(AGENT_START, start + AGENT_START.length) !== -1) throw new InitError('AGENT_DOCS_MALFORMED', t('agentBlock.duplicateStart'));
   return { start, end: end + AGENT_END.length };
 }
 // A file whose only content is `@` imports of other candidate files loads them instead of holding its own rules.

@@ -4,6 +4,7 @@ import { createHash, randomBytes } from 'node:crypto';
 import { editSpecPreview, parsePreviewBundle, renderDesignPreview, designReferenceWarnings, renderSpecPreview, renderDocument, recordPathPattern, DOCUMENT_DIRS, SpecPreviewError, parseManagedConfig } from '@gitifact/core';
 import { specPreviewReader } from '../git/spec-preview-reader.js';
 import { readConfigFile } from './config-file.js';
+import { t } from '../../shared/i18n/index.js';
 
 const fail = (message: string): never => { throw new SpecPreviewError(message); };
 const info = async (path: string) => lstat(path).catch(e => { if (e.code === 'ENOENT') return undefined; throw e; });
@@ -11,7 +12,7 @@ const digest = (value: string) => createHash('sha256').update(value).digest('hex
 /** Lock names written by earlier Tryce builds; their presence still means an unfinished or unrecovered run. */
 export const LEGACY_LOCKS = ['tryce-spec-preview.lock', 'tryce-spec-commit.lock'] as const;
 export async function failOnLegacyLock(gitDir: string) {
-  for (const name of LEGACY_LOCKS) if (await info(join(gitDir, name))) fail('이전 Tryce 실행의 잠금 또는 복구 자료가 있습니다: ' + join(gitDir, name));
+  for (const name of LEGACY_LOCKS) if (await info(join(gitDir, name))) fail(t('store.legacyLock', { path: join(gitDir, name) }));
 }
 const decode = (bytes: Buffer) => new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(bytes);
 export const generatePreviewId = (prefix: 'S' | 'R' | 'H' | 'P' | 'G') => prefix + '-' + [...randomBytes(10)].map(n => 'abcdefghijklmnopqrstuvwxyz234567'[n & 31]).join('');
@@ -21,25 +22,25 @@ export class PreservedPreviewError extends SpecPreviewError {}
 async function snapshot(root: string) {
   const files = new Map<string, string>(); let count = 0; let bytes = 0;
   const parent = await info(join(root, '.gitifact'));
-  if (parent && (!parent.isDirectory() || parent.isSymbolicLink())) fail('.gitifact는 일반 디렉터리여야 합니다.');
-  if (!parent && await info(join(root, '.tryce'))) fail('.tryce 저장소입니다. gitifact migrate로 .gitifact에 전환한 뒤 사용하세요.');
+  if (parent && (!parent.isDirectory() || parent.isSymbolicLink())) fail(t('store.storeNotDirectory'));
+  if (!parent && await info(join(root, '.tryce'))) fail(t('store.migrateFirst'));
   const config = await readConfigFile(root);
-  if ((config !== undefined && !('schemaVersion' in parseManagedConfig(config))) || await info(join(root, 'specs'))) fail('기존 프로젝트 형식은 별도 전환이 필요합니다.');
+  if ((config !== undefined && !('schemaVersion' in parseManagedConfig(config))) || await info(join(root, 'specs'))) fail(t('store.legacyProject'));
   // Spec folders are one level deep; document folders may nest, and only Markdown plus the root reason file are read there.
   async function visit(path: string, depth: number, documents: boolean) {
     const stat = await info(join(root, path)); if (!stat) return;
-    if (stat.isSymbolicLink() || (!stat.isDirectory() && !stat.isFile())) fail('링크·특수 파일은 지원하지 않습니다: ' + path);
-    if (++count > 4000) fail('명세 파일 수 한도를 초과했습니다.');
+    if (stat.isSymbolicLink() || (!stat.isDirectory() && !stat.isFile())) fail(t('store.linkOrSpecial', { path }));
+    if (++count > 4000) fail(t('store.tooManyFiles'));
     if (stat.isDirectory()) {
-      if (depth > (documents ? 8 : 1)) fail('중첩 폴더 깊이 한도를 초과했습니다: ' + path);
+      if (depth > (documents ? 8 : 1)) fail(t('store.tooDeep', { path }));
       for (const name of (await readdir(join(root, path))).sort()) await visit(path + '/' + name, depth + 1, documents);
     } else {
-      if (path.endsWith('/tryce.json')) fail('기존 JSON 형식은 전환하지 않습니다.');
+      if (path.endsWith('/tryce.json')) fail(t('store.legacyJson'));
       if (documents ? !(path.endsWith('.md') || (depth === 1 && path.endsWith('/history.jsonl'))) : !/\/(requirements\.md|design\.md|history\.jsonl)$/.test(path)) return;
-      if (!recordPathPattern.test(path) || path.startsWith('.tryce/')) fail('지원하지 않는 명세 경로입니다: ' + path);
-      if (stat.nlink !== 1 || stat.size > 1024 * 1024) fail('하드 링크 또는 1 MiB 한도를 확인하세요.');
+      if (!recordPathPattern.test(path) || path.startsWith('.tryce/')) fail(t('store.unsupportedPath', { path }));
+      if (stat.nlink !== 1 || stat.size > 1024 * 1024) fail(t('store.hardLinkOrSize'));
       const raw = await readFile(join(root, path)); bytes += raw.length;
-      if (raw.length > 1024 * 1024 || bytes > 16 * 1024 * 1024) fail('명세 크기 한도를 초과했습니다.');
+      if (raw.length > 1024 * 1024 || bytes > 16 * 1024 * 1024) fail(t('store.sizeLimit'));
       files.set(path, decode(raw));
     }
   }
@@ -53,10 +54,10 @@ async function snapshot(root: string) {
 export async function readWorkingPreviewState(cwd: string) {
   const { root, gitDir } = await specPreviewReader(cwd).location();
   await failOnLegacyLock(gitDir);
-  if (await info(join(gitDir, 'gitifact-spec-preview.lock'))) fail('명세 저장 잠금 또는 복구 자료가 있습니다.');
+  if (await info(join(gitDir, 'gitifact-spec-preview.lock'))) fail(t('store.locked'));
   const first = await snapshot(root); const second = await snapshot(root);
-  if (first.stamp !== second.stamp) fail('조회 중 명세가 변경됐습니다. 다시 읽으세요.');
-  if (await info(join(gitDir, 'gitifact-spec-preview.lock'))) fail('조회 중 저장 잠금이 생겼습니다.');
+  if (first.stamp !== second.stamp) fail(t('store.changedWhileReading'));
+  if (await info(join(gitDir, 'gitifact-spec-preview.lock'))) fail(t('store.lockedWhileReading'));
   return first;
 }
 
@@ -65,9 +66,9 @@ export async function readWorkingPreview(cwd: string) {
 }
 
 export async function saveWorkingPreview(cwd: string, input: unknown, publish = rename) {
-  if (!input || typeof input !== 'object' || Array.isArray(input)) fail('저장 입력이 잘못됐습니다.');
+  if (!input || typeof input !== 'object' || Array.isArray(input)) fail(t('store.invalidInput'));
   const request = input as Record<string, unknown>;
-  if (Object.keys(request).sort().join(',') !== 'expected,operations' || typeof request.expected !== 'string') fail('expected와 operations가 필요합니다.');
+  if (Object.keys(request).sort().join(',') !== 'expected,operations' || typeof request.expected !== 'string') fail(t('store.expectedOperations'));
   return previewTransaction(cwd, request.expected as string, async before => {
     const result = editSpecPreview(before.bundle, request.operations, generatePreviewId);
     const writes = new Map<string, string | null>();
@@ -97,26 +98,26 @@ export async function previewTransaction<T>(cwd: string, expected: string, build
   const { root, gitDir } = await specPreviewReader(cwd).location();
   await failOnLegacyLock(gitDir);
   const lock = join(gitDir, 'gitifact-spec-preview.lock');
-  try { await mkdir(lock); } catch (e) { if ((e as NodeJS.ErrnoException).code === 'EEXIST') fail('명세 저장 잠금 또는 복구 자료가 있습니다.'); throw e; }
+  try { await mkdir(lock); } catch (e) { if ((e as NodeJS.ErrnoException).code === 'EEXIST') fail(t('store.locked')); throw e; }
   const createdDirs: string[] = []; const temporary: string[] = [];
   const changed: { path: string; before: string | null; after: string | null }[] = [];
   const published: typeof changed = []; let keepRecovery = false;
   async function directory(path: string) {
     const stat = await info(path);
-    if (stat) { if (!stat.isDirectory() || stat.isSymbolicLink()) fail('일반 디렉터리가 아닙니다: ' + path); return; }
+    if (stat) { if (!stat.isDirectory() || stat.isSymbolicLink()) fail(t('store.notDirectory', { path })); return; }
     await directory(dirname(path)); await mkdir(path); createdDirs.push(path);
   }
   try {
     const before = await snapshot(root);
-    if (before.stamp !== expected) fail('읽은 뒤 명세가 변경됐습니다. working으로 다시 읽으세요.');
+    if (before.stamp !== expected) fail(t('store.staleExpected'));
     const result = await build(before);
     for (const [path, after] of result.writes) {
-      if (!recordPathPattern.test(path) || path.startsWith('.tryce/') || path.split('/').some(p => p === '..' || p === '.' || /[\\:\0]/.test(p))) fail('지원하지 않는 저장 경로입니다.');
-      if (after !== null && Buffer.byteLength(after) > 1024 * 1024) fail('명세 1 MiB 한도를 초과했습니다.');
+      if (!recordPathPattern.test(path) || path.startsWith('.tryce/') || path.split('/').some(p => p === '..' || p === '.' || /[\\:\0]/.test(p))) fail(t('store.unsupportedSavePath'));
+      if (after !== null && Buffer.byteLength(after) > 1024 * 1024) fail(t('store.fileSizeLimit'));
       changed.push({ path, before: before.files.get(path) ?? null, after });
     }
     const finalFiles = new Map(before.files); for (const c of changed) { if (c.after === null) finalFiles.delete(c.path); else finalFiles.set(c.path, c.after); }
-    if (finalFiles.size > 2000 || [...finalFiles.values()].reduce((n, s) => n + Buffer.byteLength(s), 0) > 16 * 1024 * 1024) fail('명세 전체 한도를 초과했습니다.');
+    if (finalFiles.size > 2000 || [...finalFiles.values()].reduce((n, s) => n + Buffer.byteLength(s), 0) > 16 * 1024 * 1024) fail(t('store.totalLimit'));
     // Keep original bytes before any publication; abrupt process termination leaves this lock for inspection.
     await writeFile(join(lock, 'recovery.json'), JSON.stringify({ root, changed }), { flag: 'wx' });
     for (const c of changed) {
@@ -125,16 +126,16 @@ export async function previewTransaction<T>(cwd: string, expected: string, build
       const temp = join(dirname(join(root, c.path)), '.gitifact-save-' + randomBytes(12).toString('hex'));
       await writeFile(temp, c.after, { flag: 'wx' }); temporary.push(temp);
     }
-    if ((await snapshot(root)).stamp !== before.stamp) fail('저장 준비 중 명세가 변경됐습니다.');
+    if ((await snapshot(root)).stamp !== before.stamp) fail(t('store.changedPreparing'));
     await result.recheck?.();
     for (let i = 0; i < changed.length; i++) {
       const c = changed[i]!; const path = join(root, c.path); const stat = await info(path);
-      if (stat?.isSymbolicLink() || (stat && !stat.isFile()) || (stat ? decode(await readFile(path)) : null) !== c.before) fail('저장 직전 파일이 변경됐습니다.');
+      if (stat?.isSymbolicLink() || (stat && !stat.isFile()) || (stat ? decode(await readFile(path)) : null) !== c.before) fail(t('store.changedBeforeWrite'));
       if (c.after === null) await unlink(path); else await publish(temporary[i]!, path);
       published.push(c);
     }
     const after = await snapshot(root);
-    if (after.stamp !== digest(JSON.stringify([...finalFiles].sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)) + (before.config ?? ''))) fail('저장 중 명세 또는 설정이 변경됐습니다.');
+    if (after.stamp !== digest(JSON.stringify([...finalFiles].sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)) + (before.config ?? ''))) fail(t('store.changedWhileWriting'));
     await result.recheck?.();
     // Runs while the lock is held; a normal failure here restores the published files like any other failure.
     await afterPublish?.(after);
@@ -152,7 +153,7 @@ export async function previewTransaction<T>(cwd: string, expected: string, build
         }
       } catch { keepRecovery = true; }
     }
-    if (keepRecovery) fail('자동 복구를 완료하지 못했습니다. 다른 편집을 보존했습니다. 복구 자료: ' + lock);
+    if (keepRecovery) fail(t('store.recoveryIncomplete', { path: lock }));
     throw error;
   } finally {
     for (const path of temporary.filter(Boolean)) await unlink(path).catch(e => { if (e.code !== 'ENOENT') keepRecovery = true; });

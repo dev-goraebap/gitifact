@@ -4,6 +4,7 @@ import { createHash } from 'node:crypto';
 import { comparePreviewBundles, finalSpecPreviewChanges, parsePreviewBundle, pendingPreviewReasons, prepareSpecPreview, SpecPreviewError } from '@gitifact/core';
 import { specPreviewReader } from '../git/spec-preview-reader.js';
 import { generatePreviewId, previewTransaction, readWorkingPreviewState } from './spec-preview-store.js';
+import { t } from '../../shared/i18n/index.js';
 
 const fail = (message: string): never => { throw new SpecPreviewError(message); };
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
@@ -14,7 +15,7 @@ export async function readPreviewContext(cwd: string) {
   const checkOperation = async () => {
     for (const name of ['MERGE_HEAD', 'CHERRY_PICK_HEAD', 'REVERT_HEAD', 'rebase-merge', 'rebase-apply']) {
       const exists = await lstat(join(gitDir, name)).catch(e => { if (e.code === 'ENOENT') return undefined; throw e; });
-      if (exists) fail('Git 통합 작업 중에는 실험용 커밋 준비를 하지 않습니다.');
+      if (exists) fail(t('prepare.integrationInProgress'));
     }
   };
   await checkOperation();
@@ -22,7 +23,7 @@ export async function readPreviewContext(cwd: string) {
   const working = await readWorkingPreviewState(cwd);
   const files = base.head ? await reader.files(base.head, working.config !== undefined) : new Map<string, string>();
   const bundle = parsePreviewBundle(files); const specs = bundle.specs;
-  const recheck = async () => { await checkOperation(); if (!same(base, await reader.baseline())) fail('HEAD 또는 브랜치가 변경됐습니다. changes부터 다시 확인하세요.'); };
+  const recheck = async () => { await checkOperation(); if (!same(base, await reader.baseline())) fail(t('prepare.headChanged')); };
   return { reader, base, files, specs, bundle, recheck, working };
 }
 const context = readPreviewContext;
@@ -35,11 +36,11 @@ export async function readFinalPreviewChanges(cwd: string) {
 }
 
 export async function prepareWorkingPreview(cwd: string, input: unknown, publish?: Parameters<typeof previewTransaction>[3]) {
-  if (!input || typeof input !== 'object' || Array.isArray(input)) fail('잘못된 준비 입력입니다.');
+  if (!input || typeof input !== 'object' || Array.isArray(input)) fail(t('prepare.invalidInput'));
   const request = input as Record<string, unknown>;
-  if (Object.keys(request).sort().join(',') !== 'expected,reasons' || typeof request.expected !== 'string') fail('expected와 reasons가 필요합니다.');
+  if (Object.keys(request).sort().join(',') !== 'expected,reasons' || typeof request.expected !== 'string') fail(t('prepare.expectedReasons'));
   const c = await context(cwd); const current = await readWorkingPreviewState(cwd);
-  if (request.expected !== expected(c.base, current.stamp)) fail('준비 입력이 오래됐습니다. changes부터 다시 확인하세요.');
+  if (request.expected !== expected(c.base, current.stamp)) fail(t('prepare.staleInput'));
   const result = await previewTransaction(cwd, current.stamp, async before => {
     await c.recheck();
     const prepared = prepareSpecPreview(c.bundle, before.bundle, c.files, before.files, request.reasons, () => generatePreviewId('H'));
@@ -49,22 +50,22 @@ export async function prepareWorkingPreview(cwd: string, input: unknown, publish
 }
 
 export async function verifyPreparedPreview(cwd: string, input: unknown, staged: boolean) {
-  if (!input || typeof input !== 'object' || Array.isArray(input)) fail('잘못된 확인 입력입니다.');
+  if (!input || typeof input !== 'object' || Array.isArray(input)) fail(t('prepare.invalidVerifyInput'));
   const request = input as Record<string, unknown>;
-  if (Object.keys(request).sort().join(',') !== 'base,stamp' || typeof request.stamp !== 'string') fail('prepare가 반환한 verification 객체가 필요합니다.');
+  if (Object.keys(request).sort().join(',') !== 'base,stamp' || typeof request.stamp !== 'string') fail(t('prepare.verificationRequired'));
   const c = await context(cwd); const current = await readWorkingPreviewState(cwd);
-  if (!same(request.base, c.base) || request.stamp !== current.stamp) fail('준비 뒤 HEAD 또는 명세가 변경됐습니다. 다시 준비하세요.');
+  if (!same(request.base, c.base) || request.stamp !== current.stamp) fail(t('prepare.changedAfterPrepare'));
   finalSpecPreviewChanges(c.bundle, current.bundle); comparePreviewBundles(c.bundle, current.bundle);
   if (staged) {
     const index = await c.reader.index();
-    if (index.size !== current.files.size) fail('staging의 명세 범위가 준비한 원문과 다릅니다.');
+    if (index.size !== current.files.size) fail(t('prepare.stagingScope'));
     for (const [path, source] of current.files) {
       const oid = index.get(path); const bytes = Buffer.from(source);
       const hash = createHash(oid?.length === 64 ? 'sha256' : 'sha1').update(`blob ${bytes.length}\0`).update(bytes).digest('hex');
-      if (oid !== hash) fail('staging 원문이 준비한 파일과 다릅니다: ' + path);
+      if (oid !== hash) fail(t('prepare.stagingContent', { path }));
     }
-    if (!same([...index], [...await c.reader.index()])) fail('확인 중 staging이 변경됐습니다.');
+    if (!same([...index], [...await c.reader.index()])) fail(t('prepare.stagingChanged'));
   }
-  if ((await readWorkingPreviewState(cwd)).stamp !== current.stamp) fail('확인 중 명세가 변경됐습니다.');
+  if ((await readWorkingPreviewState(cwd)).stamp !== current.stamp) fail(t('prepare.specsChanged'));
   await c.recheck(); return { verified: true, scope: staged ? 'staged' : 'working', base: c.base, stamp: current.stamp };
 }
