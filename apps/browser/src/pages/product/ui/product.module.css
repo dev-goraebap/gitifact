@@ -52,7 +52,8 @@
 .entry[aria-current=true] .entryTitle { text-decoration:underline; }
 .drawer { height:100dvh; max-height:100dvh; margin:0; border-radius:0; overflow:hidden; scrollbar-width:thin; scrollbar-color:var(--color-border-emphasized, var(--color-border)) transparent; }
 .drawer > :first-child { overflow-y:auto; scrollbar-gutter:stable; overscroll-behavior:contain; scrollbar-width:thin; scrollbar-color:var(--color-border-emphasized, var(--color-border)) transparent; }
-.drawerHeader { position:sticky; top:0; z-index:1; background:var(--color-background-surface); padding-inline:var(--spacing-5); padding-top:var(--spacing-4); }
+/* Above the compare handle (z-index 1-2) so scrolled content never shows through, with a rule under it. */
+.drawerHeader { position:sticky; top:0; z-index:3; background:var(--color-background-surface); border-bottom:1px solid var(--color-border); padding-inline:var(--spacing-5); padding-block:var(--spacing-4) var(--spacing-3); }
 .drawerHandle { position:absolute; inset-block:0; inset-inline-start:0; z-index:2; }
 
 /* Contributors: a card grid; the detail page opens at the same width with a hero row. */
@@ -69,10 +70,10 @@
 
 /* Before/after reveal in the activity drawer: both bodies share one grid cell; the before layer is clipped at the handle. */
 .compareLegend { align-items:center; }
-.compare { position:relative; display:grid; grid-template-columns:100%; min-width:0; border:1px solid var(--color-border); border-radius:var(--radius-element); }
-.compareAfter, .compareBefore { grid-area:1 / 1; min-width:0; padding:var(--spacing-4); box-sizing:border-box; border-radius:var(--radius-element); }
-/* background-yellow stays muted in the dark theme, where warning-muted resolves to a bright solid tan. Only the outer (start) corners are rounded; the reveal edge is square. */
-.compareBefore { background:var(--color-background-yellow); border-radius:var(--radius-element) 0 0 var(--radius-element); clip-path:inset(0 calc(100% - var(--reveal, 0px)) 0 0); }
+.compare { position:relative; display:grid; grid-template-columns:100%; min-width:0; border-block:1px solid var(--color-border); }
+.compareAfter, .compareBefore { grid-area:1 / 1; min-width:0; padding:var(--spacing-4); box-sizing:border-box; }
+/* background-yellow stays muted in the dark theme, where warning-muted resolves to a bright solid tan. */
+.compareBefore { background:var(--color-background-yellow); clip-path:inset(0 calc(100% - var(--reveal, 0px)) 0 0); }
 .compareHandle { position:absolute; inset-block:0; inset-inline-start:var(--reveal, 0px); z-index:1; width:var(--spacing-6); transform:translateX(-50%); cursor:col-resize; touch-action:none; user-select:none; outline:none; }
 .compareHandle::before { content:""; position:absolute; inset-block:0; inset-inline-start:calc(50% - 1px); width:2px; background:var(--color-border-emphasized, var(--color-border)); }
 .compareHandle::after { content:""; position:absolute; inset-inline-start:calc(50% - var(--spacing-1)); top:calc(50% - var(--spacing-4)); width:var(--spacing-2); height:var(--spacing-8); border-radius:var(--radius-full); background:var(--color-background-surface); border:1px solid var(--color-border-emphasized, var(--color-border)); box-shadow:var(--shadow-low); }

@@ -6,9 +6,7 @@ import { Card } from '@astryxdesign/core/Card';
 import { Heading } from '@astryxdesign/core/Heading';
 import { Text } from '@astryxdesign/core/Text';
 import { Token } from '@astryxdesign/core/Token';
-import { Divider } from '@astryxdesign/core/Divider';
 import { ProgressBar } from '@astryxdesign/core/ProgressBar';
-import { Markdown } from '@astryxdesign/core/Markdown';
 import { Timestamp } from '@astryxdesign/core/Timestamp';
 import { Link } from '@tanstack/react-router';
 import { Person } from './Person';
@@ -87,6 +85,7 @@ export function ProductOverview({ product, features, documents, events, contribu
         {product && <Text type="supporting" color="secondary">{product.id}</Text>}
         {product && (product.updatedAt ? <Timestamp value={product.updatedAt} format="relative"/> : <Text type="supporting" color="secondary">{t('common.inProgress')}</Text>)}
         {working && <Token label={t('overview.uncommittedToken')} color="yellow" size="sm"/>}
+        {product && <Link to="/product/document">{t('overview.openDocument')}</Link>}
         <Link to="/" search={{ document: 'product' }}>{t('overview.productHistory')}</Link>
       </HStack>
     </VStack>
@@ -144,10 +143,6 @@ export function ProductOverview({ product, features, documents, events, contribu
       </VStack> : <Text type="supporting" color="secondary">{t('overview.noActivity')}</Text>}
     </VStack></Card>
 
-    <Divider/>
-
-    {product
-      ? <VStack gap={0} className={styles.productBody} aria-label={t('overview.productBody')}><Markdown headingLevelStart={2}>{productImageSources(withoutLeadingBanner(product.body))}</Markdown></VStack>
-      : <PageState kind="empty" isCompact title={t('overview.emptyTitle')} description={t('overview.emptyDescription')}/>}
+    {!product && <PageState kind="empty" isCompact title={t('overview.emptyTitle')} description={t('overview.emptyDescription')}/>}
   </VStack>;
 }

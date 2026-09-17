@@ -15,6 +15,8 @@ import type { ProductSearch } from '../model/search';
 import styles from './product.module.css';
 import { PageState } from '../../../shared/ui/page-state';
 import { StateIllustration } from '../../../shared/ui/page-state/StateIllustration';
+import { productImageSources, withoutLeadingBanner } from './ProductOverview';
+import { DocumentBody } from '../../../shared/ui/document';
 import { t } from '../../../shared/i18n';
 
 // Only guides are browsed as a folder tree; the product description is the dashboard (ProductOverview).
@@ -39,6 +41,7 @@ function tree(documents: SpecDocument[]): Node {
   const sort = (n: Node) => { n.folders.sort((a, b) => a.name.localeCompare(b.name)); n.documents.sort((a, b) => a.path.localeCompare(b.path)); n.folders.forEach(sort); };
   sort(root); return root;
 }
+const countDocuments = (node: Node): number => node.documents.length + node.folders.reduce((sum, folder) => sum + countDocuments(folder), 0);
 const folderOf = (doc: SpecDocument) => relativePath(doc).split('/').slice(0, -1).join('/');
 /** Walks the folder chain named by `folder`; unknown segments stop at the last known folder. */
 function chainOf(root: Node, folder: string): Node[] {
@@ -73,7 +76,7 @@ function ColumnBrowser({ documents, kind, search }: { documents: SpecDocument[];
       return <VStack key={node.path || 'root'} gap={0} className={styles.browserColumn} aria-label={node.name || t('documents.document', { label: documentLabel[kind] })}>
         {items.length ? <List density="compact">
           {items.map(item => 'folder' in item
-            ? <ListItem key={item.key} label={item.folder.name} startContent={<HgiFolder size={16}/>} endContent={<Text type="supporting" color="secondary">›</Text>} isSelected={item.folder.name === nextName} onClick={() => openFolder(item.folder.path)}/>
+            ? <ListItem key={item.key} label={item.folder.name} description={t('documents.folderCount', { count: countDocuments(item.folder) })} startContent={<HgiFolder size={16}/>} endContent={<Text type="supporting" color="secondary">›</Text>} isSelected={item.folder.name === nextName} onClick={() => openFolder(item.folder.path)}/>
             : <ListItem key={item.key} label={item.doc.title} description={relativePath(item.doc).split('/').pop()} startContent={<HgiDocument size={16}/>} isSelected={item.doc.id === preview?.id} onClick={() => openDocument(item.doc)}/>)}
         </List> : <Text type="supporting" color="secondary">{t('documents.emptyFolder')}</Text>}
       </VStack>;
@@ -96,7 +99,7 @@ function ColumnBrowser({ documents, kind, search }: { documents: SpecDocument[];
 
 function DocumentPage({ doc, kind }: { doc: SpecDocument; kind: DocumentKind }) {
   return <VStack as="article" aria-label={t('documents.document', { label: documentLabel[kind] })} gap={0} className={styles.featureDetail}>
-    <Link to={documentRoot[kind]} search={{ folder: folderOf(doc) || undefined, selected: doc.id }} className={styles.featureBack}>← {documentLabel[kind]}{folderOf(doc) ? ` / ${folderOf(doc)}` : ''}</Link>
+    <Link to={documentRoot[kind]} search={kind === 'product' ? {} : { folder: folderOf(doc) || undefined, selected: doc.id }} className={styles.featureBack}>← {documentLabel[kind]}{folderOf(doc) ? ` / ${folderOf(doc)}` : ''}</Link>
     <VStack gap={3} className={styles.documentHeading}>
       <Heading level={1}>{doc.title}</Heading>
       <MetadataList orientation="horizontal">
@@ -106,6 +109,7 @@ function DocumentPage({ doc, kind }: { doc: SpecDocument; kind: DocumentKind }) 
       </MetadataList>
       <Link to="/" search={{ document: kind, q: doc.id }}>{t('documents.activity')}</Link>
     </VStack>
-    <VStack gap={0} className={styles.documentBody}><Markdown headingLevelStart={2}>{doc.body}</Markdown></VStack>
+    {/* Product images sit beside PRODUCT.md and the banner repeats the page title, as on the dashboard before. */}
+    <VStack gap={0} className={styles.documentBody}><DocumentBody>{kind === 'product' ? productImageSources(withoutLeadingBanner(doc.body)) : doc.body}</DocumentBody></VStack>
   </VStack>;
 }

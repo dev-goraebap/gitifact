@@ -4,7 +4,10 @@ import { RouterLink } from '../../shared/ui/router-link/RouterLink';
 import { InternationalizationProvider } from '@astryxdesign/core/i18n';
 import koKR from '@astryxdesign/core/locales/ko-KR.json';
 import { Theme } from '@astryxdesign/core/theme';
-import { stoneTheme } from '@astryxdesign/theme-stone/built';
+import { SyntaxTheme } from '@astryxdesign/core/theme/syntax';
+import { documentSyntax } from '../../shared/ui/document';
+import { themes } from './themes';
+import { useAppearance } from '../../shared/lib/appearance';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { createRouter, RouterProvider } from '@tanstack/react-router';
 import { routeTree } from '../routeTree.gen';
@@ -29,8 +32,10 @@ declare module '@tanstack/react-router' {
 }
 
 export function AppProviders() {
+  const { mode, palette } = useAppearance();
   return (
-    <Theme theme={stoneTheme}>
+    <Theme theme={themes[palette]} mode={mode}>
+      <SyntaxTheme theme={documentSyntax}>
       <InternationalizationProvider locale="ko-KR" messages={{ 'ko-KR': koKR }}>
         <LayerProvider>
           <LinkProvider component={RouterLink}>
@@ -40,6 +45,7 @@ export function AppProviders() {
           </LinkProvider>
         </LayerProvider>
       </InternationalizationProvider>
+      </SyntaxTheme>
     </Theme>
   );
 }

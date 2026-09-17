@@ -12,6 +12,7 @@ import { HgiGit } from '../../../shared/ui/icons/HgiGit';
 import { HgiProduct } from '../../../shared/ui/icons/HgiProduct';
 import { HgiBook } from '../../../shared/ui/icons/HgiBook';
 import { HgiInfo } from '../../../shared/ui/icons/HgiInfo';
+import { HgiSettings } from '../../../shared/ui/icons/HgiSettings';
 import { VersionFooter } from './VersionFooter';
 import styles from './app-shell.module.css';
 import { t } from '../../../shared/i18n';
@@ -22,6 +23,7 @@ const destinations = [
   ['/', t('nav.history'), HgiHistory],
   ['/contributors', t('nav.contributors'), HgiMembers],
   ['/git', t('nav.git'), HgiGit],
+  ['/settings', t('nav.settings'), HgiSettings],
 ] as const;
 const plainClick = (event: MouseEvent) => !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey && event.button === 0;
 export function BrowserShell() {

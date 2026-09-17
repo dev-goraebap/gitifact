@@ -1,5 +1,5 @@
 import type { SpecFeature } from '@gitifact/contracts';
-import { Markdown } from '@astryxdesign/core/Markdown';
+import { DocumentBody } from '../../../shared/ui/document';
 import { Heading } from '@astryxdesign/core/Heading';
 import { VStack } from '@astryxdesign/core/VStack';
 import { t } from '../../../shared/i18n';
@@ -17,5 +17,5 @@ export function DesignDocument({design, features}: {design: NonNullable<SpecFeat
       return feature ? `[${id}](/features/${encodeURIComponent(feature.id)}?selected=${id}&tab=requirements#${id})` : t('design.missingRequirement', { id });
     }).join(', ') + '\n';
   }).join('\n');
-  return <VStack gap={4}><Heading level={3}>{design.title}</Heading><Markdown headingLevelStart={4}>{body}</Markdown></VStack>;
+  return <VStack gap={4}><Heading level={3}>{design.title}</Heading><DocumentBody headingLevelStart={4}>{body}</DocumentBody></VStack>;
 }

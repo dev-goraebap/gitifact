@@ -49,7 +49,7 @@ test('document changes appear in the activity feed with their kind and open the 
   await expect(page).toHaveURL(/\/guides\/G-abcdefghij$/);
 });
 
-test('the product page is a dashboard of the loaded specs followed by PRODUCT.md without its banner image', async ({ page }) => {
+test('the product page is a dashboard of the loaded specs and opens PRODUCT.md on its own reading page', async ({ page }) => {
   await mockApi(page);
   const data = structuredClone(specs);
   data.documents[0]!.body = '![GITIFACT](./gitifact-logo.svg)\n\n' + data.documents[0]!.body;
@@ -64,14 +64,27 @@ test('the product page is a dashboard of the loaded specs followed by PRODUCT.md
   await expect(article.getByLabel('최근 변경 종류 범례').getByRole('listitem').first()).toHaveText('추가1 · 100%');
   await expect(article.getByLabel('참여자별 커밋 범례').getByRole('listitem').first()).toHaveText('Fixture3 · 75%');
   await expect(article.getByLabel('최근 명세 활동')).toContainText('검색어 입력');
-  await expect(article.getByLabel('제품 설명')).toContainText('요구사항과 변경 이유를 Git에 연결합니다.');
-  // The leading banner is dropped; every other relative image is served from the product folder.
-  await expect(article.locator('img[alt="GITIFACT"]')).toHaveCount(0);
-  await expect(article.locator('img[alt="로고"]')).toHaveAttribute('src', '/api/v1/product/assets/logo.png');
+  // The dashboard no longer carries the product text; it links to the reading page.
+  await expect(article).not.toContainText('요구사항과 변경 이유를 Git에 연결합니다.');
   await expect(page.getByRole('textbox', { name: '검색', exact: true })).toHaveCount(0);
   // The observed time moved into the header, left of the refresh button, without the read-only note.
   await expect(page.locator('header[aria-label="현재 위치"]')).toContainText('조회');
   await expect(page.getByText('로컬 읽기 전용', { exact: false })).toHaveCount(0);
+  await article.getByRole('link', { name: '제품 문서 보기' }).click();
+  await expect(page).toHaveURL(/\/product\/document$/);
+  const reading = page.getByRole('article', { name: '제품 개요 문서' });
+  await expect(reading.getByRole('heading', { level: 1 })).toHaveText('Gitifact');
+  await expect(reading).toContainText('요구사항과 변경 이유를 Git에 연결합니다.');
+  // The leading banner is dropped; every other relative image is served from the product folder.
+  await expect(reading.locator('img[alt="GITIFACT"]')).toHaveCount(0);
+  await expect(reading.locator('img[alt="로고"]')).toHaveAttribute('src', '/api/v1/product/assets/logo.png');
+  // Documents are read larger than the 14px interface text.
+  expect(await reading.locator('.astryx-markdown-paragraph').first().evaluate(element => getComputedStyle(element).fontSize)).toBe('16px');
+  await expect(page.locator('header[aria-label="현재 위치"]')).toContainText('Gitifact');
+  await page.reload();
+  await expect(reading.getByRole('heading', { level: 1 })).toHaveText('Gitifact');
+  await reading.getByRole('link', { name: /제품 개요/ }).first().click();
+  await expect(page).toHaveURL(/\/product$/);
   await page.getByRole('link', { name: '제품 개요 변경 이력 →' }).click();
   await expect(page).toHaveURL(/document=product/);
 });

@@ -23,7 +23,7 @@ import { PageHeader } from '../../../widgets/page-header';
 import { useLoadingHold } from '../../../shared/ui/request-state/useLoadingHold';
 import { ViewSkeleton } from './ViewSkeleton';
 import { t, tNodes } from '../../../shared/i18n';
-export function ProductPanel({session,view,featureId,email,documentId,search,change}:ProductProps&{session:BrowserSessionV2}) {
+export function ProductPanel({session,view,featureId,email,documentId,productDocument,search,change}:ProductProps&{session:BrowserSessionV2}) {
  const guides=view==='guides'; const productPage=view==='product';
  const query=useInfiniteQuery(specsOptions(session));
  const disconnected=query.error instanceof ApiError && query.error.code==='SESSION_CHANGED';
@@ -35,7 +35,9 @@ export function ProductPanel({session,view,featureId,email,documentId,search,cha
  const title={history:t('nav.history'),features:t('nav.features'),contributors:t('nav.contributors'),product:t('nav.product'),guides:t('nav.guides')}[view];
  const detailFeature=featureId?first?.features.find(f=>f.id===featureId):undefined;
  const detailPerson=email?first?.contributors.find(p=>p.email===email):undefined;
- const detailDocument=documentId?first?.documents.find(d=>d.id===documentId):undefined;
+ const productDoc=first?.documents.find(d=>d.kind==='product');
+ // The product text has its own reading page at /product/document; the dashboard only links to it.
+ const detailDocument=productDocument?productDoc:documentId?first?.documents.find(d=>d.id===documentId):undefined;
  // Detail pages and the product dashboard carry their own heading; the guide browser fills the whole content area with columns.
  const detailPage=!!(featureId||email||documentId)||productPage;
  const browsing=guides&&!documentId;
@@ -61,7 +63,7 @@ export function ProductPanel({session,view,featureId,email,documentId,search,cha
  {skeleton&&<ViewSkeleton view={view}/>}
  {filters}
  {ready&&<VStack gap={3} className={browsing?styles.fillContent:styles.content}>
- {view==='history'?<HistoryView events={events} features={first.features} search={search} change={change}/>:view==='features'?<FeatureView features={first.features} featureId={featureId} search={search} change={change}/>:productPage?<ProductOverview product={first.documents.find(d=>d.kind==='product')} features={first.features} documents={first.documents} events={events} contributors={first.contributors} working={first.working}/>:guides?<DocumentsView documents={first.documents.filter(d=>d.kind==='guide')} kind="guide" documentId={documentId} search={search} change={change}/>:<ContributorsView people={first.contributors} events={events} features={first.features} email={email} search={search}/>}
+ {view==='history'?<HistoryView events={events} features={first.features} search={search} change={change}/>:view==='features'?<FeatureView features={first.features} featureId={featureId} search={search} change={change}/>:productPage&&productDocument?<DocumentsView documents={productDoc?[productDoc]:[]} kind="product" documentId={productDoc?.id??'PRODUCT.md'} search={search} change={change}/>:productPage?<ProductOverview product={productDoc} features={first.features} documents={first.documents} events={events} contributors={first.contributors} working={first.working}/>:guides?<DocumentsView documents={first.documents.filter(d=>d.kind==='guide')} kind="guide" documentId={documentId} search={search} change={change}/>:<ContributorsView people={first.contributors} events={events} features={first.features} email={email} search={search}/>}
  {view==='history'&&<VStack gap={3} padding={5} className={styles.historyPagination}>
  <Text type="supporting" color="secondary">{t('history.loaded', { count: events.length })} {query.hasNextPage?t('history.filtersApplyToLoaded'):t('history.reachedEnd')}</Text>
  {query.hasNextPage&&<Button label={query.isFetchingNextPage?t('history.loadingMore'):query.isFetchNextPageError?t('history.retryMore'):t('history.loadMore')} isDisabled={query.isFetching} onClick={()=>{void query.fetchNextPage();}}/>}

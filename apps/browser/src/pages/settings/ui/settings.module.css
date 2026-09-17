@@ -1,0 +1,12 @@
+/* Settings: the same centered column as the other pages. */
+.page { min-width:0; }
+.column { width:100%; max-width:64rem; margin-inline:auto; min-width:0; }
+.pageTitle { padding-inline:var(--spacing-5); padding-block:var(--spacing-6) var(--spacing-2); }
+.sections { padding:var(--spacing-4) var(--spacing-5) var(--spacing-8); min-width:0; }
+.section { padding-block:var(--spacing-5); border-top:1px solid var(--color-border); }
+/* Palette preview: a miniature page (floor, surface, accent mark, a line of text) for the light side and the dark side. */
+.swatches { border-radius:var(--radius-element); overflow:hidden; border:1px solid var(--color-border); }
+.sample { padding:var(--spacing-2); }
+.sampleSurface { flex:1; padding:var(--spacing-2) var(--spacing-3); border-radius:var(--radius-inner, var(--radius-element)); }
+.sampleDot { inline-size:var(--spacing-3); block-size:var(--spacing-3); border-radius:var(--radius-full); flex-shrink:0; }
+.sampleLine { flex:1; block-size:var(--spacing-1); border-radius:var(--radius-full); opacity:.75; }

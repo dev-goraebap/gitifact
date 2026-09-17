@@ -17,6 +17,7 @@ import { avatarSource, contributorHref } from './Person';
 import type { ProductSearch } from '../model/search';
 import styles from './product.module.css';
 import { PageState } from '../../../shared/ui/page-state';
+import { DocumentBody } from '../../../shared/ui/document';
 import { t } from '../../../shared/i18n';
 
 export function FeatureView({ features, featureId, search, change }: { features: SpecFeature[]; featureId?: string | undefined; search: ProductSearch; change: (s: ProductSearch) => void }) {
@@ -94,7 +95,7 @@ function FeatureDetail({ feature: selected, features, search, change }: { featur
             <Heading level={3}>{r.title}</Heading>
             <Text type="supporting" color="secondary">{r.id}</Text>
           </VStack>
-          <Markdown headingLevelStart={4}>{r.body.replace(/\r?\n([ \t]+)(기대 동작:)/g, '  \n$1$2')}</Markdown>
+          <DocumentBody headingLevelStart={4}>{r.body.replace(/\r?\n([ \t]+)(기대 동작:)/g, '  \n$1$2')}</DocumentBody>
           <Link to="/" search={{ feature: selected.id, q: r.id }}>{t('features.requirementHistory')}</Link>
         </VStack>
       ))}
