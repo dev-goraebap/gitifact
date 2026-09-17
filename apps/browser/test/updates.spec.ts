@@ -49,6 +49,17 @@ test('a newer release offers a prompt for the agent and the npm command, without
   await expect(dialog).toContainText('gitifact update');
   await expect(dialog).toContainText('npm install -g gitifact@0.4.1');
   await expect(dialog).toContainText('npm 전역 설치용');
+  // The close button sits inside the padded header, and copy buttons live in code block header bars, not over the code.
+  const box = (await dialog.boundingBox())!; const close = (await dialog.getByRole('button', { name: /닫기|close/i }).first().boundingBox())!;
+  const title = (await dialog.getByRole('heading', { name: '새 버전이 있습니다' }).boundingBox())!;
+  expect(title.x).toBeGreaterThan(box.x + 8); expect(title.y).toBeGreaterThan(box.y + 4); expect(close.x + close.width).toBeLessThan(box.x + box.width - 4);
+  for (const text of ['gitifact를 0.4.1 버전으로', 'npm install -g gitifact@0.4.1']) {
+    const code = (await dialog.locator('code', { hasText: text }).boundingBox())!;
+    for (const copy of await dialog.getByRole('button', { name: /복사|copy/i }).all()) {
+      const b = (await copy.boundingBox())!;
+      expect(b.y + b.height <= code.y || b.y >= code.y + code.height || b.x >= code.x + code.width || b.x + b.width <= code.x).toBe(true);
+    }
+  }
   await page.keyboard.press('Escape');
   await expect(dialog).toHaveCount(0);
   // The browser never talks to the registry itself.

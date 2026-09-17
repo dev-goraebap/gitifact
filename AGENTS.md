@@ -1,7 +1,7 @@
 # gitifact 개발 지침
 
 <!-- GITIFACT:START -->
-gitifact v0.4.2 · ko · 저장 규약 schemaVersion 1
+gitifact v0.4.3 · ko · 저장 규약 schemaVersion 1
 CLI: 모든 명령은 `gitifact <cmd>`로 실행한다. 프로젝트 지침이 다른 실행 방법을 지정하면 그것을 따른다.
 
 시작할 때:
