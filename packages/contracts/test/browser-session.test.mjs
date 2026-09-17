@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { browserSessionV2, browserHttpErrorV1, updateStateV1, updateV1 } from '../dist/index.js';
+import { browserSessionV2, browserHttpErrorV1, updateStateV1, updateV2 } from '../dist/index.js';
 
 const value = { contract: 'browser-session', version: 2,
   sessionId: '7cc37dc4-4ea7-4252-b9de-24944fbfb5a2',
@@ -27,13 +27,22 @@ test('update state carries a version exactly when the check produced a result', 
     { status: 'available' }]) assert.equal(updateStateV1.safeParse(state).success, false);
 });
 
-test('update command output is versioned and keeps failures separate', () => {
-  const ok = { contract: 'update', version: 1, ok: true, cliVersion: '0.4.0', update: { status: 'available', latestVersion: '0.4.1' },
-    install: { npmGlobal: 'npm install -g gitifact@0.4.1' }, agentDocs: { state: 'refreshed', paths: ['AGENTS.md'] } };
-  assert.deepEqual(updateV1.parse(ok), ok);
-  assert.equal(updateV1.safeParse({ ...ok, install: null, agentDocs: { state: 'not-initialized', paths: [] } }).success, true);
-  assert.equal(updateV1.safeParse({ ...ok, agentDocs: { state: 'unknown', paths: [] } }).success, false);
-  assert.equal(updateV1.safeParse({ ...ok, extra: true }).success, false);
-  const failure = { contract: 'update', version: 1, ok: false, error: { code: 'UPDATE_FAILED', message: 'x' } };
-  assert.deepEqual(updateV1.parse(failure), failure);
+test('update command output is versioned, reports the block commit and keeps failures separate', () => {
+  const none = { state: 'not-requested', commit: null, paths: [], message: null, reason: null, detail: null };
+  const ok = { contract: 'update', version: 2, ok: true, cliVersion: '0.4.0', update: { status: 'available', latestVersion: '0.4.1' },
+    install: { npmGlobal: 'npm install -g gitifact@0.4.1' }, agentDocs: { state: 'refreshed', paths: ['AGENTS.md'] }, commit: none };
+  assert.deepEqual(updateV2.parse(ok), ok);
+  assert.equal(updateV2.safeParse({ ...ok, install: null, agentDocs: { state: 'not-initialized', paths: [] } }).success, true);
+  assert.equal(updateV2.safeParse({ ...ok, agentDocs: { state: 'unknown', paths: [] } }).success, false);
+  assert.equal(updateV2.safeParse({ ...ok, extra: true }).success, false);
+  const { commit: _omitted, ...withoutCommit } = ok;
+  assert.equal(updateV2.safeParse(withoutCommit).success, false);
+  assert.equal(updateV2.safeParse({ ...ok, version: 1 }).success, false);
+  const committed = { state: 'committed', commit: 'a'.repeat(40), paths: ['AGENTS.md'], message: 'chore(gitifact): refresh GITIFACT block to v0.4.0', reason: null, detail: null };
+  assert.equal(updateV2.safeParse({ ...ok, commit: committed }).success, true);
+  assert.equal(updateV2.safeParse({ ...ok, commit: { ...committed, commit: null } }).success, false);
+  assert.equal(updateV2.safeParse({ ...ok, commit: { ...none, state: 'skipped', paths: ['AGENTS.md'], reason: 'other-changes' } }).success, true);
+  assert.equal(updateV2.safeParse({ ...ok, commit: { ...none, state: 'skipped' } }).success, false);
+  const failure = { contract: 'update', version: 2, ok: false, error: { code: 'UPDATE_FAILED', message: 'x' } };
+  assert.deepEqual(updateV2.parse(failure), failure);
 });

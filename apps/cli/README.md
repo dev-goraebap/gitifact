@@ -9,7 +9,7 @@ gitifact init --dry-run
 gitifact init
 gitifact docs
 gitifact docs spec
-gitifact update
+gitifact update --commit
 gitifact spec working
 gitifact spec save --file input.json
 gitifact spec changes
@@ -29,7 +29,9 @@ The `spec` commands use the input objects described by `gitifact docs spec` and 
 
 ## Updates
 
-`gitifact update` reports the running version, whether a newer release exists, and the install command for npm global installs (`npm install -g gitifact@<version>`); other install methods update their own way. It never installs anything itself. In an initialized project it also rewrites the GITIFACT block in files that already carry one, so run it again after installing. Output is `contract: "update", version: 1`; add `--format text` for a readable form.
+`gitifact update` reports the running version, whether a newer release exists, and the install command for npm global installs (`npm install -g gitifact@<version>`); other install methods update their own way. It never installs anything itself. In an initialized project it also rewrites the GITIFACT block in files that already carry one, so run it again after installing. With `--commit` it then commits the instruction files whose only difference from HEAD is inside the markers, alone and with the fixed message `chore(gitifact): refresh GITIFACT block to v<version>`; other staged changes stay staged and hooks and signing run as usual. A file with other uncommitted edits, an untracked file or a commit Git rejects commits nothing and is reported in `commit.reason`. Output is `contract: "update", version: 2`; add `--format text` for a readable form.
+
+The block tells agents that a missing `gitifact` command means the project's CLI is not installed yet: they tell the user and, with consent, install the version written in the block (`npm install -g gitifact@<version>`).
 
 `gitifact browser` and `gitifact update` make the only outbound request of the CLI: one GET to `https://registry.npmjs.org/gitifact` for the latest version. No project information is sent, the request has a short timeout, and a failure never blocks anything. Turn it off with `gitifact browser --no-update-check` or `GITIFACT_NO_UPDATE_CHECK=1`.
 

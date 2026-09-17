@@ -39,13 +39,13 @@ test('agent docs block is planned, created, refreshed and removed through init',
   const created = await run(f, false, docs());
   assert.deepEqual([created.outcome, created.agentDocs.paths], ['created', ['CLAUDE.md']]);
   const text = readFileSync(join(f.repo, 'CLAUDE.md'), 'utf8');
-  assert.match(text, /^# Team\n\nRules\.\n\n<!-- GITIFACT:START -->\ngitifact v0\.0\.0-test /);
+  assert.match(text, /^# Team\n\nRules\.\n\n<!-- GITIFACT:START -->\n## Gitifact Guide\n\ngitifact v0\.0\.0-test /);
   assert.equal(existsSync(join(f.repo, 'AGENTS.md')), false);
   const again = await run(f, false, docs({ version: '0.0.1-test' }));
   assert.equal(again.outcome, 'already-initialized');
-  assert.equal(readFileSync(join(f.repo, 'CLAUDE.md'), 'utf8'), text.replace('v0.0.0-test', 'v0.0.1-test'));
+  assert.equal(readFileSync(join(f.repo, 'CLAUDE.md'), 'utf8'), text.replaceAll('0.0.0-test', '0.0.1-test'));
   assert.equal((await run(f, true, docs({ version: '0.0.2-test' }))).outcome, 'already-initialized');
-  assert.equal(readFileSync(join(f.repo, 'CLAUDE.md'), 'utf8'), text.replace('v0.0.0-test', 'v0.0.1-test'));
+  assert.equal(readFileSync(join(f.repo, 'CLAUDE.md'), 'utf8'), text.replaceAll('0.0.0-test', '0.0.1-test'));
   const removed = await run(f, false, docs({ remove: true }));
   assert.deepEqual(removed.agentDocs, { mode: 'remove', paths: ['CLAUDE.md'] });
   assert.equal(readFileSync(join(f.repo, 'CLAUDE.md'), 'utf8'), '# Team\n\nRules.\n');

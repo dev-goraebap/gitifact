@@ -209,7 +209,7 @@
   "update.versions": "현재 {current} · 최신 {latest}",
   "update.promptLabel": "에이전트에게 맡기기",
   "update.promptHelp": "아래 문장을 복사해 프로젝트에서 쓰는 에이전트에게 전달하세요.",
-  "update.prompt": "gitifact를 {latest} 버전으로 업데이트해 주세요. 먼저 gitifact update를 실행해 설치 방법을 확인하고, 이 환경의 설치 방식에 맞게 설치한 뒤 gitifact update를 다시 실행해 프로젝트의 GITIFACT 지침 블록을 새 버전으로 갱신해 주세요.",
+  "update.prompt": "gitifact를 {latest} 버전으로 업데이트해 주세요. 먼저 gitifact update를 실행해 설치 방법을 확인하고, 이 환경의 설치 방식에 맞게 설치한 뒤 gitifact update --commit을 다시 실행해 프로젝트의 GITIFACT 지침 블록을 새 버전으로 갱신하고 커밋해 주세요.",
   "update.promptTitle": "요청 문장",
   "update.commandTitle": "터미널",
   "update.commandLabel": "직접 설치하기",

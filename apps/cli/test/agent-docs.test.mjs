@@ -16,11 +16,19 @@ const block = await render('1.2.3');
 const agents = boilerplateFor('AGENTS.md');
 const noop = async () => {};
 
-test('rendered block is versioned, marker-delimited and about thirty lines', () => {
+test('rendered block is versioned, marker-delimited, Markdown-structured and short', () => {
   const lines = block.split('\n');
   assert.equal(lines[0], AGENT_START); assert.equal(lines.at(-1), AGENT_END);
-  assert.equal(lines[1], 'gitifact v1.2.3 · ko · 저장 규약 schemaVersion 1');
-  assert.ok(lines.length >= 25 && lines.length <= 40, String(lines.length));
+  // A heading opens the block and a rule closes it, so it reads as its own section beside the user's text.
+  assert.equal(lines[1], '## Gitifact Guide'); assert.equal(lines.at(-2), '---'); assert.equal(lines.at(-3), '');
+  assert.equal(lines[3], 'gitifact v1.2.3 · ko · 저장 규약 schemaVersion 1');
+  // Markdown joins consecutive plain lines, so every non-blank line must be a heading, list item, table row or its own paragraph.
+  for (const [index, line] of lines.entries()) {
+    if (!line || /^(#{2,3} |- |\| |---$|<!--)/.test(line)) continue;
+    assert.ok(!lines[index + 1] || /^\| /.test(line), 'plain line runs into the next: ' + line);
+  }
+  assert.ok(block.includes('npm install -g gitifact@1.2.3'), 'install hint pins the block version');
+  assert.ok(lines.length >= 25 && lines.length <= 50, String(lines.length));
   assert.deepEqual(parseAgentBlock(block), { version: '1.2.3', language: 'ko', schemaVersion: 1 });
   assert.equal(parseAgentBlock('no block'), null);
   for (const topic of ['docs spec', 'docs commit', 'docs <topic>', 'spec working', 'SELF-CHECK']) assert.ok(block.includes(topic), topic);
@@ -61,7 +69,7 @@ test('inject creates, appends, replaces idempotently and keeps CRLF', async () =
   const crlf = injectBlock('# Win\r\n\r\nText\r\n', block, agents);
   assert.equal(crlf, '# Win\r\n\r\nText\r\n\r\n' + block.split('\n').join('\r\n') + '\r\n');
   assert.equal(crlf.includes('\n\n'), false);
-  assert.equal(injectBlock(crlf, newer, agents), crlf.replace('v1.2.3', 'v2.0.0'));
+  assert.equal(injectBlock(crlf, newer, agents), crlf.replace('v1.2.3', 'v2.0.0').replace('gitifact@1.2.3', 'gitifact@2.0.0'));
 });
 
 test('malformed markers are refused and remove restores or deletes', () => {

@@ -1,1 +1,2 @@
 {"id":"H-gre5vu6fs2","requirements":["R-cj525dk5vt","R-cr5rajcs4a","R-hlndpxflx7","R-yrk7zcukqy"],"designs":["S-b7f4g2gpw6"],"reason":"사용자가 새 버전 안내, 현재 버전 표시, 명령줄 업데이트 확인, 버전별 패치노트를 요청했다. 확인 주체는 로컬 서버로 하고 자동 설치는 하지 않기로 했다. 설치 방식을 CLI가 소유하지 않고, 실행 중 자기 파일을 교체해야 하며, 브라우저 요청으로 명령을 실행하는 endpoint를 두지 않기로 했기 때문이다. 대신 에이전트용 문장과 npm 전역 설치 명령을 제공한다."}
+{"id":"H-s3734wkvqj","requirements":["R-cr5rajcs4a"],"designs":["S-b7f4g2gpw6"],"reason":"사용자가 업데이트 후 바뀐 AGENTS.md 블록을 매번 따로 커밋하지 않고 고정된 메시지로 커밋되기를 요청했다. 자동 커밋 권한 원칙을 지키기 위해 사용자가 기본 커밋이나 지침만 추가하는 방식 대신 명시적인 update --commit 옵션안을 선택했다."}

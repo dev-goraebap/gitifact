@@ -5,3 +5,4 @@
 {"id":"H-w4kacabofk","requirements":["R-b2q2g4sgsd"],"reason":"스킬 설치 대신 init이 에이전트 지침 파일에 GITIFACT 블록을 쓰고 상세 규칙은 gitifact docs로 제공하기로 했다. 항상 로드되는 지침 파일이 세션마다 발동이 갈리는 스킬보다 맞고, 마커 바깥이 사용자 영역이라 수정본 감지가 필요 없으며, CLI 업데이트 후 init 재실행으로 갱신되기 때문이다."}
 {"id":"H-57rvsuzzkp","requirements":[],"designs":["S-eordsbir6z"],"reason":"init의 지침 블록 설치·갱신·제거 규칙(후보 파일, 프리셋, wrapper 건너뛰기, 마커 오류 거부, CRLF)과 스킬 배포 대신 마커 블록을 택한 이유, 남긴 upgrade 명령 범위를 기록했다."}
 {"id":"H-4gz7rafzf6","requirements":[],"designs":["S-eordsbir6z"],"reason":"블록 문안과 지침 docs를 언어 폴더로 옮기고 블록 첫 줄에 언어 토큰을 넣어 init 재실행이 기존 블록의 언어를 읽을 수 있게 했다. 토큰 없는 과거 블록도 읽고, 블록의 요청 예시가 workflow 원문과 어긋나지 않게 대조한다."}
+{"id":"H-yf7vtln2mt","requirements":["R-b2q2g4sgsd"],"designs":["S-eordsbir6z"],"reason":"사용자가 블록의 CLI 목록이 Markdown에서 한 줄로 합쳐져 보인다며 목록 구조, H2 제목, 끝 구분선을 요청했고, 프로젝트에 참여한 팀원 환경에 CLI가 없을 수 있으니 설치로 유도해 달라고 요청했다."}

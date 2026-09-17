@@ -53,6 +53,7 @@ program.command('update')
   .description(t('help.update'))
   .allowExcessArguments(false)
   .addOption(new Option('--format <format>', t('help.format')).choices(['json', 'text']).default('json'))
+  .option('--commit', t('help.updateCommit'))
   .action(options => runUpdate(options, __CLI_VERSION__));
 
 program.command('migrate')
