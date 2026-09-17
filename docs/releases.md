@@ -125,6 +125,12 @@ Tryce에서 Gitifact로 이름을 바꾼 첫 배포다. 패키지 `gitifact@0.1.
 
 `pnpm check`를 통과했다. contracts 7개·core 27개·intro 3개·CLI 123개·브라우저 28개와 workspace 밖 오프라인 설치·실행을 확인했고 루트 AGENTS.md의 블록은 `pnpm cli update`로 v0.4.1 줄로 갱신했다. 색 조합과 읽기 영역은 라이트·다크 화면을 직접 띄워 확인했다. CLI 번들 SHA-256은 `9f9a9d244191cca75470154ca17a033431ac8775ec3496f23ef956c00bd8bdf6`이다. 게시 결과는 아래에 이어서 기록한다.
 
+## 0.4.1 게시 완료
+
+2026-09-17 릴리스 커밋 `9cb8eb8`까지 main을 푸시하고 apps/cli에서 Git 검사를 유지한 `pnpm publish --access public --tag latest --publish-branch main --json`을 실행했다. npm은 접수 후 몇 분 뒤 공개했다. latest는 0.4.1, 라이선스는 MIT다. 실제 게시와 레지스트리의 integrity는 `sha512-VKb8TctSf5tRQdYlVpoGQU2p/rj9L4qOjb6hQuA3cCeZr0yao6PWlBY3bJqKcf3g0k5IjJOYbLvaSnJjjTkhBg==`, shasum은 `6492b28254d5a4c60c5750dd76743161e471d903`이며 패키지는 68개 파일이다. 모의 실행의 integrity(`sha512-ThOARh…`)는 0.3.x 때와 같이 매니페스트 기록 순서 차이로 달랐고 파일 목록은 같았다.
+
+레지스트리에서 새 임시 폴더에 로컬로 설치한 CLI 번들의 SHA-256이 검증 빌드 `9f9a9d24…`와 같았다. 설치본으로 새 Git 저장소의 init, `update`(실제 레지스트리 조회 결과 up-to-date·latest 0.4.1), 조회를 끈 `browser` 서버의 세션 v2(`cliVersion` 0.4.1·disabled)와 `/settings`·`/product/document`·`/changelog` 경로의 200 응답을 확인했다. 사용자가 브라우저의 새 버전 안내를 0.4.0에서 직접 시험하려고 요청해 이 PC의 npm 전역 설치는 0.4.0으로 남겼다. 기존 인증 세션으로 게시했으며 인증 파일과 토큰은 조회·변경하지 않았다.
+
 ## 이전 Tryce 배포 기록
 
 아래 패키지 이름·버전·커밋·무결성은 당시 배포의 사실이다. Gitifact 0.1.0의 게시 결과로 해석하거나 새 이름으로 일괄 치환하지 않는다.
