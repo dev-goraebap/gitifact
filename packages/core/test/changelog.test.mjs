@@ -55,5 +55,7 @@ test('order, empty versions, stray items and duplicate sections are refused', ()
 test('the shipped Korean changelog is valid', () => {
   const source = readFileSync(new URL('../../../apps/cli/src/shared/i18n/ko/changelog.md', import.meta.url), 'utf8');
   const entries = parseChangelog(source);
-  assert.deepEqual(entries.map(entry => entry.version), ['0.3.1', '0.3.0', '0.2.0', '0.1.0']);
+  // Only stable facts: new releases are added at the top, and the package check compares the top with package.json.
+  assert.ok(entries.length >= 1);
+  assert.equal(entries.at(-1).version, '0.1.0');
 });

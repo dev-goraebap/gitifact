@@ -93,6 +93,14 @@ Tryce에서 Gitifact로 이름을 바꾼 첫 배포다. 패키지 `gitifact@0.1.
 
 레지스트리에서 새 임시 폴더에 설치한 CLI 번들의 SHA-256이 검증 빌드 `a35ef9c9…`와 같았다. 설치본으로 version, 새 Git 저장소의 init(config.json 생성과 AGENTS.md의 `gitifact v0.3.1` 블록), `docs` 목록을 확인했다. 기존 인증 세션으로 게시했으며 인증 파일과 토큰은 조회·변경하지 않았다.
 
+## 0.3.2 배포 준비
+
+2026-09-17 사용자 푸시·배포 요청으로 언어별 문구 구조 정리(`73752a8`~`5980ee9`)를 패치 버전 0.3.2로 준비했다. 사용자에게 보이는 변경은 패치노트 동봉, `spec` 하위 명령 5개의 도움말 설명, 브라우저 소개 페이지의 로고와 새 소개 글, GITIFACT 블록 첫 줄의 언어 토큰(`· ko ·`), CLI 안내의 잘못된 구형 버전 표기 정정이다. CLI 명령·서버 계약·저장 형식은 바뀌지 않았고 CLI 출력 문구도 도움말 설명 외에는 같다. 내용은 [개발 환경](development.md#2026-09-17-언어별-문구-구조)을 따른다.
+
+배포물의 지침 Markdown 위치가 `dist/docs`에서 `dist/i18n/ko/docs`로 바뀌었다. 모의 게시에서 이전 빌드가 남긴 `dist/docs`가 함께 묶이는 것을 발견해(파일 59개), 빌드가 그 폴더를 지우고 패키지 검사가 `dist/docs`·`dist/skills`가 없음을 확인하도록 했다. 같은 준비 중 core 테스트가 패치노트의 버전 목록을 고정해 새 항목에서 실패해, 가장 오래된 0.1.0만 확인하도록 고쳤다.
+
+버전을 0.3.2로 올리고 패치노트 첫 항목을 쓴 뒤 `pnpm check`를 통과했다. core 27개·contracts 5개·intro 3개·CLI 117개·브라우저 23개와 workspace 밖 오프라인 설치·실행을 확인했고 루트 AGENTS.md의 블록을 `pnpm cli init`으로 v0.3.2 줄로 갱신했다. CLI 런타임 의존성과 라이선스 사본은 0.3.1과 같다. CLI 번들 SHA-256은 `2b21657c72beccfa4665b2c6f5148f0f846f595c57ed811fcecee9f493b90c22`이다. 모의 게시(`--dry-run --no-git-checks`, 커밋 전 확인용)는 54개 파일, integrity `sha512-4NIh4ja3zpvWPhz/mYT96myUcz//nL3Ghru/5/m8k1f6d27r/pmkmw+fK1q2eD0WFFRPZyAeIkK8CDbbJZO86Q==`이며 dist·README·LICENSE·package.json만 포함했다. 게시 결과는 아래에 이어서 기록한다.
+
 ## 이전 Tryce 배포 기록
 
 아래 패키지 이름·버전·커밋·무결성은 당시 배포의 사실이다. Gitifact 0.1.0의 게시 결과로 해석하거나 새 이름으로 일괄 치환하지 않는다.

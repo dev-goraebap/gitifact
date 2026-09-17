@@ -18,6 +18,10 @@ const i18nDestination = fileURLToPath(new URL('../dist/i18n/', import.meta.url))
 await readFile(join(i18nSource, 'ko', 'docs', 'workflow.md'));
 if (relative(packageRoot, i18nDestination) !== join('dist', 'i18n')) throw new Error('Unexpected i18n asset destination');
 await rm(i18nDestination, { recursive: true, force: true });
+// Builds before 0.3.2 wrote the agent docs to dist/docs; remove that copy so a stale folder is never packed.
+const legacyDocsDestination = fileURLToPath(new URL('../dist/docs/', import.meta.url));
+if (relative(packageRoot, legacyDocsDestination) !== join('dist', 'docs')) throw new Error('Unexpected legacy docs destination');
+await rm(legacyDocsDestination, { recursive: true, force: true });
 // Only the long-form Markdown ships as a file; messages.json is bundled into main.js by esbuild.
 await cp(i18nSource, i18nDestination, { recursive: true, filter: source => !source.endsWith('.ts') && !source.endsWith('.json') });
 await writeNotices();

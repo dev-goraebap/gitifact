@@ -30,6 +30,10 @@ try {
   assert.match(await readFile(join(installedRoot, 'dist/THIRD_PARTY_NOTICES.txt'), 'utf8'), /Meta Platforms/);
   assert.deepEqual(dependencies, {}, 'The initial bundled CLI must be self-contained.');
   // Publishing a version without its release notes is the mistake this guards against.
+  // Output folders from earlier builds must not be packed alongside the current ones.
+  for (const stale of ['dist/docs', 'dist/skills']) {
+    await assert.rejects(readdir(join(installedRoot, stale)), { code: 'ENOENT' }, stale + ' must not be packed.');
+  }
   const [latestNotes] = parseChangelog(await readFile(join(installedRoot, 'dist/i18n/ko/changelog.md'), 'utf8'));
   assert.equal(latestNotes.version, version, 'The shipped changelog must start with the package version.');
   // Version numbers live in package.json and the changelog; a copy in these pages goes stale at the next release.
