@@ -5,6 +5,7 @@ import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { parseChangelog } from '../packages/core/dist/index.js';
 
 const workspace = fileURLToPath(new URL('../', import.meta.url));
 const packageManager = process.env.npm_execpath;
@@ -28,6 +29,9 @@ try {
   assert.match(await readFile(join(installedRoot, 'README.md'), 'utf8'), /npm install -g gitifact/);
   assert.match(await readFile(join(installedRoot, 'dist/THIRD_PARTY_NOTICES.txt'), 'utf8'), /Meta Platforms/);
   assert.deepEqual(dependencies, {}, 'The initial bundled CLI must be self-contained.');
+  // Publishing a version without its release notes is the mistake this guards against.
+  const [latestNotes] = parseChangelog(await readFile(join(installedRoot, 'dist/i18n/ko/changelog.md'), 'utf8'));
+  assert.equal(latestNotes.version, version, 'The shipped changelog must start with the package version.');
   assert.equal(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', '--version'], temporaryRoot).trim(), version);
   assert.match(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', '--help'], temporaryRoot), /Usage: gitifact/);
   execFileSync('git', ['init', '--template=', '-b', 'main'], { cwd: temporaryRoot, stdio: 'pipe' });
