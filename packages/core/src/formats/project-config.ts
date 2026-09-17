@@ -1,3 +1,5 @@
+import { t } from '../shared/i18n/index.js';
+
 export type ProjectMode = 'normal' | 'prototype' | 'auto' | 'approval';
 export type Baseline = { kind: 'empty' } | { kind: 'commit'; objectFormat: 'sha1' | 'sha256'; commit: string };
 export interface ProjectConfig {
@@ -16,11 +18,11 @@ const keys = (value: Record<string, unknown>, expected: string[]) =>
 
 export function parseProjectConfig(text: string): ProjectConfig {
   let value: unknown;
-  try { value = JSON.parse(text); } catch { throw new InitError('INVALID_CONFIG', '설정 JSON을 읽지 못했습니다. 원문을 보존하세요.'); }
+  try { value = JSON.parse(text); } catch { throw new InitError('INVALID_CONFIG', t('config.jsonUnreadable')); }
   if (object(value) && value.kind === 'tryce-project' && typeof value.format === 'string' && !['init-1', 'prototype-1', 'workflow-1'].includes(value.format)) {
-    throw new InitError('UNSUPPORTED_FORMAT', '지원하지 않는 프로젝트 형식입니다. 호환 CLI가 필요합니다.');
+    throw new InitError('UNSUPPORTED_FORMAT', t('config.unsupportedFormat'));
   }
-  const invalid = () => new InitError('INVALID_CONFIG', '프로젝트 설정의 필드나 값이 올바르지 않습니다.');
+  const invalid = () => new InitError('INVALID_CONFIG', t('config.invalidFields'));
   if (!object(value) || !keys(value, ['kind', 'format', 'mode', 'baseline']) || value.kind !== 'tryce-project'
     || !['init-1', 'prototype-1', 'workflow-1'].includes(String(value.format)) || typeof value.format !== 'string'
     || typeof value.mode !== 'string' || !(value.format === 'workflow-1' ? ['auto', 'approval'] : ['normal', 'prototype']).includes(value.mode) || !object(value.baseline)) throw invalid();

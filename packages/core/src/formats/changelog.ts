@@ -1,3 +1,4 @@
+import { t, type MessageKey } from '../shared/i18n/index.js';
 import { InitError } from './project-config.js';
 
 export const changelogSections = ['added', 'changed', 'removed', 'fixed'] as const;
@@ -20,10 +21,11 @@ export function parseChangelog(text: string): ChangelogEntry[] {
   let previous: [number, number, number] | undefined;
   let entry: ChangelogEntry | undefined;
   let section: ChangelogSection | undefined;
-  const fail = (line: number, reason: string) => new InitError('INVALID_CHANGELOG', '패치노트 ' + line + '행: ' + reason);
+  const fail = (line: number, key: MessageKey, values: Record<string, unknown> = {}) =>
+    new InitError('INVALID_CHANGELOG', t('changelog.atLine', { line, reason: t(key, values) }));
   const lines = text.replace(/\r\n/g, '\n').split('\n');
   const close = (line: number) => {
-    if (entry && changelogSections.every(name => entry![name].length === 0)) throw fail(line, entry.version + ' 버전에 항목이 없습니다.');
+    if (entry && changelogSections.every(name => entry![name].length === 0)) throw fail(line, 'changelog.emptyVersion', { version: entry.version });
   };
   lines.forEach((raw, index) => {
     const line = index + 1;
@@ -32,9 +34,9 @@ export function parseChangelog(text: string): ChangelogEntry[] {
     if (version) {
       close(line);
       const core: [number, number, number] = [Number(version[1]), Number(version[2]), Number(version[3])];
-      if (!realDate(Number(version[4]), Number(version[5]), Number(version[6]))) throw fail(line, '존재하지 않는 날짜입니다: ' + raw);
+      if (!realDate(Number(version[4]), Number(version[5]), Number(version[6]))) throw fail(line, 'changelog.invalidDate', { text: raw });
       if (previous && !(core[0] < previous[0] || (core[0] === previous[0] && (core[1] < previous[1] || (core[1] === previous[1] && core[2] < previous[2]))))) {
-        throw fail(line, '버전은 최신이 앞에 오도록 내림차순이어야 합니다: ' + core.join('.'));
+        throw fail(line, 'changelog.order', { version: core.join('.') });
       }
       previous = core; section = undefined;
       entry = { version: core.join('.'), date: version[4] + '-' + version[5] + '-' + version[6], added: [], changed: [], removed: [], fixed: [] };
@@ -43,21 +45,21 @@ export function parseChangelog(text: string): ChangelogEntry[] {
     }
     const heading = sectionLine.exec(raw);
     if (heading) {
-      if (!entry) throw fail(line, '버전 제목보다 절 제목이 먼저 나왔습니다.');
+      if (!entry) throw fail(line, 'changelog.sectionBeforeVersion');
       const name = heading[1]!.toLowerCase() as ChangelogSection;
-      if (entry[name].length > 0) throw fail(line, '같은 버전에 ' + heading[1] + ' 절이 두 번 있습니다.');
+      if (entry[name].length > 0) throw fail(line, 'changelog.duplicateSection', { section: heading[1] });
       section = name;
       return;
     }
     const item = itemLine.exec(raw);
     if (item) {
-      if (!entry || !section) throw fail(line, '절 제목(### Added|Changed|Removed|Fixed) 아래에만 항목을 쓸 수 있습니다.');
+      if (!entry || !section) throw fail(line, 'changelog.itemOutsideSection');
       entry[section].push(item[1]!.trimEnd());
       return;
     }
-    throw fail(line, '인식할 수 없는 줄입니다. 버전은 "## X.Y.Z - YYYY-MM-DD", 절은 "### Added|Changed|Removed|Fixed", 항목은 "- "로 씁니다: ' + raw);
+    throw fail(line, 'changelog.unknownLine', { text: raw });
   });
   close(lines.length);
-  if (entries.length === 0) throw fail(1, '버전이 하나도 없습니다.');
+  if (entries.length === 0) throw fail(1, 'changelog.noVersions');
   return entries;
 }

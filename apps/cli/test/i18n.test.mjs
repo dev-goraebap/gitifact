@@ -47,3 +47,10 @@ test('placeholders are filled like concatenation and unknown ones stay visible',
   // A value that looks like a placeholder is inserted as text, not expanded again.
   assert.equal(t('migrate.unsupportedFile', { feature: '{name}', name: 'x' }), '지원하지 않는 명세 파일입니다: .tryce/spec/{name}/x');
 });
+
+test('read error codes stay the set the repository-status contract accepts', async () => {
+  // The codes moved out of the message table in core; the contract lists them separately.
+  const { repositoryReadErrorCodes } = await import('@gitifact/core');
+  const { repositoryStatusFailureV1 } = await import('@gitifact/contracts');
+  assert.deepEqual([...repositoryReadErrorCodes].sort(), [...repositoryStatusFailureV1.shape.error.shape.code.options].sort());
+});
