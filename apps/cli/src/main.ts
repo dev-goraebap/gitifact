@@ -3,6 +3,7 @@ import { runStatus } from './commands/status.js';
 import { runBrowser, parsePort } from './commands/browser.js';
 import { runInit } from './commands/init.js';
 import { runDocs } from './commands/docs.js';
+import { runUpdate } from './commands/update.js';
 import { agentPresetNames } from './commands/agent-block.js';
 import { runSpecPreview } from './commands/spec-preview.js';
 import { runMigrate } from './commands/migrate.js';
@@ -29,7 +30,8 @@ program.command('browser')
   .allowExcessArguments(false)
   .option('--port <port>', t('help.browserPort'), parsePort, 0)
   .option('--dev', t('help.browserDev'))
-  .action(runBrowser);
+  .option('--no-update-check', t('help.browserNoUpdateCheck'))
+  .action(options => runBrowser(options, __CLI_VERSION__));
 
 program.command('init')
   .description(t('help.init'))
@@ -46,6 +48,12 @@ program.command('docs')
   .argument('[topic]', t('help.docsTopic'))
   .allowExcessArguments(false)
   .action(async (topic?: string) => { await runDocs(topic); });
+
+program.command('update')
+  .description(t('help.update'))
+  .allowExcessArguments(false)
+  .addOption(new Option('--format <format>', t('help.format')).choices(['json', 'text']).default('json'))
+  .action(options => runUpdate(options, __CLI_VERSION__));
 
 program.command('migrate')
   .description(t('help.migrate'))

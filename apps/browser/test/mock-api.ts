@@ -1,11 +1,13 @@
 import type { Page } from '@playwright/test';
-import { browserSessionV1, repositoryStatusSuccessV1 } from '@gitifact/contracts';
+import { browserSessionV2, changelogV1, repositoryStatusSuccessV1 } from '@gitifact/contracts';
 
-export const session = browserSessionV1.parse({
+export const session = browserSessionV2.parse({
   contract: 'browser-session',
-  version: 1,
+  version: 2,
   sessionId: 'bb17c554-63a2-47f7-af46-2c3ac17952f1',
   repository: { key: 'repo:' + 'a'.repeat(64), worktreeKey: 'worktree:' + 'b'.repeat(64) },
+  cliVersion: '0.4.0',
+  update: { status: 'up-to-date', latestVersion: '0.4.0' },
 });
 export const status = repositoryStatusSuccessV1.parse({
   contract: 'repository-status',
@@ -23,10 +25,18 @@ export const status = repositoryStatusSuccessV1.parse({
   summary: { staged: 1, unstaged: 1, untracked: 0, conflicted: 0 },
   checks: { state: 'not-run', reason: 'git-status-only' },
 });
+export const changelog = changelogV1.parse({
+  contract: 'changelog', version: 1, language: 'ko', fallback: false,
+  entries: [
+    { version: '0.4.0', date: '2026-09-17', added: ['브라우저에 **패치노트** 페이지를 추가했습니다.', '`update` 명령을 추가했습니다.'], changed: ['세션 계약이 version 2가 됐습니다.'], removed: [], fixed: [] },
+    { version: '0.3.2', date: '2026-09-16', added: [], changed: [], removed: ['옛 명령을 제거했습니다.'], fixed: ['오타를 고쳤습니다.'] },
+  ],
+});
 export async function mockApi(page: Page) {
   await page.route('**/api/v1/session', (route) => route.fulfill({ json: session }));
   await page.route('**/api/v1/status', (route) => route.fulfill({ json: status }));
   await page.route('**/api/v1/specs*', route => route.fulfill({json:specs}));
+  await page.route('**/api/v1/changelog*', route => route.fulfill({ json: changelog }));
 }
 
 export const specs = {

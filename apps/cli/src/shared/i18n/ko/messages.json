@@ -225,5 +225,22 @@
   "docs.summary.spec": "사용자 스토리·수용 조건 형식, ID 규칙, spec save 입력",
   "docs.summary.design": "design.md 목차, 참조 주석, 개정 방식",
   "docs.summary.product": "PRODUCT.md와 guides 문서의 역할과 저장 명령",
-  "docs.summary.commit": "spec commit 입력, 이유 기록, 실패 후 복구"
+  "docs.summary.commit": "spec commit 입력, 이유 기록, 실패 후 복구",
+  "help.browserNoUpdateCheck": "새 버전 확인을 위한 npm 레지스트리 조회를 끔 (GITIFACT_NO_UPDATE_CHECK와 같음)",
+  "help.update": "새 버전 확인과 설치 방법 안내, 프로젝트 지침 파일의 GITIFACT 블록을 현재 버전으로 갱신",
+  "server.badLanguage": "언어 코드를 확인하세요.",
+  "server.changelogNotFound": "패치노트를 찾지 못했습니다.",
+  "server.changelogUnreadable": "패치노트를 읽지 못했습니다.",
+  "update.text.current": "현재 버전: {version}",
+  "update.text.available": "새 버전: {version}",
+  "update.text.upToDate": "최신 버전을 사용 중입니다.",
+  "update.text.disabled": "새 버전 확인이 꺼져 있습니다.",
+  "update.text.unavailable": "새 버전을 확인하지 못했습니다. 네트워크 연결을 확인하세요.",
+  "update.text.install": "npm 전역 설치용: {command}",
+  "update.text.afterInstall": "설치한 뒤 gitifact update를 다시 실행하면 지침 블록이 새 버전으로 갱신됩니다.",
+  "update.text.blockRefreshed": "지침 블록 갱신: {paths}",
+  "update.text.blockCurrent": "지침 블록은 이미 현재 버전입니다: {paths}",
+  "update.text.noBlock": "GITIFACT 블록이 있는 지침 파일이 없습니다. gitifact init으로 설치하세요.",
+  "update.text.notInitialized": "초기화된 프로젝트가 아니어서 버전만 확인했습니다.",
+  "update.failed": "업데이트 확인에 실패했습니다."
 }

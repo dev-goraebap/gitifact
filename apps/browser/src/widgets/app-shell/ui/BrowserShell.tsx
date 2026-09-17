@@ -13,6 +13,7 @@ import { HgiGit } from '../../../shared/ui/icons/HgiGit';
 import { HgiProduct } from '../../../shared/ui/icons/HgiProduct';
 import { HgiBook } from '../../../shared/ui/icons/HgiBook';
 import { HgiInfo } from '../../../shared/ui/icons/HgiInfo';
+import { VersionFooter } from './VersionFooter';
 import styles from './app-shell.module.css';
 import { t } from '../../../shared/i18n';
 const destinations = [
@@ -45,6 +46,7 @@ export function BrowserShell() {
               <Text type="supporting" color="secondary">
                 {t('shell.askAgent')}
               </Text>
+              <VersionFooter />
             </VStack>
           }
         >
@@ -64,6 +66,7 @@ export function BrowserShell() {
           </SideNavSection>
           <SideNavSection title="GITIFACT">
             <SideNavItem label={t('nav.about')} icon={<HgiInfo/>} href="/about" isSelected={pathname === '/about'} onClick={go('/about')}/>
+            <SideNavItem label={t('nav.changelog')} icon={<HgiHistory/>} href="/changelog" isSelected={pathname === '/changelog'} onClick={go('/changelog')}/>
           </SideNavSection>
         </SideNav>
       }

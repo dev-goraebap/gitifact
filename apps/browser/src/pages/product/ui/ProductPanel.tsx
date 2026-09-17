@@ -1,5 +1,5 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
-import type { BrowserSessionV1 } from '@gitifact/contracts';
+import type { BrowserSessionV2 } from '@gitifact/contracts';
 import { VStack } from '@astryxdesign/core/VStack';
 import { HStack } from '@astryxdesign/core/HStack';
 import { Heading } from '@astryxdesign/core/Heading';
@@ -23,7 +23,7 @@ import { PageHeader } from '../../../widgets/page-header';
 import { useLoadingHold } from '../../../shared/ui/request-state/useLoadingHold';
 import { ViewSkeleton } from './ViewSkeleton';
 import { t, tNodes } from '../../../shared/i18n';
-export function ProductPanel({session,view,featureId,email,documentId,search,change}:ProductProps&{session:BrowserSessionV1}) {
+export function ProductPanel({session,view,featureId,email,documentId,search,change}:ProductProps&{session:BrowserSessionV2}) {
  const guides=view==='guides'; const productPage=view==='product';
  const query=useInfiniteQuery(specsOptions(session));
  const disconnected=query.error instanceof ApiError && query.error.code==='SESSION_CHANGED';

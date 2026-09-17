@@ -9,6 +9,7 @@ gitifact init --dry-run
 gitifact init
 gitifact docs
 gitifact docs spec
+gitifact update
 gitifact spec working
 gitifact spec save --file input.json
 gitifact spec changes
@@ -26,9 +27,15 @@ The legacy `req`, `note`, `mode`, `brief`, `commit plan/apply` and `init --mode`
 
 The `spec` commands use the input objects described by `gitifact docs spec` and `gitifact docs commit`. Their output envelope is `contract: "spec", version: 1`. For a project with schemaVersion 1, config bytes are bound to working stamps and commit plans. Creation and edits never imply user approval or implementation completion.
 
+## Updates
+
+`gitifact update` reports the running version, whether a newer release exists, and the install command for npm global installs (`npm install -g gitifact@<version>`); other install methods update their own way. It never installs anything itself. In an initialized project it also rewrites the GITIFACT block in files that already carry one, so run it again after installing. Output is `contract: "update", version: 1`; add `--format text` for a readable form.
+
+`gitifact browser` and `gitifact update` make the only outbound request of the CLI: one GET to `https://registry.npmjs.org/gitifact` for the latest version. No project information is sent, the request has a short timeout, and a failure never blocks anything. Turn it off with `gitifact browser --no-update-check` or `GITIFACT_NO_UPDATE_CHECK=1`.
+
 ## Browser
 
-Run `gitifact browser` inside your project. It prints a local URL and stops with Ctrl+C. The read-only browser displays requirement history with before/after content, current feature specifications and Git contributors. History loads in pages; filtering applies to loaded results. No project records are changed by browsing.
+Run `gitifact browser` inside your project. It prints a local URL and stops with Ctrl+C. The read-only browser displays requirement history with before/after content, current feature specifications and Git contributors. History loads in pages; filtering applies to loaded results. No project records are changed by browsing. The side menu footer shows the running CLI version and links to the release notes page, which lists added, changed, removed and fixed items per version. When the server found a newer release, a button next to the version opens a prompt to hand to your agent and the npm command to copy; the browser never installs anything.
 
 ## Commit
 

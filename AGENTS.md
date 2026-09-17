@@ -1,7 +1,7 @@
 # gitifact 개발 지침
 
 <!-- GITIFACT:START -->
-gitifact v0.3.2 · ko · 저장 규약 schemaVersion 1
+gitifact v0.4.0 · ko · 저장 규약 schemaVersion 1
 CLI: 모든 명령은 `gitifact <cmd>`로 실행한다. 프로젝트 지침이 다른 실행 방법을 지정하면 그것을 따른다.
 
 시작할 때:
@@ -30,7 +30,8 @@ MORE CLI:
   spec save        --file <json>: 요구사항·설계·문서 저장
   spec commit      --file <json>: 변경 이유 기록과 커밋을 한 번에
   browser          읽기 전용 브라우저 열기
-  init             다시 실행하면 이 블록을 갱신한다
+  update           새 버전 확인과 설치 안내, 이 블록을 현재 버전으로 갱신
+  init             처음 도입할 때 설정과 이 블록을 만든다
 <!-- GITIFACT:END -->
 
 이 저장소는 gitifact를 개발하면서 프로젝트 자체에도 적용한다. 제품의 기록 원칙을 따르되, 아직 구현되지 않은 기능은 아래 대체 절차로 수행한다. 이 예외는 gitifact 개발 저장소에만 적용하며 제품의 기본 동작으로 확장하지 않는다.

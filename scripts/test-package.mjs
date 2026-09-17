@@ -89,8 +89,15 @@ try {
   const removed = JSON.parse(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', 'init', '--remove-agents'], temporaryRoot));
   assert.deepEqual(removed.agentDocs, { mode: 'remove', paths: ['AGENTS.md'] });
   assert.equal(await readFile(agentsPath, 'utf8'), '# AGENTS.md\n\nProject-specific guidance for AI coding agents.\n\n## Project rules\n\nKeep me.\n');
+  // The package check never contacts the npm registry: the update check is switched off and reported as disabled.
+  const offline = { ...process.env, GITIFACT_NO_UPDATE_CHECK: '1' };
+  await writeFile(agentsPath, agents.replace('gitifact v' + version + ' ', 'gitifact v0.0.1 '));
+  const updated = JSON.parse(execFileSync(process.execPath, [join(installedRoot, 'dist', 'main.js'), 'update'], { cwd: temporaryRoot, env: offline, encoding: 'utf8', timeout: 60_000 }));
+  assert.deepEqual([updated.contract, updated.cliVersion, updated.update, updated.install, updated.agentDocs],
+    ['update', version, { status: 'disabled', latestVersion: null }, null, { state: 'refreshed', paths: ['AGENTS.md'] }]);
+  assert.equal(await readFile(agentsPath, 'utf8'), agents, 'update must restore the block of the installed version.');
   const child = spawn(process.execPath, [join(installedRoot, 'dist', 'main.js'), 'browser'], {
-    cwd: temporaryRoot, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true,
+    cwd: temporaryRoot, env: offline, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true,
   });
   const exited = once(child, 'exit');
   try {
@@ -116,14 +123,18 @@ try {
     }
     assert.equal((await fetch(new URL('/about', url), { headers: { Accept: 'text/html' } })).status, 200);
     const session = await (await fetch(new URL('/api/v1/session', url))).json();
+    assert.deepEqual([session.version, session.cliVersion, session.update], [2, version, { status: 'disabled', latestVersion: null }]);
     const headers = { 'X-Gitifact-Session': session.sessionId, Origin: new URL(url).origin };
+    const notes = await (await fetch(new URL('/api/v1/changelog?lang=ko', url), { headers })).json();
+    assert.deepEqual([notes.contract, notes.language, notes.fallback, notes.entries[0].version], ['changelog', 'ko', false, version], 'Release notes must start with the packaged version.');
+    assert.equal((await fetch(new URL('/changelog', url), { headers: { Accept: 'text/html' } })).status, 200);
     assert.equal((await fetch(new URL('/api/v1/status', url), { headers })).status, 200);
     await writeFile(join(temporaryRoot, 'browser-created.txt'), 'refresh fixture');
     const response = await fetch(new URL('/api/v1/status/refresh', url), { method: 'POST', headers });
     assert.equal(response.status, 200);
     assert.ok((await response.json()).changes.some(change => change.path === 'browser-created.txt'));
   } finally { child.kill(); await exited; }
-  console.log('PASS: packed CLI installs offline; init with the AGENTS.md block, docs, spec save/commit/read, status and browser run outside the workspace.');
+  console.log('PASS: packed CLI installs offline; init with the AGENTS.md block, docs, update, spec save/commit/read, status, release notes and browser run outside the workspace.');
 } finally {
   // Only removes the exact directory returned by mkdtemp for this check.
   await rm(temporaryRoot, { recursive: true, force: true });

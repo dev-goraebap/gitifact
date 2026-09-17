@@ -1,0 +1,12 @@
+/* Release notes: the same centered reading column as the about page, with a rail marking each release. */
+.page { min-width:0; }
+.column { width:100%; max-width:64rem; margin-inline:auto; min-width:0; }
+.pageTitle { padding-inline:var(--spacing-5); padding-block:var(--spacing-6) var(--spacing-2); }
+.timeline { padding:var(--spacing-4) var(--spacing-5) var(--spacing-8); min-width:0; }
+.release { position:relative; padding-inline-start:var(--spacing-6); padding-block-end:var(--spacing-8); border-inline-start:1px solid var(--color-border); }
+.release:last-child { padding-block-end:0; border-inline-start-color:transparent; }
+.release::before { content:""; position:absolute; inset-inline-start:calc(var(--spacing-1) * -1 - 0.5px); inset-block-start:var(--spacing-2); inline-size:var(--spacing-2); block-size:var(--spacing-2); border-radius:var(--radius-full, 9999px); background:var(--color-border-emphasized, var(--color-border)); }
+.current::before { background:var(--color-background-accent, var(--color-text-primary)); }
+.items { min-width:0; overflow-wrap:anywhere; }
+.items li { line-height:1.9; }
+.notice { padding-block-end:var(--spacing-5); }

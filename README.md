@@ -13,7 +13,7 @@ Gitifact는 Git과 Artifact를 합친 이름입니다. 제품의 요구사항과
 init이 AGENTS.md 등에 쓴 GITIFACT 블록을 읽고 이번 세션부터 따르세요.
 ```
 
-Node.js 24.x와 Git이 필요합니다. `init`은 프로젝트의 AGENTS.md 같은 에이전트 지침 파일에 작업 규칙 블록을 씁니다. 그 뒤로는 평소처럼 제품을 설명하고 개발을 이어가면 됩니다. CLI를 업데이트했다면 `init`을 다시 실행해 블록을 갱신하세요. 명령 목록은 [CLI 안내](https://github.com/dev-goraebap/gitifact/blob/main/apps/cli/README.md)에 있습니다.
+Node.js 24.x와 Git이 필요합니다. `init`은 프로젝트의 AGENTS.md 같은 에이전트 지침 파일에 작업 규칙 블록을 씁니다. 그 뒤로는 평소처럼 제품을 설명하고 개발을 이어가면 됩니다. 브라우저가 새 버전을 알려 주면 에이전트에게 업데이트를 맡기거나 직접 설치하고, `gitifact update`로 블록을 새 버전에 맞추세요. 명령 목록은 [CLI 안내](https://github.com/dev-goraebap/gitifact/blob/main/apps/cli/README.md)에 있습니다.
 
 ## 제품에 집중할 수 있도록
 

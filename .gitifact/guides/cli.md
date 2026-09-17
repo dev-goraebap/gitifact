@@ -72,7 +72,9 @@ ID는 CLI가 발급하는 소문자 base32 10자다. 명세 S-, 요구사항 R-,
 
 ## 로컬 서버
 
-`node:http`로 제공하며 별도 프레임워크를 두지 않는다. loopback에 바인딩하고 Host·Origin·세션 헤더를 검증한다. 클라이언트의 임의 경로로 로컬 파일이나 명령을 실행하지 않는다. GET은 정의한 조회만 수행하고 재검사는 별도 POST로 받아 중복 실행을 제어한다. 제품 이미지는 `/api/v1/product/assets/<파일명>`으로 제품 폴더 바로 아래의 이미지 파일(5 MiB 이하)만 제공한다. 편집 endpoint는 두지 않는다.
+`node:http`로 제공하며 별도 프레임워크를 두지 않는다. loopback에 바인딩하고 Host·Origin·세션 헤더를 검증한다. 클라이언트의 임의 경로로 로컬 파일이나 명령을 실행하지 않는다. GET은 정의한 조회만 수행하고 재검사는 별도 POST로 받아 중복 실행을 제어한다. 제품 이미지는 `/api/v1/product/assets/<파일명>`으로 제품 폴더 바로 아래의 이미지 파일(5 MiB 이하)만 제공한다. 편집 endpoint와 명령 실행 endpoint는 두지 않는다.
+
+CLI가 외부로 보내는 요청은 하나다. `browser` 기동 시와 `update` 실행 시 `registry.npmjs.org/gitifact`의 최신 버전을 조회하며 프로젝트 정보는 보내지 않는다. 제한 시간 안에 답이 없으면 확인 불가로 처리하고 동작을 막지 않는다. `--no-update-check`와 `GITIFACT_NO_UPDATE_CHECK`로 끈다. 이 요청은 `adapters/registry/`에만 두고 테스트는 조회 함수를 주입해 네트워크 없이 실행한다.
 
 ## 빌드·배포·테스트
 

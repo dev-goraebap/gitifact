@@ -27,4 +27,5 @@ MORE CLI:
   spec save        --file <json>: 요구사항·설계·문서 저장
   spec commit      --file <json>: 변경 이유 기록과 커밋을 한 번에
   browser          읽기 전용 브라우저 열기
-  init             다시 실행하면 이 블록을 갱신한다
+  update           새 버전 확인과 설치 안내, 이 블록을 현재 버전으로 갱신
+  init             처음 도입할 때 설정과 이 블록을 만든다

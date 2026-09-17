@@ -1,9 +1,9 @@
 import { infiniteQueryOptions } from '@tanstack/react-query';
-import { browserSpecsV1, type BrowserSessionV1 } from '@gitifact/contracts';
+import { browserSpecsV1, type BrowserSessionV2 } from '@gitifact/contracts';
 import { requestJson, ApiError } from '../../../shared/api/client';
 import { httpFailure } from './repository';
 import { t } from '../../../shared/i18n';
-export const specsOptions = (session: BrowserSessionV1) => infiniteQueryOptions({
+export const specsOptions = (session: BrowserSessionV2) => infiniteQueryOptions({
   queryKey: ['browser-specs', 1, window.location.origin, session.sessionId, session.repository.worktreeKey],
   initialPageParam: { cursor: 0, head: '' }, staleTime: 5000, retry: false,
   queryFn: async ({ signal, pageParam }) => {

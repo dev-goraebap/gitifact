@@ -4,15 +4,17 @@ import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { lstat, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { readRepositoryStatus, isProductAssetPath } from '@gitifact/core';
-import { browserHttpErrorV1 } from '@gitifact/contracts';
+import { readRepositoryStatus, isProductAssetPath, parseChangelog } from '@gitifact/core';
+import { browserHttpErrorV1, changelogV1 } from '@gitifact/contracts';
 import type { RepositoryStatusSuccessV1 } from '@gitifact/contracts';
 import { createRepositoryReader } from '../adapters/git/repository-reader.js';
 import { statusDto } from '../output/repository-status.js';
 import { loadBrowserAssets, contentType } from './assets.js';
 import { createStatusSession } from './status-session.js';
 import { createSpecBrowserReader } from './spec-reader.js';
-import { t } from '../shared/i18n/index.js';
+import { defaultLanguage, t } from '../shared/i18n/index.js';
+import { checkingUpdate, resolveUpdate } from '../shared/update-check.js';
+import type { FetchLatestVersion } from '../adapters/registry/latest-version.js';
 
 interface Options {
   cwd: string;
@@ -23,7 +25,16 @@ interface Options {
   // Tests use this boundary to control concurrent reads and failures.
   readStatus?: (signal: AbortSignal) => Promise<RepositoryStatusSuccessV1>;
   env?: NodeJS.ProcessEnv;
+  // The running CLI version, the same value as `gitifact --version`.
+  cliVersion?: string;
+  // Asks the npm registry for the latest release once after startup. Omitted means the check is disabled.
+  fetchLatest?: FetchLatestVersion;
+  updateCheckTimeoutMs?: number;
+  // Release notes source for one language; null when that language has no notes. Tests inject it because .test-build has no assets.
+  readChangelog?: (language: string) => Promise<string | null>;
 }
+const readBundledChangelog = (language: string) => readFile(new URL('./i18n/' + language + '/changelog.md', import.meta.url), 'utf8')
+  .catch(error => { if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null; throw error; });
 export async function startBrowserServer(options: Options) {
   const controller = new AbortController();
   const onAbort = () => controller.abort();
@@ -44,11 +55,13 @@ export async function startBrowserServer(options: Options) {
     options.signal?.removeEventListener('abort', onAbort);
     throw error;
   }
-  const store = createStatusSession(initial, () => read(controller.signal));
-  const { session } = store;
+  const store = createStatusSession(initial, () => read(controller.signal), options.cliVersion);
+  const sessionId = store.session.sessionId;
+  const readChangelog = options.readChangelog ?? readBundledChangelog;
+  let updatePending: Promise<void> | undefined;
   let closing = false;
   let origin = '';
-  const readSpecs = createSpecBrowserReader(initial.repository.rootPath, session.sessionId, options.env);
+  const readSpecs = createSpecBrowserReader(initial.repository.rootPath, sessionId, options.env);
   function json(response: ServerResponse, status: number, value: unknown) {
     response.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
     response.end(JSON.stringify(value) + '\n');
@@ -84,7 +97,7 @@ export async function startBrowserServer(options: Options) {
     const api = path === '/api' || path.startsWith('/api/');
     if (api) {
       if (request.headers['sec-fetch-site'] === 'cross-site' && !allowedOrigin) return fail(response, 403, 'FORBIDDEN', t('server.crossSite'));
-      if (url.search && path !== '/api/v1/specs') return fail(response, 400, 'BAD_REQUEST', t('server.noQuery'));
+      if (url.search && path !== '/api/v1/specs' && path !== '/api/v1/changelog') return fail(response, 400, 'BAD_REQUEST', t('server.noQuery'));
       // Images beside PRODUCT.md, by plain file name only: <img> requests carry no session header, so the route stays read-only and narrow.
       if (path.startsWith('/api/v1/product/assets/')) {
         const name = path.slice('/api/v1/product/assets/'.length);
@@ -98,19 +111,32 @@ export async function startBrowserServer(options: Options) {
         response.end(bytes); return;
       }
       const method = path === '/api/v1/status/refresh' ? 'POST' : 'GET';
-      if (!['/api/v1/session', '/api/v1/status', '/api/v1/status/refresh', '/api/v1/specs'].includes(path)) return fail(response, 404, 'NOT_FOUND', t('server.apiNotFound'));
+      if (!['/api/v1/session', '/api/v1/status', '/api/v1/status/refresh', '/api/v1/specs', '/api/v1/changelog'].includes(path)) return fail(response, 404, 'NOT_FOUND', t('server.apiNotFound'));
       if (request.method !== method) {
         response.setHeader('Allow', method);
         return fail(response, 405, 'METHOD_NOT_ALLOWED', t('server.methodNotAllowed'));
       }
-      if (path === '/api/v1/session') return json(response, 200, session);
-      if (request.headers['x-gitifact-session'] !== session.sessionId) return fail(response, 409, 'SESSION_CHANGED', t('server.sessionChanged'));
+      // Re-reading the session never contacts the registry; it returns the state the single startup check left.
+      if (path === '/api/v1/session') return json(response, 200, store.session);
+      if (request.headers['x-gitifact-session'] !== sessionId) return fail(response, 409, 'SESSION_CHANGED', t('server.sessionChanged'));
       if (path === '/api/v1/specs') {
         const cursor = url.searchParams.get('cursor') ?? '0'; const head = url.searchParams.get('head');
         if ([...url.searchParams.keys()].some(k => !['cursor','head'].includes(k)) || url.searchParams.getAll('cursor').length > 1 || url.searchParams.getAll('head').length > 1
           || !/^(0|[1-9]\d{0,5})$/.test(cursor) || (head !== null && !/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/.test(head))) return fail(response,400,'BAD_REQUEST',t('server.badRange'));
         try { json(response,200,await readSpecs(Number(cursor), head ?? undefined)); }
         catch (error) { fail(response,503,'INTERNAL_ERROR',error instanceof Error ? error.message : t('server.specsUnreadable')); }
+        return;
+      }
+      if (path === '/api/v1/changelog') {
+        const language = url.searchParams.get('lang') ?? defaultLanguage;
+        if ([...url.searchParams.keys()].some(key => key !== 'lang') || url.searchParams.getAll('lang').length > 1 || !/^[a-z]{2}(?:-[A-Z]{2})?$/.test(language)) return fail(response, 400, 'BAD_REQUEST', t('server.badLanguage'));
+        try {
+          // A language without notes falls back to the default one, and the answer says so.
+          const own = await readChangelog(language);
+          const text = own ?? (language === defaultLanguage ? null : await readChangelog(defaultLanguage));
+          if (text === null) return fail(response, 404, 'NOT_FOUND', t('server.changelogNotFound'));
+          json(response, 200, changelogV1.parse({ contract: 'changelog', version: 1, language: own === null ? defaultLanguage : language, fallback: own === null, entries: parseChangelog(text) }));
+        } catch (error) { fail(response, 503, 'INTERNAL_ERROR', error instanceof Error ? error.message : t('server.changelogUnreadable')); }
         return;
       }
       if (method === 'POST' && !allowedOrigin) return fail(response, 403, 'FORBIDDEN', t('server.refreshOrigin'));
@@ -157,6 +183,11 @@ export async function startBrowserServer(options: Options) {
   const address = server.address();
   if (!address || typeof address === 'string') throw new Error(t('server.addressUnknown'));
   origin = 'http://127.0.0.1:' + address.port;
+  // One registry request per server start, in the background so neither startup nor any page waits for it.
+  if (options.fetchLatest) {
+    store.setUpdate(checkingUpdate);
+    updatePending = resolveUpdate(store.session.cliVersion, options.fetchLatest, controller.signal, options.updateCheckTimeoutMs).then(state => { store.setUpdate(state); });
+  }
   let resolveClosed: () => void;
   const closed = new Promise<void>((resolve) => { resolveClosed = resolve; });
   let shutdown: Promise<void> | undefined;
@@ -167,6 +198,7 @@ export async function startBrowserServer(options: Options) {
     shutdown = (async () => {
       await new Promise<void>((resolve) => { server.close(() => resolve()); server.closeAllConnections(); });
       await store.pending;
+      await updatePending;
       options.signal?.removeEventListener('abort', onAbort);
       options.signal?.removeEventListener('abort', closeOnAbort);
       resolveClosed!();
@@ -176,5 +208,5 @@ export async function startBrowserServer(options: Options) {
   const closeOnAbort = () => { void close(); };
   options.signal?.addEventListener('abort', closeOnAbort, { once: true });
   if (options.signal?.aborted) void close();
-  return { url: origin, session, close, closed };
+  return { url: origin, get session() { return store.session; }, close, closed };
 }
