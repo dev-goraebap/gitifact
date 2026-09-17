@@ -50,6 +50,7 @@ apps/cli     ──→ packages/core
 - 패키지는 `apps`를 참조하지 않고 앱끼리 소스를 직접 import하지 않는다. 다른 패키지의 `src`를 경로로 참조하지 않으며 exports로 공개한 진입점만 쓴다.
 - 브라우저는 `core`의 내부 규칙이나 Git·파일 접근 코드를 가져오지 않는다.
 - React UI를 쓰는 앱이 하나인 동안 UI 공통 코드는 브라우저의 `shared/ui`에 둔다. 브라우저의 FSD `shared`와 저장소의 `packages`는 다른 범위다.
+- 사용자에게 보이는 문구는 패키지마다 `src/shared/i18n/<lang>/`에 두고 공용 locales 패키지를 만들지 않는다. 배치와 키 규칙은 CLI 지침의 문구 절을 따른다.
 
 ## 브라우저와 CLI의 연결
 
@@ -59,6 +60,6 @@ apps/cli     ──→ packages/core
 
 ## 에이전트 지침과 자체 적용
 
-에이전트에게 전달하는 지침 텍스트의 편집 원본은 `apps/cli/assets/docs/`의 Markdown 하나뿐이다. 두 번째 편집 원본을 만들지 않는다. 빌드가 이를 `dist/docs`로 수집하고, `gitifact init`이 AGENTS.md 등 지침 파일에 마커 블록을 쓰며 `gitifact docs <topic>`이 원문을 출력한다. 스킬 파일은 배포하지 않는다.
+에이전트에게 전달하는 지침 텍스트의 편집 원본은 `apps/cli/src/shared/i18n/<lang>/docs/`의 Markdown 하나뿐이다. 두 번째 편집 원본을 만들지 않는다. 빌드가 이를 `dist/i18n/<lang>/docs`로 수집하고, `gitifact init`이 AGENTS.md 등 지침 파일에 마커 블록을 쓰며 `gitifact docs <topic>`이 원문을 출력한다. 스킬 파일은 배포하지 않는다.
 
 이 저장소 자체에도 같은 방식을 적용한다. 루트 AGENTS.md의 GITIFACT 블록은 `pnpm cli init`이 쓰고 갱신하며 마커 사이를 직접 편집하지 않는다. CLAUDE.md는 `@AGENTS.md` 한 줄로 같은 파일을 가져와 블록을 중복하지 않는다. 이 저장소 자체의 기록에는 지정된 CLI 빌드를 쓰고 대체 절차는 루트 AGENTS.md를 따른다.

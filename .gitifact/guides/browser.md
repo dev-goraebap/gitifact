@@ -22,7 +22,7 @@
 
 ## 코드 구성 (FSD)
 
-`app`(라우트·provider) → `pages` → `widgets` → `features` → `entities` → `shared` 방향으로만 의존한다. 단일 화면의 api/model/ui는 해당 page에 둔다. 여러 화면이 공유하는 조회·도메인 표현만 entities, 공통 화면 블록은 widgets에 둔다. 같은 계층의 다른 슬라이스를 참조하지 않고 외부에서는 index.ts 공개 API만 쓴다. 명세·문서 화면은 `pages/product` 슬라이스가 조합하고 세션·명세 Query와 미커밋 여부 훅(`useWorkingChanges`)은 `entities/project`가 소유한다.
+`app`(라우트·provider) → `pages` → `widgets` → `features` → `entities` → `shared` 방향으로만 의존한다. 단일 화면의 api/model/ui는 해당 page에 둔다. 여러 화면이 공유하는 조회·도메인 표현만 entities, 공통 화면 블록은 widgets에 둔다. 같은 계층의 다른 슬라이스를 참조하지 않고 외부에서는 index.ts 공개 API만 쓴다. 명세·문서 화면은 `pages/product` 슬라이스가 조합하고 세션·명세 Query와 미커밋 여부 훅(`useWorkingChanges`)은 `entities/project`가 소유한다. 화면 문구는 `shared/i18n`의 `t()`·`tNodes()`로 가져오고 소개 본문은 `shared/i18n/<lang>/about.md`에 둔다. 규칙은 CLI 지침의 문구 절을 따른다.
 
 ## 데이터 흐름
 

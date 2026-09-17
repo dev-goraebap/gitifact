@@ -1,7 +1,5 @@
 # Gitifact CLI
 
-> Current release: `gitifact@0.3.1` (unscoped). Requires Node.js 24.x and Git.
-
 Git-backed requirements and change history for coding agents. New projects use `schemaVersion: 1`, Markdown specifications and per-feature change reasons. Requires Node.js 24.x and Git.
 
 Install with `npm install -g gitifact`. Run `gitifact init`, then read the GITIFACT block it writes into the project's agent instruction file and follow it in the current session.
@@ -24,7 +22,7 @@ Initialization creates the configuration and the Git adoption baseline, then ins
 
 `gitifact docs` lists the guidance topics (`workflow`, `spec`, `design`, `product`, `commit`) and `gitifact docs <topic>` prints the bundled Markdown for one. The block summarises the rules and points agents at these topics for the exact input formats.
 
-The legacy `req`, `note`, `mode`, `brief`, `commit plan/apply` and `init --mode` commands and the `spec-preview` alias have been removed. Historical JSON projects require the old `gitifact@0.4.0` or earlier. `browser` serves requirement history, current features and contributors from Markdown/Git.
+The legacy `req`, `note`, `mode`, `brief`, `commit plan/apply` and `init --mode` commands and the `spec-preview` alias have been removed. Historical JSON projects require the old `@tryce/cli@0.4.0` or earlier. `browser` serves requirement history, current features and contributors from Markdown/Git.
 
 The `spec` commands use the input objects described by `gitifact docs spec` and `gitifact docs commit`. Their output envelope is `contract: "spec", version: 1`. For a project with schemaVersion 1, config bytes are bound to working stamps and commit plans. Creation and edits never imply user approval or implementation completion.
 

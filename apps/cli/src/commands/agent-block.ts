@@ -3,7 +3,8 @@ import { InitError } from '@gitifact/core';
 import { defaultLanguage, t, type Language } from '../shared/i18n/index.js';
 import { docTopics } from './docs.js';
 
-// Pure text logic for the managed GITIFACT block in agent instruction files. No filesystem access.
+// Text logic for the managed GITIFACT block in agent instruction files. Only renderAgentBlock reads a file,
+// the bundled block body, and tests replace that reader.
 export const AGENT_START = '<!-- GITIFACT:START -->';
 export const AGENT_END = '<!-- GITIFACT:END -->';
 export const candidatePaths = ['AGENTS.md', 'CLAUDE.md', '.claude/CLAUDE.md', '.cursorrules', '.hermes.md', 'HERMES.md'] as const;

@@ -14,7 +14,7 @@
 ### Changed
 - `project-init` 계약이 version 4가 됐습니다.
 ### Removed
-- `skills install`·`skills sync`·`skills remove` 명령과 배포 스킬 파일을 제거했습니다. 0.2.0 스킬 설치본의 자동 정리는 제공하지 않습니다.
+- `skills install`·`skills sync`·`skills remove` 명령과 배포 스킬 파일을 제거했습니다. 0.2.0 스킬 설치본은 자동으로 정리하지 않으므로, 설치한 스킬 파일을 직접 삭제하고 `init`을 다시 실행하세요.
 
 ## 0.2.0 - 2026-09-15
 ### Added

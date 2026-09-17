@@ -27,15 +27,15 @@ CLI의 init-repository 어댑터가 저장소·현재 checkout·HEAD·index를 �
 
 후보 파일은 AGENTS.md, CLAUDE.md, .claude/CLAUDE.md, .cursorrules, .hermes.md, HERMES.md다. 옵션 없이 실행하면 존재하는 후보 전부에 블록을 쓰되 `@AGENTS.md`처럼 다른 후보만 가져오는 파일은 건너뛰고, 하나도 없으면 AGENTS.md를 보일러플레이트 헤더와 함께 만든다. `--agent claude|cursor|codex|hermes|all`은 도구별 탐색 순서에서 처음 존재하는 파일에 쓰고 없으면 마지막 후보를 만든다. `--remove-agents`는 블록을 제거하고 헤더만 남은 파일은 삭제한다. `--skip-agents`는 지침 파일을 건드리지 않는다. CLI는 실행 중인 에이전트를 감지하지 않으며 어느 파일을 쓸지는 기존 파일과 옵션으로 정한다.
 
-블록은 commands/agent-block.ts의 순수 함수가 줄 배열로 렌더링한다. 첫 줄에 CLI 버전과 저장 규약을 적어 이후 stale 판정에 쓴다. 내용은 시작 시 확인할 것, 요구사항 분류 표, 규칙, `gitifact docs` 주제 목록이며 약 30줄이다. 기존 파일의 줄바꿈(CRLF)을 따른다. 마커 쌍이 있으면 그 사이만 교체하고, 없으면 빈 줄 뒤에 덧붙이며, START만 있거나 START가 중복이면 AGENT_DOCS_MALFORMED로 거부한다.
+블록 본문은 apps/cli/src/shared/i18n/<lang>/block.md이며 commands/agent-block.ts가 `{version}`·`{language}`·`{topics}` 자리를 채우고 마커로 감싼다. 첫 줄에 CLI 버전·언어·저장 규약(`gitifact vX · ko · 저장 규약 schemaVersion 1`)을 적어 이후 stale 판정과 언어 유지에 쓴다. 언어 토큰이 없는 과거 블록도 읽고 한국어로 간주한다. 내용은 시작 시 확인할 것, 요구사항 분류 표, 규칙, `gitifact docs` 주제 목록이며 약 30줄이다. 기존 파일의 줄바꿈(CRLF)을 따른다. 마커 쌍이 있으면 그 사이만 교체하고, 없으면 빈 줄 뒤에 덧붙이며, START만 있거나 START가 중복이면 AGENT_DOCS_MALFORMED로 거부한다.
 
-상세 규칙은 apps/cli/assets/docs/의 Markdown 다섯 편(workflow·spec·design·product·commit)이며 빌드 시 dist/docs로 복사되고 `gitifact docs <topic>`이 그대로 출력한다. 스킬 파일과 매니페스트·복사본 검사는 두지 않는다. 지침 텍스트의 편집 원본은 한 곳이다.
+상세 규칙은 apps/cli/src/shared/i18n/<lang>/docs/의 Markdown 다섯 편(workflow·spec·design·product·commit)이며 빌드 시 dist/i18n/<lang>/docs로 복사되고 `gitifact docs <topic>`이 그대로 출력한다. 스킬 파일과 매니페스트·복사본 검사는 두지 않는다. 지침 텍스트의 편집 원본은 한 곳이다.
 
 ## 오류 처리와 검증
 
 삭제된 추적 설정, 구형 자료, 잘못된 기준선, 진행 중인 Git 작업, 링크, 무시 규칙 충돌은 원인을 알리고 보존한다. 동시 초기화는 기존 파일을 덮어쓰지 않는다. 초기화 실패를 설정 삭제와 재시도로 우회하지 않는다.
 
-독립 저장소에서 첫 커밋 전후, SHA-1/SHA-256, 반복·동시 실행, 중단, linked worktree, 기존 staging 보존과 함께 블록의 생성·갱신·제거, wrapper 건너뛰기, 프리셋별 대상 선택, 잘못된 마커 거부, CRLF 유지를 검사한다. 패키지 검사는 설치된 CLI의 init이 AGENTS.md에 버전 줄을 쓰고 사용자 문단을 보존하며 `docs` 출력이 자산 원본과 같은지 확인한다.
+독립 저장소에서 첫 커밋 전후, SHA-1/SHA-256, 반복·동시 실행, 중단, linked worktree, 기존 staging 보존과 함께 블록의 생성·갱신·제거, wrapper 건너뛰기, 프리셋별 대상 선택, 잘못된 마커 거부, CRLF 유지를 검사한다. 블록의 요청 분류 예시가 workflow 원문에 있는지 대조한다. 패키지 검사는 설치된 CLI의 init이 AGENTS.md에 버전 줄을 쓰고 사용자 문단을 보존하며 `docs` 출력이 자산 원본과 같은지 확인한다.
 
 ## 주요 설계 결정과 제한
 

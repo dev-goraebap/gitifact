@@ -2,6 +2,8 @@
 
 공개 패키지는 `apps/cli`의 `gitifact` 하나다. 설치는 `npm install -g gitifact`, 실행 명령은 `gitifact`다. 루트 workspace와 공통 패키지·브라우저는 private으로 유지한다. 첫 배포 버전은 0.1.0, 사용자가 선택한 라이선스는 MIT다. Node.js 24.x와 Git이 필요하며 현재 실행 검증 환경은 Windows다.
 
+버전별 기능 변경은 [패치노트](../apps/cli/src/shared/i18n/ko/changelog.md)가 원본이다. 이 문서는 배포 준비의 검증 결과·해시와 게시 경과만 기록한다.
+
 ## 준비와 게시
 
 저장소 루트에서 의존성을 설치하고 빌드·테스트한다. 아래 명령은 Git Bash에서도 그대로 사용한다.
@@ -10,6 +12,8 @@
 pnpm install --frozen-lockfile
 pnpm check
 ```
+
+버전을 올릴 때 [패치노트](../apps/cli/src/shared/i18n/ko/changelog.md) 맨 앞에 그 버전의 항목을 쓴다. 절 제목은 `Added`·`Changed`·`Removed`·`Fixed`만 쓰고 사용자에게 보이는 변경만 적는다. 첫 항목이 `apps/cli/package.json`의 버전과 다르면 `pnpm check`의 패키지 검사가 실패한다. README와 소개 페이지에는 버전 번호를 적지 않는다.
 
 검증한 변경을 커밋하고 게시 브랜치 `main`을 원격과 맞춘 뒤, 패키지 폴더에서 게시한다. pnpm은 브랜치·작업 폴더·원격 상태를 검사한다. Git 푸시는 별도로 요청받은 범위에서 수행한다.
 
@@ -23,7 +27,7 @@ pnpm publish --access public --tag latest --publish-branch main
 
 모의 실행에서 파일 목록·버전·integrity를 확인하고 게시까지 소스·설정·빌드 결과를 바꾸지 않는다. 변경했다면 검증부터 다시 수행한다. 게시 이후 같은 이름·버전을 덮어쓰지 않고 수정 버전을 발급한다. 게시 권한·추가 인증이 필요하면 npm이 제공하는 절차를 따른다. 자격 증명을 저장소나 로그에 기록하지 않는다. [npm publish](https://docs.npmjs.com/cli/v11/commands/npm-publish/).
 
-압축 파일에는 번들 CLI, 브라우저 정적 자산, 스킬 원본, 사용 안내, MIT 라이선스와 제3자 고지만 포함한다. 실행 의존성을 번들해 내부 private 패키지의 게시를 요구하지 않는다. 소스·테스트·프로젝트 기록·인증 파일은 배포하지 않는다. npm 설치 시 실행하는 lifecycle script도 없다.
+압축 파일에는 번들 CLI, 브라우저 정적 자산, 에이전트 지침·패치노트 Markdown(`dist/i18n`), 사용 안내, MIT 라이선스와 제3자 고지만 포함한다. 실행 의존성을 번들해 내부 private 패키지의 게시를 요구하지 않는다. 소스·테스트·프로젝트 기록·인증 파일은 배포하지 않는다. npm 설치 시 실행하는 lifecycle script도 없다.
 
 빌드는 runtime dependency의 라이선스 본문을 모아 `dist/THIRD_PARTY_NOTICES.txt`를 만든다. 배포 패키지에 빠진 Astryx·StyleX 고지는 [출처가 고정된 사본](../apps/cli/licenses/README.md)을 사용한다. 버전을 바꾸면 해당 사본과 고지를 다시 검토한다.
 

@@ -32,6 +32,10 @@ try {
   // Publishing a version without its release notes is the mistake this guards against.
   const [latestNotes] = parseChangelog(await readFile(join(installedRoot, 'dist/i18n/ko/changelog.md'), 'utf8'));
   assert.equal(latestNotes.version, version, 'The shipped changelog must start with the package version.');
+  // Version numbers live in package.json and the changelog; a copy in these pages goes stale at the next release.
+  for (const page of ['README.md', 'apps/cli/README.md', 'apps/browser/src/shared/i18n/ko/about.md']) {
+    assert.doesNotMatch(await readFile(join(workspace, page), 'utf8'), /gitifact@\d/, page + ' must not hardcode a gitifact version.');
+  }
   assert.equal(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', '--version'], temporaryRoot).trim(), version);
   assert.match(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', '--help'], temporaryRoot), /Usage: gitifact/);
   execFileSync('git', ['init', '--template=', '-b', 'main'], { cwd: temporaryRoot, stdio: 'pipe' });
