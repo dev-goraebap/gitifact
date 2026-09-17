@@ -7,18 +7,20 @@ import { readWorkingPreview, saveWorkingPreview } from '../adapters/filesystem/s
 import { prepareWorkingPreview, readFinalPreviewChanges, verifyPreparedPreview } from '../adapters/filesystem/spec-preview-prepare.js';
 import { fileInfo, readConfigFile } from '../adapters/filesystem/config-file.js';
 import { initRepository } from '../adapters/git/init-repository.js';
+import { discardAgentInput, prepareAgentInputs, type AgentInputControls } from '../adapters/filesystem/agent-inputs.js';
 import { previewCommit } from './spec-preview-commit.js';
 import { specCommit } from './spec-commit.js';
 import { t } from '../shared/i18n/index.js';
 
 type Action = 'read' | 'diff' | 'working' | 'save' | 'changes' | 'prepare' | 'verify' | 'commit-plan' | 'commit-apply' | 'commit';
-type Options = { ref?: string; from?: string; to?: string; file?: string; staged?: boolean; dryRun?: boolean };
+type Options = { ref?: string; from?: string; to?: string; file?: string; staged?: boolean; dryRun?: boolean; stamp?: boolean; feature?: string; ids?: boolean };
+export interface SpecPreviewControls extends AgentInputControls { stdin?: AsyncIterable<Uint8Array> }
 const operations = ['MERGE_HEAD', 'CHERRY_PICK_HEAD', 'REVERT_HEAD', 'rebase-merge', 'rebase-apply', 'sequencer', 'BISECT_START', 'index.lock'];
 
 // One scope per command lets nested reads share the repository location instead of spawning Git again.
-export const runSpecPreview = (action: Action, options: Options) => withCommandScope(() => execute(action, options));
+export const runSpecPreview = (action: Action, options: Options, controls: SpecPreviewControls = {}) => withCommandScope(() => execute(action, options, controls));
 
-async function execute(action: Action, options: Options) {
+async function execute(action: Action, options: Options, controls: SpecPreviewControls) {
   const envelope = { contract: 'spec', version: 1 };
   try {
     // Same guards as the full repository inspection, using only the Git reads they need.
@@ -32,12 +34,12 @@ async function execute(action: Action, options: Options) {
     await initRepository(root).validateBaseline(config, root, 'HEAD', objectFormat);
     if (['working', 'save', 'changes', 'prepare', 'verify', 'commit-plan', 'commit-apply', 'commit'].includes(action)) {
       let result;
-      if (action === 'working') result = await readWorkingPreview(process.cwd());
-      else if (action === 'changes') result = await readFinalPreviewChanges(process.cwd());
+      // The input paths ride on the reads an agent already runs before save and commit; a failure only omits them.
+      const inputs = () => prepareAgentInputs(root, controls).catch(() => undefined);
+      if (action === 'working') result = narrowWorking(await readWorkingPreview(process.cwd()), options, await inputs());
+      else if (action === 'changes') result = { ...await readFinalPreviewChanges(process.cwd()), inputs: await inputs() };
       else {
-        const source = await stat(options.file!);
-        if (!source.isFile() || source.size > 1024 * 1024) throw new SpecPreviewError(t('preview.inputFile'));
-        const bytes = await readFile(options.file!);
+        const bytes = options.file === '-' ? await readStdin(controls.stdin ?? process.stdin) : await readInputFile(options.file!);
         if (bytes.length > 1024 * 1024) throw new SpecPreviewError(t('preview.inputSize'));
         let input: unknown;
         try { input = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes)); }
@@ -47,6 +49,9 @@ async function execute(action: Action, options: Options) {
           : action === 'prepare' ? await prepareWorkingPreview(process.cwd(), input)
           : action === 'verify' ? await verifyPreparedPreview(process.cwd(), input, !!options.staged)
           : await saveWorkingPreview(process.cwd(), input);
+        // Only a certain success consumes the input; failures, dry runs and uncertain commits keep it for the retry.
+        const consumed = action === 'save' || (action === 'commit' && (result as { outcome?: string }).outcome === 'committed');
+        if (consumed && options.file !== '-') result = { ...result, inputRemoved: await discardAgentInput(root, options.file!, controls) };
       }
       process.stdout.write(JSON.stringify({ ...envelope, ok: true, ...result }) + '\n'); return;
     }
@@ -65,4 +70,37 @@ async function execute(action: Action, options: Options) {
     process.stderr.write(JSON.stringify({ ...envelope, ok: false, error: { code: known ? error.code : 'SPEC_PREVIEW_FAILED', message: known ? error.message : t('preview.failed') } }) + '\n');
     process.exitCode = 1;
   }
+}
+
+async function readInputFile(path: string) {
+  const source = await stat(path);
+  if (!source.isFile() || source.size > 1024 * 1024) throw new SpecPreviewError(t('preview.inputFile'));
+  return readFile(path);
+}
+
+async function readStdin(stream: AsyncIterable<Uint8Array>) {
+  const chunks: Uint8Array[] = []; let size = 0;
+  for await (const chunk of stream) {
+    size += chunk.length;
+    if (size > 1024 * 1024) throw new SpecPreviewError(t('preview.inputSize'));
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks);
+}
+
+type Working = Awaited<ReturnType<typeof readWorkingPreview>>;
+type Inputs = Awaited<ReturnType<typeof prepareAgentInputs>>;
+/** Smaller working views so agents read what they need instead of keeping the full output in a file. */
+function narrowWorking(working: Working, options: Options, inputs: Inputs) {
+  if (options.stamp) return { stamp: working.stamp, inputs };
+  let { specs, documents, warnings } = working;
+  if (options.feature !== undefined) {
+    specs = specs.filter(s => s.path === '.gitifact/spec/' + options.feature + '/requirements.md');
+    if (!specs.length) throw new SpecPreviewError(t('preview.unknownFeature', { feature: options.feature }));
+    documents = []; warnings = warnings.filter(w => w.specId === specs[0]!.id);
+  }
+  if (!options.ids) return { stamp: working.stamp, inputs, specs, documents, warnings };
+  return { stamp: working.stamp, inputs, warnings,
+    specs: specs.map(s => ({ id: s.id, path: s.path, title: s.title, design: s.design?.title ?? null, requirements: s.requirements.map(r => ({ id: r.id, title: r.title })) })),
+    documents: documents.map(set => ({ kind: set.kind, documents: set.documents.map(d => ({ id: d.id, path: d.path, title: d.title })) })) };
 }

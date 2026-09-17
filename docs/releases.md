@@ -131,6 +131,12 @@ Tryce에서 Gitifact로 이름을 바꾼 첫 배포다. 패키지 `gitifact@0.1.
 
 레지스트리에서 새 임시 폴더에 로컬로 설치한 CLI 번들의 SHA-256이 검증 빌드 `9f9a9d24…`와 같았다. 설치본으로 새 Git 저장소의 init, `update`(실제 레지스트리 조회 결과 up-to-date·latest 0.4.1), 조회를 끈 `browser` 서버의 세션 v2(`cliVersion` 0.4.1·disabled)와 `/settings`·`/product/document`·`/changelog` 경로의 200 응답을 확인했다. 사용자가 브라우저의 새 버전 안내를 0.4.0에서 직접 시험하려고 요청해 이 PC의 npm 전역 설치는 0.4.0으로 남겼다. 기존 인증 세션으로 게시했으며 인증 파일과 토큰은 조회·변경하지 않았다.
 
+## 0.4.2 배포 준비
+
+2026-09-17 사용자 요청으로 에이전트 임시 입력 파일 관리와 브라우저 열기 안내를 패치 버전 0.4.2로 준비했다. 기능 목록은 패치노트, 설계는 agent-workflow 명세를 따른다. spec 계약의 version은 그대로이고 `inputs`·`inputRemoved` 필드와 working 옵션이 추가됐다. 저장 형식과 서버 계약은 바뀌지 않았고 새 의존성도 없다. 테스트 fixture와 패키지 검사는 TEMP·TMP·TMPDIR을 시험 폴더로 돌려 실제 사용자 임시 폴더를 쓰지 않는다.
+
+`pnpm check`를 통과했다. contracts 7개·core 27개·intro 3개·CLI 129개(새 임시 입력 파일 검사 6개 포함)·브라우저 28개와 workspace 밖 오프라인 설치·실행을 확인했고, 패키지 검사는 설치본의 입력 경로와 성공 후 삭제도 확인한다. 루트 AGENTS.md의 블록은 `pnpm cli update`로 v0.4.2 줄로 갱신했다. CLI 번들 SHA-256은 `e43085fbe66d7cd348bd25fe4ba8b3d7dd7075092fd35fc06c9814c1ed654c94`이다. 게시 결과는 아래에 이어서 기록한다.
+
 ## 이전 Tryce 배포 기록
 
 아래 패키지 이름·버전·커밋·무결성은 당시 배포의 사실이다. Gitifact 0.1.0의 게시 결과로 해석하거나 새 이름으로 일괄 치환하지 않는다.

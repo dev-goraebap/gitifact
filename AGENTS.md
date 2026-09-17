@@ -1,7 +1,7 @@
 # gitifact 개발 지침
 
 <!-- GITIFACT:START -->
-gitifact v0.4.1 · ko · 저장 규약 schemaVersion 1
+gitifact v0.4.2 · ko · 저장 규약 schemaVersion 1
 CLI: 모든 명령은 `gitifact <cmd>`로 실행한다. 프로젝트 지침이 다른 실행 방법을 지정하면 그것을 따른다.
 
 시작할 때:
@@ -23,13 +23,15 @@ CLI: 모든 명령은 `gitifact <cmd>`로 실행한다. 프로젝트 지침이 �
 - 자동 기록은 커밋 권한이 아니다. 사용자 요청이나 명시적 프로젝트 정책이 있을 때만 커밋하고 푸시는 별도 요청을 따른다.
 - 불명확한 제품 동작만 질문하고 독립적인 작업은 진행한다. 기존 기능 전체 도출은 요청받았을 때 한다.
 - SELF-CHECK: save·commit 입력을 만들기 전에 해당 docs를 다시 읽고 형식을 대조한다. 확실하지 않으면 추측하지 말고 `gitifact docs <topic>`을 실행한다.
+- save·commit 입력 JSON은 `spec working`이 알려 준 inputs 경로에 쓴다. 성공하면 CLI가 지운다. 조회 결과와 docs 출력은 파일로 저장하지 않고 필요할 때 다시 실행한다.
+- 사용자가 요구사항·프로젝트 현황·변경 이력을 보여 달라고 하면 `gitifact browser`를 백그라운드로 실행하고 출력된 URL을 알려 준다. 채팅 요약으로 대신하지 않는다.
 
 MORE CLI:
   docs <topic>     workflow, spec, design, product, commit
-  spec working     현재 명세·제품·지침 전체와 stamp
-  spec save        --file <json>: 요구사항·설계·문서 저장
-  spec commit      --file <json>: 변경 이유 기록과 커밋을 한 번에
-  browser          읽기 전용 브라우저 열기
+  spec working     현재 명세·제품·지침 전체, stamp, 입력 파일 경로 (--stamp, --feature <이름>, --ids)
+  spec save        --file <json|->: 요구사항·설계·문서 저장
+  spec commit      --file <json|->: 변경 이유 기록과 커밋을 한 번에
+  browser          읽기 전용 브라우저 서버 실행, URL 출력 후 계속 실행
   update           새 버전 확인과 설치 안내, 이 블록을 현재 버전으로 갱신
   init             처음 도입할 때 설정과 이 블록을 만든다
 <!-- GITIFACT:END -->

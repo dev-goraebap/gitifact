@@ -7,7 +7,7 @@
 ## 절차
 
 1. 실제 diff와 관련 테스트를 확인한다. 필요하면 `spec changes`로 HEAD 대비 최종 명세 차이와 pendingReasons를 읽는다.
-2. 아래 입력을 UTF-8 JSON 파일로 저장하고 `spec commit --file <입력.json>`을 실행한다. 범위나 이유 누락을 먼저 보려면 `--dry-run`을 붙인다. dry-run은 파일을 쓰거나 커밋하지 않는다.
+2. 아래 입력을 `spec working` 또는 `spec changes` 결과의 `inputs.commit` 경로에 UTF-8 JSON으로 쓰고 `spec commit --file <그 경로>`를 실행한다. 커밋이 성공하면 CLI가 입력 파일을 지운다. 범위나 이유 누락을 먼저 보려면 `--dry-run`을 붙인다. dry-run은 파일을 쓰거나 커밋하지 않는다.
 3. 성공 결과와 실제 Git 상태를 확인하고, 반환된 withoutReason이 있으면 이유 누락으로 보고한다.
 
 ```json

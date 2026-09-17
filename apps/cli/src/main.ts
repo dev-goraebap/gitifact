@@ -74,7 +74,10 @@ spec.command('prepare').description(replaced).allowExcessArguments(false)
 spec.command('verify').description(replaced).allowExcessArguments(false)
   .requiredOption('--file <path>', t('help.specVerifyFile')).option('--staged', t('help.specVerifyStaged'))
   .action(o => runSpecPreview('verify', o));
-spec.command('working').description(t('help.specWorking')).allowExcessArguments(false).action(o => runSpecPreview('working', o));
+spec.command('working').description(t('help.specWorking')).allowExcessArguments(false)
+  .addOption(new Option('--stamp', t('help.specWorkingStamp')).conflicts(['feature', 'ids']))
+  .option('--feature <name>', t('help.specWorkingFeature')).option('--ids', t('help.specWorkingIds'))
+  .action(o => runSpecPreview('working', o));
 spec.command('save').description(t('help.specSave')).allowExcessArguments(false)
   .requiredOption('--file <path>', t('help.specSaveFile')).action(o => runSpecPreview('save', o));
 spec.command('read').description(t('help.specRead')).allowExcessArguments(false).option('--ref <commit>', t('help.specReadRef'), 'HEAD').action(o => runSpecPreview('read', o));

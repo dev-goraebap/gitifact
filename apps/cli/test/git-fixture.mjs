@@ -17,10 +17,13 @@ export function fixture(t, format = 'sha1') {
   });
   const repo = join(root, 'repo');
   mkdirSync(repo);
+  // CLI temporary folders (spec working inputs) stay inside the fixture instead of the user's system folder.
+  const temp = join(root, 'tmp');
+  mkdirSync(temp);
   const config = join(root, 'empty-config');
   writeFileSync(config, '');
   const env = { ...process.env, GIT_CONFIG_GLOBAL: config, GIT_CONFIG_SYSTEM: config,
-    GIT_CONFIG_NOSYSTEM: '1', GIT_TERMINAL_PROMPT: '0', LC_ALL: 'C',
+    GIT_CONFIG_NOSYSTEM: '1', GIT_TERMINAL_PROMPT: '0', LC_ALL: 'C', TEMP: temp, TMP: temp, TMPDIR: temp,
     GIT_AUTHOR_DATE: '2026-09-13T00:00:00Z', GIT_COMMITTER_DATE: '2026-09-13T00:00:00Z' };
   for (const key of Object.keys(env)) {
     if (/^GIT_(DIR|WORK_TREE|COMMON_DIR|INDEX_FILE|CONFIG_COUNT|CONFIG_PARAMETERS|CONFIG_KEY_\d+|CONFIG_VALUE_\d+)$/i.test(key)) delete env[key];

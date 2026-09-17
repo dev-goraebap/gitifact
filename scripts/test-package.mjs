@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { execFileSync, spawn } from 'node:child_process';
 import { once } from 'node:events';
-import { mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -11,8 +11,8 @@ const workspace = fileURLToPath(new URL('../', import.meta.url));
 const packageManager = process.env.npm_execpath;
 assert.ok(packageManager, 'Run this check through pnpm test or pnpm test:built.');
 const temporaryRoot = await mkdtemp(join(tmpdir(), 'gitifact-package-'));
-const pnpm = (args, cwd) => execFileSync(process.execPath, [packageManager, ...args], {
-  cwd, encoding: 'utf8', timeout: 60_000, stdio: ['ignore', 'pipe', 'pipe'],
+const pnpm = (args, cwd, env = process.env) => execFileSync(process.execPath, [packageManager, ...args], {
+  cwd, env, encoding: 'utf8', timeout: 60_000, stdio: ['ignore', 'pipe', 'pipe'],
 });
 
 try {
@@ -59,10 +59,17 @@ try {
   for (const [key, value] of [['user.name', 'Package fixture'], ['user.email', 'package@example.invalid'], ['commit.gpgsign', 'false']]) {
     execFileSync('git', ['config', key, value], { cwd: temporaryRoot, stdio: 'pipe' });
   }
-  const specInput = join(temporaryRoot, 'spec-input.json');
+  // Input files go to the folder working reports; the system temporary folder is redirected into this check's root.
+  const systemTemp = join(temporaryRoot, 'system-temp'); await mkdir(systemTemp);
+  const specEnv = { ...process.env, TEMP: systemTemp, TMP: systemTemp, TMPDIR: systemTemp };
+  const { inputs } = JSON.parse(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', 'spec', 'working', '--stamp'], temporaryRoot, specEnv));
+  assert.ok(inputs.save.startsWith(systemTemp), 'Input files must default to the system temporary folder.');
   const spec = async (args, input) => {
+    const specInput = args[0] === 'commit' ? inputs.commit : inputs.save;
     if (input) await writeFile(specInput, JSON.stringify(input));
-    return JSON.parse(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', 'spec', ...args, ...(input ? ['--file', specInput] : [])], temporaryRoot));
+    const result = JSON.parse(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', 'spec', ...args, ...(input ? ['--file', specInput] : [])], temporaryRoot, specEnv));
+    if (input) assert.equal(result.inputRemoved, true, 'A successful save or commit removes its input file.');
+    return result;
   };
   const saved = await spec(['save'], { expected: (await spec(['working'])).stamp, operations: [
     { type: 'create', feature: 'package', title: '패키지 기능' },

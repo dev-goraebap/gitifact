@@ -34,7 +34,7 @@ S-ID와 R-ID는 CLI가 발급한 값을 그대로 사용한다. 형식은 `S-<�
 
 ## 저장 명령
 
-실제 저장은 `spec working`의 stamp로 다음 JSON을 구성하고 `spec save --file <입력.json>`을 호출한다.
+실제 저장은 `spec working`의 stamp로 다음 JSON을 구성해 working 결과의 `inputs.save` 경로에 쓰고 `spec save --file <그 경로>`를 호출한다. 성공하면 CLI가 입력 파일을 지운다. 실패하면 파일이 남으므로 고쳐서 다시 실행한다.
 
 ```json
 {
