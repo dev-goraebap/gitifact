@@ -139,9 +139,11 @@ Tryce에서 Gitifact로 이름을 바꾼 첫 배포다. 패키지 `gitifact@0.1.
 
 ## 0.4.2 게시 완료
 
-2026-09-17 릴리스 커밋 까지 main을 푸시하고 apps/cli에서 Git 검사를 유지한 을 실행했다. latest는 0.4.2, 라이선스는 MIT다. 모의 실행·실제 게시·레지스트리의 integrity는 모두 , shasum은 이며 패키지는 68개 파일이다.
+2026-09-17 릴리스 커밋 `02338b1`까지 main을 푸시하고 apps/cli에서 Git 검사를 유지한 `pnpm publish --access public --tag latest --publish-branch main --json`을 실행했다. latest는 0.4.2, 라이선스는 MIT다. 모의 실행·실제 게시·레지스트리의 integrity는 모두 `sha512-CpFExVDbFc0vnlY/6ab77wzoUzNvM0X7T7iheYdpJO5n579/uLQYYv/CdzJrlrWZ3MFazBrl/eWselK3SGruaQ==`, shasum은 `69f0c5ea9467a4cafad7aaacefa92d893e9eb98c`이며 패키지는 68개 파일이다.
 
-레지스트리에서 새 임시 폴더에 로컬로 설치한 CLI 번들의 SHA-256이 검증 빌드 와 같았다. 설치본으로 새 Git 저장소의 init과 블록의 브라우저 안내, TEMP를 시험 폴더로 돌린 의 inputs 경로, 그 경로로 실행한 spec save의 와 실제 파일 삭제,  출력을 확인했다. 이 PC의 npm 전역 설치는 사용자의 새 버전 안내 시험을 위해 0.4.0으로 남겼다. 기존 인증 세션으로 게시했으며 인증 파일과 토큰은 조회·변경하지 않았다.
+레지스트리에서 새 임시 폴더에 로컬로 설치한 CLI 번들의 SHA-256이 검증 빌드 `e43085fb…`와 같았다. 설치본으로 새 Git 저장소의 init과 블록의 브라우저 안내, TEMP를 시험 폴더로 돌린 `spec working --stamp`의 inputs 경로, 그 경로로 실행한 spec save의 `inputRemoved: true`와 실제 파일 삭제, `spec working --ids` 출력을 확인했다. 이 PC의 npm 전역 설치는 사용자의 새 버전 안내 시험을 위해 0.4.0으로 남겼다. 기존 인증 세션으로 게시했으며 인증 파일과 토큰은 조회·변경하지 않았다.
+
+기록 커밋 `b6e8bb0`은 셸 인용 실수로 이 절의 코드 표기가 빠진 채 푸시돼 후속 커밋에서 바로잡았다. 그 실행에서 인용이 깨진 `pnpm publish` 호출이 알 수 없는 옵션 오류로 중단됐으며 추가 게시는 없었다(레지스트리 버전 목록으로 확인).
 
 ## 이전 Tryce 배포 기록
 
