@@ -1,92 +1,118 @@
 import { expect, test } from '@playwright/test';
 import { mockApi, specs, status } from './mock-api';
 
-test('guides browse as full-width columns, preview a chosen document and open its detail page from the preview', async ({ page }) => {
-  await mockApi(page); await page.goto('/guides');
-  // The guide browser has no page title, search box or view switch; the columns take the whole content area.
+test('wiki pages browse as full-width columns, preview a chosen page and open its detail page from the preview', async ({ page }) => {
+  await mockApi(page); await page.goto('/wiki');
+  // The wiki browser has no page title, search box or view switch; the columns take the whole content area.
   await expect(page.getByRole('heading', { level: 1 })).toHaveCount(0);
   await expect(page.getByRole('textbox', { name: '검색', exact: true })).toHaveCount(0);
   await expect(page.getByRole('radio', { name: '목록' })).toHaveCount(0);
-  const browser = page.getByLabel('지침 문서 탐색');
+  const browser = page.getByLabel('위키 탐색');
   await expect(browser.getByText('frontend', { exact: true })).toBeVisible();
+  await expect(browser.getByText('README.md', { exact: true })).toBeVisible();
   await browser.getByText('이름 규칙', { exact: true }).click();
-  await expect(page).toHaveURL(/\/guides\?selected=G-bbbbbbbbbb$/);
+  await expect(page).toHaveURL(/\/wiki\?selected=W-cccccccccc$/);
   const preview = page.getByLabel('문서 미리보기');
   await expect(preview).toContainText('소문자와 하이픈을 씁니다.');
   await browser.getByText('frontend', { exact: true }).click();
-  await expect(page).toHaveURL(/\/guides\?folder=frontend$/);
+  await expect(page).toHaveURL(/\/wiki\?folder=frontend$/);
   await expect(preview).toHaveCount(0);
   await browser.getByText('레이아웃 지침', { exact: true }).click();
-  await expect(page).toHaveURL(/folder=frontend&selected=G-abcdefghij$/);
+  await expect(page).toHaveURL(/folder=frontend&selected=W-bbbbbbbbbb$/);
   await expect(preview).toContainText('중앙 컬럼은 64rem입니다.');
   await page.reload(); await expect(page.getByLabel('문서 미리보기')).toContainText('중앙 컬럼은 64rem입니다.');
   await page.getByRole('button', { name: '상세 보기' }).click();
-  await expect(page).toHaveURL(/\/guides\/G-abcdefghij$/);
-  const article = page.getByRole('article', { name: '지침 문서' });
+  await expect(page).toHaveURL(/\/wiki\/W-bbbbbbbbbb$/);
+  const article = page.getByRole('article', { name: '위키 페이지' });
   await expect(article).toContainText('중앙 컬럼은 64rem입니다.');
   await expect(page.getByText('미커밋 명세 변경이 있습니다', { exact: false })).toHaveCount(0);
-  await article.getByRole('link', { name: '← 지침 / frontend' }).click();
-  await expect(page).toHaveURL(/folder=frontend&selected=G-abcdefghij$/);
+  await article.getByRole('link', { name: '← 프로젝트 위키 / frontend' }).click();
+  await expect(page).toHaveURL(/folder=frontend&selected=W-bbbbbbbbbb$/);
   await expect(page.getByLabel('문서 미리보기')).toContainText('중앙 컬럼은 64rem입니다.');
-  await page.goto('/guides/G-missing000');
+  await page.goto('/wiki/W-missing0000');
   await expect(page.getByRole('heading', { name: '문서를 찾을 수 없습니다' })).toBeVisible();
+  // The old guide routes are gone.
+  await page.goto('/guides');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('페이지를 찾을 수 없습니다');
 });
 
-test('document changes appear in the activity feed with their kind and open the current document', async ({ page }) => {
+test('wiki changes appear in the activity feed with their kind and open the current page', async ({ page }) => {
   await mockApi(page);
   const event = specs.events[0]!;
-  const data = { ...structuredClone(specs), events: [{ ...event, key: specs.head + ':G-abcdefghij', id: 'G-abcdefghij', kind: 'guide', types: ['modified'],
-    before: { id: 'G-abcdefghij', title: '레이아웃 지침', body: '이전 본문', specId: 'guide', path: '.gitifact/guides/layout.md' },
-    after: { id: 'G-abcdefghij', title: '레이아웃 지침', body: '중앙 컬럼은 64rem입니다.', specId: 'guide', path: '.gitifact/guides/frontend/layout.md' }, reasons: ['폴더를 정리했습니다.'] }] };
+  const data = { ...structuredClone(specs), events: [{ ...event, key: specs.head + ':W-bbbbbbbbbb', id: 'W-bbbbbbbbbb', kind: 'wiki', types: ['modified'],
+    before: { id: 'W-bbbbbbbbbb', title: '레이아웃 지침', body: '이전 본문', specId: 'wiki', path: '.gitifact/wiki/layout.md' },
+    after: { id: 'W-bbbbbbbbbb', title: '레이아웃 지침', body: '중앙 컬럼은 64rem입니다.', specId: 'wiki', path: '.gitifact/wiki/frontend/layout.md' }, reasons: ['폴더를 정리했습니다.'] }] };
   await page.route('**/api/v1/specs*', r => r.fulfill({ json: data }));
-  await page.goto('/?document=guide');
+  await page.goto('/?document=wiki');
   const rows = page.getByRole('list', { name: '활동 목록' }).getByRole('listitem'); await expect(rows).toHaveCount(1);
-  await expect(rows.first()).toContainText('지침 문서');
+  await expect(rows.first()).toContainText('위키 페이지');
+  await expect(rows.first()).toContainText('frontend/layout.md');
   await rows.first().getByRole('link', { name: '레이아웃 지침' }).click();
   const pane = page.getByRole('dialog', { name: '레이아웃 지침' });
-  await expect(pane).toContainText('지침 문서 변경');
+  await expect(pane).toContainText('위키 페이지 변경');
   await pane.getByRole('link', { name: '현재 문서 보기 →' }).click();
-  await expect(page).toHaveURL(/\/guides\/G-abcdefghij$/);
+  await expect(page).toHaveURL(/\/wiki\/W-bbbbbbbbbb$/);
 });
 
-test('the product page is a dashboard of the loaded specs and opens PRODUCT.md on its own reading page', async ({ page }) => {
+test('the product page is a dashboard of the loaded specs and opens the wiki entry page as the product document', async ({ page }) => {
   await mockApi(page);
   const data = structuredClone(specs);
-  data.documents[0]!.body = '![GITIFACT](./gitifact-logo.svg)\n\n' + data.documents[0]!.body;
+  data.documents[0]!.body = '![GITIFACT](../assets/gitifact-logo.svg)\n\n' + data.documents[0]!.body;
   await page.route('**/api/v1/specs*', r => r.fulfill({ json: data }));
   await page.goto('/product');
   const article = page.getByRole('article', { name: '제품 개요' });
   await expect(article.getByRole('heading', { level: 1 })).toHaveText('Gitifact');
   const summary = article.getByLabel('현재 명세 요약');
   await expect(summary).toContainText('기능 명세');
-  await expect(summary).toContainText('지침 문서');
+  await expect(summary).toContainText('위키 페이지');
   await expect(article.getByLabel('기능별 요구사항 수')).toContainText('검색 기능');
   await expect(article.getByLabel('최근 변경 종류 범례').getByRole('listitem').first()).toHaveText('추가1 · 100%');
   await expect(article.getByLabel('참여자별 커밋 범례').getByRole('listitem').first()).toHaveText('Fixture3 · 75%');
   await expect(article.getByLabel('최근 명세 활동')).toContainText('검색어 입력');
-  // The dashboard no longer carries the product text; it links to the reading page.
+  // The dashboard does not carry the entry page text; it links to the wiki page.
   await expect(article).not.toContainText('요구사항과 변경 이유를 Git에 연결합니다.');
   await expect(page.getByRole('textbox', { name: '검색', exact: true })).toHaveCount(0);
-  // The observed time moved into the header, left of the refresh button, without the read-only note.
   await expect(page.locator('header[aria-label="현재 위치"]')).toContainText('조회');
   await expect(page.getByText('로컬 읽기 전용', { exact: false })).toHaveCount(0);
   await article.getByRole('link', { name: '제품 문서 보기' }).click();
-  await expect(page).toHaveURL(/\/product\/document$/);
-  const reading = page.getByRole('article', { name: '제품 개요 문서' });
+  await expect(page).toHaveURL(/\/wiki\/W-abcdefghij$/);
+  const reading = page.getByRole('article', { name: '위키 페이지' });
   await expect(reading.getByRole('heading', { level: 1 })).toHaveText('Gitifact');
   await expect(reading).toContainText('요구사항과 변경 이유를 Git에 연결합니다.');
-  // The leading banner is dropped; every other relative image is served from the product folder.
+  // The leading banner is dropped on the entry page; a store asset is served by the CLI's assets route.
   await expect(reading.locator('img[alt="GITIFACT"]')).toHaveCount(0);
-  await expect(reading.locator('img[alt="로고"]')).toHaveAttribute('src', '/api/v1/product/assets/logo.png');
-  // Documents are read larger than the 14px interface text.
+  await expect(reading.locator('img[alt="로고"]')).toHaveAttribute('src', '/api/v1/assets/logo.png');
   expect(await reading.locator('.astryx-markdown-paragraph').first().evaluate(element => getComputedStyle(element).fontSize)).toBe('16px');
   await expect(page.locator('header[aria-label="현재 위치"]')).toContainText('Gitifact');
   await page.reload();
   await expect(reading.getByRole('heading', { level: 1 })).toHaveText('Gitifact');
-  await reading.getByRole('link', { name: /제품 개요/ }).first().click();
-  await expect(page).toHaveURL(/\/product$/);
-  await page.getByRole('link', { name: '제품 개요 변경 이력 →' }).click();
-  await expect(page).toHaveURL(/document=product/);
+  await reading.getByRole('link', { name: '이 문서의 활동 →' }).click();
+  await expect(page).toHaveURL(/document=wiki&q=W-abcdefghij/);
+});
+
+test('relative links in a page resolve to wiki pages, feature specs, assets, missing pages and files outside the browser', async ({ page, context }) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await mockApi(page);
+  await page.goto('/wiki/W-abcdefghij');
+  const reading = page.getByRole('article', { name: '위키 페이지' });
+  await expect(reading.getByRole('link', { name: '레이아웃 지침' })).toHaveAttribute('href', '/wiki/W-bbbbbbbbbb');
+  await expect(reading.getByRole('link', { name: '검색 설계' })).toHaveAttribute('href', '/features/S-abcdefghij?tab=design');
+  // A repository file the browser does not serve: no navigation, a hint on hover, the path copied on click.
+  const outside = reading.getByRole('button', { name: '개발 환경' });
+  await outside.hover();
+  await expect(page.locator('.astryx-tooltip', { hasText: '브라우저 밖의 파일입니다' })).toBeVisible();
+  await outside.click();
+  await expect(page).toHaveURL(/\/wiki\/W-abcdefghij$/);
+  await expect(page.getByRole('region', { name: '알림' }).getByText('경로를 복사했습니다')).toBeVisible();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('docs/development.md');
+  // A page that does not exist is inert text that names the missing path on hover.
+  await expect(reading.getByRole('link', { name: '없는 페이지' })).toHaveCount(0);
+  await expect(reading.getByRole('button', { name: '없는 페이지' })).toHaveCount(0);
+  await reading.getByText('없는 페이지', { exact: true }).hover();
+  await expect(page.locator('.astryx-tooltip', { hasText: '페이지가 없습니다: .gitifact/wiki/missing.md' })).toBeVisible();
+  await reading.getByRole('link', { name: '레이아웃 지침' }).click();
+  await expect(page).toHaveURL(/\/wiki\/W-bbbbbbbbbb$/);
+  await expect(page.getByRole('article', { name: '위키 페이지' })).toContainText('중앙 컬럼은 64rem입니다.');
 });
 
 test('uncommitted spec changes mark the Git menu and are explained on the Git page instead of above the lists', async ({ page }) => {
@@ -98,7 +124,7 @@ test('uncommitted spec changes mark the Git menu and are explained on the Git pa
   const nav = page.getByRole('navigation', { name: '사이드 탐색' });
   await expect(nav.getByLabel('미커밋 명세 변경 있음')).toBeVisible();
   await nav.getByRole('link', { name: /^Git 상태/ }).click();
-  await expect(page.getByText('요구사항·제품 개요·지침 화면은 작업 중인 내용이고', { exact: false })).toBeVisible();
+  await expect(page.getByText('요구사항·제품 개요·위키 화면은 작업 중인 내용이고', { exact: false })).toBeVisible();
   await page.getByRole('link', { name: '요구사항 보기 →' }).click();
   await expect(page).toHaveURL(/\/features$/);
 });
@@ -108,6 +134,6 @@ test('a direct visit to the Git page reads uncommitted store paths from the repo
   const data = { ...status, changes: [...status.changes, { kind: 'tracked', path: '.gitifact/spec/search/requirements.md', xy: '.M', submodule: null }], summary: { ...status.summary, unstaged: 2 } };
   await page.route('**/api/v1/status', r => r.fulfill({ json: data }));
   await page.goto('/git');
-  await expect(page.getByText('요구사항·제품 개요·지침 화면은 작업 중인 내용이고', { exact: false })).toBeVisible();
+  await expect(page.getByText('요구사항·제품 개요·위키 화면은 작업 중인 내용이고', { exact: false })).toBeVisible();
   await expect(page.getByRole('navigation', { name: '사이드 탐색' }).getByLabel('미커밋 명세 변경 있음')).toBeVisible();
 });

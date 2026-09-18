@@ -23,8 +23,9 @@ import { PageHeader } from '../../../widgets/page-header';
 import { useLoadingHold } from '../../../shared/ui/request-state/useLoadingHold';
 import { ViewSkeleton } from './ViewSkeleton';
 import { t, tNodes } from '../../../shared/i18n';
-export function ProductPanel({session,view,featureId,email,documentId,productDocument,search,change}:ProductProps&{session:BrowserSessionV2}) {
- const guides=view==='guides'; const productPage=view==='product';
+import { DocumentIndexProvider, wikiEntryPath } from '../../../shared/ui/document';
+export function ProductPanel({session,view,featureId,email,documentId,search,change}:ProductProps&{session:BrowserSessionV2}) {
+ const wiki=view==='wiki'; const productPage=view==='product';
  const query=useInfiniteQuery(specsOptions(session));
  const disconnected=query.error instanceof ApiError && query.error.code==='SESSION_CHANGED';
  const first=disconnected?undefined:query.data?.pages[0];
@@ -32,20 +33,20 @@ export function ProductPanel({session,view,featureId,email,documentId,productDoc
  const skeleton=useLoadingHold(!first&&!query.error);
  const ready=!!first&&!skeleton;
  const events=[...new Map((query.data?.pages.flatMap(p=>p.events)??[]).map(e=>[e.key,e])).values()];
- const title={history:t('nav.history'),features:t('nav.features'),contributors:t('nav.contributors'),product:t('nav.product'),guides:t('nav.guides')}[view];
+ const title={history:t('nav.history'),features:t('nav.features'),contributors:t('nav.contributors'),product:t('nav.product'),wiki:t('nav.wiki')}[view];
  const detailFeature=featureId?first?.features.find(f=>f.id===featureId):undefined;
  const detailPerson=email?first?.contributors.find(p=>p.email===email):undefined;
- const productDoc=first?.documents.find(d=>d.kind==='product');
- // The product text has its own reading page at /product/document; the dashboard only links to it.
- const detailDocument=productDocument?productDoc:documentId?first?.documents.find(d=>d.id===documentId):undefined;
- // Detail pages and the product dashboard carry their own heading; the guide browser fills the whole content area with columns.
+ // The wiki entry page doubles as the product description; the dashboard links to it as a wiki page.
+ const entryPage=first?.documents.find(d=>d.path===wikiEntryPath);
+ const detailDocument=documentId?first?.documents.find(d=>d.id===documentId):undefined;
+ // Detail pages and the product dashboard carry their own heading; the wiki browser fills the whole content area with columns.
  const detailPage=!!(featureId||email||documentId)||productPage;
- const browsing=guides&&!documentId;
- const root={history:'/',features:'/features',contributors:'/contributors',product:'/product',guides:'/guides'}[view];
+ const browsing=wiki&&!documentId;
+ const root={history:'/',features:'/features',contributors:'/contributors',product:'/product',wiki:'/wiki'}[view];
  const trail=[{label:title,to:root},...(detailFeature?[{label:detailFeature.title}]:[]),...(detailPerson?[{label:detailPerson.name}]:[]),...(detailDocument?[{label:detailDocument.title}]:[])];
- const filters=ready&&!detailPage&&!guides&&<HStack gap={3} wrap="wrap" className={`${styles.filters} ${styles.filtersSticky}`}><TextInput label={t('filters.search')} isLabelHidden placeholder={view==='features'?t('filters.searchFeatures'):view==='contributors'?t('filters.searchContributors'):t('filters.searchEvents')} value={search.q??''} hasClear onChange={q=>change({...search,q:q||undefined},true)}/>
+ const filters=ready&&!detailPage&&!wiki&&<HStack gap={3} wrap="wrap" className={`${styles.filters} ${styles.filtersSticky}`}><TextInput label={t('filters.search')} isLabelHidden placeholder={view==='features'?t('filters.searchFeatures'):view==='contributors'?t('filters.searchContributors'):t('filters.searchEvents')} value={search.q??''} hasClear onChange={q=>change({...search,q:q||undefined},true)}/>
  {view==='history'&&<><Selector label={t('filters.feature')} isLabelHidden value={search.feature??''} options={[{value:'',label:t('filters.allFeatures')},...first.features.map(f=>({value:f.id,label:f.title}))]} onChange={feature=>change({...search,feature:feature||undefined})}/>
- <Selector label={t('filters.document')} isLabelHidden value={search.document??''} options={[{value:'',label:t('filters.allDocuments')},{value:'requirement',label:t('kind.requirement')},{value:'design',label:t('kind.design')},{value:'product',label:t('kind.product')},{value:'guide',label:t('kind.guide')}]} onChange={document=>change({...search,document:document||undefined})}/>
+ <Selector label={t('filters.document')} isLabelHidden value={search.document??''} options={[{value:'',label:t('filters.allDocuments')},{value:'requirement',label:t('kind.requirement')},{value:'design',label:t('kind.design')},{value:'wiki',label:t('kind.wiki')}]} onChange={document=>change({...search,document:document||undefined})}/>
  <Selector label={t('filters.change')} isLabelHidden value={search.kind??''} options={[{value:'',label:t('filters.allChanges')},{value:'created',label:t('change.created')},{value:'modified',label:t('change.modified')},{value:'moved',label:t('change.moved')},{value:'deleted',label:t('change.deleted')}]} onChange={kind=>change({...search,kind:kind||undefined})}/>
  <Selector label={t('filters.author')} isLabelHidden value={search.author??''} options={[{value:'',label:t('filters.allAuthors')},...first.contributors.map(p=>({value:p.email,label:p.name}))]} onChange={author=>change({...search,author:author||undefined})}/></>}
  </HStack>;
@@ -57,13 +58,13 @@ export function ProductPanel({session,view,featureId,email,documentId,productDoc
  return <VStack gap={0} className={browsing?styles.pageFill:styles.page}>
  <PageHeader trail={trail} actions={actions}/>
  <VStack gap={0} className={browsing?styles.fill:styles.column}>
- {!detailPage&&!guides&&<VStack gap={1} className={styles.pageTitle}><Heading level={1}>{title}</Heading></VStack>}
+ {!detailPage&&!wiki&&<VStack gap={1} className={styles.pageTitle}><Heading level={1}>{title}</Heading></VStack>}
  {query.error&&first&&<VStack padding={4} role="alert"><Text>{query.error.message}</Text><Text>{t('history.staleData')}</Text></VStack>}
  {!first&&query.error&&<RequestState error={query.error} retry={()=>{if(disconnected)window.location.reload();else void query.refetch();}}/>}
  {skeleton&&<ViewSkeleton view={view}/>}
  {filters}
  {ready&&<VStack gap={3} className={browsing?styles.fillContent:styles.content}>
- {view==='history'?<HistoryView events={events} features={first.features} search={search} change={change}/>:view==='features'?<FeatureView features={first.features} featureId={featureId} search={search} change={change}/>:productPage&&productDocument?<DocumentsView documents={productDoc?[productDoc]:[]} kind="product" documentId={productDoc?.id??'PRODUCT.md'} search={search} change={change}/>:productPage?<ProductOverview product={productDoc} features={first.features} documents={first.documents} events={events} contributors={first.contributors} working={first.working}/>:guides?<DocumentsView documents={first.documents.filter(d=>d.kind==='guide')} kind="guide" documentId={documentId} search={search} change={change}/>:<ContributorsView people={first.contributors} events={events} features={first.features} email={email} search={search}/>}
+ <DocumentIndexProvider index={first}>{view==='history'?<HistoryView events={events} features={first.features} search={search} change={change}/>:view==='features'?<FeatureView features={first.features} featureId={featureId} search={search} change={change}/>:productPage?<ProductOverview product={entryPage} features={first.features} documents={first.documents} events={events} contributors={first.contributors} working={first.working}/>:wiki?<DocumentsView documents={first.documents} documentId={documentId} search={search} change={change}/>:<ContributorsView people={first.contributors} events={events} features={first.features} email={email} search={search}/>}</DocumentIndexProvider>
  {view==='history'&&<VStack gap={3} padding={5} className={styles.historyPagination}>
  <Text type="supporting" color="secondary">{t('history.loaded', { count: events.length })} {query.hasNextPage?t('history.filtersApplyToLoaded'):t('history.reachedEnd')}</Text>
  {query.hasNextPage&&<Button label={query.isFetchingNextPage?t('history.loadingMore'):query.isFetchNextPageError?t('history.retryMore'):t('history.loadMore')} isDisabled={query.isFetching} onClick={()=>{void query.fetchNextPage();}}/>}

@@ -4,7 +4,6 @@ import { HStack } from '@astryxdesign/core/HStack';
 import { Heading } from '@astryxdesign/core/Heading';
 import { Text } from '@astryxdesign/core/Text';
 import { Button } from '@astryxdesign/core/Button';
-import { Markdown } from '@astryxdesign/core/Markdown';
 import { List, ListItem } from '@astryxdesign/core/List';
 import { MetadataList, MetadataListItem } from '@astryxdesign/core/MetadataList';
 import { Timestamp } from '@astryxdesign/core/Timestamp';
@@ -15,16 +14,14 @@ import type { ProductSearch } from '../model/search';
 import styles from './product.module.css';
 import { PageState } from '../../../shared/ui/page-state';
 import { StateIllustration } from '../../../shared/ui/page-state/StateIllustration';
-import { productImageSources, withoutLeadingBanner } from './ProductOverview';
-import { DocumentBody } from '../../../shared/ui/document';
+import { DocumentBody, wikiEntryPath } from '../../../shared/ui/document';
 import { t } from '../../../shared/i18n';
 
-// Only guides are browsed as a folder tree; the product description is the dashboard (ProductOverview).
-export type DocumentKind = SpecDocument['kind'];
-export const documentRoot = { product: '/product', guide: '/guides' } as const;
-export const documentLabel = { product: t('nav.product'), guide: t('nav.guides') };
-/** Path inside the store folder, e.g. `frontend/layout.md` for `.gitifact/guides/frontend/layout.md`. */
-export const relativePath = (doc: SpecDocument) => doc.path.replace(/^\.gitifact\/(?:product|guides)\//, '');
+/** Path inside the wiki folder, e.g. `frontend/layout.md` for `.gitifact/wiki/frontend/layout.md`. */
+export const relativePath = (doc: SpecDocument) => doc.path.replace(/^\.gitifact\/wiki\//, '');
+/** A banner image as the very first block of the entry page duplicates the wordmark already in the side nav; it is dropped, every other image stays. */
+export const withoutLeadingBanner = (body: string) => body.replace(/^\s*!\[[^\]]*\]\([^)]*\)\s*\n+/, '');
+const bodyOf = (doc: SpecDocument) => doc.path === wikiEntryPath ? withoutLeadingBanner(doc.body) : doc.body;
 
 type Node = { name: string; path: string; folders: Node[]; documents: SpecDocument[] };
 function tree(documents: SpecDocument[]): Node {
@@ -53,27 +50,27 @@ function chainOf(root: Node, folder: string): Node[] {
   return chain;
 }
 
-export function DocumentsView({ documents, kind, documentId, search }: { documents: SpecDocument[]; kind: DocumentKind; documentId?: string | undefined; search: ProductSearch; change: (s: ProductSearch) => void }) {
+export function DocumentsView({ documents, documentId, search }: { documents: SpecDocument[]; documentId?: string | undefined; search: ProductSearch; change: (s: ProductSearch) => void }) {
   const selected = documentId ? documents.find(d => d.id === documentId) : undefined;
-  if (documentId && !selected) return <PageState kind="not-found" title={t('documents.notFoundTitle')} description={t('documents.notFoundDescription', { id: documentId, label: documentLabel[kind] })} actions={<Link to={documentRoot[kind]}>{t('documents.backToList', { label: documentLabel[kind] })}</Link>}/>;
-  if (selected) return <DocumentPage doc={selected} kind={kind}/>;
-  if (!documents.length) return <PageState kind="empty" title={t('documents.emptyTitle', { label: documentLabel[kind] })} description={t('documents.emptyDescription')}/>;
-  return <ColumnBrowser documents={documents} kind={kind} search={search}/>;
+  if (documentId && !selected) return <PageState kind="not-found" title={t('documents.notFoundTitle')} description={t('documents.notFoundDescription', { id: documentId })} actions={<Link to="/wiki">{t('documents.backToList')}</Link>}/>;
+  if (selected) return <DocumentPage doc={selected}/>;
+  if (!documents.length) return <PageState kind="empty" title={t('documents.emptyTitle')} description={t('documents.emptyDescription')}/>;
+  return <ColumnBrowser documents={documents} search={search}/>;
 }
 
 /** Finder-style columns across the whole content area: each folder opens to the right, a chosen document previews in the remaining space. */
-function ColumnBrowser({ documents, kind, search }: { documents: SpecDocument[]; kind: DocumentKind; search: ProductSearch }) {
+function ColumnBrowser({ documents, search }: { documents: SpecDocument[]; search: ProductSearch }) {
   const navigate = useNavigate();
   const preview = search.selected ? documents.find(d => d.id === search.selected) : undefined;
   // A previewed document keeps its own folder open even when the URL only names the document.
   const chain = chainOf(tree(documents), search.folder ?? (preview ? folderOf(preview) : ''));
-  const openFolder = (path: string) => { void navigate({ to: documentRoot[kind], search: { folder: path || undefined } }); };
-  const openDocument = (doc: SpecDocument) => { void navigate({ to: documentRoot[kind], search: { folder: folderOf(doc) || undefined, selected: doc.id } }); };
-  return <HStack gap={0} className={styles.columns} aria-label={t('documents.browse', { label: documentLabel[kind] })}>
+  const openFolder = (path: string) => { void navigate({ to: '/wiki', search: { folder: path || undefined } }); };
+  const openDocument = (doc: SpecDocument) => { void navigate({ to: '/wiki', search: { folder: folderOf(doc) || undefined, selected: doc.id } }); };
+  return <HStack gap={0} className={styles.columns} aria-label={t('documents.browse')}>
     {chain.map((node, index) => {
       const nextName = chain[index + 1]?.name;
       const items = [...node.folders.map(f => ({ key: 'd:' + f.path, folder: f })), ...node.documents.map(d => ({ key: d.id, doc: d }))];
-      return <VStack key={node.path || 'root'} gap={0} className={styles.browserColumn} aria-label={node.name || t('documents.document', { label: documentLabel[kind] })}>
+      return <VStack key={node.path || 'root'} gap={0} className={styles.browserColumn} aria-label={node.name || t('documents.document')}>
         {items.length ? <List density="compact">
           {items.map(item => 'folder' in item
             ? <ListItem key={item.key} label={item.folder.name} description={t('documents.folderCount', { count: countDocuments(item.folder) })} startContent={<HgiFolder size={16}/>} endContent={<Text type="supporting" color="secondary">›</Text>} isSelected={item.folder.name === nextName} onClick={() => openFolder(item.folder.path)}/>
@@ -87,9 +84,9 @@ function ColumnBrowser({ documents, kind, search }: { documents: SpecDocument[];
           <Heading level={2}>{preview.title}</Heading>
           <Text type="supporting" color="secondary">{relativePath(preview)} · {preview.id}</Text>
         </VStack>
-        <Button label={t('documents.openDetail')} size="sm" onClick={() => { void navigate({ to: '/guides/$documentId', params: { documentId: preview.id } }); }}/>
+        <Button label={t('documents.openDetail')} size="sm" onClick={() => { void navigate({ to: '/wiki/$documentId', params: { documentId: preview.id } }); }}/>
       </HStack>
-      <VStack gap={0} className={styles.previewBody}><Markdown headingLevelStart={3} density="compact">{preview.body}</Markdown></VStack>
+      <VStack gap={0} className={styles.previewBody}><DocumentBody headingLevelStart={3} density="compact" path={preview.path}>{bodyOf(preview)}</DocumentBody></VStack>
     </VStack> : <VStack gap={3} className={styles.columnFiller} aria-hidden="true">
       <StateIllustration kind="empty" compact/>
       <Text type="supporting" color="secondary">{t('documents.choose')}</Text>
@@ -97,9 +94,9 @@ function ColumnBrowser({ documents, kind, search }: { documents: SpecDocument[];
   </HStack>;
 }
 
-function DocumentPage({ doc, kind }: { doc: SpecDocument; kind: DocumentKind }) {
-  return <VStack as="article" aria-label={t('documents.document', { label: documentLabel[kind] })} gap={0} className={styles.featureDetail}>
-    <Link to={documentRoot[kind]} search={kind === 'product' ? {} : { folder: folderOf(doc) || undefined, selected: doc.id }} className={styles.featureBack}>← {documentLabel[kind]}{folderOf(doc) ? ` / ${folderOf(doc)}` : ''}</Link>
+function DocumentPage({ doc }: { doc: SpecDocument }) {
+  return <VStack as="article" aria-label={t('documents.document')} gap={0} className={styles.featureDetail}>
+    <Link to="/wiki" search={{ folder: folderOf(doc) || undefined, selected: doc.id }} className={styles.featureBack}>← {t('nav.wiki')}{folderOf(doc) ? ` / ${folderOf(doc)}` : ''}</Link>
     <VStack gap={3} className={styles.documentHeading}>
       <Heading level={1}>{doc.title}</Heading>
       <MetadataList orientation="horizontal">
@@ -107,9 +104,8 @@ function DocumentPage({ doc, kind }: { doc: SpecDocument; kind: DocumentKind }) 
         <MetadataListItem label="ID">{doc.id}</MetadataListItem>
         <MetadataListItem label={t('common.recentChange')}>{doc.updatedAt ? <Timestamp value={doc.updatedAt} format="relative"/> : t('common.inProgress')}</MetadataListItem>
       </MetadataList>
-      <Link to="/" search={{ document: kind, q: doc.id }}>{t('documents.activity')}</Link>
+      <Link to="/" search={{ document: 'wiki', q: doc.id }}>{t('documents.activity')}</Link>
     </VStack>
-    {/* Product images sit beside PRODUCT.md and the banner repeats the page title, as on the dashboard before. */}
-    <VStack gap={0} className={styles.documentBody}><DocumentBody>{kind === 'product' ? productImageSources(withoutLeadingBanner(doc.body)) : doc.body}</DocumentBody></VStack>
+    <VStack gap={0} className={styles.documentBody}><DocumentBody path={doc.path}>{bodyOf(doc)}</DocumentBody></VStack>
   </VStack>;
 }

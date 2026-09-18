@@ -19,7 +19,7 @@ import { t } from '../../../shared/i18n';
 const destinations = [
   ['/product', t('nav.product'), HgiProduct],
   ['/features', t('nav.features'), HgiRequirement],
-  ['/guides', t('nav.guides'), HgiBook],
+  ['/wiki', t('nav.wiki'), HgiBook],
   ['/', t('nav.history'), HgiHistory],
   ['/contributors', t('nav.contributors'), HgiMembers],
   ['/git', t('nav.git'), HgiGit],

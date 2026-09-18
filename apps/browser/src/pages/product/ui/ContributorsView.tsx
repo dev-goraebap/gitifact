@@ -1,4 +1,4 @@
-import type { BrowserSpecsV1, SpecEvent, SpecFeature } from '@gitifact/contracts';
+import type { BrowserSpecsV2, SpecEvent, SpecFeature } from '@gitifact/contracts';
 import { VStack } from '@astryxdesign/core/VStack';
 import { HStack } from '@astryxdesign/core/HStack';
 import { Grid } from '@astryxdesign/core/Grid';
@@ -15,7 +15,7 @@ import styles from './product.module.css';
 import { PageState } from '../../../shared/ui/page-state';
 import { t, tNodes } from '../../../shared/i18n';
 
-type Contributor = BrowserSpecsV1['contributors'][number];
+type Contributor = BrowserSpecsV2['contributors'][number];
 const names = {created:t('change.created'),modified:t('change.modified'),deleted:t('change.deleted'),moved:t('change.moved')};
 
 export function ContributorsView({people,events,features,email,search}: {people:Contributor[];events:SpecEvent[];features:SpecFeature[];email?:string|undefined;search:ProductSearch}) {
@@ -87,7 +87,7 @@ function ContributorDetail({person,events,features}: {person:Contributor;events:
       {activities.length ? <VStack gap={0} className={styles.personActivity}>
         {activities.slice(0, 10).map(e => <HStack key={e.key} gap={3} className={styles.personActivityRow}>
           <Token label={e.types.map(type => names[type]).join(' · ')} color={e.types.includes('deleted') ? 'red' : e.types.includes('modified') ? 'blue' : e.types.includes('moved') ? 'purple' : 'green'}/>
-          <Text type="supporting" color="secondary">{e.kind === 'design' ? t('kind.design') : t('kind.requirement')}</Text>
+          <Text type="supporting" color="secondary">{e.kind === 'design' ? t('kind.design') : e.kind === 'wiki' ? t('kind.wiki') : t('kind.requirement')}</Text>
           <Link to="/" search={{selected:e.key}} className={styles.entryTitle}>{(e.after ?? e.before)?.title ?? e.id}</Link>
           <Timestamp value={e.date} format="relative"/>
         </HStack>)}

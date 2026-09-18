@@ -7,7 +7,7 @@ import { EventDetail } from './EventDetail';
 import styles from './product.module.css';
 import { t } from '../../../shared/i18n';
 const names={created:t('change.created'),modified:t('change.modified'),deleted:t('change.deleted'),moved:t('change.moved')};
-const kinds={requirement:t('kind.requirement'),design:t('kind.design'),product:t('kind.product'),guide:t('kind.guide')};
+const kinds={requirement:t('kind.requirement'),design:t('kind.design'),wiki:t('kind.wiki')};
 /** Detail drawer: full screen below the desktop breakpoint, otherwise a resizable panel docked to the end edge. The dialog itself scrolls; the header stays pinned. */
 export function ActivityDetailDialog({event:e,features,close}: {event:SpecEvent;features:SpecFeature[];close:()=>void}) {
   const narrow=useMediaQuery('(max-width: 1023px)');

@@ -1,4 +1,4 @@
-import type { SpecDocument, SpecEvent, SpecFeature, BrowserSpecsV1 } from '@gitifact/contracts';
+import type { SpecDocument, SpecEvent, SpecFeature, BrowserSpecsV2 } from '@gitifact/contracts';
 import { VStack } from '@astryxdesign/core/VStack';
 import { HStack } from '@astryxdesign/core/HStack';
 import { Grid } from '@astryxdesign/core/Grid';
@@ -14,24 +14,15 @@ import styles from './product.module.css';
 import { PageState } from '../../../shared/ui/page-state';
 import { t } from '../../../shared/i18n';
 
-type Contributor = BrowserSpecsV1['contributors'][number];
+type Contributor = BrowserSpecsV2['contributors'][number];
 type ChangeType = SpecEvent['types'][number];
-
-/** Relative image links in PRODUCT.md point at files beside it; the server exposes those by file name only. */
-export function productImageSources(body: string) {
-  return body.replace(/(!\[[^\]]*\]\()(?:\.\/)?([A-Za-z0-9][A-Za-z0-9._-]*\.(?:png|jpe?g|gif|svg|webp))(\s*(?:"[^"]*")?\))/gi, '$1/api/v1/product/assets/$2$3');
-}
-/** A banner image as the very first block duplicates the wordmark already in the side nav; the dashboard drops it and keeps every other image. */
-export function withoutLeadingBanner(body: string) {
-  return body.replace(/^\s*!\[[^\]]*\]\([^)]*\)\s*\n+/, '');
-}
 
 // Categorical hues in a fixed order validated for adjacent-pair CVD separation (blue → orange → purple → green); gray closes a tail.
 const series = ['var(--color-data-categorical-blue, #0171E3)', 'var(--color-data-categorical-orange, #EB6E00)', 'var(--color-data-categorical-purple, #6B1EFD)', 'var(--color-data-categorical-green, #0B991F)'] as const;
 const tail = 'var(--color-data-neutral, #8494A3)';
 const changeNames: Record<ChangeType, string> = { created: t('change.created'), modified: t('change.modified'), moved: t('change.moved'), deleted: t('change.deleted') };
 const changeOrder: ChangeType[] = ['created', 'modified', 'moved', 'deleted'];
-const kindNames: Record<NonNullable<SpecEvent['kind']>, string> = { requirement: t('kind.requirement'), design: t('kind.design'), product: t('kind.product'), guide: t('kind.guide') };
+const kindNames: Record<NonNullable<SpecEvent['kind']>, string> = { requirement: t('kind.requirement'), design: t('kind.design'), wiki: t('kind.wiki') };
 
 type Segment = { label: string; value: number; color: string };
 
@@ -66,18 +57,17 @@ function Stat({ label, value, detail }: { label: string; value: number | string;
   </VStack></Card>;
 }
 
-/** The product page as a dashboard: headline counts and charts drawn from the loaded specs answer, then the PRODUCT.md text as written. */
+/** The product page as a dashboard: headline counts and charts drawn from the loaded specs answer; `product` is the wiki entry page (README.md), which the dashboard links to. */
 export function ProductOverview({ product, features, documents, events, contributors, working }: { product: SpecDocument | undefined; features: SpecFeature[]; documents: SpecDocument[]; events: SpecEvent[]; contributors: Contributor[]; working: boolean }) {
   const requirements = features.reduce((sum, f) => sum + f.requirements.length, 0);
   const designed = features.filter(f => f.design).length;
-  const guides = documents.filter(d => d.kind === 'guide').length;
   const ranked = [...features].sort((a, b) => b.requirements.length - a.requirements.length || a.title.localeCompare(b.title));
   const mostRequirements = Math.max(1, ...features.map(f => f.requirements.length));
   const changes: Segment[] = changeOrder.map((type, i) => ({ label: changeNames[type], value: events.filter(e => e.types.includes(type)).length, color: series[i]! }));
   const byCommits = [...contributors].sort((a, b) => b.commits - a.commits || a.name.localeCompare(b.name));
   const commitShare: Segment[] = [...byCommits.slice(0, 3).map((p, i) => ({ label: p.name, value: p.commits, color: series[i]! })), ...(byCommits.length > 3 ? [{ label: t('overview.otherContributors', { count: byCommits.length - 3 }), value: byCommits.slice(3).reduce((sum, p) => sum + p.commits, 0), color: tail }] : [])];
   const recent = events.slice(0, 5);
-  const specOf = (e: SpecEvent) => e.kind === 'product' || e.kind === 'guide' ? documents.find(d => d.id === e.id) : features.find(f => f.id === e.id || f.requirements.some(r => r.id === e.id));
+  const specOf = (e: SpecEvent) => e.kind === 'wiki' ? documents.find(d => d.id === e.id) : features.find(f => f.id === e.id || f.requirements.some(r => r.id === e.id));
   return <VStack as="article" aria-label={t('nav.product')} gap={6} className={styles.dashboard}>
     <VStack gap={2} className={styles.dashboardHead}>
       <Heading level={1}>{product?.title ?? t('nav.product')}</Heading>
@@ -85,8 +75,8 @@ export function ProductOverview({ product, features, documents, events, contribu
         {product && <Text type="supporting" color="secondary">{product.id}</Text>}
         {product && (product.updatedAt ? <Timestamp value={product.updatedAt} format="relative"/> : <Text type="supporting" color="secondary">{t('common.inProgress')}</Text>)}
         {working && <Token label={t('overview.uncommittedToken')} color="yellow" size="sm"/>}
-        {product && <Link to="/product/document">{t('overview.openDocument')}</Link>}
-        <Link to="/" search={{ document: 'product' }}>{t('overview.productHistory')}</Link>
+        {product && <Link to="/wiki/$documentId" params={{ documentId: product.id }}>{t('overview.openDocument')}</Link>}
+        {product && <Link to="/" search={{ document: 'wiki', q: product.id }}>{t('documents.activity')}</Link>}
       </HStack>
     </VStack>
 
@@ -98,7 +88,7 @@ export function ProductOverview({ product, features, documents, events, contribu
         <Heading level={2}>{designed}<Text type="supporting" color="secondary"> / {features.length}</Text></Heading>
         <ProgressBar label={t('overview.stat.designRatio')} isLabelHidden value={designed} max={Math.max(1, features.length)} variant="accent"/>
       </VStack></Card>
-      <Stat label={t('overview.stat.guides')} value={guides} detail={t('overview.stat.guidesDetail')}/>
+      <Stat label={t('overview.stat.wiki')} value={documents.length} detail={t('overview.stat.wikiDetail')}/>
       <Stat label={t('overview.stat.contributors')} value={contributors.length} detail={t('overview.stat.contributorsDetail')}/>
     </Grid>
 

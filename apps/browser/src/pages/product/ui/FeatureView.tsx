@@ -17,7 +17,7 @@ import { avatarSource, contributorHref } from './Person';
 import type { ProductSearch } from '../model/search';
 import styles from './product.module.css';
 import { PageState } from '../../../shared/ui/page-state';
-import { DocumentBody } from '../../../shared/ui/document';
+import { DocumentBody, designPathOf } from '../../../shared/ui/document';
 import { t } from '../../../shared/i18n';
 
 export function FeatureView({ features, featureId, search, change }: { features: SpecFeature[]; featureId?: string | undefined; search: ProductSearch; change: (s: ProductSearch) => void }) {
@@ -82,7 +82,7 @@ function FeatureDetail({ feature: selected, features, search, change }: { featur
       <Tab value="design" label={t('features.tab.design')} panelId="feature-design"/>
     </TabList>
     {tab === 'design' ? <VStack id="feature-design" role="tabpanel" aria-label={t('features.tab.design')} gap={4} className={styles.designPanel}>
-      {selected.design ? <DesignDocument design={selected.design} features={features}/> : <PageState isCompact title={t('features.noDesignTitle')} description={t('features.noDesignDescription')}/>}
+      {selected.design ? <DesignDocument design={selected.design} path={designPathOf(selected.path)} features={features}/> : <PageState isCompact title={t('features.noDesignTitle')} description={t('features.noDesignDescription')}/>}
     </VStack> : <VStack id="feature-requirements" role="tabpanel" aria-label={t('features.tab.requirements')} gap={0}>
       <VStack as="nav" aria-label={t('features.index')} gap={2} className={styles.documentIndex}>
         <Text type="supporting" color="secondary">{t('features.indexTitle')}</Text>
@@ -95,7 +95,7 @@ function FeatureDetail({ feature: selected, features, search, change }: { featur
             <Heading level={3}>{r.title}</Heading>
             <Text type="supporting" color="secondary">{r.id}</Text>
           </VStack>
-          <DocumentBody headingLevelStart={4}>{r.body.replace(/\r?\n([ \t]+)(기대 동작:)/g, '  \n$1$2')}</DocumentBody>
+          <DocumentBody headingLevelStart={4} path={selected.path}>{r.body.replace(/\r?\n([ \t]+)(기대 동작:)/g, '  \n$1$2')}</DocumentBody>
           <Link to="/" search={{ feature: selected.id, q: r.id }}>{t('features.requirementHistory')}</Link>
         </VStack>
       ))}

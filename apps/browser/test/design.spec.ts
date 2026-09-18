@@ -1,6 +1,6 @@
 import {test, expect} from '@playwright/test';
 import {mockApi, specs} from './mock-api';
-const design={title:'검색 구현 설계',body:'## 처리 흐름\n<!-- gitifact-ref: R-abcdefghij -->\n검색 색인을 조회합니다.\n\n<!-- gitifact-ref: R-zzzzzzzzzz -->',requirements:['R-abcdefghij','R-zzzzzzzzzz']};
+const design={title:'검색 구현 설계',body:'## 처리 흐름\n<!-- gitifact-ref: R-abcdefghij -->\n검색 색인을 조회합니다.\n\n<!-- gitifact-ref: R-zzzzzzzzzz -->',requirements:['R-abcdefghij','R-zzzzzzzzzz'],sources:[{title:'레이아웃 지침',path:'../../wiki/frontend/layout.md',note:'열 폭 기준'},{title:'React 참조',url:'https://react.dev/reference/react',note:'훅 규칙'},{title:'옮겨진 페이지',path:'../../wiki/gone.md'}]};
 function data(){return {...structuredClone(specs), features:specs.features.map(f=>({...f,design})), events:[
  {...specs.events[0]!,key:specs.head+':S-abcdefghij',id:'S-abcdefghij',kind:'design',types:['modified'],before:{...specs.events[0]!.after,title:design.title,body:'이전 설계'},after:{...specs.events[0]!.after,id:'S-abcdefghij',title:design.title,body:design.body,path:'.gitifact/spec/search/design.md'},reasons:['검색 부하를 줄입니다.']},...specs.events]};}
 test('design tab, explicit references and URL restoration',async({page})=>{
@@ -30,4 +30,15 @@ test('optional design empty state and mobile safe Markdown',async({page})=>{
  await page.route('**/api/v1/specs*',r=>r.fulfill({json:payload}));await page.setViewportSize({width:390,height:844});await page.emulateMedia({colorScheme:'dark'});await page.reload();
  await expect(page.getByRole('tabpanel',{name:'설계'})).toContainText('검색 색인');await expect(page.locator('article script,article a[href^="javascript:"]')).toHaveCount(0);
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+});
+test('design sources list above the body: wiki pages open in the app, URLs open in a new tab, missing pages are disabled',async({page})=>{
+ await mockApi(page);await page.route('**/api/v1/specs*',r=>r.fulfill({json:data()}));
+ await page.goto('/features/S-abcdefghij?tab=design');
+ const sources=page.getByRole('tabpanel',{name:'설계'}).getByLabel('참고 문서');
+ await expect(sources).toContainText('열 폭 기준');await expect(sources).toContainText('frontend/layout.md');
+ const external=sources.getByRole('link',{name:'React 참조'});
+ await expect(external).toHaveAttribute('href','https://react.dev/reference/react');await expect(external).toHaveAttribute('target','_blank');await expect(sources).toContainText('react.dev');
+ await expect(sources.getByRole('link',{name:'옮겨진 페이지'})).toHaveCount(0);await expect(sources.getByText('옮겨진 페이지',{exact:true})).toBeVisible();await expect(sources).toContainText('페이지가 없습니다: .gitifact/wiki/gone.md');
+ expect(await sources.boundingBox().then(b=>b!.y)).toBeLessThan(await page.getByText('검색 색인을 조회합니다.').boundingBox().then(b=>b!.y));
+ await sources.getByRole('link',{name:'레이아웃 지침'}).click();await expect(page).toHaveURL(/\/wiki\/W-bbbbbbbbbb$/);
 });

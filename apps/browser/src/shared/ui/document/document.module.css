@@ -28,3 +28,7 @@
 /* Links keep the text color of the theme, so the underline is what marks them. */
 .reading :global(.astryx-markdown-paragraph) a, .reading :global(.astryx-markdown-list) a, .reading :global(.astryx-markdown-table) a { text-decoration:underline; text-decoration-color:var(--color-border-emphasized, currentColor); text-underline-offset:.2em; }
 .reading :global(.astryx-markdown-paragraph) a:hover, .reading :global(.astryx-markdown-list) a:hover, .reading :global(.astryx-markdown-table) a:hover { text-decoration-color:currentColor; }
+.reading .image { max-width:100%; height:auto; border-radius:var(--radius-element); }
+/* A page that does not exist is inert text with a strike; a file outside the browser keeps a quiet dashed underline and copies its path. */
+.missingLink { cursor:not-allowed; }
+.outsideLink { text-decoration-style:dashed; cursor:copy; }
