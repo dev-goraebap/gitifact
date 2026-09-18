@@ -60,7 +60,7 @@ test('wiki changes appear in the activity feed with their kind and open the curr
     before: { id: 'W-bbbbbbbbbb', title: '레이아웃 지침', body: '이전 본문', specId: 'wiki', path: '.gitifact/wiki/layout.md' },
     after: { id: 'W-bbbbbbbbbb', title: '레이아웃 지침', body: '중앙 컬럼은 64rem입니다.', specId: 'wiki', path: '.gitifact/wiki/frontend/layout.md' }, reasons: ['폴더를 정리했습니다.'] }] };
   await page.route('**/api/v1/specs*', r => r.fulfill({ json: data }));
-  await page.goto('/?document=wiki');
+  await page.goto('/activity?document=wiki');
   const rows = page.getByRole('list', { name: '활동 목록' }).getByRole('listitem'); await expect(rows).toHaveCount(1);
   await expect(rows.first()).toContainText('위키 페이지');
   await expect(rows.first()).toContainText('frontend/layout.md');
@@ -139,12 +139,12 @@ test('uncommitted spec changes mark the Git menu and are explained on the Git pa
   await mockApi(page);
   await page.route('**/api/v1/specs*', r => r.fulfill({ json: { ...specs, working: true } }));
   await page.goto('/features');
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('요구사항');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('기능별 요구사항');
   await expect(page.getByText('작업 중인 내용이고', { exact: false })).toHaveCount(0);
   const nav = page.getByRole('navigation', { name: '사이드 탐색' });
   await expect(nav.getByLabel('미커밋 명세 변경 있음')).toBeVisible();
   await nav.getByRole('link', { name: /^Git 상태/ }).click();
-  await expect(page.getByText('요구사항·제품 개요·위키 화면은 작업 중인 내용이고', { exact: false })).toBeVisible();
+  await expect(page.getByText('제품 개요·기능별 요구사항·위키 화면은 작업 중인 내용이고', { exact: false })).toBeVisible();
   await page.getByRole('link', { name: '요구사항 보기 →' }).click();
   await expect(page).toHaveURL(/\/features$/);
 });
@@ -154,6 +154,6 @@ test('a direct visit to the Git page reads uncommitted store paths from the repo
   const data = { ...status, changes: [...status.changes, { kind: 'tracked', path: '.gitifact/spec/search/requirements.md', xy: '.M', submodule: null }], summary: { ...status.summary, unstaged: 2 } };
   await page.route('**/api/v1/status', r => r.fulfill({ json: data }));
   await page.goto('/git');
-  await expect(page.getByText('요구사항·제품 개요·위키 화면은 작업 중인 내용이고', { exact: false })).toBeVisible();
+  await expect(page.getByText('제품 개요·기능별 요구사항·위키 화면은 작업 중인 내용이고', { exact: false })).toBeVisible();
   await expect(page.getByRole('navigation', { name: '사이드 탐색' }).getByLabel('미커밋 명세 변경 있음')).toBeVisible();
 });

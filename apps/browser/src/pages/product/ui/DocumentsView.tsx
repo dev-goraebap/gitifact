@@ -128,7 +128,7 @@ function DocumentPage({ doc }: { doc: SpecDocument }) {
         <MetadataListItem label="ID">{doc.id}</MetadataListItem>
         <MetadataListItem label={t('common.recentChange')}>{doc.updatedAt ? <Timestamp value={doc.updatedAt} format="relative"/> : t('common.inProgress')}</MetadataListItem>
       </MetadataList>
-      <Link to="/" search={{ document: 'wiki', q: doc.id }}>{t('documents.activity')}</Link>
+      <Link to="/activity" search={{ document: 'wiki', q: doc.id }}>{t('documents.activity')}</Link>
     </VStack>
     <VStack gap={0} className={styles.documentBody}><DocumentBody path={doc.path}>{bodyOf(doc)}</DocumentBody></VStack>
   </VStack>;

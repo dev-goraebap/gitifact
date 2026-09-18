@@ -2,7 +2,9 @@
   <img src="packages/intro/assets/gitifact-logo.svg" alt="GITIFACT" width="720" />
 </p>
 
-Gitifact는 Git과 Artifact를 합친 이름입니다. 제품의 요구사항과 설계, 에이전트가 참고할 지침을 저장소의 Markdown 문서로 두고 Git으로 관리합니다. 그리고 요구사항이 언제, 왜 추가·변경·삭제됐는지를 함께 남깁니다.
+AI 에이전트와 함께 코드를 작성하는 환경에서는 빠른 구현 속도만큼이나 제품의 본래 의도와 맥락을 보존하는 일도 중요합니다. 대화 속에 흩어지는 요구사항과 빠르게 쌓여가는 커밋 사이에서, 특정 명세가 언제 어떤 이유로 바뀌었는지는 쉽게 유실되기 때문입니다.
+
+Gitifact CLI는 사용자가 문서 형식이나 복잡한 규칙을 고민하지 않고 개발에만 집중할 수 있도록 돕습니다. 요구사항마다 고유 ID를 부여해 문서 위치나 제목이 바뀌어도 추적을 자동으로 이어주고, 커밋 시점에는 바뀐 요구사항과 그 이유를 코드 변경과 함께 한 번에 묶어 기록합니다. 별도의 외부 도구 없이 가벼운 CLI 하나로, 제품의 모든 명세와 결정 배경을 Git 저장소 안에서 가장 간편하게 관리할 수 있습니다.
 
 ## 에이전트에게 시작을 맡기세요
 
@@ -27,7 +29,7 @@ Gitifact의 목표는 에이전트와 함께 제품을 만드는 사람이 제�
 
 Gitifact는 전혀 새로운 발상에서 나오지 않았습니다. 요구사항과 지침을 저장소의 Markdown으로 두고 에이전트가 읽게 하는 방식은 이미 널리 쓰이고 있고, 스펙 주도 개발 도구들에서도 많은 아이디어를 가져왔습니다. 다만 그 방식들에서 채워지지 않은 부분이 있었습니다. **명세가 언제, 어떤 이유로 바뀌었는가**입니다. 요구사항 문서를 어떤 관점으로 추적할지 다시 생각하게 된 계기는 Anthropic의 [AI-Native SDLC Playbook](https://academy.claude.com/courses/ai-native-sdlc-playbook)이었습니다. 다만 Gitifact가 그 글이 제시한 방식을 그대로 따르지는 않습니다.
 
-Git은 뛰어난 추적 도구지만 추적의 단위는 파일과 줄, 그리고 커밋입니다. 반면 요구사항은 문서 안의 한 절이고, 제목이 바뀌거나 다른 문서로 옮겨지기도 합니다. 커밋 메시지는 코드와 문서가 섞인 변경 전체를 한 번에 설명하므로, 특정 요구사항이 왜 바뀌었는지는 여러 커밋의 메시지와 diff, 이미 지나간 대화 속에 흩어집니다. Git이 이 정보를 담지 못한다기보다, 순수한 Markdown 문서와 커밋만으로는 기록을 보는 관점이 한곳에 모이지 않습니다.
+Git은 뛰어난 추적 도구지만 추적의 단위는 파일과 텍스트 줄(line), 그리고 커밋입니다. 반면 요구사항은 줄 단위가 아니라 제품의 기능과 규칙을 나타내는 의미 단위입니다. 문서 구조가 바뀌어 제목이 달라지거나 다른 파일로 옮겨지면 Git diff는 이를 단순한 삭제와 추가로 인식해 요구사항의 연속성을 놓치기 쉽습니다. 또한 커밋 메시지는 여러 파일의 변경을 한 번에 설명하므로, 특정 요구사항이 구체적으로 어떤 이유로 바뀌었는지는 커밋 diff와 이미 지나간 대화 속에 흩어집니다. Git이 이 정보를 담지 못한다기보다, 순수한 Markdown 문서와 기본 커밋만으로는 요구사항을 축으로 기록을 모아보기 어렵습니다.
 
 그래서 Gitifact는 Git 위에 최소한의 장치만 더합니다.
 
@@ -55,16 +57,12 @@ Gitifact는 개인이나 팀이 **하나의 Git 저장소 안에서 제품을 �
 
 ## 프로젝트 상태
 
-Markdown 요구사항·설계와 커밋 시점의 변경 이유를 Git에 연결하고, 읽기 전용 브라우저에서 활동·요구사항·참여자를 볼 수 있습니다. 에이전트에게 "gitifact 브라우저를 열어주세요"라고 요청하세요. 이전 Tryce 프로젝트는 `gitifact migrate`로 전환합니다.
+Markdown 요구사항·설계와 커밋 시점의 변경 이유를 Git에 연결하고, 읽기 전용 브라우저에서 활동·요구사항·참여자를 볼 수 있습니다. 에이전트에게 "gitifact 브라우저를 열어주세요"라고 요청하세요.
 
 최신 공개 버전은 [npm](https://www.npmjs.com/package/gitifact)에서, 버전별 변경 내역은 [패치노트](https://github.com/dev-goraebap/gitifact/blob/main/apps/cli/src/shared/i18n/ko/changelog.md)에서 확인하세요.
 
 제품의 목적·원칙·범위는 이 문서에서, 기능별 요구사항과 설계는 [요구사항](https://github.com/dev-goraebap/gitifact/tree/main/.gitifact/spec)에서 확인할 수 있습니다.
 
-## Gitifact 개발에 참여하려면
-
-실행·빌드·검증은 [개발 환경](https://github.com/dev-goraebap/gitifact/blob/main/docs/development.md), 코드 구조는 [결정 기록](https://github.com/dev-goraebap/gitifact/tree/main/.gitifact/wiki/adr)을 참고하세요.
-
 ## 라이선스
 
-[MIT](https://github.com/dev-goraebap/gitifact/blob/main/LICENSE). 배포물에 포함된 의존성의 라이선스 고지는 `dist/THIRD_PARTY_NOTICES.txt`에 제공합니다.
+[MIT](https://github.com/dev-goraebap/gitifact/blob/main/LICENSE).

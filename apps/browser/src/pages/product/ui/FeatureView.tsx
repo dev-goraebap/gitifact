@@ -74,7 +74,7 @@ function FeatureDetail({ feature: selected, features, search, change }: { featur
         <Text type="supporting" color="secondary">{t('features.requirementCount', { count: selected.requirements.length })}</Text>
         <Contributors people={selected.contributors}/>
         {selected.updatedAt && <Timestamp value={selected.updatedAt} format="relative"/>}
-        <Link to="/" search={{ feature: selected.id }}>{t('features.history')}</Link>
+        <Link to="/activity" search={{ feature: selected.id }}>{t('features.history')}</Link>
       </HStack>
     </VStack>
     <TabList role="tablist" value={tab} onChange={tab => change({ ...search, tab, selected: undefined })} hasDivider>
@@ -96,7 +96,7 @@ function FeatureDetail({ feature: selected, features, search, change }: { featur
             <Text type="supporting" color="secondary">{r.id}</Text>
           </VStack>
           <DocumentBody headingLevelStart={4} path={selected.path}>{r.body.replace(/\r?\n([ \t]+)(기대 동작:)/g, '  \n$1$2')}</DocumentBody>
-          <Link to="/" search={{ feature: selected.id, q: r.id }}>{t('features.requirementHistory')}</Link>
+          <Link to="/activity" search={{ feature: selected.id, q: r.id }}>{t('features.requirementHistory')}</Link>
         </VStack>
       ))}
       {!selected.requirements.length && <Text>{t('features.noRequirements')}</Text>}

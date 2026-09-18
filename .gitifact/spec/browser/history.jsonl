@@ -14,3 +14,7 @@
 {"id":"H-s74jym76xn","requirements":["R-wgi4sahmou"],"designs":["S-jqxgddhsdf"],"reason":"브라우저가 상대 링크를 그릴 때 위키·기능·에셋으로 해석한다. gitifact 문서가 아닌 저장소 파일은 사용자 결정으로 열지 않고 경로 복사만 제공한다. 서버가 `.gitifact` 밖 파일을 제공하는 안과 원격 저장소 주소로 바꾸는 안은 노출 범위와 미푸시 상태의 404 때문에 기각했다."}
 {"id":"H-r4o2lti7pk","requirements":[],"designs":["S-jqxgddhsdf"],"reason":"사용자가 GitHub의 파일 탐색 화면처럼 왼쪽 트리와 가운데 목록·상세 구성을 요청했다. Finder식 열 보기는 폴더가 깊어지면 열이 본문 자리를 밀어내고 읽기까지 미리보기·상세 두 단계를 거쳐야 했다. 사용자 검토로 트리에서 wiki 루트를 빼고, 목록에 구분선과 가운데 정렬을, 경로 헤더에 고정 높이와 왼쪽 정렬을 주고, 본문 전용 스크롤 대신 바깥 카드 스크롤을 쓰게 했다."}
 {"id":"H-fcl4hahwam","requirements":[],"designs":["S-jqxgddhsdf"],"reason":"위키에 README 하나만 있을 때 한 줄짜리 목록 대신 README를 바로 보여 달라는 요청을 반영했다. README가 제품 소개가 아니라 위키 운영 방침이 되면서 제품 개요 대시보드의 \"제품 문서 보기\" 링크와 README에 기대던 머리 정보를 사용자 결정으로 없앴다."}
+{"id":"H-7b6hce5okn","requirements":["R-5eehizubwl"],"reason":"사용자가 검색창에서 한글 입력이 잘 안 된다고 알렸다. 입력값이 URL에 직접 묶여 라우터의 비동기 갱신이 조합 중인 글자를 이전 값으로 되돌려 써서 '검색'이 'ㄱ거검검ㅅ새색색'처럼 쌓였다. 검색창이 입력값을 들고 URL에 따라 반영하도록 고쳤다."}
+{"id":"H-xgc5ojpq22","requirements":["R-tkl3lrrlpu"],"reason":"사용자 요청으로 브라우저를 열면 활동 대신 제품 개요가 먼저 보이게 했다. 활동은 /activity로 옮기고, 0.5.0 전의 활동 링크(/?selected=… 등)가 필터를 잃지 않도록 검색 인자가 있는 / 는 같은 인자로 /activity에 보낸다."}
+{"id":"H-npbfnif5vy","requirements":["R-xqf3xsumye"],"reason":"사용자 요청으로 요구사항 메뉴 이름을 기능별 요구사항으로 바꿨다. 목록이 기능 단위임을 드러낸다. 경로 /features는 유지한다."}
+{"id":"H-teqm6njrlu","requirements":[],"designs":["S-jqxgddhsdf"],"reason":"시작 화면을 제품 개요로 바꾸고 활동을 /activity로 옮긴 경로 설계, 기능별 요구사항 메뉴 이름, 한글 조합을 보호하는 검색창(SearchFilter) 구조를 사용자 요청에 따라 반영했다."}

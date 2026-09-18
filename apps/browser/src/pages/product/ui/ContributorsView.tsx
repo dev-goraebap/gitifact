@@ -67,7 +67,7 @@ function ContributorDetail({person,events,features}: {person:Contributor;events:
         <HStack gap={4} wrap="wrap">
           <Text type="supporting" color="secondary">{t('contributors.gitCommits', { count: person.commits })}</Text>
           <Text type="supporting" color="secondary">{tNodes('contributors.latest', { time: <Timestamp value={person.latest} format="relative" type="inherit" color="inherit"/> })}</Text>
-          <Link to="/" search={{author:person.email}}>{t('contributors.activity')}</Link>
+          <Link to="/activity" search={{author:person.email}}>{t('contributors.activity')}</Link>
         </HStack>
       </VStack>
     </HStack>
@@ -88,7 +88,7 @@ function ContributorDetail({person,events,features}: {person:Contributor;events:
         {activities.slice(0, 10).map(e => <HStack key={e.key} gap={3} className={styles.personActivityRow}>
           <Token label={e.types.map(type => names[type]).join(' · ')} color={e.types.includes('deleted') ? 'red' : e.types.includes('modified') ? 'blue' : e.types.includes('moved') ? 'purple' : 'green'}/>
           <Text type="supporting" color="secondary">{e.kind === 'design' ? t('kind.design') : e.kind === 'wiki' ? t('kind.wiki') : t('kind.requirement')}</Text>
-          <Link to="/" search={{selected:e.key}} className={styles.entryTitle}>{(e.after ?? e.before)?.title ?? e.id}</Link>
+          <Link to="/activity" search={{selected:e.key}} className={styles.entryTitle}>{(e.after ?? e.before)?.title ?? e.id}</Link>
           <Timestamp value={e.date} format="relative"/>
         </HStack>)}
       </VStack> : <Text color="secondary">{t('contributors.noRecentActivity')}</Text>}

@@ -4,7 +4,6 @@ import { VStack } from '@astryxdesign/core/VStack';
 import { HStack } from '@astryxdesign/core/HStack';
 import { Heading } from '@astryxdesign/core/Heading';
 import { Text } from '@astryxdesign/core/Text';
-import { TextInput } from '@astryxdesign/core/TextInput';
 import { Selector } from '@astryxdesign/core/Selector';
 import { Button } from '@astryxdesign/core/Button';
 import { IconButton } from '@astryxdesign/core/IconButton';
@@ -17,6 +16,7 @@ import { FeatureView } from './FeatureView';
 import { ContributorsView } from './ContributorsView';
 import { DocumentsView } from './DocumentsView';
 import { ProductOverview } from './ProductOverview';
+import { SearchFilter } from './SearchFilter';
 import styles from './product.module.css';
 import { RequestState } from '../../../shared/ui/request-state';
 import { PageHeader } from '../../../widgets/page-header';
@@ -40,9 +40,9 @@ export function ProductPanel({session,view,featureId,email,documentId,search,cha
  // Detail pages and the product dashboard carry their own heading; the wiki explorer fills the whole content area with its tree and pane.
  const detailPage=!!(featureId||email||documentId)||productPage;
  const browsing=wiki;
- const root={history:'/',features:'/features',contributors:'/contributors',product:'/product',wiki:'/wiki'}[view];
+ const root={history:'/activity',features:'/features',contributors:'/contributors',product:'/product',wiki:'/wiki'}[view];
  const trail=[{label:title,to:root},...(detailFeature?[{label:detailFeature.title}]:[]),...(detailPerson?[{label:detailPerson.name}]:[]),...(detailDocument?[{label:detailDocument.title}]:[])];
- const filters=ready&&!detailPage&&!wiki&&<HStack gap={3} wrap="wrap" className={`${styles.filters} ${styles.filtersSticky}`}><TextInput label={t('filters.search')} isLabelHidden placeholder={view==='features'?t('filters.searchFeatures'):view==='contributors'?t('filters.searchContributors'):t('filters.searchEvents')} value={search.q??''} hasClear onChange={q=>change({...search,q:q||undefined},true)}/>
+ const filters=ready&&!detailPage&&!wiki&&<HStack gap={3} wrap="wrap" className={`${styles.filters} ${styles.filtersSticky}`}><SearchFilter label={t('filters.search')} placeholder={view==='features'?t('filters.searchFeatures'):view==='contributors'?t('filters.searchContributors'):t('filters.searchEvents')} value={search.q??''} onChange={q=>change({...search,q:q||undefined},true)}/>
  {view==='history'&&<><Selector label={t('filters.feature')} isLabelHidden value={search.feature??''} options={[{value:'',label:t('filters.allFeatures')},...first.features.map(f=>({value:f.id,label:f.title}))]} onChange={feature=>change({...search,feature:feature||undefined})}/>
  <Selector label={t('filters.document')} isLabelHidden value={search.document??''} options={[{value:'',label:t('filters.allDocuments')},{value:'requirement',label:t('kind.requirement')},{value:'design',label:t('kind.design')},{value:'wiki',label:t('kind.wiki')}]} onChange={document=>change({...search,document:document||undefined})}/>
  <Selector label={t('filters.change')} isLabelHidden value={search.kind??''} options={[{value:'',label:t('filters.allChanges')},{value:'created',label:t('change.created')},{value:'modified',label:t('change.modified')},{value:'moved',label:t('change.moved')},{value:'deleted',label:t('change.deleted')}]} onChange={kind=>change({...search,kind:kind||undefined})}/>

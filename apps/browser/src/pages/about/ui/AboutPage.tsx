@@ -6,11 +6,10 @@ import { localDocument, t } from '../../../shared/i18n';
 import logoUrl from '@gitifact/intro/assets/gitifact-logo.svg?url';
 import styles from './about.module.css';
 
-// The intro is shared with the README and the landing site and links to GitHub. Inside the browser, the product
-// architecture and requirements links open the matching pages instead.
+// The intro is shared with the README and the landing site and links to GitHub. Inside the browser, the requirements
+// link opens the matching page instead.
 const repository = 'https://github.com/dev-goraebap/gitifact';
 const inAppLinks: [string, string][] = [
-  ['](' + repository + '/tree/main/.gitifact/wiki/adr)', '](/wiki?folder=adr)'],
   ['](' + repository + '/tree/main/.gitifact/spec)', '](/features)'],
 ];
 // The README opens with an HTML logo block, which Markdown here does not render; it becomes an image of the bundled file.

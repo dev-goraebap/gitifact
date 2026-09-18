@@ -20,7 +20,7 @@ const destinations = [
   ['/product', t('nav.product'), HgiProduct],
   ['/features', t('nav.features'), HgiRequirement],
   ['/wiki', t('nav.wiki'), HgiBook],
-  ['/', t('nav.history'), HgiHistory],
+  ['/activity', t('nav.history'), HgiHistory],
   ['/contributors', t('nav.contributors'), HgiMembers],
   ['/git', t('nav.git'), HgiGit],
   ['/settings', t('nav.settings'), HgiSettings],
@@ -40,7 +40,7 @@ export function BrowserShell() {
       sideNav={
         <SideNav
           resizable={{ defaultWidth: 240, minWidth: 200, maxWidth: 400, autoSaveId: 'gitifact-sidenav' }}
-          header={<Link to="/" className="gitifact-wordmark" aria-label={t('shell.home')} />}
+          header={<Link to="/product" className="gitifact-wordmark" aria-label={t('shell.home')} />}
           footer={<VersionFooter />}
         >
           <SideNavSection title="WORKSPACE">
@@ -50,7 +50,7 @@ export function BrowserShell() {
                 label={label}
                 icon={<MenuIcon/>}
                 href={to}
-                isSelected={to === '/' ? pathname === '/' : pathname === to || pathname.startsWith(to + '/')}
+                isSelected={pathname === to || pathname.startsWith(to + '/')}
                 // The uncommitted-spec indicator lives on the Git menu; the Git page carries the explanation.
                 endContent={to === '/git' && working ? <StatusDot variant="warning" label={t('shell.workingChanges')} tooltip={t('shell.workingChangesTooltip')}/> : undefined}
                 onClick={go(to)}

@@ -1,7 +1,7 @@
 import {expect,test} from '@playwright/test';
 import {mockApi,specs} from './mock-api';
 test('history links to current features and contributors with URL restoration',async({page})=>{
- await mockApi(page);await page.goto('/');await page.getByText('검색어 입력',{exact:true}).click();
+ await mockApi(page);await page.goto('/activity');await page.getByText('검색어 입력',{exact:true}).click();
  await expect(page.getByRole('dialog',{name:'검색어 입력'})).toContainText('사용자가 검색을 요청했습니다.');
  await page.getByRole('link',{name:'현재 기능 명세 보기 →'}).click();
  const detail=page.getByRole('article',{name:'기능 명세'});await expect(detail).toContainText('기대 동작:');await page.reload();await expect(detail).toBeVisible();
@@ -11,7 +11,7 @@ test('history links to current features and contributors with URL restoration',a
  await page.getByRole('textbox',{name:'검색',exact:true}).fill('없는 항목');await expect(page.getByText('표시할 활동이 없습니다.',{exact:false})).toBeVisible();
 });
 test('reload failure labels previous snapshot and malformed responses are rejected',async({page})=>{
- await mockApi(page);await page.goto('/');await expect(page.getByText('검색어 입력',{exact:true})).toBeVisible();
+ await mockApi(page);await page.goto('/activity');await expect(page.getByText('검색어 입력',{exact:true})).toBeVisible();
  await page.route('**/api/v1/specs*',r=>r.abort());await page.getByRole('button',{name:'새로고침',exact:true}).click();await expect(page.getByRole('alert')).toContainText('이전 조회 자료');
  await page.route('**/api/v1/specs*',r=>r.fulfill({json:{...specs,events:'broken'}}));await page.getByRole('button',{name:'새로고침',exact:true}).click();await expect(page.getByRole('alert')).toContainText('호환되지');
 });
@@ -21,7 +21,7 @@ test('mobile dark theme preserves safe Markdown and navigation',async({page})=>{
  await page.route('**/api/v1/specs*',r=>r.fulfill({json:unsafe}));await page.goto('/features/S-abcdefghij?selected=R-abcdefghij');
  const detail=page.getByRole('article',{name:'기능 명세'});await expect(detail).toContainText('읽을 내용');await expect(detail.locator('script,a[href^="javascript:"]')).toHaveCount(0);
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
- await detail.getByRole('link',{name:'← 요구사항'}).click();await expect(detail).toHaveCount(0);await expect(page.getByRole('table')).toBeVisible();
+ await detail.getByRole('link',{name:'← 기능별 요구사항'}).click();await expect(detail).toHaveCount(0);await expect(page.getByRole('table')).toBeVisible();
  await page.getByRole('button',{name:'탐색 열기',exact:true}).click();await page.getByRole('link',{name:'참여자',exact:true}).click();await expect(page).toHaveURL(/contributors/);
 });
 
@@ -31,7 +31,7 @@ test('load more retains rows, appends the next page and shows completion', async
  next.events[0]!.key = 'd'.repeat(40)+':R-abcdefghij';
  next.events[0]!.after!.title = '이전 검색 요구사항';
  await page.route('**/api/v1/specs*', route => route.fulfill({json:new URL(route.request().url()).searchParams.has('cursor')?next:{...specs,nextCursor:10}}));
- await page.goto('/');
+ await page.goto('/activity');
  await expect(page.getByText('검색어 입력',{exact:true})).toBeVisible();
  await page.getByRole('button',{name:'이전 이력 더 보기',exact:true}).click();
  await expect(page.getByText('이전 검색 요구사항',{exact:true})).toBeVisible();
@@ -45,7 +45,7 @@ test('initial request shows delayed skeleton then the Gentask empty illustration
  let release!: () => void;
  const pending = new Promise<void>(resolve => {release = resolve;});
  await page.route('**/api/v1/specs*', async route => {await pending;await route.fulfill({json:{...specs,events:[],features:[],contributors:[]}});});
- await page.goto('/');
+ await page.goto('/activity');
  await expect(page.getByRole('status',{name:'프로젝트 불러오는 중'})).toHaveCSS('opacity','1');
  release();
  await expect(page.getByRole('heading',{name:'표시할 활동이 없습니다.'})).toBeVisible();
@@ -54,7 +54,7 @@ test('initial request shows delayed skeleton then the Gentask empty illustration
 });
 
 test('detail drawer opens from the timeline, keeps avatars and can be resized from the keyboard', async ({page}) => {
- await mockApi(page);await page.goto('/');
+ await mockApi(page);await page.goto('/activity');
  await expect(page.getByRole('list',{name:'활동 목록'}).locator('img').first()).toBeVisible();
  await page.getByText('검색어 입력',{exact:true}).click();
  const pane=page.getByRole('dialog',{name:'검색어 입력'});
@@ -75,7 +75,7 @@ test('history rows preview change reasons and mark missing ones', async ({page})
   {...event,key:specs.head+':R-cccccccccc',id:'R-cccccccccc',after:{...event.after,id:'R-cccccccccc',title:'이유 없는 변경',body:'본문만 있습니다.'},reasons:[]},
  ]};
  await page.route('**/api/v1/specs*',r=>r.fulfill({json:data}));
- await page.goto('/');
+ await page.goto('/activity');
  const rows=page.getByRole('list',{name:'활동 목록'}).getByRole('listitem');await expect(rows).toHaveCount(2);
  await expect(rows.nth(0)).toContainText('정렬을 요청했습니다. · 응답 순서를 고정합니다.');
  await expect(rows.nth(0)).not.toContainText('정렬 본문입니다.');

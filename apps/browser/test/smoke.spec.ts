@@ -12,8 +12,10 @@ test('built app loads Astryx and supports navigation, reload, and history', asyn
     if (message.type() === 'error') errors.push(message.text());
   });
 
+  // The browser opens on the product overview.
   await page.goto('/');
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('활동');
+  await expect(page).toHaveURL(/\/product$/);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('제품 개요');
   const button = page.getByRole('link', { name: '소개', exact: true });
   await expect(button).toBeVisible();
   // Confirms that the shipped component CSS and theme have both loaded.
@@ -27,23 +29,43 @@ test('built app loads Astryx and supports navigation, reload, and history', asyn
   await page.keyboard.press('Enter');
   await expect(page).toHaveURL(/\/about$/);
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Gitifact 소개');
-  // The shared intro links to GitHub; inside the browser these two open the matching pages.
+  // The shared intro links to GitHub; inside the browser the requirements link opens the matching page.
   const intro = page.getByRole('article', { name: 'Gitifact 소개' });
   await expect(intro.getByRole('img', { name: 'GITIFACT' })).toBeVisible();
   await expect(intro).not.toContainText('<p align');
-  await expect(intro.getByRole('link', { name: '결정 기록' })).toHaveAttribute('href', '/wiki?folder=adr');
   await expect(intro.getByRole('link', { name: '요구사항' })).toHaveAttribute('href', '/features');
-  await expect(intro.getByRole('link', { name: '개발 환경' })).toHaveAttribute('href', /^https:\/\/github\.com\//);
+  await expect(intro.getByRole('link', { name: '패치노트' })).toHaveAttribute('href', /^https:\/\/github\.com\//);
   await page.reload();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Gitifact 소개');
   await page.goBack();
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('활동');
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('제품 개요');
   expect(errors).toEqual([]);
+});
+
+test('activity links from before 0.5.0 carry their filters to the activity page', async ({ page }) => {
+  await page.goto('/?document=design&q=검색');
+  await expect(page).toHaveURL(/\/activity\?document=design&q=/);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('활동');
+  await expect(page.getByRole('textbox', { name: '검색', exact: true })).toHaveValue('검색');
+});
+
+test('the search field keeps Korean text composed through an input method', async ({ page, browserName }) => {
+  test.skip(browserName !== 'chromium', 'Input method events are driven through the Chrome DevTools Protocol.');
+  await page.goto('/activity');
+  const field = page.getByRole('textbox', { name: '검색', exact: true });
+  await field.click();
+  const cdp = await page.context().newCDPSession(page);
+  // Each step is what a Korean IME reports while one syllable is composed and the next one begins.
+  for (const [text, commit] of [['ㄱ', false], ['거', false], ['검', false], ['검', true], ['ㅅ', false], ['새', false], ['색', false], ['색', true]] as const) {
+    await cdp.send(commit ? 'Input.insertText' : 'Input.imeSetComposition', commit ? { text } : { text, selectionStart: text.length, selectionEnd: text.length });
+  }
+  await expect(field).toHaveValue('검색');
+  await expect(page).toHaveURL(/q=%EA%B2%80%EC%83%89/);
 });
 
 test('unknown routes show an explicit missing page and a working return link', async ({ page }) => {
   await page.goto('/missing');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('페이지를 찾을 수 없습니다');
   await page.getByRole('link', { name: '처음으로' }).click();
-  await expect(page).toHaveURL('/');
+  await expect(page).toHaveURL(/\/product$/);
 });

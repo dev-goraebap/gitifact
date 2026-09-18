@@ -112,14 +112,14 @@ export function ProductOverview({ features, documents, events, contributors, wor
     </Grid>
 
     <Card padding={5}><VStack gap={4}>
-      <HStack gap={3} className={styles.barRowHead}><Heading level={3}>{t('activity.recent')}</Heading><Link to="/">{t('overview.activityLink')}</Link></HStack>
+      <HStack gap={3} className={styles.barRowHead}><Heading level={3}>{t('activity.recent')}</Heading><Link to="/activity">{t('overview.activityLink')}</Link></HStack>
       {recent.length ? <VStack as="ul" gap={0} className={styles.recentList} aria-label={t('activity.recent')}>
         {recent.map(e => { const spec = specOf(e); const title = e.after?.title ?? e.before?.title ?? spec?.title ?? e.id; return <HStack as="li" key={e.key} gap={3} className={styles.recentRow}>
           <Person name={e.author} email={e.email} avatarOnly/>
           <HStack gap={2} wrap="wrap" className={styles.recentBody}>
             <Token label={e.types.map(type => changeNames[type]).join('·')} size="sm"/>
             <Text type="supporting" color="secondary">{kindNames[e.kind ?? 'requirement']}</Text>
-            <Link to="/" search={{ selected: e.key }} className={styles.entryTitle}>{title}</Link>
+            <Link to="/activity" search={{ selected: e.key }} className={styles.entryTitle}>{title}</Link>
           </HStack>
           <Timestamp value={e.date} format="relative"/>
         </HStack>; })}

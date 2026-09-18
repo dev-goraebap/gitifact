@@ -29,7 +29,7 @@ export function ActivityTimeline({events,features,selected}: {events:SpecEvent[]
      <HStack gap={2} wrap="wrap" className={styles.entryLine}>
       <Token label={e.types.map(type=>names[type]).join(' · ')} color={colors[kind]}/>
       <Text type="supporting" color="secondary">{kinds[e.kind??'requirement']}</Text>
-      <Link to="/" search={s=>({...s,selected:e.key})} className={styles.entryTitle}>{spec?.title??e.id}</Link>
+      <Link to="/activity" search={s=>({...s,selected:e.key})} className={styles.entryTitle}>{spec?.title??e.id}</Link>
       {feature&&<Text type="supporting" color="secondary">·</Text>}
       {feature&&<Link to="/features/$featureId" params={{featureId:feature.id}} className={styles.entryFeature}>{feature.title}</Link>}
       {e.kind==='wiki'&&e.after&&<><Text type="supporting" color="secondary">·</Text><Link to="/wiki/$documentId" params={{documentId:e.id}} className={styles.entryFeature}>{e.after.path.replace(/^\.gitifact\/wiki\//,'')}</Link></>}
