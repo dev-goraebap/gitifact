@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -16,32 +16,34 @@ const run = (cwd, ...args) => {
   assert.ifError(result.error); return result;
 };
 const asset = name => readFileSync(join(assets, name), 'utf8');
-// Every topic ships as the format part plus the default guidance; `docs` prints them joined.
-const expected = topic => asset(topic + '.md').trimEnd() + '\n\n' + asset(topic + '.default.md').trimEnd() + '\n';
+const bump = text => text.trim().replace(/^(#{1,5}) /gm, '#$1 ');
 
 test('bundled docs match the asset source and list every topic', async t => {
   const cwd = await mkdtemp(join(tmpdir(), 'gitifact-docs-'));
   t.after(() => rm(cwd, { recursive: true, force: true }));
-  const names = [...docTopics].flatMap(topic => [topic + '.md', topic + '.default.md']).sort();
+  // One file per topic, plus the wiki policy template.
+  const names = [...docTopics.map(topic => topic + '.md'), 'wiki.default.md'].sort();
   assert.deepEqual(readdirSync(assets).sort(), names);
   assert.deepEqual(readdirSync(bundled).sort(), names);
   const list = run(cwd);
   assert.equal(list.status, 0, list.stderr); assert.equal(list.stderr, '');
   assert.equal(list.stdout, listDocTopics());
-  for (const topic of docTopics) {
+  for (const topic of docTopics.filter(topic => topic !== 'wiki')) {
     assert.match(list.stdout, new RegExp('^' + topic + ' ', 'm'));
     const shown = run(cwd, topic);
     assert.equal(shown.status, 0, shown.stderr); assert.equal(shown.stderr, '');
-    assert.equal(shown.stdout, expected(topic));
-    assert.match(shown.stdout, /^# /); assert.match(shown.stdout, /\n## 운영 지침\n/);
+    assert.equal(shown.stdout, asset(topic + '.md'));
   }
+  // Outside a project the wiki topic carries the bundled default policy and says so.
+  const wiki = run(cwd, 'wiki');
+  assert.equal(wiki.stdout, asset('wiki.md').trimEnd() + '\n\n## 운영 방침 (기본값. .gitifact/wiki/README.md가 없어 내장 방침을 싣는다)\n\n' + bump(asset('wiki.default.md')) + '\n');
   assert.match(run(cwd, 'spec').stdout, /set-design/);
-  assert.match(run(cwd, 'wiki').stdout, /create-doc/);
+  assert.match(wiki.stdout, /create-doc/);
   assert.match(run(cwd, 'commit').stdout, /spec commit --file/);
   assert.deepEqual(readdirSync(cwd), []);
 });
 
-test('unknown topics fail on stderr without output and docs works outside a repository', async t => {
+test('unknown topics and removed options fail on stderr without output', async t => {
   const cwd = await mkdtemp(join(tmpdir(), 'gitifact-docs-'));
   t.after(() => rm(cwd, { recursive: true, force: true }));
   const failure = run(cwd, 'nope');
@@ -49,47 +51,40 @@ test('unknown topics fail on stderr without output and docs works outside a repo
   const dto = JSON.parse(failure.stderr);
   assert.deepEqual([dto.contract, dto.version, dto.ok, dto.error.code], ['docs', 1, false, 'UNKNOWN_TOPIC']);
   assert.match(dto.error.message, /workflow, spec, design, wiki, commit/);
-  const extra = run(cwd, 'spec', 'design');
-  assert.notEqual(extra.status, 0); assert.equal(extra.stdout, '');
-  // Eject needs a project; outside one it refuses and writes nothing.
-  const outside = run(cwd, 'wiki', '--eject');
-  assert.equal(outside.status, 1); assert.equal(JSON.parse(outside.stderr).error.code, 'NOT_INITIALIZED');
-  assert.equal(JSON.parse(run(cwd, '--eject').stderr).error.code, 'TOPIC_REQUIRED');
+  assert.notEqual(run(cwd, 'spec', 'design').status, 0);
+  // Guidance overrides were removed; the option no longer exists.
+  const eject = run(cwd, 'wiki', '--eject');
+  assert.notEqual(eject.status, 0); assert.equal(eject.stdout, '');
   assert.deepEqual(readdirSync(cwd), []);
 });
 
-test('an override replaces the guidance part only, eject copies it, and an empty override is ignored', async t => {
+test("the project's wiki README is the wiki policy, found from any folder inside the project", async t => {
   const root = await mkdtemp(join(tmpdir(), 'gitifact-docs-'));
   t.after(() => rm(root, { recursive: true, force: true }));
-  mkdirSync(join(root, '.gitifact')); writeFileSync(join(root, '.gitifact', 'config.json'), '{"schemaVersion":2,"baseline":{"kind":"empty"}}\n');
+  mkdirSync(join(root, '.gitifact', 'wiki'), { recursive: true });
+  writeFileSync(join(root, '.gitifact', 'config.json'), '{"schemaVersion":2,"baseline":{"kind":"empty"}}\n');
+  writeFileSync(join(root, '.gitifact', 'wiki', 'README.md'), '---\nid: W-abcdefghij\n---\n\n# 우리 위키\n\n규칙은 rules/에 둔다.\n\n## 결정\n\n```md\n# 코드 블록 속 제목\n```\n');
   const nested = join(root, 'src', 'deep'); mkdirSync(nested, { recursive: true });
-  const ejected = run(nested, 'wiki', '--eject');
-  assert.equal(ejected.status, 0, ejected.stderr);
-  assert.deepEqual(JSON.parse(ejected.stdout), { contract: 'docs', version: 1, ok: true, topic: 'wiki', ejected: '.gitifact/overrides/wiki.md' });
-  const path = join(root, '.gitifact', 'overrides', 'wiki.md');
-  const copied = readFileSync(path, 'utf8');
-  assert.match(copied, /^<!-- gitifact docs wiki /); assert.ok(copied.endsWith(asset('wiki.default.md').trimEnd() + '\n'));
-  assert.equal(JSON.parse(run(nested, 'wiki', '--eject').stderr).error.code, 'OVERRIDE_EXISTS');
-  // Printed from anywhere inside the project: the format part stays, the guidance is the project's file.
-  writeFileSync(path, '## 우리 위키\n\n페이지는 docs/ 아래 구조를 따른다.\n');
-  assert.equal(run(nested, 'wiki').stdout, asset('wiki.md').trimEnd() + '\n\n## 우리 위키\n\n페이지는 docs/ 아래 구조를 따른다.\n');
-  assert.equal(run(nested, 'spec').stdout, expected('spec'));
-  writeFileSync(path, '\n  \n');
-  assert.equal(run(nested, 'wiki').stdout, expected('wiki'));
-  assert.equal(existsSync(join(root, '.gitifact', 'overrides', 'spec.md')), false);
+  // Frontmatter and title are dropped, headings move one level down, fenced examples stay as written.
+  assert.equal(run(nested, 'wiki').stdout, asset('wiki.md').trimEnd() + '\n\n## 운영 방침 (.gitifact/wiki/README.md)\n\n규칙은 rules/에 둔다.\n\n### 결정\n\n```md\n# 코드 블록 속 제목\n```\n');
+  // Other topics are never replaced by project files.
+  assert.equal(run(nested, 'spec').stdout, asset('spec.md'));
+  // An empty README falls back to the bundled policy.
+  writeFileSync(join(root, '.gitifact', 'wiki', 'README.md'), '---\nid: W-abcdefghij\n---\n\n# 비어 있음\n');
+  assert.match(run(nested, 'wiki').stdout, /## 운영 방침 \(기본값\./);
 });
 
 test('in-process docs reads through the injected source', async t => {
-  // A folder outside any project, so this repository's own overrides do not replace the injected text.
+  // A folder outside any project, so this repository's own README does not replace the injected text.
   const cwd = await mkdtemp(join(tmpdir(), 'gitifact-docs-'));
   t.after(() => rm(cwd, { recursive: true, force: true }));
   const chunks = [];
   const original = process.stdout.write;
   // The test runner also writes its own binary reports through stdout in the same process; keep only text chunks.
   process.stdout.write = chunk => { if (typeof chunk === 'string') chunks.push(chunk); return true; };
-  try { await runDocs('design', {}, { cwd, readDoc: async name => 'injected ' + name + '\n' }); }
+  try { await runDocs('design', { cwd, readDoc: async name => 'injected ' + name + '\n' }); }
   finally { process.stdout.write = original; }
-  assert.deepEqual(chunks.filter(c => c.startsWith('injected')), ['injected design\n\ninjected design.default\n']);
-  assert.equal(await renderDoc('spec', { cwd, readDoc: async name => name }), 'spec\n\nspec.default\n');
+  assert.deepEqual(chunks.filter(c => c.startsWith('injected')), ['injected design\n']);
+  assert.equal(await renderDoc('wiki', { cwd, readDoc: async name => name === 'wiki' ? 'format' : '## 기본' }), 'format\n\n## 운영 방침 (기본값. .gitifact/wiki/README.md가 없어 내장 방침을 싣는다)\n\n### 기본\n');
   assert.equal(process.exitCode, undefined);
 });

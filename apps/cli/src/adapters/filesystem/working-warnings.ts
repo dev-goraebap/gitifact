@@ -1,7 +1,6 @@
 import { lstat, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
-import { ASSETS_DIR, ASSET_SIZE_LIMIT, ASSETS_TOTAL_LIMIT, RECOMMENDED_ASSET_EXTENSIONS, OVERRIDES_DIR, assetExtension, documentLinks, designReferenceWarnings, type PreviewBundle, type PreviewWarning } from '@gitifact/core';
-import { docTopics } from '../../commands/docs.js';
+import { ASSETS_DIR, ASSET_SIZE_LIMIT, ASSETS_TOTAL_LIMIT, RECOMMENDED_ASSET_EXTENSIONS, assetExtension, documentLinks, designReferenceWarnings, type PreviewBundle, type PreviewWarning } from '@gitifact/core';
 
 const info = async (path: string) => lstat(path).catch(e => { if (e.code === 'ENOENT') return undefined; throw e; });
 const posix = (path: string) => path.split('\\').join('/');
@@ -16,18 +15,6 @@ export async function listAssets(root: string): Promise<{ path: string; bytes: n
   }
   await visit(ASSETS_DIR, 0);
   return out;
-}
-
-/** Docs topics whose bundled guidance an override file replaces; an empty file is reported and not used. */
-export async function listOverrides(root: string): Promise<{ topics: string[]; empty: string[] }> {
-  const topics: string[] = []; const empty: string[] = [];
-  for (const topic of docTopics) {
-    const path = OVERRIDES_DIR + '/' + topic + '.md';
-    const stat = await info(join(root, path)); if (!stat?.isFile()) continue;
-    if (stat.size === 0) { empty.push(path); continue; }
-    topics.push(topic);
-  }
-  return { topics, empty };
 }
 
 /**
@@ -54,6 +41,5 @@ export async function workingWarnings(root: string, bundle: PreviewBundle): Prom
     if (!referenced.has(asset.path)) warnings.push({ code: 'UNREFERENCED_ASSET', path: asset.path });
   }
   if (total > ASSETS_TOTAL_LIMIT) warnings.push({ code: 'ASSETS_TOTAL_SIZE', bytes: total });
-  for (const path of (await listOverrides(root)).empty) warnings.push({ code: 'EMPTY_OVERRIDE', path });
   return warnings;
 }

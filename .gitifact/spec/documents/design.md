@@ -18,9 +18,9 @@ id: S-7ymbd7bqzf
 ## 저장 흐름
 <!-- gitifact-ref: R-y5tidh72gk, R-hjteu77gki -->
 
-spec working이 `wiki.documents`·`wiki.history`와 함께 `warnings`, 재정의된 지침 `overrides`를 반환한다. spec save의 operations는 `create-doc`(path·title·body), `update-doc`(id·title·body), `move-doc`(id·path), `delete-doc`(id)다. `set-product`·`delete-product`는 제거했다. path는 위키 폴더 안 상대 경로다.
+spec working이 `wiki.documents`·`wiki.history`와 함께 `warnings`를 반환한다. spec save의 operations는 `create-doc`(path·title·body), `update-doc`(id·title·body), `move-doc`(id·path), `delete-doc`(id)다. `set-product`·`delete-product`는 제거했다. path는 위키 폴더 안 상대 경로다.
 
-지침 블록과 `gitifact docs wiki`가 요구사항·설계를 정리하기 전에 README.md와 작업 영역의 페이지를 읽도록 안내한다. 무엇을 어떤 페이지로 나눌지는 `wiki.default.md`(운영 지침)에 있으며 프로젝트가 `.gitifact/overrides/wiki.md`로 대체한다. `init`은 위키를 만들지 않는다. 빈 뼈대나 페이지 세트를 만드는 안은 프로젝트마다 구성이 달라 대부분 고치게 되므로 기각했다.
+지침 블록이 요구사항·설계·코드를 바꾸기 전에 `gitifact docs wiki`를 확인하도록 안내하고, `docs wiki`는 형식 뒤에 `README.md`를 운영 방침으로 싣는다(에이전트 작업 흐름 설계의 위키 운영 방침 절). `init`은 처음 도입할 때 기본 방침 README 한 페이지만 만든다. 기본 방침은 결정 기록을 쌓는 것 하나로 두었다. 목적별 페이지 세트를 미리 만드는 안은 프로젝트마다 구성이 달라 대부분 고치게 되므로 기각했다.
 
 ## 링크와 경고
 <!-- gitifact-ref: R-dzowfm436d, R-rir7dn3eez -->
@@ -35,7 +35,7 @@ core의 `extractLinks`는 코드 블록 밖의 Markdown 링크·이미지를 모
 ## 화면
 <!-- gitifact-ref: R-oh4oevufr3, R-rir7dn3eez -->
 
-왼쪽 메뉴의 첫 항목은 제품 개요(`/product`)이며 제품 문서 보기가 진입 페이지의 상세(`/wiki/<id>`)로 연결한다. 위키 메뉴는 `/wiki`(폴더는 `folder` 검색 매개변수)와 `/wiki/$documentId`이며 트리와 본문으로 된 탐색기 하나가 둘을 함께 그린다. 첫 구현은 Finder식 열 보기와 미리보기였으나, 폴더가 깊어지면 열이 본문 자리를 밀어내고 읽기까지 미리보기·상세 두 단계를 거쳐야 해 사용자 요청으로 바꿨다(2026-09-18). 브라우저 서버는 `/api/v1/assets/<경로>`로 에셋을 제공한다. 이미지는 inline, 그 밖은 attachment이며 응답에 sandbox CSP를 붙여 직접 연 SVG의 스크립트가 실행되지 않게 한다. 링크 해석은 브라우저 명세의 설계를 따른다.
+왼쪽 메뉴의 첫 항목은 제품 개요(`/product`)이며 위키와 연결하지 않는다. README가 위키 운영 방침이 되면서 대시보드의 "제품 문서 보기" 링크는 사용자 결정으로 없앴다(2026-09-18). 위키 메뉴는 `/wiki`(폴더는 `folder` 검색 매개변수)와 `/wiki/$documentId`이며 트리와 본문으로 된 탐색기 하나가 둘을 함께 그린다. 위키에 README 하나만 있으면 `/wiki`가 목록 대신 README를 바로 연다. 첫 구현은 Finder식 열 보기와 미리보기였으나, 폴더가 깊어지면 열이 본문 자리를 밀어내고 읽기까지 미리보기·상세 두 단계를 거쳐야 해 사용자 요청으로 바꿨다(2026-09-18). 브라우저 서버는 `/api/v1/assets/<경로>`로 에셋을 제공한다. 이미지는 inline, 그 밖은 attachment이며 응답에 sandbox CSP를 붙여 직접 연 SVG의 스크립트가 실행되지 않게 한다. 링크 해석은 브라우저 명세의 설계를 따른다.
 
 ## 주요 설계 결정
 

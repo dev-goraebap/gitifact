@@ -23,7 +23,7 @@ import { PageHeader } from '../../../widgets/page-header';
 import { useLoadingHold } from '../../../shared/ui/request-state/useLoadingHold';
 import { ViewSkeleton } from './ViewSkeleton';
 import { t, tNodes } from '../../../shared/i18n';
-import { DocumentIndexProvider, wikiEntryPath } from '../../../shared/ui/document';
+import { DocumentIndexProvider } from '../../../shared/ui/document';
 export function ProductPanel({session,view,featureId,email,documentId,search,change}:ProductProps&{session:BrowserSessionV2}) {
  const wiki=view==='wiki'; const productPage=view==='product';
  const query=useInfiniteQuery(specsOptions(session));
@@ -36,8 +36,6 @@ export function ProductPanel({session,view,featureId,email,documentId,search,cha
  const title={history:t('nav.history'),features:t('nav.features'),contributors:t('nav.contributors'),product:t('nav.product'),wiki:t('nav.wiki')}[view];
  const detailFeature=featureId?first?.features.find(f=>f.id===featureId):undefined;
  const detailPerson=email?first?.contributors.find(p=>p.email===email):undefined;
- // The wiki entry page doubles as the product description; the dashboard links to it as a wiki page.
- const entryPage=first?.documents.find(d=>d.path===wikiEntryPath);
  const detailDocument=documentId?first?.documents.find(d=>d.id===documentId):undefined;
  // Detail pages and the product dashboard carry their own heading; the wiki explorer fills the whole content area with its tree and pane.
  const detailPage=!!(featureId||email||documentId)||productPage;
@@ -64,7 +62,7 @@ export function ProductPanel({session,view,featureId,email,documentId,search,cha
  {skeleton&&<ViewSkeleton view={view}/>}
  {filters}
  {ready&&<VStack gap={3} className={browsing?styles.fillContent:styles.content}>
- <DocumentIndexProvider index={first}>{view==='history'?<HistoryView events={events} features={first.features} search={search} change={change}/>:view==='features'?<FeatureView features={first.features} featureId={featureId} search={search} change={change}/>:productPage?<ProductOverview product={entryPage} features={first.features} documents={first.documents} events={events} contributors={first.contributors} working={first.working}/>:wiki?<DocumentsView documents={first.documents} documentId={documentId} search={search} change={change}/>:<ContributorsView people={first.contributors} events={events} features={first.features} email={email} search={search}/>}</DocumentIndexProvider>
+ <DocumentIndexProvider index={first}>{view==='history'?<HistoryView events={events} features={first.features} search={search} change={change}/>:view==='features'?<FeatureView features={first.features} featureId={featureId} search={search} change={change}/>:productPage?<ProductOverview features={first.features} documents={first.documents} events={events} contributors={first.contributors} working={first.working}/>:wiki?<DocumentsView documents={first.documents} documentId={documentId} search={search} change={change}/>:<ContributorsView people={first.contributors} events={events} features={first.features} email={email} search={search}/>}</DocumentIndexProvider>
  {view==='history'&&<VStack gap={3} padding={5} className={styles.historyPagination}>
  <Text type="supporting" color="secondary">{t('history.loaded', { count: events.length })} {query.hasNextPage?t('history.filtersApplyToLoaded'):t('history.reachedEnd')}</Text>
  {query.hasNextPage&&<Button label={query.isFetchingNextPage?t('history.loadingMore'):query.isFetchNextPageError?t('history.retryMore'):t('history.loadMore')} isDisabled={query.isFetching} onClick={()=>{void query.fetchNextPage();}}/>}

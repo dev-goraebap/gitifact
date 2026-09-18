@@ -4,7 +4,7 @@ id: W-ognoghkj7k
 
 # 결정 0001. 위키 통합과 frontmatter
 
-상태: 채택 · 2026-09-18
+상태: Accepted · 2026-09-18
 
 ## 맥락
 

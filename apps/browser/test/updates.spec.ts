@@ -50,6 +50,8 @@ test('a newer release offers a prompt for the agent and the npm command, without
   await expect(dialog).toContainText('npm install -g gitifact@0.4.1');
   await expect(dialog).toContainText('npm 전역 설치용');
   // The close button sits inside the padded header, and copy buttons live in code block header bars, not over the code.
+  // Measure after the opening animation settles; mid-animation the dialog is still scaling and positions drift by a pixel.
+  await dialog.evaluate(el => Promise.all(el.getAnimations({ subtree: true }).map(animation => animation.finished)));
   const box = (await dialog.boundingBox())!; const close = (await dialog.getByRole('button', { name: /닫기|close/i }).first().boundingBox())!;
   const title = (await dialog.getByRole('heading', { name: '새 버전이 있습니다' }).boundingBox())!;
   expect(title.x).toBeGreaterThan(box.x + 8); expect(title.y).toBeGreaterThan(box.y + 4); expect(close.x + close.width).toBeLessThan(box.x + box.width - 4);

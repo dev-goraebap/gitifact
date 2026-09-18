@@ -10,7 +10,7 @@ import styles from './about.module.css';
 // architecture and requirements links open the matching pages instead.
 const repository = 'https://github.com/dev-goraebap/gitifact';
 const inAppLinks: [string, string][] = [
-  ['](' + repository + '/blob/main/.gitifact/wiki/ARCHITECTURE.md)', '](/wiki)'],
+  ['](' + repository + '/tree/main/.gitifact/wiki/adr)', '](/wiki?folder=adr)'],
   ['](' + repository + '/tree/main/.gitifact/spec)', '](/features)'],
 ];
 // The README opens with an HTML logo block, which Markdown here does not render; it becomes an image of the bundled file.

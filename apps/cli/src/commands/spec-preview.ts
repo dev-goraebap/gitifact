@@ -93,14 +93,14 @@ type Inputs = Awaited<ReturnType<typeof prepareAgentInputs>>;
 /** Smaller working views so agents read what they need instead of keeping the full output in a file. */
 function narrowWorking(working: Working, options: Options, inputs: Inputs) {
   if (options.stamp) return { stamp: working.stamp, inputs };
-  let { specs, wiki, warnings } = working; const { overrides } = working;
+  let { specs, wiki, warnings } = working;
   if (options.feature !== undefined) {
     specs = specs.filter(s => s.path === '.gitifact/spec/' + options.feature + '/requirements.md');
     if (!specs.length) throw new SpecPreviewError(t('preview.unknownFeature', { feature: options.feature }));
     wiki = { documents: [], history: [] }; warnings = warnings.filter(w => w.code === 'MISSING_DESIGN_REFERENCE' && w.specId === specs[0]!.id);
   }
-  if (!options.ids) return { stamp: working.stamp, inputs, overrides, specs, wiki, warnings };
-  return { stamp: working.stamp, inputs, overrides, warnings,
+  if (!options.ids) return { stamp: working.stamp, inputs, specs, wiki, warnings };
+  return { stamp: working.stamp, inputs, warnings,
     specs: specs.map(s => ({ id: s.id, path: s.path, title: s.title, design: s.design?.title ?? null, requirements: s.requirements.map(r => ({ id: r.id, title: r.title })) })),
     wiki: { documents: wiki.documents.map(d => ({ id: d.id, path: d.path, title: d.title })) } };
 }

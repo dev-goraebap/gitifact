@@ -39,6 +39,20 @@ test('the wiki is a repository-style explorer: a tree, the folder contents, and 
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('페이지를 찾을 수 없습니다');
 });
 
+test('a wiki that holds only its policy README opens straight onto it', async ({ page }) => {
+  await mockApi(page);
+  const policy = { id: 'W-pppppppppp', path: '.gitifact/wiki/README.md', title: '위키 운영 방침', body: '이 위키에는 아키텍처 결정 기록(ADR)을 쌓는다.', updatedAt: null };
+  await page.route('**/api/v1/specs*', route => route.fulfill({ json: { ...structuredClone(specs), documents: [policy] } }));
+  await page.goto('/wiki');
+  // No one-row folder list: the policy itself is the page, and the URL stays on the wiki root.
+  const article = page.getByRole('article', { name: '위키 페이지' });
+  await expect(article.getByRole('heading', { level: 1 })).toHaveText('위키 운영 방침');
+  await expect(article).toContainText('아키텍처 결정 기록(ADR)을 쌓는다');
+  await expect(page).toHaveURL(/\/wiki$/);
+  await expect(page.getByRole('list', { name: '폴더 내용' })).toHaveCount(0);
+  await expect(page.getByRole('navigation', { name: '현재 위치' })).toContainText('README.md');
+});
+
 test('wiki changes appear in the activity feed with their kind and open the current page', async ({ page }) => {
   await mockApi(page);
   const event = specs.events[0]!;
@@ -57,14 +71,10 @@ test('wiki changes appear in the activity feed with their kind and open the curr
   await expect(page).toHaveURL(/\/wiki\/W-bbbbbbbbbb$/);
 });
 
-test('the product page is a dashboard of the loaded specs and opens the wiki entry page as the product document', async ({ page }) => {
-  await mockApi(page);
-  const data = structuredClone(specs);
-  data.documents[0]!.body = '![GITIFACT](../assets/gitifact-logo.svg)\n\n' + data.documents[0]!.body;
-  await page.route('**/api/v1/specs*', r => r.fulfill({ json: data }));
-  await page.goto('/product');
+test('the product page is a dashboard of the loaded specs and does not treat the wiki README as a product document', async ({ page }) => {
+  await mockApi(page); await page.goto('/product');
   const article = page.getByRole('article', { name: '제품 개요' });
-  await expect(article.getByRole('heading', { level: 1 })).toHaveText('Gitifact');
+  await expect(article.getByRole('heading', { level: 1 })).toHaveText('제품 개요');
   const summary = article.getByLabel('현재 명세 요약');
   await expect(summary).toContainText('기능 명세');
   await expect(summary).toContainText('위키 페이지');
@@ -72,21 +82,28 @@ test('the product page is a dashboard of the loaded specs and opens the wiki ent
   await expect(article.getByLabel('최근 변경 종류 범례').getByRole('listitem').first()).toHaveText('추가1 · 100%');
   await expect(article.getByLabel('참여자별 커밋 범례').getByRole('listitem').first()).toHaveText('Fixture3 · 75%');
   await expect(article.getByLabel('최근 명세 활동')).toContainText('검색어 입력');
-  // The dashboard does not carry the entry page text; it links to the wiki page.
+  // The README is the wiki's policy: the dashboard neither shows it nor links to it as a product document.
   await expect(article).not.toContainText('요구사항과 변경 이유를 Git에 연결합니다.');
+  await expect(article.getByRole('link', { name: '제품 문서 보기' })).toHaveCount(0);
+  await expect(article).not.toContainText('W-abcdefghij');
   await expect(page.getByRole('textbox', { name: '검색', exact: true })).toHaveCount(0);
   await expect(page.locator('header[aria-label="현재 위치"]')).toContainText('조회');
   await expect(page.getByText('로컬 읽기 전용', { exact: false })).toHaveCount(0);
-  await article.getByRole('link', { name: '제품 문서 보기' }).click();
-  await expect(page).toHaveURL(/\/wiki\/W-abcdefghij$/);
+});
+
+test('the wiki README reads like any page: banner dropped, store assets served, activity linked', async ({ page }) => {
+  await mockApi(page);
+  const data = structuredClone(specs);
+  data.documents[0]!.body = '![GITIFACT](../assets/gitifact-logo.svg)\n\n' + data.documents[0]!.body;
+  await page.route('**/api/v1/specs*', r => r.fulfill({ json: data }));
+  await page.goto('/wiki/W-abcdefghij');
   const reading = page.getByRole('article', { name: '위키 페이지' });
   await expect(reading.getByRole('heading', { level: 1 })).toHaveText('Gitifact');
   await expect(reading).toContainText('요구사항과 변경 이유를 Git에 연결합니다.');
-  // The leading banner is dropped on the entry page; a store asset is served by the CLI's assets route.
+  // The leading banner is dropped on the README; a store asset is served by the CLI's assets route.
   await expect(reading.locator('img[alt="GITIFACT"]')).toHaveCount(0);
   await expect(reading.locator('img[alt="로고"]')).toHaveAttribute('src', '/api/v1/assets/logo.png');
   expect(await reading.locator('.astryx-markdown-paragraph').first().evaluate(element => getComputedStyle(element).fontSize)).toBe('16px');
-  await expect(page.locator('header[aria-label="현재 위치"]')).toContainText('Gitifact');
   await page.reload();
   await expect(reading.getByRole('heading', { level: 1 })).toHaveText('Gitifact');
   await reading.getByRole('link', { name: '이 문서의 활동 →' }).click();

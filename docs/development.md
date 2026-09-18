@@ -1,5 +1,11 @@
 # 개발 환경
 
+## 2026-09-18 위키 운영 방침을 README로, 지침 내재화
+
+재정의(`.gitifact/overrides/`, `docs --eject`)를 없애고 workflow·spec·design·commit을 CLI 내장 지침 하나씩으로 되돌렸다. 위키만 프로젝트별로 달라져야 해서, 위키 운영 방침을 `.gitifact/wiki/README.md` 자체로 두고 `docs wiki`가 형식 뒤에 README를 싣게 했다. `init`은 처음 도입할 때 기본 방침(아키텍처 결정 기록을 쌓는다)으로 README를 만든다. 결정은 위키 ADR 0003(0002를 대체)에 있다.
+
+이 저장소 위키는 기본 방침에 "개발 규칙은 `rules/`에서 관리한다"를 더한 README, `rules/`(옛 references 6건과 새 검증·문서 문체), `adr/`로 재편했다. ARCHITECTURE.md의 결정은 ADR 0004~0007로 옮기고 페이지를 지웠다. ADR 상태는 표준값(`Proposed`·`Accepted`·`Deprecated`·`Superseded by NNNN`)을 쓴다.
+
 ## 2026-09-18 위키·frontmatter·에셋·지침 재정의 (schemaVersion 2)
 
 다른 프로젝트에서 온 보고(Codex로 AGENTS.md만 두고 도입한 뒤 Claude Code 참여자가 블록을 못 읽음)를 계기로 도입 경로를 고치고, 이어서 사용자와 논의한 저장 규약 개선을 한 번에 적용했다. 결정과 기각한 대안은 각 기능의 설계 문서에 있다.

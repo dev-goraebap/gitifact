@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync, writeFileSync, mkdirSync, unlinkSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, mkdirSync, unlinkSync, rmdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
@@ -14,9 +14,12 @@ const file=(f,value)=>{const p=join(f.root,'input.json');writeFileSync(p,JSON.st
 const working=f=>ok(cli(f,['spec','working']));
 const save=(f,operations)=>cli(f,['spec','save','--file',file(f,{expected:working(f).stamp,operations})]);
 const authorization={basis:'user-request',evidence:'Fixture explicitly requests this test commit'};
-function setup(t){
+// Most cases start from an empty wiki; the policy README that init writes is covered on its own below.
+function setup(t,{keepPolicy=false}={}){
  const f=fixture(t);for(const [k,v] of [['user.name','Tryce fixture'],['user.email','fixture@example.invalid'],['commit.gpgsign','false'],['core.autocrlf','false']])f.git(['config',k,v]);
- ok(cli(f,['init']));f.commit('Initialize gitifact');return f;
+ ok(cli(f,['init']));
+ if(!keepPolicy){unlinkSync(join(f.repo,'.gitifact/wiki/README.md'));rmdirSync(join(f.repo,'.gitifact/wiki'));}
+ f.commit('Initialize gitifact');return f;
 }
 
 test('wiki pages are created, committed with reasons, moved and compared by ID',async t=>{
@@ -29,7 +32,7 @@ test('wiki pages are created, committed with reasons, moved and compared by ID',
  assert.match(entry,/^W-[a-z2-7]{10}$/);assert.match(page,/^W-[a-z2-7]{10}$/);
  assert.equal(readFileSync(join(f.repo,'.gitifact/wiki/README.md'),'utf8'),`---\nid: ${entry}\n---\n\n# 제품 개요\n\n요구사항과 변경 이유를 Git에 연결한다. [레이아웃](frontend/layout.md)\n`);
  assert.equal(existsSync(join(f.repo,'.gitifact/wiki/history.jsonl')),false);
- const state=working(f);assert.deepEqual(state.wiki.documents.map(d=>d.path),['.gitifact/wiki/README.md','.gitifact/wiki/frontend/layout.md']);assert.deepEqual(state.warnings,[]);assert.deepEqual(state.overrides,[]);
+ const state=working(f);assert.deepEqual(state.wiki.documents.map(d=>d.path),['.gitifact/wiki/README.md','.gitifact/wiki/frontend/layout.md']);assert.deepEqual(state.warnings,[]);
  assert.deepEqual(ok(cli(f,['spec','working','--ids'])).wiki,{documents:[{id:entry,path:'.gitifact/wiki/README.md',title:'제품 개요'},{id:page,path:'.gitifact/wiki/frontend/layout.md',title:'레이아웃 지침'}]});
  const changes=ok(cli(f,['spec','changes']));assert.deepEqual(changes.changes.map(c=>[c.id,c.kind,c.types]).sort(),[[page,'wiki',['created']],[entry,'wiki',['created']]].sort());
  const committed=ok(cli(f,['spec','commit','--file',file(f,{reasons:[{requirements:[],documents:[page],reason:'화면 폭을 고정한다.'}],
@@ -134,14 +137,18 @@ test('assets commit with the documents that reference them and working warns abo
  assert.ok(!tracked.includes('scratch.txt'));
 });
 
-test('an ejected override is reported by working, replaces docs guidance and commits as a plain file',t=>{
- const f=setup(t);
- const ejected=ok(cli(f,['docs','wiki','--eject']));assert.equal(ejected.ejected,'.gitifact/overrides/wiki.md');
- assert.deepEqual(working(f).overrides,['wiki']);
- f.write('.gitifact/overrides/wiki.md','## 우리 규칙\n\n페이지는 세 개만 둔다.\n');
- assert.match(cli(f,['docs','wiki']).stdout,/\n## 우리 규칙\n\n페이지는 세 개만 둔다\.\n$/);
- ok(cli(f,['spec','commit','--file',file(f,{reasons:[],paths:['.gitifact/overrides/wiki.md'],message:'Customize wiki guidance',authorization})]));
- assert.ok(f.git(['ls-tree','--name-only','-r','HEAD']).stdout.includes('.gitifact/overrides/wiki.md'));
- f.write('.gitifact/overrides/wiki.md','');
- const state=working(f);assert.deepEqual(state.overrides,[]);assert.deepEqual(state.warnings,[{code:'EMPTY_OVERRIDE',path:'.gitifact/overrides/wiki.md'}]);
+test('init writes the wiki policy once, and docs wiki carries the edited README', t => {
+ const f = setup(t, { keepPolicy: true });
+ // setup ran the built init: the wiki starts with its policy page, committed like any other page.
+ const [policy] = working(f).wiki.documents;
+ assert.equal(policy.path, '.gitifact/wiki/README.md'); assert.equal(policy.title, '위키 운영 방침'); assert.match(policy.id, /^W-[a-z2-7]{10}$/);
+ assert.match(policy.body, /^이 위키에는 아키텍처 결정 기록\(ADR\)을 쌓는다\./);
+ ok(save(f, [{ type: 'update-doc', id: policy.id, title: '위키 운영 방침', body: '규칙은 rules/에 두고 결정은 adr/에 둔다.' }]));
+ assert.match(cli(f, ['docs', 'wiki']).stdout, /## 운영 방침 \(\.gitifact\/wiki\/README\.md\)\n\n규칙은 rules\/에 두고 결정은 adr\/에 둔다\.\n$/);
+ // A deleted README stays deleted: init does not write it again, and the bundled policy applies.
+ ok(save(f, [{ type: 'delete-doc', id: policy.id }]));
+ ok(cli(f, ['init']));
+ assert.equal(existsSync(join(f.repo, '.gitifact/wiki/README.md')), false);
+ assert.match(cli(f, ['docs', 'wiki']).stdout, /## 운영 방침 \(기본값\./);
+ assert.equal('overrides' in working(f), false);
 });

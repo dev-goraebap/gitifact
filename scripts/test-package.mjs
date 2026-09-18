@@ -76,15 +76,18 @@ try {
     { type: 'add', feature: 'package', title: '설치 확인', body: '설치한 CLI로 명세와 코드를 커밋합니다.' }] });
   await writeFile(join(temporaryRoot, 'feature.txt'), 'packaged feature\n');
   const committed = await spec(['commit'], { reasons: [{ requirements: [saved.results[1].id], reason: '패키지 검증' }],
-    paths: ['.gitifact/config.json', '.gitifact/spec/package/requirements.md', '.gitifact/spec/package/history.jsonl', 'feature.txt'],
+    // init also wrote the wiki policy page; a commit selects every pending record.
+    paths: ['.gitifact/config.json', '.gitifact/wiki/README.md', '.gitifact/spec/package/requirements.md', '.gitifact/spec/package/history.jsonl', 'feature.txt'],
     message: 'Package fixture commit', authorization: { basis: 'user-request', evidence: 'Package verification fixture' } });
   assert.equal(committed.outcome, 'committed');
   assert.equal((await spec(['read'])).specs[0].requirements[0].id, saved.results[1].id);
   assert.match(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', 'docs'], temporaryRoot), /^workflow /m);
-  // `docs` prints the format part and the default guidance joined; a project override would replace the second part.
-  const docSource = async name => (await readFile(join(workspace, 'apps/cli/src/shared/i18n/ko/docs/' + name), 'utf8')).trimEnd();
   assert.equal(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', 'docs', 'spec'], temporaryRoot),
-    await docSource('spec.md') + '\n\n' + await docSource('spec.default.md') + '\n', 'Bundled docs must match the asset source.');
+    await readFile(join(workspace, 'apps/cli/src/shared/i18n/ko/docs/spec.md'), 'utf8'), 'Bundled docs must match the asset source.');
+  // A real install writes the wiki policy on first adoption, and docs wiki carries it as the project's policy.
+  const policy = await readFile(join(temporaryRoot, '.gitifact', 'wiki', 'README.md'), 'utf8');
+  assert.match(policy, /^---\nid: W-[a-z2-7]{10}\n---\n\n# 위키 운영 방침\n\n이 위키에는 아키텍처 결정 기록\(ADR\)을 쌓는다\./);
+  assert.match(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', 'docs', 'wiki'], temporaryRoot), /## 운영 방침 \(\.gitifact\/wiki\/README\.md\)\n\n이 위키에는 아키텍처 결정 기록/);
   const agentsPath = join(temporaryRoot, 'AGENTS.md');
   const agents = await readFile(agentsPath, 'utf8');
   assert.deepEqual(initialized.agentDocs, { mode: 'install', paths: ['AGENTS.md', 'CLAUDE.md'] });

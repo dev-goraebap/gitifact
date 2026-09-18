@@ -48,7 +48,7 @@ test('the header parses with and without the language token', () => {
 test('the block summary matches the workflow document it summarizes', () => {
   // The block abbreviates the handling column, so only the example requests are compared. A request that
   // exists in the block but not in the source table would teach agents a rule the full document never states.
-  const workflow = ['workflow.md', 'workflow.default.md'].map(name => readFileSync(fileURLToPath(new URL('../src/shared/i18n/ko/docs/' + name, import.meta.url)), 'utf8')).join('\n');
+  const workflow = readFileSync(fileURLToPath(new URL('../src/shared/i18n/ko/docs/workflow.md', import.meta.url)), 'utf8');
   const requests = text => text.split('\n').filter(line => line.startsWith('| ') && !line.startsWith('| ---')).map(line => line.split(' | ')[0]);
   const rows = block.split('\n').filter(line => line.startsWith('| ') && !line.startsWith('| ---') && !line.startsWith('| 요청 '));
   assert.equal(rows.length, 4);

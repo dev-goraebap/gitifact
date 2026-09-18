@@ -73,9 +73,9 @@ CLI 패키지가 지침 Markdown을 포함하고 init이 쓰는 블록과 docs �
 | 추적되는 `.gitifact/.gitignore`에 `/tmp/` 등록 | 대체 경로가 작업 도중 처음 생길 때 새 미추적 파일이 diff에 끼고, 팀에 적용하려면 커밋이 필요하다. CLI가 엄격히 검사하는 폴더에 예외도 늘어난다. |
 | 작업 단위로 임시 파일을 나누고 실행 중 작업을 보호 | CLI에는 작업 개념이 없어 상태 파일과 잠금이 또 생긴다. 성공 시 삭제와 기간 정리로 충분하다. |
 
-## 운영 지침 재정의
+## 위키 운영 방침
 <!-- gitifact-ref: R-uywsfp34va -->
 
-지침 topic은 workflow·spec·design·wiki·commit이며 각각 `<topic>.md`(형식)와 `<topic>.default.md`(운영 지침) 두 파일로 번들된다. `docs.ts`의 `renderDoc`이 형식 부분과, 프로젝트 루트(`.gitifact/config.json`이 있는 가장 가까운 상위 폴더)의 `.gitifact/overrides/<topic>.md` 또는 내장 기본을 이어 붙인다. `--eject`는 기본 파일을 그 경로에 `wx`로 복사하고 결과에 `ejected` 경로를 싣는다. 비어 있거나 256KiB를 넘는 재정의 파일은 무시한다. 재정의 파일은 기록이 아니므로 ID·이력 없이 커밋 선택만 허용한다.
+지침 topic은 workflow·spec·design·wiki·commit이며 각각 `<topic>.md` 하나로 번들된다. `wiki.default.md`는 기본 위키 방침으로, README가 없을 때 싣는 내용이자 `init`이 README를 만드는 템플릿이다. `docs.ts`의 `renderDoc`은 wiki topic에서만 프로젝트 루트(`.gitifact/config.json`이 있는 가장 가까운 상위 폴더)의 README를 읽어 frontmatter와 제목을 떼고, 코드 블록 밖의 제목을 한 단계 낮춰 "운영 방침" 제목 아래에 붙인다. 1MiB를 넘거나 비어 있으면 기본 방침을 쓰고 제목에 기본값임을 밝힌다. `init`은 새 설정을 만든 뒤 `.gitifact/wiki/`가 없을 때만 README를 `wx`로 쓴다. 블록은 "요구사항·설계·코드를 바꾸기 전에 `docs wiki`를 확인한다"와 "위키 운영 방식을 바꾸려면 README를 `spec save`로 고친다"를 안내한다.
 
-재정의를 같은 `docs` 명령 뒤에 숨긴 이유는 에이전트의 절차를 바꾸지 않기 위해서다. "`.gitifact/overrides/*`가 있으면 그것도 읽어라"만 안내하는 안은 내장 지침과 충돌할 때 우선순위 판단을 에이전트에 맡기게 되고, 문서 전체를 대체하게 하는 안은 사용자가 형식 규칙까지 지워 저장이 반복 실패할 수 있어 기각했다. 폴더 이름은 conventions·rules 대신 overrides를 택했다. 파일이 있다는 사실이 곧 재정의 중이라는 뜻이라 상태가 분명하고, 위키의 규칙 페이지나 에이전트 규칙 파일과 혼동되지 않는다(2026-09-18).
+처음에는 모든 topic을 형식/운영 두 파일로 나누고 `.gitifact/overrides/<topic>.md`로 대체하게 했으나(`--eject`), 프로젝트마다 달라야 하는 것은 위키 방식뿐이어서 사용자 결정으로 README 방식으로 바꿨다(2026-09-18). README를 일반 페이지로 두고 에이전트가 직접 읽게 하는 안은 읽기를 빠뜨릴 수 있고 README가 없을 때의 기본이 없어 기각했다. 옛 `.gitifact/overrides/` 파일은 삭제로만 커밋할 수 있다.

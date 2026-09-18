@@ -31,8 +31,6 @@ export const ASSETS_DIR = '.gitifact/assets';
 export const RECOMMENDED_ASSET_EXTENSIONS = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'pdf'] as const;
 export const ASSET_SIZE_LIMIT = 1024 * 1024;
 export const ASSETS_TOTAL_LIMIT = 50 * 1024 * 1024;
-/** Overrides of the bundled `docs <topic>` guidance; plain Markdown outside the record set. */
-export const OVERRIDES_DIR = '.gitifact/overrides';
 const token = '[a-z2-7]{10}';
 /** Current store directory; `.tryce` is read from history and legacy checkouts but never written. */
 export const STORE_DIR = '.gitifact';
@@ -244,8 +242,7 @@ export type PreviewWarning =
   | { code: 'MISSING_DESIGN_REFERENCE'; specId: string; requirement: string }
   | { code: 'MISSING_LINK_TARGET'; path: string; target: string; link: string }
   | { code: 'ASSET_SIZE' | 'ASSET_EXTENSION' | 'UNREFERENCED_ASSET'; path: string; bytes?: number }
-  | { code: 'ASSETS_TOTAL_SIZE'; bytes: number }
-  | { code: 'EMPTY_OVERRIDE'; path: string };
+  | { code: 'ASSETS_TOTAL_SIZE'; bytes: number };
 export function designReferenceWarnings(specs: PreviewSpec[]): PreviewWarning[] {
   const known = new Set(specs.flatMap(s => s.requirements.map(r => r.id)));
   return specs.flatMap(s => (s.design?.requirements ?? []).filter(id => !known.has(id)).map(id => ({specId: s.id, requirement: id, code: 'MISSING_DESIGN_REFERENCE' as const})));

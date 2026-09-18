@@ -2,7 +2,7 @@ import { lstat, readdir, readFile, mkdir, writeFile, rename, unlink, rmdir } fro
 import { join, dirname } from 'node:path';
 import { createHash, randomBytes } from 'node:crypto';
 import { editSpecPreview, parsePreviewBundle, renderDesignPreview, renderSpecPreview, renderDocument, recordPathPattern, WIKI_DIR, SpecPreviewError, parseManagedConfig } from '@gitifact/core';
-import { listOverrides, workingWarnings } from './working-warnings.js';
+import { workingWarnings } from './working-warnings.js';
 import { specPreviewReader } from '../git/spec-preview-reader.js';
 import { readConfigFile } from './config-file.js';
 import { t } from '../../shared/i18n/index.js';
@@ -64,7 +64,7 @@ export async function readWorkingPreviewState(cwd: string) {
 
 export async function readWorkingPreview(cwd: string) {
   const { root, stamp, specs, wiki, bundle } = await readWorkingPreviewState(cwd);
-  return { stamp, specs, wiki, overrides: (await listOverrides(root)).topics, warnings: await workingWarnings(root, bundle) };
+  return { stamp, specs, wiki, warnings: await workingWarnings(root, bundle) };
 }
 
 export async function saveWorkingPreview(cwd: string, input: unknown, publish = rename) {

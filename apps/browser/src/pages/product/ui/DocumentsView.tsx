@@ -70,7 +70,9 @@ export function DocumentsView({ documents, documentId, search }: { documents: Sp
   }, [documentId, search.folder]);
   if (!documents.length && !documentId) return <PageState kind="empty" title={t('documents.emptyTitle')} description={t('documents.emptyDescription')}/>;
   const root = tree(documents);
-  const selected = documentId ? documents.find(d => d.id === documentId) : undefined;
+  // A wiki that holds only its operating policy opens straight onto it instead of a one-row list.
+  const onlyPolicy = !documentId && !search.folder && documents.length === 1 && documents[0]!.path === wikiEntryPath ? documents[0] : undefined;
+  const selected = documentId ? documents.find(d => d.id === documentId) : onlyPolicy;
   const folder = selected ? folderOf(selected) : folderAt(root, search.folder ?? '') ? search.folder ?? '' : '';
   const openFolder = (path: string) => { void navigate({ to: '/wiki', search: { folder: path || undefined } }); };
   const openDocument = (doc: SpecDocument) => { void navigate({ to: '/wiki/$documentId', params: { documentId: doc.id } }); };

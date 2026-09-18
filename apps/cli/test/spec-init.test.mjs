@@ -49,7 +49,8 @@ test('spec command writes, prepares and commits through initialized format', asy
   const saved = input(f, 'save', { expected: call(f, ['spec', 'working']).stamp, operations: [{type:'create', feature:'posts', title:'게시물 관리'}, {type:'add',feature:'posts',title:'게시물 생성',body:'제목을 입력한다.'}] });
   const id = saved.results[1].id;
   const prepared = input(f, 'prepare', { expected: call(f, ['spec','changes']).expected, reasons:[{ requirements:[id], reason:'기능 도입'}] });
-  const plan = input(f, 'commit-plan', {verification:prepared.verification, paths:['.gitifact/config.json','.gitifact/spec/posts/requirements.md','.gitifact/spec/posts/history.jsonl'], message:'Add posts specification', authorization:{basis:'project-policy',evidence:'Isolated test policy'}});
+  // init also wrote the wiki policy page; the plan must select every pending record.
+  const plan = input(f, 'commit-plan', {verification:prepared.verification, paths:['.gitifact/config.json','.gitifact/wiki/README.md','.gitifact/spec/posts/requirements.md','.gitifact/spec/posts/history.jsonl'], message:'Add posts specification', authorization:{basis:'project-policy',evidence:'Isolated test policy'}});
   assert.equal(input(f, 'commit-apply', plan.plan).outcome, 'committed');
   assert.equal(call(f, ['spec','read']).specs[0].requirements[0].id, id);
   assert.equal(f.git(['status','--porcelain']).stdout, '');

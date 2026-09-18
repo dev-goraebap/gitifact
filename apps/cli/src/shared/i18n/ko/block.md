@@ -8,7 +8,7 @@ CLI: 모든 명령은 `gitifact <cmd>`로 실행한다. 프로젝트 지침이 �
 
 - `gitifact` 명령이 없으면 이 프로젝트에 참여하는 데 필요한 CLI가 설치되지 않은 것이다. 사용자에게 알리고 동의를 받아 `npm install -g gitifact@{version}`으로 설치한 뒤 진행한다. 설치하지 못하면 명세 저장·커밋을 추측으로 대신하지 않는다.
 - `gitifact spec working`으로 위키·기능 명세·경고를 읽고 git status와 기존 staging을 확인한다.
-- 이 블록은 요약이다. 상세 형식은 `gitifact docs <topic>`으로 읽고 기억으로 채우지 않는다. 프로젝트가 `.gitifact/overrides/`로 운영 지침을 바꿨으면 docs 출력에 그 내용이 실린다.
+- 이 블록은 요약이다. 상세 형식은 `gitifact docs <topic>`으로 읽고 기억으로 채우지 않는다.
 
 ### 무엇을 요구사항으로 남기는가
 
@@ -25,7 +25,8 @@ CLI: 모든 명령은 `gitifact <cmd>`로 실행한다. 프로젝트 지침이 �
 
 - 명세를 저장하기 전에 `gitifact docs spec`을 읽는다. ID는 CLI가 발급한 값만 쓴다.
 - 새 기능은 requirements.md와 design.md를 함께 정리한다(`gitifact docs design`). 요구사항만 요청받으면 따른다.
-- 제품 소개·구조·규칙은 위키에 둔다(`gitifact docs wiki`). 요구사항·설계를 쓰기 전에 위키의 README.md와 관련 페이지를 읽는다.
+- 요구사항·설계·코드를 바꾸기 전에 `gitifact docs wiki`를 확인하고 그 운영 방침에 따라 관련 위키 페이지를 읽는다.
+- 이 프로젝트에 맞게 위키 운영 방식을 바꾸려면 `.gitifact/wiki/README.md`를 `spec save`로 고친다. 그 내용이 `docs wiki`의 운영 방침이 된다.
 - 커밋 요청을 받으면 `gitifact docs commit`을 읽고 명세·이유·코드·테스트를 함께 커밋한다.
 - 자동 기록은 커밋 권한이 아니다. 사용자 요청이나 명시적 프로젝트 정책이 있을 때만 커밋하고 푸시는 별도 요청을 따른다.
 - 불명확한 제품 동작만 질문하고 독립적인 작업은 진행한다. 기존 기능 전체 도출은 요청받았을 때 한다.
@@ -35,7 +36,7 @@ CLI: 모든 명령은 `gitifact <cmd>`로 실행한다. 프로젝트 지침이 �
 
 ### 명령
 
-- `docs <topic> [--eject]`: {topics}. `--eject`는 운영 지침을 `.gitifact/overrides/`로 복사해 프로젝트가 대신 쓰게 한다
+- `docs <topic>`: {topics}
 - `spec working`: 현재 명세·위키 전체, 경고, stamp, 입력 파일 경로 (`--stamp`, `--feature <이름>`, `--ids`)
 - `spec save --file <json|->`: 요구사항·설계·위키 저장
 - `spec commit --file <json|->`: 변경 이유 기록과 커밋을 한 번에

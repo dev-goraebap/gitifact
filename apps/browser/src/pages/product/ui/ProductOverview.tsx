@@ -11,7 +11,6 @@ import { Timestamp } from '@astryxdesign/core/Timestamp';
 import { Link } from '@tanstack/react-router';
 import { Person } from './Person';
 import styles from './product.module.css';
-import { PageState } from '../../../shared/ui/page-state';
 import { t } from '../../../shared/i18n';
 
 type Contributor = BrowserSpecsV2['contributors'][number];
@@ -57,8 +56,8 @@ function Stat({ label, value, detail }: { label: string; value: number | string;
   </VStack></Card>;
 }
 
-/** The product page as a dashboard: headline counts and charts drawn from the loaded specs answer; `product` is the wiki entry page (README.md), which the dashboard links to. */
-export function ProductOverview({ product, features, documents, events, contributors, working }: { product: SpecDocument | undefined; features: SpecFeature[]; documents: SpecDocument[]; events: SpecEvent[]; contributors: Contributor[]; working: boolean }) {
+/** The product page as a dashboard: headline counts and charts drawn from the loaded specs answer. The wiki README is the wiki's policy, not a product document, so the dashboard does not link to it. */
+export function ProductOverview({ features, documents, events, contributors, working }: { features: SpecFeature[]; documents: SpecDocument[]; events: SpecEvent[]; contributors: Contributor[]; working: boolean }) {
   const requirements = features.reduce((sum, f) => sum + f.requirements.length, 0);
   const designed = features.filter(f => f.design).length;
   const ranked = [...features].sort((a, b) => b.requirements.length - a.requirements.length || a.title.localeCompare(b.title));
@@ -70,14 +69,8 @@ export function ProductOverview({ product, features, documents, events, contribu
   const specOf = (e: SpecEvent) => e.kind === 'wiki' ? documents.find(d => d.id === e.id) : features.find(f => f.id === e.id || f.requirements.some(r => r.id === e.id));
   return <VStack as="article" aria-label={t('nav.product')} gap={6} className={styles.dashboard}>
     <VStack gap={2} className={styles.dashboardHead}>
-      <Heading level={1}>{product?.title ?? t('nav.product')}</Heading>
-      <HStack gap={4} wrap="wrap" className={styles.entryLine}>
-        {product && <Text type="supporting" color="secondary">{product.id}</Text>}
-        {product && (product.updatedAt ? <Timestamp value={product.updatedAt} format="relative"/> : <Text type="supporting" color="secondary">{t('common.inProgress')}</Text>)}
-        {working && <Token label={t('overview.uncommittedToken')} color="yellow" size="sm"/>}
-        {product && <Link to="/wiki/$documentId" params={{ documentId: product.id }}>{t('overview.openDocument')}</Link>}
-        {product && <Link to="/" search={{ document: 'wiki', q: product.id }}>{t('documents.activity')}</Link>}
-      </HStack>
+      <Heading level={1}>{t('nav.product')}</Heading>
+      {working && <HStack gap={4} wrap="wrap" className={styles.entryLine}><Token label={t('overview.uncommittedToken')} color="yellow" size="sm"/></HStack>}
     </VStack>
 
     <Grid columns={{ minWidth: 150, repeat: 'fit', max: 5 }} gap={3} aria-label={t('overview.summary')}>
@@ -133,6 +126,5 @@ export function ProductOverview({ product, features, documents, events, contribu
       </VStack> : <Text type="supporting" color="secondary">{t('overview.noActivity')}</Text>}
     </VStack></Card>
 
-    {!product && <PageState kind="empty" isCompact title={t('overview.emptyTitle')} description={t('overview.emptyDescription')}/>}
   </VStack>;
 }

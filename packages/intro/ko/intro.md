@@ -63,7 +63,7 @@ Markdown 요구사항·설계와 커밋 시점의 변경 이유를 Git에 연결
 
 ## Gitifact 개발에 참여하려면
 
-실행·빌드·검증은 [개발 환경](https://github.com/dev-goraebap/gitifact/blob/main/docs/development.md), 코드 구조는 [아키텍처 안내](https://github.com/dev-goraebap/gitifact/blob/main/.gitifact/wiki/ARCHITECTURE.md)을 참고하세요.
+실행·빌드·검증은 [개발 환경](https://github.com/dev-goraebap/gitifact/blob/main/docs/development.md), 코드 구조는 [결정 기록](https://github.com/dev-goraebap/gitifact/tree/main/.gitifact/wiki/adr)을 참고하세요.
 
 ## 라이선스
 

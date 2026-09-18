@@ -6,7 +6,7 @@ id: S-eordsbir6z
 
 ## 개요
 
-하나의 Git 저장소에 설정과 도입 기준선을 만들고 에이전트 지침 파일에 GITIFACT 블록을 설치한다. init은 커밋하지 않으며 명세 작성은 별도 작업이다.
+하나의 Git 저장소에 설정과 도입 기준선, 위키 운영 방침(`.gitifact/wiki/README.md`)을 만들고 에이전트 지침 파일에 GITIFACT 블록을 설치한다. init은 커밋하지 않으며 명세 작성은 별도 작업이다.
 
 ## 구조와 데이터
 <!-- gitifact-ref: R-lpwtvv6ldp -->
