@@ -1,6 +1,6 @@
 <!-- gitifact-spec: S-4snufavmgg -->
 
-# 에이전트 작업 흐름 요구사항
+# 에이전트 작업 흐름
 
 ## 제품 대화에서 요구사항 식별
 <!-- gitifact-req: R-wqv343j4kd -->

@@ -1,6 +1,6 @@
 <!-- gitifact-spec: S-b7f4g2gpw6 -->
 
-# 버전 확인과 패치노트 요구사항
+# 버전 확인과 패치노트
 
 ## 브라우저의 새 버전 안내
 <!-- gitifact-req: R-cj525dk5vt -->

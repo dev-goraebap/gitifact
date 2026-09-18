@@ -1,6 +1,6 @@
 <!-- gitifact-spec: S-zyro4g3e5f -->
 
-# Git 기록 연결 요구사항
+# Git 기록 연결
 
 ## 커밋된 최종 명세 추적
 <!-- gitifact-req: R-wpeh3aib32 -->

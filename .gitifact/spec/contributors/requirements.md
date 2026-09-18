@@ -1,6 +1,6 @@
 <!-- gitifact-spec: S-b4ubq7ghty -->
 
-# 참여자 조회 요구사항
+# 참여자 조회
 
 ## Git 작성자별 참여 조회
 <!-- gitifact-req: R-ybmsjjgqtp -->

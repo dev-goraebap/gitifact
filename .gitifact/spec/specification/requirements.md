@@ -1,6 +1,6 @@
 <!-- gitifact-spec: S-qk6cmgqgmt -->
 
-# 기능 명세 관리 요구사항
+# 기능 명세 관리
 
 ## 기능별 Markdown 명세
 <!-- gitifact-req: R-errzmn5edh -->

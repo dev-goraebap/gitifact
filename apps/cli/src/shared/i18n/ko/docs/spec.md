@@ -17,7 +17,7 @@ S-ID와 R-ID는 CLI가 발급한 값을 그대로 사용한다. 형식은 `S-<�
 ```markdown
 <!-- gitifact-spec: S-CLI가발급한값 -->
 
-# 게시물 관리 요구사항
+# 게시물 관리
 
 ## 게시물 등록
 <!-- gitifact-req: R-CLI가발급한값 -->
@@ -40,7 +40,7 @@ S-ID와 R-ID는 CLI가 발급한 값을 그대로 사용한다. 형식은 `S-<�
 {
   "expected": "working의 실제 stamp",
   "operations": [
-    { "type": "create", "feature": "posts", "title": "게시물 관리 요구사항" },
+    { "type": "create", "feature": "posts", "title": "게시물 관리" },
     { "type": "add", "feature": "posts", "title": "게시물 등록", "body": "게시물 작성자로서, 작성한 글을 나중에 다시 확인하기 위해 제목과 내용을 저장하고 싶다.\n\n### 수용 조건\n\n1. 조건: 사용자가 제목을 비운 채 저장을 요청합니다.\n   기대 동작: 시스템은 제목 입력 안내를 표시하고 저장을 중단합니다." },
     { "type": "set-design", "feature": "posts", "title": "게시물 관리 설계", "body": "## 개요\n\n합의한 구현 방향과 범위.\n\n## 구조와 데이터\n\n실제 구현에 필요한 구성 요소와 저장 방식." }
   ]

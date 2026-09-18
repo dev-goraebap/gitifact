@@ -1,6 +1,6 @@
 <!-- gitifact-spec: S-jqxgddhsdf -->
 
-# 요구사항 브라우저 요구사항
+# 요구사항 브라우저
 
 ## 최신순 활동 타임라인
 <!-- gitifact-req: R-tkl3lrrlpu -->

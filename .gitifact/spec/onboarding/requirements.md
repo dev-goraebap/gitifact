@@ -1,6 +1,6 @@
 <!-- gitifact-spec: S-eordsbir6z -->
 
-# 프로젝트 도입 요구사항
+# 프로젝트 도입
 
 ## Git 기준선과 초기화
 <!-- gitifact-req: R-lpwtvv6ldp -->
