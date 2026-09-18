@@ -8,7 +8,7 @@ import { fixture, fingerprint } from './git-fixture.mjs';
 import { createSpecBrowserReader } from '../.test-build/server/spec-reader.js';
 
 const exe = fileURLToPath(new URL('../dist/main.js', import.meta.url));
-const cli = (f, args) => spawnSync(process.execPath, [exe, ...args], { cwd: f.repo, env: f.env, encoding: 'utf8', timeout: 45000 });
+const cli = (f, args) => spawnSync(process.execPath, [exe, ...args], { cwd: f.repo, env: { ...f.env, GITIFACT_NO_UPDATE_CHECK: '1' }, encoding: 'utf8', timeout: 45000 });
 const ok = r => { assert.equal(r.status, 0, r.stderr); return JSON.parse(r.stdout); };
 const failed = (r, code) => { assert.equal(r.status, 1, r.stdout); const dto = JSON.parse(r.stderr); assert.equal(dto.error.code, code, dto.error.message); return dto; };
 const file = (f, value) => { const p = join(f.root, 'input.json'); writeFileSync(p, JSON.stringify(value)); return p; };

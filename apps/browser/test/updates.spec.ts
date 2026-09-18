@@ -76,9 +76,11 @@ test('a pending check is re-read a bounded number of times and failures never lo
   for (const status of ['unavailable', 'disabled'] as const) {
     await page.route('**/api/v1/session', route => route.fulfill({ json: { ...session, update: { status, latestVersion: null } } }));
     await page.goto('/about');
-    await expect(page.getByRole('link', { name: 'v0.4.0', exact: true })).toBeVisible();
+    // The version footer sits in the side navigation. The intro on this page may itself mention the latest version.
+    const nav = page.getByRole('navigation', { name: '사이드 탐색' });
+    await expect(nav.getByRole('link', { name: 'v0.4.0', exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: /사용 가능/ })).toHaveCount(0);
-    await expect(page.getByText('최신 버전')).toHaveCount(0);
+    await expect(nav.getByText('최신 버전')).toHaveCount(0);
   }
   await page.route('**/api/v1/changelog*', route => route.fulfill({ json: { ...changelog, fallback: true } }));
   await page.goto('/changelog');

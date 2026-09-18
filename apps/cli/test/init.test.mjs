@@ -17,7 +17,7 @@ test('dry-run is read-only; unborn init is complete, repeatable and preserves by
   assert.equal((await init(f, { dryRun: true })).outcome, 'planned');
   assert.deepEqual(fingerprint(f.repo), before);
   const created = await init(f);
-  assert.equal(created.outcome, 'created'); assert.equal(created.version, 4); assert.deepEqual(created.baseline, { kind: 'empty' });
+  assert.equal(created.outcome, 'created'); assert.equal(created.version, 5); assert.deepEqual(created.baseline, { kind: 'empty' });
   assert.deepEqual(created.agentDocs, { mode: 'skip', paths: [] });
   preserved(before, fingerprint(f.repo));
   assert.deepEqual(readdirSync(join(f.repo, '.gitifact')), ['config.json']);
@@ -118,6 +118,46 @@ test('parallel init publishes one config', async t => {
   assert.equal(JSON.parse(readFileSync(path(f), 'utf8')).schemaVersion, 2);
 });
 
+// What `gitifact init` of 0.4.x wrote. 0.5.0 refused it and its own init refused too, so a project adopted with an
+// older install had no way forward.
+const legacyConfig = '{\n  "schemaVersion": 1,\n  "baseline": {\n    "kind": "empty"\n  }\n}\n';
+
+test('init replaces an earlier convention config that has nothing beside it, tracked or not', async t => {
+  const f = fixture(t); mkdirSync(join(f.repo, '.gitifact'));
+  writeFileSync(path(f), legacyConfig);
+  const planned = await init(f, { dryRun: true });
+  assert.equal(planned.outcome, 'planned'); assert.equal(readFileSync(path(f), 'utf8'), legacyConfig);
+  // Committed legacy config: replacing it is an ordinary change for the user to commit.
+  f.write('a', 'a'); f.commit('adopted with 0.4.4');
+  const head = f.git(['rev-parse', 'HEAD']).stdout.trim();
+  const replaced = await init(f);
+  assert.equal(replaced.outcome, 'replaced'); assert.equal(replaced.version, 5);
+  assert.deepEqual(JSON.parse(readFileSync(path(f), 'utf8')), { schemaVersion: 2, baseline: { kind: 'commit', objectFormat: 'sha1', commit: head } });
+  assert.deepEqual(readdirSync(join(f.repo, '.gitifact')), ['config.json']);
+  assert.equal((await init(f)).outcome, 'already-initialized');
+});
+
+test('an earlier convention with records beside it, or a newer convention, is refused and left as it is', async t => {
+  const f = fixture(t); mkdirSync(join(f.repo, '.gitifact', 'spec', 'posts'), { recursive: true });
+  writeFileSync(path(f), legacyConfig);
+  writeFileSync(join(f.repo, '.gitifact', 'spec', 'posts', 'requirements.md'), '# 게시물\n');
+  await assert.rejects(init(f), error => error.code === 'UNSUPPORTED_SCHEMA' && /명세나 기록이 있어/.test(error.message));
+  assert.equal(readFileSync(path(f), 'utf8'), legacyConfig);
+  const g = fixture(t); mkdirSync(join(g.repo, '.gitifact'));
+  const newer = '{"schemaVersion":3,"baseline":{"kind":"empty"}}';
+  writeFileSync(path(g), newer);
+  await assert.rejects(init(g), error => error.code === 'UNSUPPORTED_SCHEMA' && /더 새로운 저장 규약/.test(error.message));
+  assert.equal(readFileSync(path(g), 'utf8'), newer);
+});
+
+test('init reports the registry check it was given and how to install a newer release', async t => {
+  const f = fixture(t);
+  const newer = await initializeSpecProject(f.repo, true, f.env, undefined, undefined, undefined, Promise.resolve({ status: 'available', latestVersion: '9.9.9' }));
+  assert.deepEqual([newer.update, newer.install], [{ status: 'available', latestVersion: '9.9.9' }, { npmGlobal: 'npm install -g gitifact@9.9.9' }]);
+  const plain = await init(f);
+  assert.deepEqual([plain.update, plain.install], [{ status: 'disabled', latestVersion: null }, null]);
+});
+
 test('input changes and injected failure leave user files intact and permit retry', async t => {
   const f = fixture(t); f.write('a', 'original'); f.commit();
   await assert.rejects(init(f, {}, f.repo, async () => { f.write('a', 'new'); f.git(['add', 'a']); }), { code: 'INPUT_CHANGED' });
@@ -149,7 +189,8 @@ test('linked worktree initialization preserves the other checkout and shared Git
 test('built command has versioned output and rejects removed options before writing', t => {
   const f = fixture(t);
   const entry = fileURLToPath(new URL('../dist/main.js', import.meta.url));
-  const cli = args => spawnSync(process.execPath, [entry, 'init', ...args], { cwd: f.repo, env: f.env, encoding: 'utf8', timeout: 35000 });
+  // The registry check is switched off: tests never contact npm.
+  const cli = args => spawnSync(process.execPath, [entry, 'init', ...args], { cwd: f.repo, env: { ...f.env, GITIFACT_NO_UPDATE_CHECK: '1' }, encoding: 'utf8', timeout: 35000 });
   const removed = cli(['--mode', 'prototype']); assert.equal(removed.status, 1); assert.equal(existsSync(join(f.repo, '.gitifact')), false);
   const planned = cli(['--dry-run']); assert.equal(planned.status, 0); assert.equal(JSON.parse(planned.stdout).schemaVersion, 2);
   const good = cli([]); assert.equal(good.status, 0, good.stderr);

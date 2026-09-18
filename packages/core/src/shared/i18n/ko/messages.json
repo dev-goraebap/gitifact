@@ -109,5 +109,6 @@
   "source.path": "참고 문서 path는 .md로 끝나는 상대 경로여야 합니다: {path}",
   "edit.documentIdNotFound": "위키 페이지 ID가 없습니다: {id}",
   "edit.invalidSources": "sources는 최대 50개의 배열이어야 합니다.",
-  "config.unsupportedSchema": "이 프로젝트의 저장 규약(schemaVersion {version})은 이 CLI가 읽지 않습니다. 정식 버전 전 규약은 전환하지 않으며 새로 init 합니다."
+  "config.unsupportedSchema": "이 프로젝트의 저장 규약(schemaVersion {version})은 이전 버전의 것이라 이 CLI가 읽지 않습니다. 정식 버전 전 규약은 전환하지 않습니다. .gitifact에 config.json만 있으면 gitifact init이 새 규약으로 바꿉니다.",
+  "config.newerSchema": "이 프로젝트는 더 새로운 저장 규약(schemaVersion {version})을 씁니다. npm install -g gitifact@latest로 CLI를 올린 뒤 다시 실행하세요."
 }

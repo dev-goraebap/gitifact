@@ -14,7 +14,7 @@ test('CLI works outside the workspace and leaves the working directory untouched
   t.after(() => rm(cwd, { recursive: true, force: true }));
   const run = (...args) => {
     const result = spawnSync(process.execPath, [entrypoint, ...args], {
-      cwd, encoding: 'utf8', timeout: 10_000,
+      cwd, env: { ...process.env, GITIFACT_NO_UPDATE_CHECK: '1' }, encoding: 'utf8', timeout: 10_000,
     });
     assert.ifError(result.error);
     return result;

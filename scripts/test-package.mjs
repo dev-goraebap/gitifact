@@ -11,6 +11,8 @@ const workspace = fileURLToPath(new URL('../', import.meta.url));
 const packageManager = process.env.npm_execpath;
 assert.ok(packageManager, 'Run this check through pnpm test or pnpm test:built.');
 const temporaryRoot = await mkdtemp(join(tmpdir(), 'gitifact-package-'));
+// init and update check npm for a newer release; this check never contacts the registry.
+const noRegistry = { ...process.env, GITIFACT_NO_UPDATE_CHECK: '1' };
 const pnpm = (args, cwd, env = process.env) => execFileSync(process.execPath, [packageManager, ...args], {
   cwd, env, encoding: 'utf8', timeout: 60_000, stdio: ['ignore', 'pipe', 'pipe'],
 });
@@ -49,12 +51,13 @@ try {
   assert.equal(status.ok, true);
   assert.deepEqual(status.head, { state: 'unborn', branch: 'main', commit: null });
   assert.deepEqual(status.checks, { state: 'not-run', reason: 'git-status-only' });
-  const initialized = JSON.parse(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', 'init'], temporaryRoot));
+  const initialized = JSON.parse(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', 'init'], temporaryRoot, noRegistry));
   assert.equal(initialized.outcome, 'created');
   assert.equal(initialized.schemaVersion, 2);
+  assert.deepEqual([initialized.version, initialized.update, initialized.install], [5, { status: 'disabled', latestVersion: null }, null]);
   assert.deepEqual(initialized.baseline, { kind: 'empty' });
   const configBefore = await readFile(join(temporaryRoot, '.gitifact', 'config.json'));
-  assert.equal(JSON.parse(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', 'init'], temporaryRoot)).outcome, 'already-initialized');
+  assert.equal(JSON.parse(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', 'init'], temporaryRoot, noRegistry)).outcome, 'already-initialized');
   assert.deepEqual(await readFile(join(temporaryRoot, '.gitifact', 'config.json')), configBefore);
   for (const [key, value] of [['user.name', 'Package fixture'], ['user.email', 'package@example.invalid'], ['commit.gpgsign', 'false']]) {
     execFileSync('git', ['config', key, value], { cwd: temporaryRoot, stdio: 'pipe' });
@@ -97,9 +100,9 @@ try {
   assert.ok(agents.includes('gitifact docs spec'), 'Block must point at the bundled docs.');
   assert.match(agents, /<!-- GITIFACT:END -->\n$/);
   await writeFile(agentsPath, agents + '\n## Project rules\n\nKeep me.\n');
-  assert.equal(JSON.parse(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', 'init'], temporaryRoot)).outcome, 'already-initialized');
+  assert.equal(JSON.parse(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', 'init'], temporaryRoot, noRegistry)).outcome, 'already-initialized');
   assert.equal(await readFile(agentsPath, 'utf8'), agents + '\n## Project rules\n\nKeep me.\n');
-  const removed = JSON.parse(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', 'init', '--remove-agents'], temporaryRoot));
+  const removed = JSON.parse(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', 'init', '--remove-agents'], temporaryRoot, noRegistry));
   assert.deepEqual(removed.agentDocs, { mode: 'remove', paths: ['AGENTS.md'] });
   assert.equal(await readFile(agentsPath, 'utf8'), '# AGENTS.md\n\nProject-specific guidance for AI coding agents.\n\n## Project rules\n\nKeep me.\n');
   // The package check never contacts the npm registry: the update check is switched off and reported as disabled.

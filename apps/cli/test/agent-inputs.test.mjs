@@ -8,7 +8,7 @@ import { fixture } from './git-fixture.mjs';
 import { discardAgentInput, prepareAgentInputs } from '../.test-build/adapters/filesystem/agent-inputs.js';
 
 const exe = fileURLToPath(new URL('../dist/main.js', import.meta.url));
-const cli = (f, args, env = {}, input) => spawnSync(process.execPath, [exe, ...args], { cwd: f.repo, env: { ...f.env, ...env }, encoding: 'utf8', timeout: 45000, input });
+const cli = (f, args, env = {}, input) => spawnSync(process.execPath, [exe, ...args], { cwd: f.repo, env: { ...f.env, GITIFACT_NO_UPDATE_CHECK: '1', ...env }, encoding: 'utf8', timeout: 45000, input });
 const ok = r => { assert.equal(r.status, 0, r.stderr); return JSON.parse(r.stdout); };
 const authorization = { basis: 'user-request', evidence: 'Fixture explicitly requests this test commit' };
 const create = [{ type: 'create', feature: 'posts', title: '게시물' }, { type: 'add', feature: 'posts', title: '저장', body: '제목을 입력해 저장합니다.' }];

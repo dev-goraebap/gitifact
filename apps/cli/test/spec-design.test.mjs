@@ -8,7 +8,7 @@ import {fixture, fingerprint} from './git-fixture.mjs';
 import {createSpecBrowserReader} from '../.test-build/server/spec-reader.js';
 const exe=fileURLToPath(new URL('../dist/main.js',import.meta.url));
 const auth={basis:'user-request',evidence:'Isolated design test'};
-function run(f,args){return spawnSync(process.execPath,[exe,...args],{cwd:f.repo,env:f.env,encoding:'utf8',timeout:45000});}
+function run(f,args){return spawnSync(process.execPath,[exe,...args],{cwd:f.repo,env:{...f.env,GITIFACT_NO_UPDATE_CHECK: '1'},encoding:'utf8',timeout:45000});}
 function ok(r){assert.equal(r.status,0,r.stderr);return JSON.parse(r.stdout);}
 function input(f,action,value,flags=[]){const p=join(f.root,'design-input.json');writeFileSync(p,JSON.stringify(value));return run(f,['spec',action,'--file',p,...flags]);}
 function save(f,operations){return ok(input(f,'save',{expected:ok(run(f,['spec','working'])).stamp,operations}));}

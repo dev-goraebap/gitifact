@@ -1,4 +1,4 @@
-import { lstat, readFile, realpath, mkdir, open, link, unlink } from 'node:fs/promises';
+import { lstat, readFile, realpath, mkdir, open, link, rename, unlink } from 'node:fs/promises';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { InitError, parseManagedConfig } from '@gitifact/core';
@@ -31,8 +31,9 @@ export async function readConfigFile(root: string): Promise<string | undefined> 
   catch { throw new InitError('INVALID_CONFIG', t('config.notUtf8Json')); }
 }
 
-// A hard link publishes the complete file without replacing an existing destination.
-export async function publishConfig(root: string, text: string, recheck: () => Promise<void>, beforePublish?: () => Promise<void>) {
+// A hard link publishes the complete file without replacing an existing destination. `replace` renames the complete
+// file over the existing one instead; the caller's recheck has confirmed that file is the one it means to replace.
+export async function publishConfig(root: string, text: string, recheck: () => Promise<void>, beforePublish?: () => Promise<void>, replace = false) {
   const directory = join(root, '.gitifact');
   await configDirectory(root);
   await mkdir(directory).catch(error => { if (error.code !== 'EEXIST') throw error; });
@@ -59,7 +60,8 @@ export async function publishConfig(root: string, text: string, recheck: () => P
     const bytes = await readFile(temporary, 'utf8');
     if (bytes !== text) throw new InitError('INPUT_CHANGED', t('config.temporaryChanged'));
     parseManagedConfig(bytes);
-    await link(temporary, join(directory, 'config.json'));
+    if (replace) await rename(temporary, join(directory, 'config.json'));
+    else await link(temporary, join(directory, 'config.json'));
   } finally {
     // Never delete a replacement directory or a file introduced by another process.
     await unchanged();

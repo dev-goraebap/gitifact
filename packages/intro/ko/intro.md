@@ -11,7 +11,7 @@ Gitifact CLI는 사용자가 문서 형식이나 복잡한 규칙을 고민하�
 아래 프롬프트를 프로젝트에서 사용하는 에이전트에게 전달하세요.
 
 ```text
-이 프로젝트에 gitifact가 없으면 npm install -g gitifact@latest로 설치하고 gitifact init을 실행하세요.
+npm install -g gitifact@latest로 gitifact를 설치하세요. 이미 설치돼 있어도 최신 버전으로 올리기 위해 실행합니다. 그다음 이 프로젝트에서 gitifact init을 실행하세요.
 init이 AGENTS.md 등에 쓴 GITIFACT 블록을 읽고 이번 세션부터 따르세요.
 ```
 

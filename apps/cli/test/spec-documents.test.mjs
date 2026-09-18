@@ -8,7 +8,7 @@ import { fixture } from './git-fixture.mjs';
 import { createSpecBrowserReader } from '../.test-build/server/spec-reader.js';
 import { startBrowserServer } from '../.test-build/server/browser-server.js';
 const exe=fileURLToPath(new URL('../dist/main.js',import.meta.url));
-const cli=(f,args)=>spawnSync(process.execPath,[exe,...args],{cwd:f.repo,env:f.env,encoding:'utf8',timeout:45000});
+const cli=(f,args)=>spawnSync(process.execPath,[exe,...args],{cwd:f.repo,env:{...f.env,GITIFACT_NO_UPDATE_CHECK: '1'},encoding:'utf8',timeout:45000});
 const ok=r=>{assert.equal(r.status,0,r.stderr);return JSON.parse(r.stdout);};
 const file=(f,value)=>{const p=join(f.root,'input.json');writeFileSync(p,JSON.stringify(value));return p;};
 const working=f=>ok(cli(f,['spec','working']));

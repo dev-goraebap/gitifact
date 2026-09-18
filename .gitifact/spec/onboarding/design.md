@@ -11,9 +11,13 @@ id: S-eordsbir6z
 ## 구조와 데이터
 <!-- gitifact-ref: R-lpwtvv6ldp -->
 
-.gitifact/config.json은 schemaVersion(현재 2. frontmatter·위키·에셋·재정의를 쓰는 규약)과 baseline을 저장한다. schemaVersion 1(0.4.x)은 이유를 밝히며 거부하고 전환하지 않는다. HEAD가 있으면 기준 커밋과 Git 객체 형식을, 첫 커밋 전이면 empty 기준선을 기록한다. 모드·승인 묶음은 저장하지 않는다.
+.gitifact/config.json은 schemaVersion(현재 2. frontmatter·위키·에셋·재정의를 쓰는 규약)과 baseline을 저장한다. schemaVersion 1(0.4.x)은 이유를 밝히며 거부하고 전환하지 않는다. 현재보다 높은 schemaVersion은 CLI를 최신으로 올리라고 안내한다(`config.newerSchema`). HEAD가 있으면 기준 커밋과 Git 객체 형식을, 첫 커밋 전이면 empty 기준선을 기록한다. 모드·승인 묶음은 저장하지 않는다.
 
-CLI의 init-repository 어댑터가 저장소·현재 checkout·HEAD·index를 관측하고 initializeSpecProject가 도입 조건을 확인한다. 설정 파일 어댑터는 임시 파일로 준비하고 기존 파일을 덮어쓰지 않는 방식으로 게시한다. 지침 파일은 managed-file 어댑터가 같은 방식(임시 파일, 조회 중 변경 감지, 링크 또는 교체)으로 쓴다.
+CLI의 init-repository 어댑터가 저장소·현재 checkout·HEAD·index를 관측하고 initializeSpecProject가 도입 조건을 확인한다. 설정 파일 어댑터는 임시 파일로 준비하고 기존 파일을 덮어쓰지 않는 방식으로 게시한다.
+
+이전 규약 설정의 교체: 설정의 schemaVersion이 현재보다 낮고, `.gitifact`에 config.json 밖의 파일(초기화 임시 파일 제외)이 없고, 루트에 구형 `specs/`도 없을 때만 init이 설정을 바꾼다. 결과의 outcome은 `replaced`이고 기준선은 지금 HEAD로 새로 잡는다. 삭제한 뒤 다시 init한 것과 같다. 임시 파일을 rename으로 덮어쓰며, 직전에 설정 바이트·저장소 내용·HEAD/index가 처음 관측과 같은지 다시 확인한다. 추적 중인 설정이면 수정으로 남고 커밋은 사용자가 한다. 조건에 맞지 않는 이전 규약은 설정과 기록을 두고 `init.legacyRecords`로 할 일을 안내한다. 0.5.0은 거부 안내가 새로 init하라고 했지만 init도 같은 이유로 거부해 빠져나갈 길이 없었다(2026-09-18). 명세가 있는 schemaVersion 1 프로젝트의 자동 전환은 정식 버전 전 규약을 전환하지 않는다는 결정에 따라 하지 않는다.
+
+새 버전 확인: init은 update·browser와 같은 레지스트리 확인(`resolveUpdate`, 3초 제한, 실패는 unavailable)을 초기화와 나란히 실행해 결과의 `update`·`install`에 담는다(project-init v5). 초기화가 실패하면 확인을 취소한다. `GITIFACT_NO_UPDATE_CHECK`로 끄며 테스트와 패키지 검사는 이 값으로 레지스트리에 접속하지 않는다. "없으면 설치"라는 도입 프롬프트 때문에 이미 설치된 0.4.4로 init해 schemaVersion 1 설정이 생긴 사례가 계기다. 도입 프롬프트는 설치돼 있어도 `@latest`로 설치하게 바꿨다. 지침 파일은 managed-file 어댑터가 같은 방식(임시 파일, 조회 중 변경 감지, 링크 또는 교체)으로 쓴다.
 
 ## 초기화 흐름
 <!-- gitifact-ref: R-lpwtvv6ldp, R-rmwolikuep -->
