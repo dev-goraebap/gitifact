@@ -109,10 +109,12 @@ test('wrapper detection and preset resolution follow the search order', () => {
 test('plan and apply write the block, refresh in place and preserve user text', async t => {
   const f = fixture(t);
   const installed = await plan(f.repo, { version: '1.2.3' });
-  assert.deepEqual([installed.mode, installed.paths], ['install', ['AGENTS.md']]);
-  assert.deepEqual(await applyAgentDocs(f.repo, installed, noop), ['AGENTS.md']);
+  assert.deepEqual([installed.mode, installed.paths, installed.missing], ['install', ['AGENTS.md', 'CLAUDE.md'], []]);
+  assert.deepEqual(await applyAgentDocs(f.repo, installed, noop), ['AGENTS.md', 'CLAUDE.md']);
   const first = readFileSync(join(f.repo, 'AGENTS.md'), 'utf8');
   assert.equal(first, agents + '\n' + block + '\n');
+  // Claude Code reads CLAUDE.md, not AGENTS.md, so init adds a root file that only imports it.
+  assert.equal(readFileSync(join(f.repo, 'CLAUDE.md'), 'utf8'), '@AGENTS.md\n');
   const again = await plan(f.repo, { version: '1.2.3' });
   assert.deepEqual([again.paths, again.writes], [['AGENTS.md'], []]);
   f.write('AGENTS.md', first + '\n## Team rules\n\nNever push.\n');
@@ -122,17 +124,44 @@ test('plan and apply write the block, refresh in place and preserve user text', 
   const text = readFileSync(join(f.repo, 'AGENTS.md'), 'utf8');
   assert.equal(text, agents + '\n' + await render('2.0.0') + '\n\n## Team rules\n\nNever push.\n');
   assert.notDeepEqual(fingerprint(f.repo), before);
-  assert.deepEqual(Object.keys(fingerprint(f.repo)).filter(k => !k.startsWith('.git/')), ['AGENTS.md']);
+  assert.deepEqual(Object.keys(fingerprint(f.repo)).filter(k => !k.startsWith('.git/')), ['AGENTS.md', 'CLAUDE.md']);
   const removal = await plan(f.repo, { version: '2.0.0', remove: true });
   assert.deepEqual([removal.mode, removal.paths], ['remove', ['AGENTS.md']]);
   await applyAgentDocs(f.repo, removal, noop);
   assert.equal(readFileSync(join(f.repo, 'AGENTS.md'), 'utf8'), agents + '\n## Team rules\n\nNever push.\n');
+  // AGENTS.md keeps the user's rules, so the wrapper that imports them stays.
+  assert.equal(readFileSync(join(f.repo, 'CLAUDE.md'), 'utf8'), '@AGENTS.md\n');
   await applyAgentDocs(f.repo, await plan(f.repo, { version: '2.0.0' }), noop);
   f.write('AGENTS.md', agents + '\n' + await render('2.0.0') + '\n');
-  await applyAgentDocs(f.repo, await plan(f.repo, { version: '2.0.0', remove: true }), noop);
+  const emptied = await plan(f.repo, { version: '2.0.0', remove: true });
+  assert.deepEqual(emptied.paths, ['AGENTS.md', 'CLAUDE.md']);
+  await applyAgentDocs(f.repo, emptied, noop);
   assert.equal(existsSync(join(f.repo, 'AGENTS.md')), false);
-  assert.deepEqual(await plan(f.repo, { version: '2.0.0', remove: true }), { mode: 'remove', paths: [], writes: [] });
-  assert.deepEqual(await plan(f.repo, { version: '2.0.0', skip: true }), { mode: 'skip', paths: [], writes: [] });
+  assert.equal(existsSync(join(f.repo, 'CLAUDE.md')), false);
+  assert.deepEqual(await plan(f.repo, { version: '2.0.0', remove: true }), { mode: 'remove', paths: [], writes: [], missing: [] });
+  assert.deepEqual(await plan(f.repo, { version: '2.0.0', skip: true }), { mode: 'skip', paths: [], writes: [], missing: [] });
+});
+
+test('the CLAUDE.md wrapper is added only when no Claude file exists and never replaces user files', async t => {
+  // An existing .claude/CLAUDE.md already reaches Claude Code, so no root file is added next to it.
+  const f = fixture(t);
+  f.write('AGENTS.md', '# Mine\n'); mkdirSync(join(f.repo, '.claude')); f.write('.claude/CLAUDE.md', '# Nested\n');
+  assert.deepEqual((await plan(f.repo, { version: '1.0.0' })).paths, ['AGENTS.md', '.claude/CLAUDE.md']);
+  // A preset that writes AGENTS.md adds it too, following the line endings of AGENTS.md.
+  const g = fixture(t);
+  g.write('AGENTS.md', '# Win\r\n');
+  const cursor = await plan(g.repo, { version: '1.0.0', agent: 'cursor' });
+  assert.deepEqual(cursor.paths, ['AGENTS.md', 'CLAUDE.md']);
+  await applyAgentDocs(g.repo, cursor, noop);
+  assert.equal(readFileSync(join(g.repo, 'CLAUDE.md'), 'utf8'), '@AGENTS.md\r\n');
+  // An update plan reports the missing wrapper instead of creating it.
+  const h = fixture(t);
+  h.write('AGENTS.md', '# Mine\n\n' + block + '\n');
+  const refresh = await plan(h.repo, { version: '1.2.3', onlyExisting: true });
+  assert.deepEqual([refresh.paths, refresh.writes, refresh.missing], [['AGENTS.md'], [], ['CLAUDE.md']]);
+  // A CLAUDE.md the user extended is kept even when removal deletes AGENTS.md.
+  h.write('AGENTS.md', agents + '\n' + block + '\n'); h.write('CLAUDE.md', '@AGENTS.md\n\nAlso read docs/.\n');
+  assert.deepEqual((await plan(h.repo, { version: '1.2.3', remove: true })).paths, ['AGENTS.md']);
 });
 
 test('presets, wrappers and malformed files on disk', async t => {

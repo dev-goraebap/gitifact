@@ -37,12 +37,16 @@
 
 ### 범위와 제약
 
-CLI의 init이 AGENTS.md 등 에이전트 지침 파일에 GITIFACT:START와 GITIFACT:END 마커 사이의 블록을 쓰고, 재실행 시 그 사이만 갱신한다. 마커 바깥의 사용자 내용은 보존한다. 블록은 규칙의 요약이며 상세 형식은 `gitifact docs <topic>`이 제공한다. 별도 스킬 파일은 설치하지 않는다. 블록은 Markdown으로 렌더링해도 제목·목록·표·구분선이 그대로 읽히며, 줄이 한 문단으로 합쳐지지 않는다. CLI 설치는 에이전트가 사용자에게 알리고 동의를 받은 뒤에만 한다.
+CLI의 init이 AGENTS.md 등 에이전트 지침 파일에 GITIFACT:START와 GITIFACT:END 마커 사이의 블록을 쓰고, 재실행 시 그 사이만 갱신한다. 마커 바깥의 사용자 내용은 보존한다. 블록은 규칙의 요약이며 상세 형식은 `gitifact docs <topic>`이 제공한다. 별도 스킬 파일은 설치하지 않는다. 블록은 Markdown으로 렌더링해도 제목·목록·표·구분선이 그대로 읽히며, 줄이 한 문단으로 합쳐지지 않는다. CLI 설치는 에이전트가 사용자에게 알리고 동의를 받은 뒤에만 한다. 도구마다 자동으로 읽는 지침 파일이 달라 Claude Code는 CLAUDE.md만 읽고 AGENTS.md는 읽지 않는다. 블록을 AGENTS.md에 쓸 때 Claude용 지침 파일이 없으면 프로젝트가 Claude Code를 쓰는지와 무관하게 AGENTS.md를 가져오는 루트 CLAUDE.md를 함께 만든다. 원본은 AGENTS.md 하나로 유지하고 같은 블록을 두 파일에 복제하지 않는다.
 
 ### 수용 조건
 
 1. 조건: 사용자가 도입 프롬프트를 전달하고 에이전트가 gitifact init을 실행합니다.
    기대 동작: 기존 AGENTS.md·CLAUDE.md·.cursorrules 등이 있으면 그 파일에, 없으면 새 AGENTS.md에 블록을 씁니다. 다른 지침 파일만 가져오는 파일에는 쓰지 않습니다. 에이전트는 그 블록을 현재 세션에서도 읽습니다.
+4. 조건: AGENTS.md로 도입한 프로젝트에 Claude Code를 쓰는 팀원이 참여합니다.
+   기대 동작: init이 함께 만든 CLAUDE.md를 통해 Claude Code도 AGENTS.md의 블록과 프로젝트 지침을 읽습니다. CLAUDE.md나 .claude/CLAUDE.md가 이미 있으면 새로 만들지 않고 기존 파일을 보존합니다.
+5. 조건: --remove-agents로 블록을 제거해 AGENTS.md가 삭제됩니다.
+   기대 동작: init이 만든 내용 그대로인 CLAUDE.md도 함께 삭제합니다. 사용자가 내용을 더한 CLAUDE.md나 AGENTS.md가 남는 경우에는 CLAUDE.md를 그대로 둡니다.
 2. 조건: CLI를 업데이트한 뒤 init을 다시 실행하거나 --remove-agents로 제거합니다.
    기대 동작: 마커 사이만 교체하거나 제거하고 사용자가 쓴 내용은 그대로 둡니다. 마커가 짝이 맞지 않으면 아무 파일도 쓰지 않고 거부합니다.
 3. 조건: 블록이 있는 프로젝트에 참여한 팀원의 환경에 gitifact 명령이 없습니다.

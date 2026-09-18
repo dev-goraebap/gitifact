@@ -57,6 +57,12 @@ export function isWrapperFile(text: string) {
   const lines = own.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
   return lines.length > 0 && lines.every(line => /^@(?:\.\/)?[^\s]+$/.test(line) && (candidatePaths as readonly string[]).includes(line.replace(/^@(?:\.\/)?/, '')));
 }
+// Claude Code loads CLAUDE.md but not AGENTS.md, so a project whose block lives only in AGENTS.md gets a root CLAUDE.md
+// that imports it. Only this exact content counts as the wrapper init wrote; anything else belongs to the user.
+export const CLAUDE_WRAPPER_PATH = 'CLAUDE.md';
+export function claudeWrapperFor(agents: string | null) { return '@AGENTS.md' + eolOf(agents); }
+export function isGeneratedClaudeWrapper(text: string) { return text.trim() === '@AGENTS.md'; }
+export function lacksClaudeFile(existing: ReadonlyMap<CandidatePath, string>) { return !existing.has('CLAUDE.md') && !existing.has('.claude/CLAUDE.md'); }
 export function resolveAgentPaths(preset: AgentPreset | undefined, existing: ReadonlyMap<CandidatePath, string>): { inject: CandidatePath[]; create: CandidatePath | null } {
   if (preset && preset !== 'all') {
     const order = agentPresets[preset];

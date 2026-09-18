@@ -85,7 +85,8 @@ try {
     await readFile(join(workspace, 'apps/cli/src/shared/i18n/ko/docs/spec.md'), 'utf8'), 'Bundled docs must match the asset source.');
   const agentsPath = join(temporaryRoot, 'AGENTS.md');
   const agents = await readFile(agentsPath, 'utf8');
-  assert.deepEqual(initialized.agentDocs, { mode: 'install', paths: ['AGENTS.md'] });
+  assert.deepEqual(initialized.agentDocs, { mode: 'install', paths: ['AGENTS.md', 'CLAUDE.md'] });
+  assert.equal(await readFile(join(temporaryRoot, 'CLAUDE.md'), 'utf8'), '@AGENTS.md\n', 'init must add a CLAUDE.md that imports AGENTS.md.');
   assert.match(agents, /^# AGENTS\.md\n\nProject-specific guidance for AI coding agents\.\n\n<!-- GITIFACT:START -->\n/);
   assert.ok(agents.includes('gitifact v' + version + ' · ko · 저장 규약 schemaVersion 1'), 'Block must carry the installed version.');
   assert.ok(agents.includes('gitifact docs spec'), 'Block must point at the bundled docs.');
@@ -101,7 +102,7 @@ try {
   await writeFile(agentsPath, agents.replace('gitifact v' + version + ' ', 'gitifact v0.0.1 '));
   const updated = JSON.parse(execFileSync(process.execPath, [join(installedRoot, 'dist', 'main.js'), 'update'], { cwd: temporaryRoot, env: offline, encoding: 'utf8', timeout: 60_000 }));
   assert.deepEqual([updated.contract, updated.cliVersion, updated.update, updated.install, updated.agentDocs],
-    ['update', version, { status: 'disabled', latestVersion: null }, null, { state: 'refreshed', paths: ['AGENTS.md'] }]);
+    ['update', version, { status: 'disabled', latestVersion: null }, null, { state: 'refreshed', paths: ['AGENTS.md'], missing: [] }]);
   assert.equal(await readFile(agentsPath, 'utf8'), agents, 'update must restore the block of the installed version.');
   const child = spawn(process.execPath, [join(installedRoot, 'dist', 'main.js'), 'browser'], {
     cwd: temporaryRoot, env: offline, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true,

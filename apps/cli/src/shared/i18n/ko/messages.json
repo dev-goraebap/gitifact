@@ -247,6 +247,7 @@
   "update.text.blockCurrent": "지침 블록은 이미 현재 버전입니다: {paths}",
   "update.text.noBlock": "GITIFACT 블록이 있는 지침 파일이 없습니다. gitifact init으로 설치하세요.",
   "update.text.notInitialized": "초기화된 프로젝트가 아니어서 버전만 확인했습니다.",
+  "update.text.missing": "{paths} 파일이 없어 Claude Code가 AGENTS.md의 지침을 읽지 못합니다. gitifact init을 다시 실행하면 AGENTS.md를 가져오는 파일을 만듭니다.",
   "update.text.committed": "지침 블록 커밋: {commit} ({paths})",
   "update.text.commitNothing": "커밋할 지침 블록 변경이 없습니다.",
   "update.text.commitSkipped.untracked": "커밋하지 않았습니다. Git이 추적하지 않는 지침 파일입니다: {paths}",

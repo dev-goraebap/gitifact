@@ -1,5 +1,5 @@
 import { InitError, RepositoryReadError } from '@gitifact/core';
-import { updateV2, type UpdateV2 } from '@gitifact/contracts';
+import { updateV3, type UpdateV3 } from '@gitifact/contracts';
 import { initRepository } from '../adapters/git/init-repository.js';
 import { agentDocsGit } from '../adapters/git/agent-docs-commit.js';
 import { readConfigFile } from '../adapters/filesystem/config-file.js';
@@ -11,34 +11,35 @@ import { AGENT_START, findBlock, type AgentBlockControls } from './agent-block.j
 import { t } from '../shared/i18n/index.js';
 
 export interface UpdateControls extends AgentBlockControls { fetchLatest?: FetchLatestVersion; timeoutMs?: number; commit?: boolean }
-type AgentDocsState = { state: 'refreshed' | 'current' | 'not-initialized' | 'no-block'; paths: string[]; root?: string; candidates?: string[] };
-type Commit = Extract<UpdateV2, { ok: true }>['commit'];
+type AgentDocsState = { state: 'refreshed' | 'current' | 'not-initialized' | 'no-block'; paths: string[]; missing: string[]; root?: string; candidates?: string[] };
+type Commit = Extract<UpdateV3, { ok: true }>['commit'];
 
 // The message is fixed so every contributor's refresh reads the same in history; it carries no Gitifact trailer.
 export const blockCommitMessage = (version: string) => 'chore(gitifact): refresh GITIFACT block to v' + version;
 const commitState = (state: Commit['state'], extra: Partial<Commit> = {}): Commit =>
   ({ state, commit: null, paths: [], message: null, reason: null, detail: null, ...extra });
 
-// Rewrites only blocks that already exist. Outside an initialized project the command still reports versions.
+// Rewrites only blocks that already exist and reports files init would add. Outside an initialized project the command still reports versions.
 async function refreshBlocks(cwd: string, version: string, env: NodeJS.ProcessEnv, controls: AgentBlockControls): Promise<AgentDocsState> {
   const repo = initRepository(cwd, env);
   let first: Awaited<ReturnType<typeof repo.inspect>>;
   let config: string | undefined;
   try { first = await repo.inspect(); config = await readConfigFile(first.state.repository.rootPath); }
   catch (error) {
-    if ((error instanceof RepositoryReadError && error.code === 'NOT_A_REPOSITORY') || (error instanceof InitError && error.code === 'MIGRATION_REQUIRED')) return { state: 'not-initialized', paths: [] };
+    if ((error instanceof RepositoryReadError && error.code === 'NOT_A_REPOSITORY') || (error instanceof InitError && error.code === 'MIGRATION_REQUIRED')) return { state: 'not-initialized', paths: [], missing: [] };
     throw error;
   }
-  if (config === undefined) return { state: 'not-initialized', paths: [] };
+  if (config === undefined) return { state: 'not-initialized', paths: [], missing: [] };
   const root = first.state.repository.rootPath;
   const plan = await planAgentDocs(root, { version, onlyExisting: true, ...controls });
-  if (plan.paths.length === 0) return { state: 'no-block', paths: [], root };
-  if (plan.writes.length === 0) return { state: 'current', paths: plan.paths, root, candidates: plan.paths };
+  const { missing } = plan;
+  if (plan.paths.length === 0) return { state: 'no-block', paths: [], missing, root };
+  if (plan.writes.length === 0) return { state: 'current', paths: plan.paths, missing, root, candidates: plan.paths };
   const unchanged = async () => {
     if ((await repo.inspect()).stamp !== first.stamp || await readConfigFile(root) !== config) throw new InitError('INPUT_CHANGED', t('init.inputChanged'));
   };
   const applied = await applyAgentDocs(root, plan, unchanged);
-  return { state: 'refreshed', paths: applied, root, candidates: plan.paths };
+  return { state: 'refreshed', paths: applied, missing, root, candidates: plan.paths };
 }
 
 // Text outside the block, with line endings normalized so a CRLF checkout of an LF blob is not a change.
@@ -86,9 +87,9 @@ export async function updateCommand(cwd: string, version: string, env: NodeJS.Pr
     refreshBlocks(cwd, version, env, controls),
   ]);
   const commit = controls.commit ? await commitBlocks(agentDocs, version, env) : commitState('not-requested');
-  return updateV2.parse({ contract: 'update', version: 2, ok: true, cliVersion: version, update,
+  return updateV3.parse({ contract: 'update', version: 3, ok: true, cliVersion: version, update,
     install: update.status === 'available' ? { npmGlobal: npmGlobalInstall(update.latestVersion!) } : null,
-    agentDocs: { state: agentDocs.state, paths: agentDocs.paths }, commit });
+    agentDocs: { state: agentDocs.state, paths: agentDocs.paths, missing: agentDocs.missing }, commit });
 }
 export async function runUpdate(options: { format?: 'json' | 'text'; commit?: boolean }, version: string) {
   try {
@@ -103,6 +104,7 @@ export async function runUpdate(options: { format?: 'json' | 'text'; commit?: bo
     lines.push(dto.agentDocs.state === 'refreshed' ? t('update.text.blockRefreshed', { paths: dto.agentDocs.paths.join(', ') })
       : dto.agentDocs.state === 'current' ? t('update.text.blockCurrent', { paths: dto.agentDocs.paths.join(', ') })
       : dto.agentDocs.state === 'no-block' ? t('update.text.noBlock') : t('update.text.notInitialized'));
+    if (dto.agentDocs.missing.length) lines.push(t('update.text.missing', { paths: dto.agentDocs.missing.join(', ') }));
     const { commit } = dto;
     if (commit.state === 'committed') lines.push(t('update.text.committed', { commit: commit.commit!.slice(0, 12), paths: commit.paths.join(', ') }));
     else if (commit.state === 'nothing') lines.push(t('update.text.commitNothing'));
@@ -117,7 +119,7 @@ export async function runUpdate(options: { format?: 'json' | 'text'; commit?: bo
     const known = error instanceof InitError || error instanceof RepositoryReadError;
     const failure = { code: known ? error.code : 'UPDATE_FAILED', message: known ? error.message : t('update.failed') };
     process.stderr.write(options.format === 'text' ? failure.code + ': ' + failure.message + '\n'
-      : JSON.stringify(updateV2.parse({ contract: 'update', version: 2, ok: false, error: failure })) + '\n');
+      : JSON.stringify(updateV3.parse({ contract: 'update', version: 3, ok: false, error: failure })) + '\n');
     process.exitCode = 1;
   }
 }
