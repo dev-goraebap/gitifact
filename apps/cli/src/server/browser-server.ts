@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { lstat, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { readRepositoryStatus, isProductAssetPath, parseChangelog } from '@gitifact/core';
+import { readRepositoryStatus, isAssetPath, assetExtension, ASSETS_DIR, parseChangelog } from '@gitifact/core';
 import { browserHttpErrorV1, changelogV1 } from '@gitifact/contracts';
 import type { RepositoryStatusSuccessV1 } from '@gitifact/contracts';
 import { createRepositoryReader } from '../adapters/git/repository-reader.js';
@@ -98,16 +98,19 @@ export async function startBrowserServer(options: Options) {
     if (api) {
       if (request.headers['sec-fetch-site'] === 'cross-site' && !allowedOrigin) return fail(response, 403, 'FORBIDDEN', t('server.crossSite'));
       if (url.search && path !== '/api/v1/specs' && path !== '/api/v1/changelog') return fail(response, 400, 'BAD_REQUEST', t('server.noQuery'));
-      // Images beside PRODUCT.md, by plain file name only: <img> requests carry no session header, so the route stays read-only and narrow.
-      if (path.startsWith('/api/v1/product/assets/')) {
-        const name = path.slice('/api/v1/product/assets/'.length);
+      // Files under .gitifact/assets by path: <img> requests carry no session header, so the route stays read-only and narrow.
+      if (path.startsWith('/api/v1/assets/')) {
+        const relative = path.slice('/api/v1/assets/'.length); const assetPath = ASSETS_DIR + '/' + relative;
         if (request.method !== 'GET') { response.setHeader('Allow', 'GET'); return fail(response, 405, 'METHOD_NOT_ALLOWED', t('server.methodNotAllowed')); }
-        if (!isProductAssetPath('.gitifact/product/' + name)) return fail(response, 404, 'NOT_FOUND', t('server.productImageNotFound'));
-        const file = join(initial.repository.rootPath, '.gitifact', 'product', name);
+        if (!isAssetPath(assetPath)) return fail(response, 404, 'NOT_FOUND', t('server.assetNotFound'));
+        const file = join(initial.repository.rootPath, ...assetPath.split('/'));
         const stat = await lstat(file).catch(() => undefined);
-        if (!stat?.isFile() || stat.isSymbolicLink() || stat.size > 5 * 1024 * 1024) return fail(response, 404, 'NOT_FOUND', t('server.productImageNotFound'));
-        const bytes = await readFile(file);
-        response.writeHead(200, { 'Content-Type': contentType(name.toLowerCase()), 'Cache-Control': 'no-cache', 'Content-Length': bytes.length });
+        if (!stat?.isFile() || stat.isSymbolicLink() || stat.size > 20 * 1024 * 1024) return fail(response, 404, 'NOT_FOUND', t('server.assetNotFound'));
+        const bytes = await readFile(file); const extension = assetExtension(relative);
+        // Images render inline; everything else downloads. The sandbox keeps an SVG opened directly from running scripts.
+        const inline = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].includes(extension);
+        response.writeHead(200, { 'Content-Type': contentType('.' + extension), 'Cache-Control': 'no-cache', 'Content-Length': bytes.length,
+          'Content-Security-Policy': "default-src 'none'; sandbox", 'Content-Disposition': inline ? 'inline' : 'attachment; filename="' + encodeURIComponent(relative.split('/').pop()!) + '"' });
         response.end(bytes); return;
       }
       const method = path === '/api/v1/status/refresh' ? 'POST' : 'GET';

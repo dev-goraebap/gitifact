@@ -21,7 +21,7 @@ test('rendered block is versioned, marker-delimited, Markdown-structured and sho
   assert.equal(lines[0], AGENT_START); assert.equal(lines.at(-1), AGENT_END);
   // A heading opens the block and a rule closes it, so it reads as its own section beside the user's text.
   assert.equal(lines[1], '## Gitifact Guide'); assert.equal(lines.at(-2), '---'); assert.equal(lines.at(-3), '');
-  assert.equal(lines[3], 'gitifact v1.2.3 · ko · 저장 규약 schemaVersion 1');
+  assert.equal(lines[3], 'gitifact v1.2.3 · ko · 저장 규약 schemaVersion 2');
   // Markdown joins consecutive plain lines, so every non-blank line must be a heading, list item, table row or its own paragraph.
   for (const [index, line] of lines.entries()) {
     if (!line || /^(#{2,3} |- |\| |---$|<!--)/.test(line)) continue;
@@ -29,7 +29,7 @@ test('rendered block is versioned, marker-delimited, Markdown-structured and sho
   }
   assert.ok(block.includes('npm install -g gitifact@1.2.3'), 'install hint pins the block version');
   assert.ok(lines.length >= 25 && lines.length <= 50, String(lines.length));
-  assert.deepEqual(parseAgentBlock(block), { version: '1.2.3', language: 'ko', schemaVersion: 1 });
+  assert.deepEqual(parseAgentBlock(block), { version: '1.2.3', language: 'ko', schemaVersion: 2 });
   assert.equal(parseAgentBlock('no block'), null);
   for (const topic of ['docs spec', 'docs commit', 'docs <topic>', 'spec working', 'SELF-CHECK']) assert.ok(block.includes(topic), topic);
   assert.equal(boilerplateFor('.claude/CLAUDE.md'), '# CLAUDE\n\nProject-specific guidance for AI coding agents.\n');
@@ -48,7 +48,7 @@ test('the header parses with and without the language token', () => {
 test('the block summary matches the workflow document it summarizes', () => {
   // The block abbreviates the handling column, so only the example requests are compared. A request that
   // exists in the block but not in the source table would teach agents a rule the full document never states.
-  const workflow = readFileSync(fileURLToPath(new URL('../src/shared/i18n/ko/docs/workflow.md', import.meta.url)), 'utf8');
+  const workflow = ['workflow.md', 'workflow.default.md'].map(name => readFileSync(fileURLToPath(new URL('../src/shared/i18n/ko/docs/' + name, import.meta.url)), 'utf8')).join('\n');
   const requests = text => text.split('\n').filter(line => line.startsWith('| ') && !line.startsWith('| ---')).map(line => line.split(' | ')[0]);
   const rows = block.split('\n').filter(line => line.startsWith('| ') && !line.startsWith('| ---') && !line.startsWith('| 요청 '));
   assert.equal(rows.length, 4);

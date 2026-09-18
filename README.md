@@ -59,11 +59,11 @@ Markdown 요구사항·설계와 커밋 시점의 변경 이유를 Git에 연결
 
 최신 공개 버전은 [npm](https://www.npmjs.com/package/gitifact)에서, 버전별 변경 내역은 [패치노트](https://github.com/dev-goraebap/gitifact/blob/main/apps/cli/src/shared/i18n/ko/changelog.md)에서 확인하세요.
 
-제품의 목적·원칙·범위는 [제품 개요](https://github.com/dev-goraebap/gitifact/blob/main/.gitifact/product/PRODUCT.md)에서, 기능별 요구사항과 설계는 [요구사항](https://github.com/dev-goraebap/gitifact/tree/main/.gitifact/spec)에서 확인할 수 있습니다.
+제품의 목적·원칙·범위는 이 문서에서, 기능별 요구사항과 설계는 [요구사항](https://github.com/dev-goraebap/gitifact/tree/main/.gitifact/spec)에서 확인할 수 있습니다.
 
 ## Gitifact 개발에 참여하려면
 
-실행·빌드·검증은 [개발 환경](https://github.com/dev-goraebap/gitifact/blob/main/docs/development.md), 코드 구조는 [아키텍처 지침](https://github.com/dev-goraebap/gitifact/blob/main/.gitifact/guides/architecture.md)을 참고하세요.
+실행·빌드·검증은 [개발 환경](https://github.com/dev-goraebap/gitifact/blob/main/docs/development.md), 코드 구조는 [아키텍처 안내](https://github.com/dev-goraebap/gitifact/blob/main/.gitifact/wiki/ARCHITECTURE.md)을 참고하세요.
 
 ## 라이선스
 

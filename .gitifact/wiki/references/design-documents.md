@@ -1,4 +1,6 @@
-<!-- gitifact-guide: G-zg7nohwo2w -->
+---
+id: W-b757hxarv2
+---
 
 # 기능 설계 문서
 

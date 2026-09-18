@@ -62,11 +62,11 @@ export function fixture(t, format = 'sha1') {
   };
   return { root, repo, env, git, write, commit, cli, status, failure };
 }
-// Adopts schemaVersion 1 without a baseline commit, as `gitifact init` does in an unborn repository.
+// Adopts schemaVersion 2 without a baseline commit, as `gitifact init` does in an unborn repository.
 export function specFixture(t, format = 'sha1') {
   const f = fixture(t, format);
   mkdirSync(join(f.repo, '.gitifact'));
-  writeFileSync(join(f.repo, '.gitifact', 'config.json'), JSON.stringify({ schemaVersion: 1, baseline: { kind: 'empty' } }, null, 2) + '\n');
+  writeFileSync(join(f.repo, '.gitifact', 'config.json'), JSON.stringify({ schemaVersion: 2, baseline: { kind: 'empty' } }, null, 2) + '\n');
   return f;
 }
 export function fingerprint(root) {

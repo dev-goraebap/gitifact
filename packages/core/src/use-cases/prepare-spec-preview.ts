@@ -1,20 +1,20 @@
-import { comparePreviewBundles, SpecPreviewError, validateBundle, asBundle, documentHistoryPath, type PreviewSpec, type PreviewReason, type PreviewBundle, type DocumentKind } from '../formats/spec-preview.js';
+import { comparePreviewBundles, SpecPreviewError, validateBundle, asBundle, WIKI_HISTORY_PATH, type PreviewSpec, type PreviewReason, type PreviewBundle } from '../formats/spec-preview.js';
 import { t } from '../shared/i18n/index.js';
 
 const fail = (message: string): never => { throw new SpecPreviewError(message); };
 const equal = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 const historyPath = (s: PreviewSpec) => s.path.replace(/requirements\.md$/, 'history.jsonl');
 
-/** Reasons written since the base commit: per feature for specs, per store folder for documents. */
+/** Reasons written since the base commit: per feature for specs, one file for the wiki. */
 export function pendingPreviewReasons(before: PreviewSpec[] | PreviewBundle, current: PreviewSpec[] | PreviewBundle) {
   const a = asBundle(before); const b = asBundle(current);
   return [
     ...b.specs.flatMap(s => s.history.slice(a.specs.find(p => p.id === s.id)?.history.length ?? 0).map(h => ({ specId: s.id, path: historyPath(s), ...h }))),
-    ...b.documents.flatMap(d => d.history.slice(a.documents.find(p => p.kind === d.kind)?.history.length ?? 0).map(h => ({ kind: d.kind, path: documentHistoryPath(d.kind), ...h }))),
+    ...b.wiki.history.slice(a.wiki.history.length).map(h => ({ kind: 'wiki' as const, path: WIKI_HISTORY_PATH, ...h })),
   ];
 }
 
-/** Strip only uncommitted reasons when computing the final requirement and document delta. */
+/** Strip only uncommitted reasons when computing the final requirement and wiki delta. */
 export function finalSpecPreviewChanges(beforeValue: PreviewSpec[] | PreviewBundle, currentValue: PreviewSpec[] | PreviewBundle) {
   const before = asBundle(beforeValue); const current = asBundle(currentValue);
   validateBundle(before); validateBundle(current);
@@ -23,13 +23,10 @@ export function finalSpecPreviewChanges(beforeValue: PreviewSpec[] | PreviewBund
     if (previous.history.length && !next) fail(t('reason.keepEmptySpec', { id: previous.id }));
     if (next && !equal(next.history.slice(0, previous.history.length), previous.history)) fail(t('reason.committedImmutable', { id: previous.id }));
   }
-  for (const previous of before.documents) {
-    const next = current.documents.find(s => s.kind === previous.kind)!;
-    if (!equal(next.history.slice(0, previous.history.length), previous.history)) fail(t('reason.committedDocumentImmutable', { kind: previous.kind }));
-  }
+  if (!equal(current.wiki.history.slice(0, before.wiki.history.length), before.wiki.history)) fail(t('reason.committedDocumentImmutable'));
   const clean: PreviewBundle = {
     specs: current.specs.map(s => ({ ...s, history: before.specs.find(p => p.id === s.id)?.history ?? [] })),
-    documents: current.documents.map(d => ({ ...d, history: before.documents.find(p => p.kind === d.kind)?.history ?? [] })),
+    wiki: { documents: current.wiki.documents, history: before.wiki.history },
   };
   return comparePreviewBundles(before, clean);
 }
@@ -41,8 +38,8 @@ export function prepareSpecPreview(beforeValue: PreviewSpec[] | PreviewBundle, c
   if (!Array.isArray(input) || input.length > 100) fail(t('reason.count'));
   const writes = new Map<string, string | null>();
   const pending = new Map<string, PreviewReason[]>(); const covered = new Set<string>();
-  const used = new Set([...before.flatMap(s => s.history), ...current.flatMap(s => s.history), ...beforeBundle.documents.flatMap(d => d.history), ...currentBundle.documents.flatMap(d => d.history)].map(h => h.id));
-  const documentPending = new Map<DocumentKind, PreviewReason[]>();
+  const used = new Set([...before.flatMap(s => s.history), ...current.flatMap(s => s.history), ...beforeBundle.wiki.history, ...currentBundle.wiki.history].map(h => h.id));
+  const wikiPending: PreviewReason[] = [];
   const allocate = () => {
     for (let attempt = 0; attempt < 100; attempt++) {
       const id = generate(); if (!/^H-[a-z2-7]{10}$/.test(id)) fail(t('reason.idGenerated'));
@@ -60,17 +57,15 @@ export function prepareSpecPreview(beforeValue: PreviewSpec[] | PreviewBundle, c
     const reason = (raw.reason as string).trim(); const groups = new Map<string, string[]>();
     if (raw.documents !== undefined) {
       if ((raw.requirements as unknown[]).length) fail(t('reason.documentWithRequirements'));
-      const ids = raw.documents as unknown[]; let kind: DocumentKind | undefined;
+      const ids = raw.documents as unknown[];
       for (const value of ids) {
-        if (typeof value !== 'string' || !/^[PG]-[a-z2-7]{10}$/.test(value) || covered.has(value)) return fail(t('reason.documentTargetInvalid'));
-        const change = delta.changes.find(c => c.id === value) ?? fail(t('reason.documentUnchanged', { id: value }));
-        if (kind && change.kind !== kind) fail(t('reason.singleDocumentKind'));
-        kind = change.kind as DocumentKind; covered.add(value);
+        if (typeof value !== 'string' || !/^W-[a-z2-7]{10}$/.test(value) || covered.has(value)) return fail(t('reason.documentTargetInvalid'));
+        if (!delta.changes.some(c => c.id === value)) fail(t('reason.documentUnchanged', { id: value }));
+        covered.add(value);
       }
-      const documents = [...ids as string[]].sort(); const set = currentBundle.documents.find(d => d.kind === kind)!;
-      const oldCount = beforeBundle.documents.find(d => d.kind === kind)?.history.length ?? 0;
-      const reusable = set.history.slice(oldCount).find(h => h.reason === reason && equal([...(h.documents ?? [])].sort(), documents));
-      documentPending.set(kind!, [...(documentPending.get(kind!) ?? []), { id: reusable?.id ?? allocate(), requirements: [], documents, reason }]);
+      const documents = [...ids as string[]].sort();
+      const reusable = currentBundle.wiki.history.slice(beforeBundle.wiki.history.length).find(h => h.reason === reason && equal([...(h.documents ?? [])].sort(), documents));
+      wikiPending.push({ id: reusable?.id ?? allocate(), requirements: [], documents, reason });
       continue;
     }
     for (const value of [...raw.requirements as unknown[], ...(raw.designs as unknown[] | undefined ?? [])]) {
@@ -91,26 +86,25 @@ export function prepareSpecPreview(beforeValue: PreviewSpec[] | PreviewBundle, c
       pending.set(specId, [...(pending.get(specId) ?? []), record]);
     }
   }
+  const historyText = (base: string | undefined, records: PreviewReason[]) => {
+    // Committed bytes form the immutable prefix, including their original line endings.
+    let text = base ?? '';
+    if (records.length) text += (text && !text.endsWith('\n') ? '\n' : '') + records.map(h => JSON.stringify(h) + '\n').join('');
+    return base !== undefined || records.length ? text : null;
+  };
   for (const spec of current) {
     const old = before.find(s => s.id === spec.id);
     const base = old ? baseFiles.get(historyPath(old)) : undefined;
     const records = (pending.get(spec.id) ?? []).sort((a, b) => (a.requirements[0] ?? a.designs![0]!) < (b.requirements[0] ?? b.designs![0]!) ? -1 : 1);
-    // Committed bytes form the immutable prefix, including their original line endings.
-    let text = base ?? '';
-    if (records.length) text += (text && !text.endsWith('\n') ? '\n' : '') + records.map(h => JSON.stringify(h) + '\n').join('');
-    const path = historyPath(spec);
-    const next = base !== undefined || records.length ? text : null;
+    const path = historyPath(spec); const next = historyText(base, records);
     if ((currentFiles.get(path) ?? null) !== next) writes.set(path, next);
   }
-  for (const set of currentBundle.documents) {
-    const path = documentHistoryPath(set.kind); const base = baseFiles.get(path);
-    const records = (documentPending.get(set.kind) ?? []).sort((a, b) => a.documents![0]! < b.documents![0]! ? -1 : 1);
-    let text = base ?? '';
-    if (records.length) text += (text && !text.endsWith('\n') ? '\n' : '') + records.map(h => JSON.stringify(h) + '\n').join('');
-    const next = base !== undefined || records.length ? text : null;
-    if ((currentFiles.get(path) ?? null) !== next) writes.set(path, next);
+  {
+    const records = wikiPending.sort((a, b) => a.documents![0]! < b.documents![0]! ? -1 : 1);
+    const next = historyText(baseFiles.get(WIKI_HISTORY_PATH), records);
+    if ((currentFiles.get(WIKI_HISTORY_PATH) ?? null) !== next) writes.set(WIKI_HISTORY_PATH, next);
   }
   return { writes, changes: delta.changes, specChanges: delta.specChanges,
-    reasons: [...[...pending].flatMap(([specId, records]) => records.map(record => ({ specId, ...record }))), ...[...documentPending].flatMap(([kind, records]) => records.map(record => ({ kind, ...record })))],
+    reasons: [...[...pending].flatMap(([specId, records]) => records.map(record => ({ specId, ...record }))), ...wikiPending.map(record => ({ kind: 'wiki' as const, ...record }))],
     withoutReason: delta.changes.filter(c => !covered.has(c.id)).map(c => c.id) };
 }

@@ -78,7 +78,7 @@ export async function specCommit(cwd: string, input: unknown, dryRun: boolean) {
   if (dryRun) { await c.recheck(); return { outcome: 'dry-run' as const, committed: false, ...summary }; }
 
   const trailers = [...requirements.map(id => 'Gitifact-Req: ' + id), ...prepared.changes.filter(c => c.kind === 'design').map(c => 'Gitifact-Design: ' + c.id),
-    ...prepared.changes.filter(c => c.kind === 'product' || c.kind === 'guide').map(c => 'Gitifact-Doc: ' + c.id)];
+    ...prepared.changes.filter(c => c.kind === 'wiki').map(c => 'Gitifact-Doc: ' + c.id)];
   const temporary = join(gitDir, 'gitifact-commit-index-' + randomUUID());
   let owned = false; let uncertain = false; let indexLock: Awaited<ReturnType<typeof open>> | undefined;
   let committed: { commit: string; paths: string[] } | undefined;

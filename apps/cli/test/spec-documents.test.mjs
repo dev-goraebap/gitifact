@@ -19,44 +19,47 @@ function setup(t){
  ok(cli(f,['init']));f.commit('Initialize gitifact');return f;
 }
 
-test('product and guide documents are created, committed with reasons, moved and compared by ID',async t=>{
+test('wiki pages are created, committed with reasons, moved and compared by ID',async t=>{
  const f=setup(t);
  const created=ok(save(f,[
-  {type:'set-product',title:'제품 개요',body:'요구사항과 변경 이유를 Git에 연결한다.'},
+  {type:'create-doc',path:'README.md',title:'제품 개요',body:'요구사항과 변경 이유를 Git에 연결한다. [레이아웃](frontend/layout.md)'},
   {type:'create-doc',path:'frontend/layout.md',title:'레이아웃 지침',body:'중앙 컬럼은 64rem이다.'},
  ]));
- const [product,guide]=created.results.map(r=>r.id);
- assert.match(product,/^P-[a-z2-7]{10}$/);assert.match(guide,/^G-[a-z2-7]{10}$/);
- assert.equal(readFileSync(join(f.repo,'.gitifact/product/PRODUCT.md'),'utf8'),`<!-- gitifact-product: ${product} -->\n\n# 제품 개요\n\n요구사항과 변경 이유를 Git에 연결한다.\n`);
- assert.equal(existsSync(join(f.repo,'.gitifact/guides/history.jsonl')),false);
- const state=working(f);assert.equal(state.documents.find(s=>s.kind==='guide').documents[0].path,'.gitifact/guides/frontend/layout.md');
- const changes=ok(cli(f,['spec','changes']));assert.deepEqual(changes.changes.map(c=>[c.id,c.kind,c.types]).sort(),[[guide,'guide',['created']],[product,'product',['created']]].sort());
- const committed=ok(cli(f,['spec','commit','--file',file(f,{reasons:[{requirements:[],documents:[guide],reason:'화면 폭을 고정한다.'}],
-  paths:['.gitifact/product/PRODUCT.md','.gitifact/guides/frontend/layout.md','.gitifact/guides/history.jsonl'],message:'Add product and guide documents',authorization})]));
- assert.equal(committed.committed,true);assert.deepEqual(committed.withoutReason,[product]);
- const history=readFileSync(join(f.repo,'.gitifact/guides/history.jsonl'),'utf8').trim().split('\n').map(l=>JSON.parse(l));
- assert.equal(history.length,1);assert.deepEqual(history[0].documents,[guide]);assert.deepEqual(history[0].requirements,[]);
- const message=f.git(['log','-1','--format=%B']).stdout;assert.match(message,new RegExp('Gitifact-Doc: '+guide));assert.match(message,new RegExp('Gitifact-Doc: '+product));
- const read=ok(cli(f,['spec','read']));assert.equal(read.documents.find(s=>s.kind==='product').documents[0].title,'제품 개요');
+ const [entry,page]=created.results.map(r=>r.id);
+ assert.match(entry,/^W-[a-z2-7]{10}$/);assert.match(page,/^W-[a-z2-7]{10}$/);
+ assert.equal(readFileSync(join(f.repo,'.gitifact/wiki/README.md'),'utf8'),`---\nid: ${entry}\n---\n\n# 제품 개요\n\n요구사항과 변경 이유를 Git에 연결한다. [레이아웃](frontend/layout.md)\n`);
+ assert.equal(existsSync(join(f.repo,'.gitifact/wiki/history.jsonl')),false);
+ const state=working(f);assert.deepEqual(state.wiki.documents.map(d=>d.path),['.gitifact/wiki/README.md','.gitifact/wiki/frontend/layout.md']);assert.deepEqual(state.warnings,[]);assert.deepEqual(state.overrides,[]);
+ assert.deepEqual(ok(cli(f,['spec','working','--ids'])).wiki,{documents:[{id:entry,path:'.gitifact/wiki/README.md',title:'제품 개요'},{id:page,path:'.gitifact/wiki/frontend/layout.md',title:'레이아웃 지침'}]});
+ const changes=ok(cli(f,['spec','changes']));assert.deepEqual(changes.changes.map(c=>[c.id,c.kind,c.types]).sort(),[[page,'wiki',['created']],[entry,'wiki',['created']]].sort());
+ const committed=ok(cli(f,['spec','commit','--file',file(f,{reasons:[{requirements:[],documents:[page],reason:'화면 폭을 고정한다.'}],
+  paths:['.gitifact/wiki/README.md','.gitifact/wiki/frontend/layout.md','.gitifact/wiki/history.jsonl'],message:'Add wiki pages',authorization})]));
+ assert.equal(committed.committed,true);assert.deepEqual(committed.withoutReason,[entry]);
+ const history=readFileSync(join(f.repo,'.gitifact/wiki/history.jsonl'),'utf8').trim().split('\n').map(l=>JSON.parse(l));
+ assert.equal(history.length,1);assert.deepEqual(history[0].documents,[page]);assert.deepEqual(history[0].requirements,[]);
+ const message=f.git(['log','-1','--format=%B']).stdout;assert.match(message,new RegExp('Gitifact-Doc: '+page));assert.match(message,new RegExp('Gitifact-Doc: '+entry));
+ const read=ok(cli(f,['spec','read']));assert.equal(read.wiki.documents[0].title,'제품 개요');
  const first=f.git(['rev-parse','HEAD']).stdout.trim();
- ok(save(f,[{type:'move-doc',id:guide,path:'ui/layout.md'},{type:'update-doc',id:guide,title:'레이아웃 지침',body:'중앙 컬럼은 64rem이고 헤더는 얇다.'}]));
- assert.equal(existsSync(join(f.repo,'.gitifact/guides/frontend/layout.md')),false);
- ok(cli(f,['spec','commit','--file',file(f,{reasons:[{requirements:[],documents:[guide],reason:'폴더를 ui로 정리했다.'}],
-  paths:['.gitifact/guides/frontend/layout.md','.gitifact/guides/ui/layout.md','.gitifact/guides/history.jsonl'],message:'Move layout guide',authorization})]));
+ ok(save(f,[{type:'move-doc',id:page,path:'ui/layout.md'},{type:'update-doc',id:page,title:'레이아웃 지침',body:'중앙 컬럼은 64rem이고 헤더는 얇다.'}]));
+ assert.equal(existsSync(join(f.repo,'.gitifact/wiki/frontend/layout.md')),false);
+ // The entry page still links to the old path; the warning names the link and blocks nothing.
+ assert.deepEqual(working(f).warnings,[{code:'MISSING_LINK_TARGET',path:'.gitifact/wiki/README.md',target:'.gitifact/wiki/frontend/layout.md',link:'frontend/layout.md'}]);
+ ok(cli(f,['spec','commit','--file',file(f,{reasons:[{requirements:[],documents:[page],reason:'폴더를 ui로 정리했다.'}],
+  paths:['.gitifact/wiki/frontend/layout.md','.gitifact/wiki/ui/layout.md','.gitifact/wiki/history.jsonl'],message:'Move layout page',authorization})]));
  const diff=ok(cli(f,['spec','diff','--from',first,'--to','HEAD']));
- assert.deepEqual(diff.changes.map(c=>[c.id,c.types]),[[guide,['moved','modified']]]);assert.equal(diff.changes[0].reasons[0].reason,'폴더를 ui로 정리했다.');
+ assert.deepEqual(diff.changes.map(c=>[c.id,c.types]),[[page,['moved','modified']]]);assert.equal(diff.changes[0].reasons[0].reason,'폴더를 ui로 정리했다.');
  const api=await createSpecBrowserReader(f.repo,'fixture',f.env)();
- assert.equal(api.documents.length,2);assert.equal(api.documents.find(d=>d.id===guide).path,'.gitifact/guides/ui/layout.md');assert.ok(api.documents.every(d=>d.updatedAt));
- assert.deepEqual(api.events.map(e=>[e.id,e.kind,e.types]),[[guide,'guide',['moved','modified']],[guide,'guide',['created']],[product,'product',['created']]]);
+ assert.equal(api.version,2);assert.equal(api.documents.length,2);assert.equal(api.documents.find(d=>d.id===page).path,'.gitifact/wiki/ui/layout.md');assert.ok(api.documents.every(d=>d.updatedAt&&!('kind' in d)));
+ assert.deepEqual(api.events.map(e=>[e.id,e.kind,e.types]),[[page,'wiki',['moved','modified']],[page,'wiki',['created']],[entry,'wiki',['created']]]);
  assert.deepEqual(api.events[0].reasons,['폴더를 ui로 정리했다.']);
 });
 
-test('document commit hook failure restores both histories and index before a clean retry',t=>{
+test('wiki commit hook failure restores history and index before a clean retry',t=>{
  const f=setup(t);
- const saved=ok(save(f,[{type:'set-product',title:'제품',body:'제품 설명'},{type:'create-doc',path:'architecture.md',title:'구조',body:'구현 지침'}]));
- const [product,guide]=saved.results.map(r=>r.id);
- const paths=['.gitifact/product/PRODUCT.md','.gitifact/guides/architecture.md','.gitifact/product/history.jsonl','.gitifact/guides/history.jsonl'];
- const input=file(f,{reasons:[{requirements:[],documents:[product],reason:'제품 목적을 공유한다.'},{requirements:[],documents:[guide],reason:'구현 기준을 공유한다.'}],paths,message:'Add project documents',authorization});
+ const saved=ok(save(f,[{type:'create-doc',path:'README.md',title:'제품',body:'제품 설명'},{type:'create-doc',path:'architecture.md',title:'구조',body:'구현 지침'}]));
+ const [entry,page]=saved.results.map(r=>r.id);
+ const paths=['.gitifact/wiki/README.md','.gitifact/wiki/architecture.md','.gitifact/wiki/history.jsonl'];
+ const input=file(f,{reasons:[{requirements:[],documents:[entry,page],reason:'제품 목적과 구현 기준을 공유한다.'}],paths,message:'Add wiki',authorization});
  const head=f.git(['rev-parse','HEAD']).stdout;
  const index=readFileSync(join(f.repo,'.git/index'));
  const originals=paths.slice(0,2).map(p=>readFileSync(join(f.repo,p)));
@@ -65,54 +68,78 @@ test('document commit hook failure restores both histories and index before a cl
  assert.equal(f.git(['rev-parse','HEAD']).stdout,head);
  assert.deepEqual(readFileSync(join(f.repo,'.git/index')),index);
  paths.slice(0,2).forEach((p,i)=>assert.deepEqual(readFileSync(join(f.repo,p)),originals[i]));
- paths.slice(2).forEach(p=>assert.equal(existsSync(join(f.repo,p)),false));
+ assert.equal(existsSync(join(f.repo,paths[2])),false);
  unlinkSync(hook);
  const result=ok(cli(f,['spec','commit','--file',input]));
  assert.equal(result.committed,true);assert.deepEqual(result.withoutReason,[]);
  assert.equal(f.git(['status','--porcelain']).stdout,'');
 });
 
-test('invalid document files, foreign markers and edited committed reasons are rejected',t=>{
+test('invalid wiki files, foreign markers, old folders and edited committed reasons are rejected',t=>{
  const f=setup(t);
- for(const op of [{type:'create-doc',kind:'guide',path:'a.md',title:'x',body:'y'},{type:'create-doc',path:'../a.md',title:'x',body:'y'},
-  {type:'create-doc',path:'A.md',title:'x',body:'y'},{type:'create-doc',path:'a.md',title:'x',body:'본문\n<!-- gitifact-req: R-abcdefghij -->'},{type:'delete-product'}]) assert.equal(save(f,[op]).status,1);
- mkdirSync(join(f.repo,'.gitifact/product'),{recursive:true});
- f.write('.gitifact/product/PRODUCT.md','# 마커 없음\n\n본문\n');
- const missing=cli(f,['spec','working']);assert.equal(missing.status,1);assert.match(missing.stderr,/gitifact-product/);
- f.write('.gitifact/product/PRODUCT.md','<!-- gitifact-guide: G-abcdefghij -->\n\n# 종류 불일치\n\n본문\n');
+ for(const op of [{type:'create-doc',kind:'guide',path:'a.md',title:'x',body:'y'},{type:'create-doc',path:'../a.md',title:'x',body:'y'},{type:'create-doc',path:'sub/README.md',title:'x',body:'y'},
+  {type:'create-doc',path:'sub/A.md',title:'x',body:'y'},{type:'create-doc',path:'a.md',title:'x',body:'본문\n<!-- gitifact-req: R-abcdefghij -->'},{type:'set-product',title:'x',body:'y'},{type:'delete-product'}]) assert.equal(save(f,[op]).status,1,JSON.stringify(op));
+ mkdirSync(join(f.repo,'.gitifact/wiki'),{recursive:true});
+ f.write('.gitifact/wiki/README.md','# frontmatter 없음\n\n본문\n');
+ const missing=cli(f,['spec','working']);assert.equal(missing.status,1);assert.match(missing.stderr,/frontmatter/);
+ f.write('.gitifact/wiki/README.md','---\nid: G-abcdefghij\n---\n\n# 옛 ID\n\n본문\n');
  assert.equal(cli(f,['spec','working']).status,1);
- f.write('.gitifact/product/logo.png','ignored');f.write('.gitifact/product/PRODUCT.md','<!-- gitifact-product: P-abcdefghij -->\n\n# 제품\n\n본문\n');
- assert.equal(working(f).documents.find(s=>s.kind==='product').documents.length,1);
- f.write('.gitifact/product/extra.md','<!-- gitifact-product: P-bbbbbbbbbb -->\n\n# 둘째\n\n본문\n');
- assert.match(cli(f,['spec','working']).stderr,/PRODUCT\.md 하나만/);unlinkSync(join(f.repo,'.gitifact/product/extra.md'));
- ok(cli(f,['spec','commit','--file',file(f,{reasons:[{requirements:[],documents:['P-abcdefghij'],reason:'첫 문서'}],paths:['.gitifact/product/PRODUCT.md','.gitifact/product/history.jsonl'],message:'Add product doc',authorization})]));
- f.write('.gitifact/product/history.jsonl','');
- const edited=cli(f,['spec','changes']);assert.equal(edited.status,1);assert.match(edited.stderr,/커밋된 문서 이유/);
+ f.write('.gitifact/wiki/README.md','---\nid: W-abcdefghij\n---\n\n# 제품\n\n본문\n');f.write('.gitifact/wiki/notes.txt','ignored');
+ assert.equal(working(f).wiki.documents.length,1);
+ // 0.4.x product and guide folders are not records any more: neither read nor accepted as a commit selection.
+ mkdirSync(join(f.repo,'.gitifact/product'),{recursive:true});f.write('.gitifact/product/PRODUCT.md','<!-- gitifact-product: P-abcdefghij -->\n\n# 제품\n\n본문\n');
+ assert.equal(working(f).wiki.documents.length,1);
+ const legacy=cli(f,['spec','commit','--file',file(f,{reasons:[],paths:['.gitifact/wiki/README.md','.gitifact/product/PRODUCT.md'],message:'x',authorization})]);
+ assert.equal(legacy.status,1);assert.match(legacy.stderr,/삭제만 선택할 수 있습니다/);
+ unlinkSync(join(f.repo,'.gitifact/product/PRODUCT.md'));
+ ok(cli(f,['spec','commit','--file',file(f,{reasons:[{requirements:[],documents:['W-abcdefghij'],reason:'첫 문서'}],paths:['.gitifact/wiki/README.md','.gitifact/wiki/history.jsonl'],message:'Add entry page',authorization})]));
+ f.write('.gitifact/wiki/history.jsonl','');
+ const edited=cli(f,['spec','changes']);assert.equal(edited.status,1);assert.match(edited.stderr,/커밋된 위키 이유/);
 });
 
-test('product images beside PRODUCT.md are served by file name only',async t=>{
- const f=setup(t);mkdirSync(join(f.repo,'.gitifact/product'),{recursive:true});
- f.write('.gitifact/product/PRODUCT.md','<!-- gitifact-product: P-abcdefghij -->\n\n# 제품\n\n![로고](./logo.png)\n');
- writeFileSync(join(f.repo,'.gitifact/product/logo.png'),Buffer.from([0x89,0x50,0x4e,0x47]));f.write('.gitifact/product/notes.txt','no');
+test('assets are served by path under .gitifact/assets, inline for images and as downloads otherwise',async t=>{
+ const f=setup(t);mkdirSync(join(f.repo,'.gitifact/assets/diagrams'),{recursive:true});
+ writeFileSync(join(f.repo,'.gitifact/assets/diagrams/flow.png'),Buffer.from([0x89,0x50,0x4e,0x47]));f.write('.gitifact/assets/notes.txt','no');
+ writeFileSync(join(f.repo,'.gitifact/assets/logo.svg'),'<svg xmlns="http://www.w3.org/2000/svg"><script>1</script></svg>');
  const server=await startBrowserServer({cwd:f.repo,env:f.env,assetsDirectory:fileURLToPath(new URL('../dist/browser/',import.meta.url))});t.after(()=>server.close());
- const get=async path=>{const r=await fetch(server.url+path);return {status:r.status,type:r.headers.get('content-type'),bytes:new Uint8Array(await r.arrayBuffer()).length};};
- assert.deepEqual(await get('/api/v1/product/assets/logo.png'),{status:200,type:'image/png',bytes:4});
- for(const path of ['/api/v1/product/assets/notes.txt','/api/v1/product/assets/PRODUCT.md','/api/v1/product/assets/missing.png','/api/v1/product/assets/..%2Flogo.png']) assert.equal((await get(path)).status,path.includes('%2F')?400:404);
+ const get=async path=>{const r=await fetch(server.url+path);return {status:r.status,type:r.headers.get('content-type'),disposition:r.headers.get('content-disposition'),csp:r.headers.get('content-security-policy'),bytes:new Uint8Array(await r.arrayBuffer()).length};};
+ assert.deepEqual(await get('/api/v1/assets/diagrams/flow.png'),{status:200,type:'image/png',disposition:'inline',csp:"default-src 'none'; sandbox",bytes:4});
+ assert.equal((await get('/api/v1/assets/logo.svg')).csp,"default-src 'none'; sandbox");
+ const text=await get('/api/v1/assets/notes.txt');assert.equal(text.status,200);assert.equal(text.type,'application/octet-stream');assert.equal(text.disposition,'attachment; filename="notes.txt"');
+ for(const path of ['/api/v1/assets/missing.png','/api/v1/assets/','/api/v1/assets/..%2Fwiki%2FREADME.md','/api/v1/product/assets/logo.png']) assert.equal((await get(path)).status,path.includes('%2F')?400:404,path);
+ assert.equal((await fetch(server.url+'/api/v1/assets/logo.svg',{method:'POST'})).status,405);
 });
 
-test('an image beside PRODUCT.md commits with it while other files in the folder stay rejected',async t=>{
+test('assets commit with the documents that reference them and working warns about size, extension and orphans',t=>{
  const f=setup(t);
- ok(save(f,[{type:'set-product',title:'제품',body:'![로고](./logo.svg)'}]));
- writeFileSync(join(f.repo,'.gitifact/product/logo.svg'),'<svg xmlns="http://www.w3.org/2000/svg"></svg>');
- f.write('.gitifact/product/notes.txt','not an image');
- const product=working(f).documents.find(s=>s.kind==='product').documents[0].id;
- const base={reasons:[{requirements:[],documents:[product],reason:'제품 개요와 로고를 등록한다.'}],message:'Add product overview',authorization};
- const records=['.gitifact/product/PRODUCT.md','.gitifact/product/history.jsonl'];
- const refused=cli(f,['spec','commit','--file',file(f,{...base,paths:[...records,'.gitifact/product/notes.txt']})]);
+ ok(save(f,[{type:'create-doc',path:'README.md',title:'제품',body:'![로고](../assets/logo.svg) [설계](../spec/posts/design.md)'}]));
+ mkdirSync(join(f.repo,'.gitifact/assets'),{recursive:true});
+ writeFileSync(join(f.repo,'.gitifact/assets/logo.svg'),'<svg xmlns="http://www.w3.org/2000/svg"></svg>');
+ writeFileSync(join(f.repo,'.gitifact/assets/big.bin'),Buffer.alloc(1024*1024+1));
+ const before=working(f);
+ assert.deepEqual(before.warnings.map(w=>[w.code,w.path??w.target]).sort(),[['ASSET_EXTENSION','.gitifact/assets/big.bin'],['ASSET_SIZE','.gitifact/assets/big.bin'],['MISSING_LINK_TARGET','.gitifact/wiki/README.md'],['UNREFERENCED_ASSET','.gitifact/assets/big.bin']].sort());
+ unlinkSync(join(f.repo,'.gitifact/assets/big.bin'));
+ const page=before.wiki.documents[0].id;
+ const base={reasons:[{requirements:[],documents:[page],reason:'제품 개요와 로고를 등록한다.'}],message:'Add wiki entry',authorization};
+ const records=['.gitifact/wiki/README.md','.gitifact/wiki/history.jsonl'];
+ f.write('.gitifact/scratch.txt','not a record');
+ const refused=cli(f,['spec','commit','--file',file(f,{...base,paths:[...records,'.gitifact/scratch.txt']})]);
  assert.equal(refused.status,1);assert.match(refused.stderr,/삭제만 선택할 수 있습니다/);
- assert.equal(existsSync(join(f.repo,'.gitifact/product/history.jsonl')),false);
- ok(cli(f,['spec','commit','--file',file(f,{...base,paths:[...records,'.gitifact/product/logo.svg']})]));
- const tracked=f.git(['ls-tree','--name-only','-r','HEAD','--','.gitifact/product']).stdout;
- for(const name of ['PRODUCT.md','history.jsonl','logo.svg']) assert.ok(tracked.includes('.gitifact/product/'+name),name);
- assert.ok(!tracked.includes('notes.txt'));
+ assert.equal(existsSync(join(f.repo,'.gitifact/wiki/history.jsonl')),false);
+ ok(cli(f,['spec','commit','--file',file(f,{...base,paths:[...records,'.gitifact/assets/logo.svg']})]));
+ const tracked=f.git(['ls-tree','--name-only','-r','HEAD','--','.gitifact']).stdout;
+ for(const name of ['wiki/README.md','wiki/history.jsonl','assets/logo.svg']) assert.ok(tracked.includes('.gitifact/'+name),name);
+ assert.ok(!tracked.includes('scratch.txt'));
+});
+
+test('an ejected override is reported by working, replaces docs guidance and commits as a plain file',t=>{
+ const f=setup(t);
+ const ejected=ok(cli(f,['docs','wiki','--eject']));assert.equal(ejected.ejected,'.gitifact/overrides/wiki.md');
+ assert.deepEqual(working(f).overrides,['wiki']);
+ f.write('.gitifact/overrides/wiki.md','## 우리 규칙\n\n페이지는 세 개만 둔다.\n');
+ assert.match(cli(f,['docs','wiki']).stdout,/\n## 우리 규칙\n\n페이지는 세 개만 둔다\.\n$/);
+ ok(cli(f,['spec','commit','--file',file(f,{reasons:[],paths:['.gitifact/overrides/wiki.md'],message:'Customize wiki guidance',authorization})]));
+ assert.ok(f.git(['ls-tree','--name-only','-r','HEAD']).stdout.includes('.gitifact/overrides/wiki.md'));
+ f.write('.gitifact/overrides/wiki.md','');
+ const state=working(f);assert.deepEqual(state.overrides,[]);assert.deepEqual(state.warnings,[{code:'EMPTY_OVERRIDE',path:'.gitifact/overrides/wiki.md'}]);
 });

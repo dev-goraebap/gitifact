@@ -1,4 +1,6 @@
-<!-- gitifact-guide: G-r7rkd66hry -->
+---
+id: W-risprbk4wt
+---
 
 # 프론트엔드 디자인 시스템
 

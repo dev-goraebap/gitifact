@@ -1,4 +1,6 @@
-<!-- gitifact-design: S-zyro4g3e5f -->
+---
+id: S-zyro4g3e5f
+---
 
 # Git 기록 연결 설계
 

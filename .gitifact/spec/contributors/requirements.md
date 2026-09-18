@@ -1,4 +1,6 @@
-<!-- gitifact-spec: S-b4ubq7ghty -->
+---
+id: S-b4ubq7ghty
+---
 
 # 참여자 조회
 

@@ -1,4 +1,6 @@
-<!-- gitifact-spec: S-eordsbir6z -->
+---
+id: S-eordsbir6z
+---
 
 # 프로젝트 도입
 

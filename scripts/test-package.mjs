@@ -51,7 +51,7 @@ try {
   assert.deepEqual(status.checks, { state: 'not-run', reason: 'git-status-only' });
   const initialized = JSON.parse(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', 'init'], temporaryRoot));
   assert.equal(initialized.outcome, 'created');
-  assert.equal(initialized.schemaVersion, 1);
+  assert.equal(initialized.schemaVersion, 2);
   assert.deepEqual(initialized.baseline, { kind: 'empty' });
   const configBefore = await readFile(join(temporaryRoot, '.gitifact', 'config.json'));
   assert.equal(JSON.parse(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', 'init'], temporaryRoot)).outcome, 'already-initialized');
@@ -81,14 +81,16 @@ try {
   assert.equal(committed.outcome, 'committed');
   assert.equal((await spec(['read'])).specs[0].requirements[0].id, saved.results[1].id);
   assert.match(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', 'docs'], temporaryRoot), /^workflow /m);
+  // `docs` prints the format part and the default guidance joined; a project override would replace the second part.
+  const docSource = async name => (await readFile(join(workspace, 'apps/cli/src/shared/i18n/ko/docs/' + name), 'utf8')).trimEnd();
   assert.equal(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', 'docs', 'spec'], temporaryRoot),
-    await readFile(join(workspace, 'apps/cli/src/shared/i18n/ko/docs/spec.md'), 'utf8'), 'Bundled docs must match the asset source.');
+    await docSource('spec.md') + '\n\n' + await docSource('spec.default.md') + '\n', 'Bundled docs must match the asset source.');
   const agentsPath = join(temporaryRoot, 'AGENTS.md');
   const agents = await readFile(agentsPath, 'utf8');
   assert.deepEqual(initialized.agentDocs, { mode: 'install', paths: ['AGENTS.md', 'CLAUDE.md'] });
   assert.equal(await readFile(join(temporaryRoot, 'CLAUDE.md'), 'utf8'), '@AGENTS.md\n', 'init must add a CLAUDE.md that imports AGENTS.md.');
   assert.match(agents, /^# AGENTS\.md\n\nProject-specific guidance for AI coding agents\.\n\n<!-- GITIFACT:START -->\n/);
-  assert.ok(agents.includes('gitifact v' + version + ' · ko · 저장 규약 schemaVersion 1'), 'Block must carry the installed version.');
+  assert.ok(agents.includes('gitifact v' + version + ' · ko · 저장 규약 schemaVersion 2'), 'Block must carry the installed version.');
   assert.ok(agents.includes('gitifact docs spec'), 'Block must point at the bundled docs.');
   assert.match(agents, /<!-- GITIFACT:END -->\n$/);
   await writeFile(agentsPath, agents + '\n## Project rules\n\nKeep me.\n');

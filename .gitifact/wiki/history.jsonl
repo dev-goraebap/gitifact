@@ -1,0 +1,1 @@
+{"id":"H-t4gmc3w674","requirements":[],"documents":["W-4oau6h3awn","W-b757hxarv2","W-dmcvdbs53b","W-hzrkrmfs6y","W-ognoghkj7k","W-qct6kpdgf6","W-risprbk4wt","W-rq66son6s4","W-xt2mfa2odx"],"reason":"product·guides를 위키로 통합하며 기존 지침 7건을 새 `W-` ID로 다시 저장하고, 사용자가 정한 구성(ARCHITECTURE.md, references, adr)으로 재편했다. 제품 소개는 루트 README에 있으므로 위키 README는 두지 않는다. 오늘의 두 결정을 ADR 0001·0002로 남겼다."}

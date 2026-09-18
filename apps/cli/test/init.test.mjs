@@ -75,7 +75,7 @@ test('SHA-1 and SHA-256 baselines survive new commits and detached subdirectory 
 
 test('ignore rules, tracked deletion, legacy and malformed files never overwrite data', async t => {
   const f = fixture(t);
-  assert.equal((await init(f, { dryRun: true })).schemaVersion, 1);
+  assert.equal((await init(f, { dryRun: true })).schemaVersion, 2);
   assert.equal(existsSync(join(f.repo, '.gitifact')), false);
   f.write('.gitignore', '.gitifact/\n');
   await assert.rejects(init(f), { code: 'CONFIG_IGNORED' });
@@ -115,7 +115,7 @@ test('parallel init publishes one config', async t => {
   const results = await Promise.all([init(f), init(f)]);
   assert.deepEqual(results.map(r => r.outcome).sort(), ['already-initialized', 'created']);
   assert.deepEqual(readdirSync(join(f.repo, '.gitifact')), ['config.json']);
-  assert.equal(JSON.parse(readFileSync(path(f), 'utf8')).schemaVersion, 1);
+  assert.equal(JSON.parse(readFileSync(path(f), 'utf8')).schemaVersion, 2);
 });
 
 test('input changes and injected failure leave user files intact and permit retry', async t => {
@@ -130,7 +130,7 @@ test('input changes and injected failure leave user files intact and permit retr
 
 test('a concurrently created user config is refused and preserved', async t => {
   const f = fixture(t);
-  const text = '{"schemaVersion":1,"baseline":{"kind":"empty"}}';
+  const text = '{"schemaVersion":2,"baseline":{"kind":"empty"}}';
   // The record check runs before the config check, so a config that appears mid-run is treated as unadopted data.
   await assert.rejects(init(f, {}, f.repo, async () => { writeFileSync(path(f), text); }), { code: 'EXISTING_RECORDS' });
   assert.equal(readFileSync(path(f), 'utf8'), text);
@@ -151,7 +151,7 @@ test('built command has versioned output and rejects removed options before writ
   const entry = fileURLToPath(new URL('../dist/main.js', import.meta.url));
   const cli = args => spawnSync(process.execPath, [entry, 'init', ...args], { cwd: f.repo, env: f.env, encoding: 'utf8', timeout: 35000 });
   const removed = cli(['--mode', 'prototype']); assert.equal(removed.status, 1); assert.equal(existsSync(join(f.repo, '.gitifact')), false);
-  const planned = cli(['--dry-run']); assert.equal(planned.status, 0); assert.equal(JSON.parse(planned.stdout).schemaVersion, 1);
+  const planned = cli(['--dry-run']); assert.equal(planned.status, 0); assert.equal(JSON.parse(planned.stdout).schemaVersion, 2);
   const good = cli([]); assert.equal(good.status, 0, good.stderr);
   const dto = JSON.parse(good.stdout); assert.equal(dto.contract, 'project-init'); assert.equal(dto.outcome, 'created');
 });

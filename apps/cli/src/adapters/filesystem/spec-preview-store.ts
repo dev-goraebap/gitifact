@@ -1,7 +1,8 @@
 import { lstat, readdir, readFile, mkdir, writeFile, rename, unlink, rmdir } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import { createHash, randomBytes } from 'node:crypto';
-import { editSpecPreview, parsePreviewBundle, renderDesignPreview, designReferenceWarnings, renderSpecPreview, renderDocument, recordPathPattern, DOCUMENT_DIRS, SpecPreviewError, parseManagedConfig } from '@gitifact/core';
+import { editSpecPreview, parsePreviewBundle, renderDesignPreview, renderSpecPreview, renderDocument, recordPathPattern, WIKI_DIR, SpecPreviewError, parseManagedConfig } from '@gitifact/core';
+import { listOverrides, workingWarnings } from './working-warnings.js';
 import { specPreviewReader } from '../git/spec-preview-reader.js';
 import { readConfigFile } from './config-file.js';
 import { t } from '../../shared/i18n/index.js';
@@ -15,7 +16,7 @@ export async function failOnLegacyLock(gitDir: string) {
   for (const name of LEGACY_LOCKS) if (await info(join(gitDir, name))) fail(t('store.legacyLock', { path: join(gitDir, name) }));
 }
 const decode = (bytes: Buffer) => new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(bytes);
-export const generatePreviewId = (prefix: 'S' | 'R' | 'H' | 'P' | 'G') => prefix + '-' + [...randomBytes(10)].map(n => 'abcdefghijklmnopqrstuvwxyz234567'[n & 31]).join('');
+export const generatePreviewId = (prefix: 'S' | 'R' | 'H' | 'W') => prefix + '-' + [...randomBytes(10)].map(n => 'abcdefghijklmnopqrstuvwxyz234567'[n & 31]).join('');
 /** A failure after Git may have changed HEAD: keep written files and recovery data instead of rolling back. */
 export class PreservedPreviewError extends SpecPreviewError {}
 
@@ -26,7 +27,7 @@ async function snapshot(root: string) {
   if (!parent && await info(join(root, '.tryce'))) fail(t('store.migrateFirst'));
   const config = await readConfigFile(root);
   if ((config !== undefined && !('schemaVersion' in parseManagedConfig(config))) || await info(join(root, 'specs'))) fail(t('store.legacyProject'));
-  // Spec folders are one level deep; document folders may nest, and only Markdown plus the root reason file are read there.
+  // Spec folders are one level deep; the wiki may nest, and only Markdown plus the root reason file are read there.
   async function visit(path: string, depth: number, documents: boolean) {
     const stat = await info(join(root, path)); if (!stat) return;
     if (stat.isSymbolicLink() || (!stat.isDirectory() && !stat.isFile())) fail(t('store.linkOrSpecial', { path }));
@@ -45,10 +46,10 @@ async function snapshot(root: string) {
     }
   }
   await visit('.gitifact/spec', 0, false);
-  for (const dir of Object.values(DOCUMENT_DIRS)) await visit(dir, 0, true);
+  await visit(WIKI_DIR, 0, true);
   const bundle = parsePreviewBundle(files);
   // Entries are sorted so the stamp does not depend on the order the store folders were visited.
-  return { files, specs: bundle.specs, documents: bundle.documents, bundle, config, stamp: digest(JSON.stringify([...files].sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)) + (config ?? '')) };
+  return { root, files, specs: bundle.specs, wiki: bundle.wiki, bundle, config, stamp: digest(JSON.stringify([...files].sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)) + (config ?? '')) };
 }
 
 export async function readWorkingPreviewState(cwd: string) {
@@ -62,7 +63,8 @@ export async function readWorkingPreviewState(cwd: string) {
 }
 
 export async function readWorkingPreview(cwd: string) {
-  const { stamp, specs, documents } = await readWorkingPreviewState(cwd); return { stamp, specs, documents, warnings: designReferenceWarnings(specs) };
+  const { root, stamp, specs, wiki, bundle } = await readWorkingPreviewState(cwd);
+  return { stamp, specs, wiki, overrides: (await listOverrides(root)).topics, warnings: await workingWarnings(root, bundle) };
 }
 
 export async function saveWorkingPreview(cwd: string, input: unknown, publish = rename) {
@@ -77,8 +79,8 @@ export async function saveWorkingPreview(cwd: string, input: unknown, publish = 
       if (!old || renderSpecPreview(old) !== renderSpecPreview(spec)) writes.set(spec.path, renderSpecPreview(spec));
       if (JSON.stringify(old?.design) !== JSON.stringify(spec.design)) writes.set(spec.path.replace(/requirements\.md$/, 'design.md'), spec.design ? renderDesignPreview(spec.id, spec.design) : null);
     }
-    // A moved document leaves its old path and appears at the new one; a deleted one only leaves.
-    const previousDocs = before.documents.flatMap(s => s.documents); const nextDocs = result.documents.flatMap(s => s.documents);
+    // A moved page leaves its old path and appears at the new one; a deleted one only leaves.
+    const previousDocs = before.wiki.documents; const nextDocs = result.wiki.documents;
     for (const doc of nextDocs) {
       const old = previousDocs.find(d => d.id === doc.id);
       if (old && old.path !== doc.path) writes.set(old.path, null);
@@ -139,7 +141,7 @@ export async function previewTransaction<T>(cwd: string, expected: string, build
     await result.recheck?.();
     // Runs while the lock is held; a normal failure here restores the published files like any other failure.
     await afterPublish?.(after);
-    return { ...result.data, stamp: after.stamp, paths: changed.map(c => c.path), specs: after.specs, documents: after.documents, warnings: designReferenceWarnings(after.specs) };
+    return { ...result.data, stamp: after.stamp, paths: changed.map(c => c.path), specs: after.specs, wiki: after.wiki, warnings: await workingWarnings(root, after.bundle) };
   } catch (error) {
     if (error instanceof PreservedPreviewError) { keepRecovery = true; throw error; }
     for (const c of [...published].reverse()) {

@@ -59,7 +59,7 @@ async function execute(action: Action, options: Options, controls: SpecPreviewCo
     if (action === 'read') {
       const commit = await reader.resolve(options.ref ?? 'HEAD');
       const bundle = await reader.readBundle(commit);
-      process.stdout.write(JSON.stringify({ ...envelope, ok: true, commit, specs: bundle.specs, documents: bundle.documents }) + '\n');
+      process.stdout.write(JSON.stringify({ ...envelope, ok: true, commit, specs: bundle.specs, wiki: bundle.wiki }) + '\n');
     } else {
       const [from, to] = await Promise.all([reader.resolve(options.from!), reader.resolve(options.to!)]);
       const [before, after] = await Promise.all([reader.readBundle(from), reader.readBundle(to)]);
@@ -93,14 +93,14 @@ type Inputs = Awaited<ReturnType<typeof prepareAgentInputs>>;
 /** Smaller working views so agents read what they need instead of keeping the full output in a file. */
 function narrowWorking(working: Working, options: Options, inputs: Inputs) {
   if (options.stamp) return { stamp: working.stamp, inputs };
-  let { specs, documents, warnings } = working;
+  let { specs, wiki, warnings } = working; const { overrides } = working;
   if (options.feature !== undefined) {
     specs = specs.filter(s => s.path === '.gitifact/spec/' + options.feature + '/requirements.md');
     if (!specs.length) throw new SpecPreviewError(t('preview.unknownFeature', { feature: options.feature }));
-    documents = []; warnings = warnings.filter(w => w.specId === specs[0]!.id);
+    wiki = { documents: [], history: [] }; warnings = warnings.filter(w => w.code === 'MISSING_DESIGN_REFERENCE' && w.specId === specs[0]!.id);
   }
-  if (!options.ids) return { stamp: working.stamp, inputs, specs, documents, warnings };
-  return { stamp: working.stamp, inputs, warnings,
+  if (!options.ids) return { stamp: working.stamp, inputs, overrides, specs, wiki, warnings };
+  return { stamp: working.stamp, inputs, overrides, warnings,
     specs: specs.map(s => ({ id: s.id, path: s.path, title: s.title, design: s.design?.title ?? null, requirements: s.requirements.map(r => ({ id: r.id, title: r.title })) })),
-    documents: documents.map(set => ({ kind: set.kind, documents: set.documents.map(d => ({ id: d.id, path: d.path, title: d.title })) })) };
+    wiki: { documents: wiki.documents.map(d => ({ id: d.id, path: d.path, title: d.title })) } };
 }

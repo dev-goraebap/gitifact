@@ -1,4 +1,6 @@
-<!-- gitifact-design: S-b7f4g2gpw6 -->
+---
+id: S-b7f4g2gpw6
+---
 
 # 버전 확인과 패치노트 설계
 

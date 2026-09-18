@@ -1,4 +1,6 @@
-<!-- gitifact-guide: G-v3gs3pgnvt -->
+---
+id: W-rq66son6s4
+---
 
 # 프론트엔드 코드 스타일
 

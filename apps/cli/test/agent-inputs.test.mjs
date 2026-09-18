@@ -96,7 +96,7 @@ test('working narrows to one feature or to IDs and titles', t => {
   ok(cli(f, ['spec', 'save', '--file', '-'], {}, JSON.stringify({ expected: stamp, operations: [...create, { type: 'create', feature: 'users', title: '사용자' }] })));
   const feature = ok(cli(f, ['spec', 'working', '--feature', 'posts']));
   assert.deepEqual(feature.specs.map(s => s.path), ['.gitifact/spec/posts/requirements.md']);
-  assert.deepEqual(feature.documents, []); assert.equal(feature.specs[0].requirements[0].body, '제목을 입력해 저장합니다.');
+  assert.deepEqual(feature.wiki, { documents: [], history: [] }); assert.equal(feature.specs[0].requirements[0].body, '제목을 입력해 저장합니다.');
   const ids = ok(cli(f, ['spec', 'working', '--ids']));
   assert.equal(ids.specs.length, 2);
   assert.deepEqual(Object.keys(ids.specs.find(s => s.path.includes('/posts/')).requirements[0]).sort(), ['id', 'title']);

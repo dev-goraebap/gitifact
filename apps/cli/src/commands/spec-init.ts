@@ -1,4 +1,4 @@
-import { InitError, parseManagedConfig, type SpecProjectConfig } from '@gitifact/core';
+import { InitError, parseManagedConfig, SCHEMA_VERSION, type SpecProjectConfig } from '@gitifact/core';
 import { projectInitV4 } from '@gitifact/contracts';
 import { readdir } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -32,7 +32,7 @@ export async function initializeSpecProject(cwd: string, dryRun = false, env = p
     const entries = await readdir(join(root, '.gitifact')).catch(e => { if (e.code === 'ENOENT') return []; throw e; });
     if (entries.some(name => !/^\.init-[a-f0-9-]+\.tmp$/.test(name))) throw new InitError('EXISTING_RECORDS', t('init.orphanStore'));
   };
-  const config: SpecProjectConfig = { schemaVersion: 1, baseline: first.state.head.commit
+  const config: SpecProjectConfig = { schemaVersion: SCHEMA_VERSION, baseline: first.state.head.commit
     ? { kind: 'commit', objectFormat: first.state.repository.objectFormat, commit: first.state.head.commit } : { kind: 'empty' } };
   const text = JSON.stringify(config, null, 2) + '\n';
   const recheck = async () => {

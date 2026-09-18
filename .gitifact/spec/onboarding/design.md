@@ -1,4 +1,6 @@
-<!-- gitifact-design: S-eordsbir6z -->
+---
+id: S-eordsbir6z
+---
 
 # 프로젝트 도입 설계
 
@@ -9,7 +11,7 @@
 ## 구조와 데이터
 <!-- gitifact-ref: R-lpwtvv6ldp -->
 
-.gitifact/config.json은 schemaVersion과 baseline을 저장한다. HEAD가 있으면 기준 커밋과 Git 객체 형식을, 첫 커밋 전이면 empty 기준선을 기록한다. 모드·승인 묶음은 저장하지 않는다.
+.gitifact/config.json은 schemaVersion(현재 2. frontmatter·위키·에셋·재정의를 쓰는 규약)과 baseline을 저장한다. schemaVersion 1(0.4.x)은 이유를 밝히며 거부하고 전환하지 않는다. HEAD가 있으면 기준 커밋과 Git 객체 형식을, 첫 커밋 전이면 empty 기준선을 기록한다. 모드·승인 묶음은 저장하지 않는다.
 
 CLI의 init-repository 어댑터가 저장소·현재 checkout·HEAD·index를 관측하고 initializeSpecProject가 도입 조건을 확인한다. 설정 파일 어댑터는 임시 파일로 준비하고 기존 파일을 덮어쓰지 않는 방식으로 게시한다. 지침 파일은 managed-file 어댑터가 같은 방식(임시 파일, 조회 중 변경 감지, 링크 또는 교체)으로 쓴다.
 
@@ -29,9 +31,9 @@ CLI의 init-repository 어댑터가 저장소·현재 checkout·HEAD·index를 �
 
 설치 대상에 AGENTS.md가 들어가고(옵션 없음·`all`·`codex`·`cursor`·`hermes`) CLAUDE.md와 .claude/CLAUDE.md가 모두 없으면 루트 CLAUDE.md를 `@AGENTS.md` 한 줄로 만든다. 줄바꿈은 AGENTS.md를 따른다. 이 파일은 wrapper라 이후 init·update가 블록을 넣지 않는다. 결과의 `agentDocs.paths`에 CLAUDE.md도 담는다. `--remove-agents`는 AGENTS.md를 삭제할 때 CLAUDE.md의 내용이 공백을 제외하고 정확히 `@AGENTS.md`면 함께 삭제한다. AGENTS.md에 사용자 내용이 남거나 CLAUDE.md를 사용자가 고쳤으면 남긴다. `claude` 프리셋은 AGENTS.md를 쓰지 않으므로 wrapper도 만들지 않는다.
 
-블록 본문은 apps/cli/src/shared/i18n/<lang>/block.md이며 commands/agent-block.ts가 `{version}`·`{language}`·`{topics}` 자리를 채우고 마커로 감싼다. 본문은 `## Gitifact Guide` 제목으로 시작하고 빈 줄 뒤에 CLI 버전·언어·저장 규약 줄(`gitifact vX · ko · 저장 규약 schemaVersion 1`)을 한 문단으로 둬 이후 stale 판정과 언어 유지에 쓴다. 파서는 이 줄을 위치가 아니라 줄 전체 일치로 찾으므로 제목 추가 전 블록도 읽는다. 언어 토큰이 없는 과거 블록도 읽고 한국어로 간주한다. 내용은 `###` 절로 나눈 시작 시 확인할 것(CLI 미설치 시 사용자 동의를 받아 `npm install -g gitifact@{version}`으로 설치), 요구사항 분류 표, 규칙, 명령 목록이다. Markdown은 연속한 일반 줄을 한 문단으로 합치므로 모든 줄을 제목·목록·표·독립 문단으로 쓰고, 끝은 빈 줄과 `---`로 마커 바깥 내용과 구분한다(빈 줄 없이 `---`를 두면 앞 줄이 제목이 된다). 빈 줄을 포함해 50줄 이내다. 설치 안내의 버전은 블록을 쓴 CLI 버전이라 팀원이 같은 버전을 설치한다. 기존 파일의 줄바꿈(CRLF)을 따른다. 마커 쌍이 있으면 그 사이만 교체하고, 없으면 빈 줄 뒤에 덧붙이며, START만 있거나 START가 중복이면 AGENT_DOCS_MALFORMED로 거부한다.
+블록 본문은 apps/cli/src/shared/i18n/<lang>/block.md이며 commands/agent-block.ts가 `{version}`·`{language}`·`{topics}` 자리를 채우고 마커로 감싼다. 본문은 `## Gitifact Guide` 제목으로 시작하고 빈 줄 뒤에 CLI 버전·언어·저장 규약 줄(`gitifact vX · ko · 저장 규약 schemaVersion 2`)을 한 문단으로 둬 이후 stale 판정과 언어 유지에 쓴다. 파서는 이 줄을 위치가 아니라 줄 전체 일치로 찾으므로 제목 추가 전 블록도 읽는다. 언어 토큰이 없는 과거 블록도 읽고 한국어로 간주한다. 내용은 `###` 절로 나눈 시작 시 확인할 것(CLI 미설치 시 사용자 동의를 받아 `npm install -g gitifact@{version}`으로 설치), 요구사항 분류 표, 규칙, 명령 목록이다. Markdown은 연속한 일반 줄을 한 문단으로 합치므로 모든 줄을 제목·목록·표·독립 문단으로 쓰고, 끝은 빈 줄과 `---`로 마커 바깥 내용과 구분한다(빈 줄 없이 `---`를 두면 앞 줄이 제목이 된다). 빈 줄을 포함해 50줄 이내다. 설치 안내의 버전은 블록을 쓴 CLI 버전이라 팀원이 같은 버전을 설치한다. 기존 파일의 줄바꿈(CRLF)을 따른다. 마커 쌍이 있으면 그 사이만 교체하고, 없으면 빈 줄 뒤에 덧붙이며, START만 있거나 START가 중복이면 AGENT_DOCS_MALFORMED로 거부한다.
 
-상세 규칙은 apps/cli/src/shared/i18n/<lang>/docs/의 Markdown 다섯 편(workflow·spec·design·product·commit)이며 빌드 시 dist/i18n/<lang>/docs로 복사되고 `gitifact docs <topic>`이 그대로 출력한다. 스킬 파일과 매니페스트·복사본 검사는 두지 않는다. 지침 텍스트의 편집 원본은 한 곳이다.
+상세 규칙은 apps/cli/src/shared/i18n/<lang>/docs/의 Markdown(workflow·spec·design·wiki·commit 각 형식 파일과 `.default.md` 운영 지침)이며 빌드 시 dist/i18n/<lang>/docs로 복사되고 `gitifact docs <topic>`이 그대로 출력한다. 스킬 파일과 매니페스트·복사본 검사는 두지 않는다. 지침 텍스트의 편집 원본은 한 곳이다.
 
 ## 오류 처리와 검증
 

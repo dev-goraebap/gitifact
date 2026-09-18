@@ -1,4 +1,6 @@
-<!-- gitifact-guide: G-nnbppll2p5 -->
+---
+id: W-dmcvdbs53b
+---
 
 # CLI와 공통 코드
 

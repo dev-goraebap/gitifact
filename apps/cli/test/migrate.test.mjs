@@ -25,7 +25,7 @@ function legacy(t) {
   for (const [k, v] of [['user.name', 'Tryce fixture'], ['user.email', 'fixture@example.invalid'], ['commit.gpgsign', 'false'], ['core.autocrlf', 'false']]) f.git(['config', k, v]);
   f.write('app.js', 'export {};\n'); f.commit('Initial');
   mkdirSync(join(f.repo, '.tryce/spec/posts'), { recursive: true });
-  f.write('.tryce/config.json', JSON.stringify({ schemaVersion: 1, baseline: { kind: 'commit', objectFormat: 'sha1', commit: f.git(['rev-parse', 'HEAD']).stdout.trim() } }, null, 2) + '\n');
+  f.write('.tryce/config.json', JSON.stringify({ schemaVersion: 2, baseline: { kind: 'commit', objectFormat: 'sha1', commit: f.git(['rev-parse', 'HEAD']).stdout.trim() } }, null, 2) + '\n');
   f.write(legacyFiles[0], legacyReq); f.write(legacyFiles[1], legacyDesign); f.write(legacyFiles[2], history);
   f.commit('Legacy spec');
   return f;

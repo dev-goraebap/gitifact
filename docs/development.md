@@ -1,5 +1,20 @@
 # 개발 환경
 
+## 2026-09-18 위키·frontmatter·에셋·지침 재정의 (schemaVersion 2)
+
+다른 프로젝트에서 온 보고(Codex로 AGENTS.md만 두고 도입한 뒤 Claude Code 참여자가 블록을 못 읽음)를 계기로 도입 경로를 고치고, 이어서 사용자와 논의한 저장 규약 개선을 한 번에 적용했다. 결정과 기각한 대안은 각 기능의 설계 문서에 있다.
+
+- product·guides 두 폴더와 `P-`·`G-` ID를 `.gitifact/wiki/`와 `W-` ID 하나로 대체했다. 진입 페이지는 `README.md`다. 전환 도구는 두지 않는다(정식 버전 전, 사용자 결정).
+- 파일 단위 ID는 frontmatter로 옮겼다. 절 단위 `gitifact-req`·`gitifact-ref` 주석은 그대로다. 설계 frontmatter의 `sources`가 참고 문서 목록이다. 0.4.x의 첫 줄 주석은 이력 조회를 위해 읽기만 한다.
+- `.gitifact/assets/`(ID 없는 일반 파일)와 `spec working`의 경고(깨진 상대 링크, 에셋 크기·확장자·미참조, 빈 재정의)를 추가했다. 어떤 경고도 저장·커밋을 막지 않는다.
+- 브라우저가 문서의 상대 링크를 그릴 때 해석한다. 저장소의 다른 파일은 열지 않고 경로만 복사한다.
+- `docs <topic>`이 형식 부분과 운영 지침을 이어 출력하고, `--eject`로 `.gitifact/overrides/<topic>.md`에 복사한 운영 지침이 내장본을 대신한다.
+- `update` 출력 계약 v3(`agentDocs.missing`), `browser-specs` 계약 v2, 저장 규약 schemaVersion 2. schemaVersion 1은 이유를 밝히며 거부한다.
+
+이 저장소의 기록은 일회성 스크립트(DEV-01)로 전환했다. 이어서 위키를 README·ARCHITECTURE·references·adr 구성으로 재편하고 다섯 topic을 모두 `.gitifact/overrides/`로 빼냈으며, 위키 재정의 지침에 이 구성과 톤앤매너를 적었다. 재편 스크립트가 두 페이지의 첫 문단을 떨어뜨린 것을 발견해 복구했다. 명세 16개 파일의 첫 줄 주석을 frontmatter로 바꾸고, PRODUCT.md와 guides 7건을 `spec save`의 create-doc으로 위키에 다시 저장해 새 ID를 받았으며 로고를 assets로 옮기고 옛 폴더를 지웠다. 옛 history.jsonl의 이유는 Git 이력에 남는다.
+
+검증: `pnpm check` 통과. core 29·contracts 7·intro 3·CLI 132·브라우저 30·패키지 설치 검사. 브라우저의 업데이트 대화상자 제목 위치 테스트가 전체 실행에서 한 번 0.14px 차이로 실패했으나 단독 3회 반복은 통과했다(열림 애니메이션 타이밍, 이번 변경과 무관).
+
 ## 2026-09-17 제품 소개 글 원본
 
 README와 브라우저 소개 본문이 이미 10줄 어긋나 있었다(제품명 표기 `gitifact`/`Gitifact`, 저장소 상대 링크와 앱 경로). 영어 추가와 gitifact.xyz 랜딩 사이트(Cloudflare 정적 배포, 사이트가 언어 전환 담당)를 앞두고 원본을 `packages/intro/<lang>/intro.md` 하나로 정했다. 브라우저는 `@gitifact/intro/ko/intro.md?raw`로 가져오고, 사이트도 같은 패키지를 쓸 예정이다. 사이트 앱이 원본을 소유하는 안과 브라우저의 about.md를 원본으로 두는 안은 앱끼리 소스를 import하게 돼 기각했다. 본문은 PRODUCT.md와 표기가 같은 브라우저 쪽을 기준으로 삼았다.

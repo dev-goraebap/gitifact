@@ -14,7 +14,7 @@ export async function runInit(options: InitOptions, version: string) {
     const docs = dto.agentDocs.mode === 'skip' ? t('init.text.skipped')
       : dto.agentDocs.paths.join(', ') + (dto.agentDocs.mode === 'remove' ? ' (' + t('init.text.blockRemoved') + ')' : dto.outcome === 'planned' ? ' (' + t('init.text.blockPlanned') + ')' : ' (' + t('init.text.blockUpdated') + ')');
     process.stdout.write(options.format === 'text'
-      ? `${dto.outcome}: ${dto.rootPath}/.gitifact/config.json\n${t('init.text.storage')}: schemaVersion 1\n${t('init.text.agentDocs')}: ${docs}\n`
+      ? `${dto.outcome}: ${dto.rootPath}/.gitifact/config.json\n${t('init.text.storage')}: schemaVersion ${dto.schemaVersion}\n${t('init.text.agentDocs')}: ${docs}\n`
       : JSON.stringify(dto) + '\n');
   } catch (error) {
     const known = error instanceof InitError || error instanceof RepositoryReadError;

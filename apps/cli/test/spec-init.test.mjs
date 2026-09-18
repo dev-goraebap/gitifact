@@ -18,7 +18,7 @@ test('spec init dry-run, repeat and agent docs block preserve existing work and 
   const before = fingerprint(f.repo);
   const planned = call(f, ['init', '--dry-run']);
   assert.deepEqual([planned.outcome, planned.agentDocs], ['planned', { mode: 'install', paths: ['AGENTS.md', 'CLAUDE.md'] }]); assert.deepEqual(fingerprint(f.repo), before);
-  assert.equal(call(f, ['init']).schemaVersion, 1);
+  assert.equal(call(f, ['init']).schemaVersion, 2);
   const config = readFileSync(join(f.repo, '.gitifact/config.json'), 'utf8');
   assert.equal(JSON.parse(config).mode, undefined);
   const agents = readFileSync(join(f.repo, 'AGENTS.md'), 'utf8');
@@ -71,7 +71,7 @@ test('explicit legacy replacement can prepare and commit deletion without retain
   mkdirSync(join(f.repo,'.gitifact/spec/old'),{recursive:true}); f.write('.gitifact/config.json',legacyConfig);
   const oldPath='.gitifact/spec/old/tryce.json'; f.write(oldPath,'{"kind":"tryce-requirements","format":"requirements-1","spec":"old","requirements":[],"reviews":[],"decisions":[]}\n'); f.commit('Legacy baseline');
   const config=JSON.parse(readFileSync(join(f.repo,'.gitifact/config.json'),'utf8'));
-  f.write('.gitifact/config.json',JSON.stringify({schemaVersion:1,baseline:config.baseline})+'\n');
+  f.write('.gitifact/config.json',JSON.stringify({schemaVersion:2,baseline:config.baseline})+'\n');
   const {unlinkSync}=await import('node:fs'); unlinkSync(join(f.repo,oldPath));
   const saved=input(f,'save',{expected:call(f,['spec','working']).stamp,operations:[{type:'create',feature:'product',title:'제품 요구사항'},{type:'add',feature:'product',title:'사용자 의도 기록',body:'최종 요구사항을 기록한다.'}]});
   const prepared=input(f,'prepare',{expected:call(f,['spec','changes']).expected,reasons:[{requirements:[saved.results[1].id],reason:'사용자가 요청한 새 형식 전환'}]});

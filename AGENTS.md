@@ -3,15 +3,15 @@
 <!-- GITIFACT:START -->
 ## Gitifact Guide
 
-gitifact v0.4.4 · ko · 저장 규약 schemaVersion 1
+gitifact v0.4.4 · ko · 저장 규약 schemaVersion 2
 
 CLI: 모든 명령은 `gitifact <cmd>`로 실행한다. 프로젝트 지침이 다른 실행 방법을 지정하면 그것을 따른다.
 
 ### 시작할 때
 
 - `gitifact` 명령이 없으면 이 프로젝트에 참여하는 데 필요한 CLI가 설치되지 않은 것이다. 사용자에게 알리고 동의를 받아 `npm install -g gitifact@0.4.4`으로 설치한 뒤 진행한다. 설치하지 못하면 명세 저장·커밋을 추측으로 대신하지 않는다.
-- `gitifact spec working`으로 제품 설명·지침·기능 명세를 읽고 git status와 기존 staging을 확인한다.
-- 이 블록은 요약이다. 상세 형식은 `gitifact docs <topic>`으로 읽고 기억으로 채우지 않는다.
+- `gitifact spec working`으로 위키·기능 명세·경고를 읽고 git status와 기존 staging을 확인한다.
+- 이 블록은 요약이다. 상세 형식은 `gitifact docs <topic>`으로 읽고 기억으로 채우지 않는다. 프로젝트가 `.gitifact/overrides/`로 운영 지침을 바꿨으면 docs 출력에 그 내용이 실린다.
 
 ### 무엇을 요구사항으로 남기는가
 
@@ -28,6 +28,7 @@ CLI: 모든 명령은 `gitifact <cmd>`로 실행한다. 프로젝트 지침이 �
 
 - 명세를 저장하기 전에 `gitifact docs spec`을 읽는다. ID는 CLI가 발급한 값만 쓴다.
 - 새 기능은 requirements.md와 design.md를 함께 정리한다(`gitifact docs design`). 요구사항만 요청받으면 따른다.
+- 제품 소개·구조·규칙은 위키에 둔다(`gitifact docs wiki`). 요구사항·설계를 쓰기 전에 위키의 README.md와 관련 페이지를 읽는다.
 - 커밋 요청을 받으면 `gitifact docs commit`을 읽고 명세·이유·코드·테스트를 함께 커밋한다.
 - 자동 기록은 커밋 권한이 아니다. 사용자 요청이나 명시적 프로젝트 정책이 있을 때만 커밋하고 푸시는 별도 요청을 따른다.
 - 불명확한 제품 동작만 질문하고 독립적인 작업은 진행한다. 기존 기능 전체 도출은 요청받았을 때 한다.
@@ -37,9 +38,9 @@ CLI: 모든 명령은 `gitifact <cmd>`로 실행한다. 프로젝트 지침이 �
 
 ### 명령
 
-- `docs <topic>`: workflow, spec, design, product, commit
-- `spec working`: 현재 명세·제품·지침 전체, stamp, 입력 파일 경로 (`--stamp`, `--feature <이름>`, `--ids`)
-- `spec save --file <json|->`: 요구사항·설계·문서 저장
+- `docs <topic> [--eject]`: workflow, spec, design, wiki, commit. `--eject`는 운영 지침을 `.gitifact/overrides/`로 복사해 프로젝트가 대신 쓰게 한다
+- `spec working`: 현재 명세·위키 전체, 경고, stamp, 입력 파일 경로 (`--stamp`, `--feature <이름>`, `--ids`)
+- `spec save --file <json|->`: 요구사항·설계·위키 저장
 - `spec commit --file <json|->`: 변경 이유 기록과 커밋을 한 번에
 - `browser`: 읽기 전용 브라우저 서버 실행, URL 출력 후 계속 실행
 - `update [--commit]`: 새 버전 확인과 설치 안내, 이 블록을 현재 버전으로 갱신. `--commit`은 블록만 바뀐 파일을 고정 메시지로 커밋한다
@@ -50,7 +51,7 @@ CLI: 모든 명령은 `gitifact <cmd>`로 실행한다. 프로젝트 지침이 �
 
 이 저장소는 gitifact를 개발하면서 프로젝트 자체에도 적용한다. 제품의 기록 원칙을 따르되, 아직 구현되지 않은 기능은 아래 대체 절차로 수행한다. 이 예외는 gitifact 개발 저장소에만 적용하며 제품의 기본 동작으로 확장하지 않는다.
 
-현재 프로젝트는 `.gitifact/config.json`의 `schemaVersion: 1` 저장 규약이다. 2026-09-15 제품 이름을 Tryce에서 Gitifact로 바꾸며 저장 경로 `.tryce`와 `tryce-*` 마커를 `.gitifact`와 `gitifact-*`로 전환했다. 과거 커밋의 `.tryce` 기록과 `Tryce-Req` 트레일러는 CLI가 계속 읽으며 새로 쓰지 않는다. 모드·승인 묶음·note를 새로 작성하지 않는다. 개발 작업에는 이 파일 첫머리의 GITIFACT 블록과 `pnpm cli docs <topic>`을 읽고 적용한다. 블록은 `pnpm cli init`이 쓰고 갱신하며 마커 사이를 직접 편집하지 않는다. 블록 안의 `gitifact`는 이 저장소에서 `pnpm cli`를 뜻한다. 지침 원본은 `apps/cli/src/shared/i18n/<lang>/docs/`에만 두고 두 번째 편집본을 만들지 않는다.
+현재 프로젝트는 `.gitifact/config.json`의 `schemaVersion: 2` 저장 규약이다(frontmatter ID·위키·에셋·재정의). 2026-09-18 product·guides를 위키로, 파일 ID 주석을 frontmatter로 바꾸며 이 저장소의 기록을 일회성 스크립트(DEV-01)로 전환했다. 2026-09-15 제품 이름을 Tryce에서 Gitifact로 바꾸며 저장 경로 `.tryce`와 `tryce-*` 마커를 `.gitifact`와 `gitifact-*`로 전환했다. 과거 커밋의 `.tryce` 기록과 `Tryce-Req` 트레일러는 CLI가 계속 읽으며 새로 쓰지 않는다. 모드·승인 묶음·note를 새로 작성하지 않는다. 개발 작업에는 이 파일 첫머리의 GITIFACT 블록과 `pnpm cli docs <topic>`을 읽고 적용한다. 블록은 `pnpm cli init`이 쓰고 갱신하며 마커 사이를 직접 편집하지 않는다. 블록 안의 `gitifact`는 이 저장소에서 `pnpm cli`를 뜻한다. 지침 원본은 `apps/cli/src/shared/i18n/<lang>/docs/`에만 두고 두 번째 편집본을 만들지 않는다.
 
 프로젝트 사용 빌드와 해시는 [개발 환경](docs/development.md)의 최신 지정을 따른다. 시작할 때 `pnpm cli spec working`과 Git 상태를 읽고 필요한 명세·지침 문서를 원문으로 확인한다. browser는 요구사항 이력·제품 기능·기여자를 읽기 전용으로 제공한다. 구형 req·note·mode·brief·commit 명령은 개발 빌드에서 제거했다.
 
@@ -65,13 +66,13 @@ CLI: 모든 명령은 `gitifact <cmd>`로 실행한다. 프로젝트 지침이 �
 ## 작업을 시작할 때
 
 1. `git status`와 현재 브랜치·작업 경로를 확인한다. 기존 변경과 다른 에이전트의 작업을 보존한다.
-2. [제품 개요](.gitifact/product/PRODUCT.md)를 읽고 이번 작업이 제품의 목적·원칙·범위 안에 있는지 확인한다. 관련 기능 명세(`.gitifact/spec/`)도 읽는다.
-   코드 구조와 기술 선택은 [아키텍처 지침](.gitifact/guides/architecture.md)을 따른다. CLI 작업은 [CLI 지침](.gitifact/guides/cli.md), 브라우저 작업은 [브라우저 지침](.gitifact/guides/browser.md)과 `.gitifact/guides/frontend/`의 문서, [apps/browser/AGENTS.md](apps/browser/AGENTS.md)의 Astryx 생성 지침을 직접 읽는다. 설계 문서 규약은 [기능 설계 문서](.gitifact/guides/design-documents.md)다. 자동 첨부 여부에 의존하지 않고, 사용할 컴포넌트의 설치 버전 API를 Astryx CLI로 확인한다.
+2. [README](README.md)의 제품 소개와 [아키텍처 안내](.gitifact/wiki/ARCHITECTURE.md)를 읽고 이번 작업이 제품의 목적·원칙·범위 안에 있는지 확인한다. 관련 기능 명세(`.gitifact/spec/`)도 읽는다.
+   코드 구조와 기술 선택은 [아키텍처 안내](.gitifact/wiki/ARCHITECTURE.md)을 따른다. CLI 작업은 [CLI 지침](.gitifact/wiki/references/cli.md), 브라우저 작업은 [브라우저 지침](.gitifact/wiki/references/browser.md)과 `.gitifact/wiki/references/frontend/`의 문서, [apps/browser/AGENTS.md](apps/browser/AGENTS.md)의 Astryx 생성 지침을 직접 읽는다. 설계 문서 규약은 [기능 설계 문서](.gitifact/wiki/references/design-documents.md)다. 자동 첨부 여부에 의존하지 않고, 사용할 컴포넌트의 설치 버전 API를 Astryx CLI로 확인한다.
 3. 실제 파일과 실행 가능한 명령을 확인한다. README나 설계 문서에 등장한다는 이유만으로 기능이 구현됐다고 가정하지 않는다.
    실행 방법과 검증 범위는 [개발 환경](docs/development.md)을 확인한다. 현재 통합 검증 명령은 `pnpm check`다.
 4. 이번 작업의 범위, 관련 문서, 검증 방법을 정하고 진행한다.
 
-`.tmp/`는 로컬 조사·논의 자료다. 새 체크아웃에 없어도 작업을 시작할 수 있어야 한다. 구현 규칙과 결정은 `.gitifact/guides/`의 지침에, 제품의 목적·원칙·범위는 `.gitifact/product/PRODUCT.md`에 남긴다. 둘 다 spec save로 저장하고 커밋 시 변경 이유를 붙인다. 날짜별 작업·검증·배포 기록만 `docs/`에 둔다.
+`.tmp/`는 로컬 조사·논의 자료다. 새 체크아웃에 없어도 작업을 시작할 수 있어야 한다. 구현 규칙과 결정은 `.gitifact/wiki/`의 페이지에, 제품의 목적·원칙·범위는 루트 README.md(원본은 packages/intro)에 둔다. 둘 다 spec save로 저장하고 커밋 시 변경 이유를 붙인다. 날짜별 작업·검증·배포 기록만 `docs/`에 둔다.
 
 ## 항상 지킬 원칙
 

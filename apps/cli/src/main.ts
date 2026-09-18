@@ -46,8 +46,9 @@ program.command('init')
 program.command('docs')
   .description(t('help.docs'))
   .argument('[topic]', t('help.docsTopic'))
+  .option('--eject', t('help.docsEject'))
   .allowExcessArguments(false)
-  .action(async (topic?: string) => { await runDocs(topic); });
+  .action(async (topic: string | undefined, options: { eject?: boolean }) => { await runDocs(topic, options); });
 
 program.command('update')
   .description(t('help.update'))

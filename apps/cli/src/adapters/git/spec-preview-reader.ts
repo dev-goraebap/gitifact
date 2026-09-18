@@ -1,7 +1,7 @@
-import { parsePreviewFiles, parsePreviewBundle, SpecPreviewError, parseProjectConfig, recordPathPattern, STORE_DIRS, DOCUMENT_DIRS, type PreviewSpec, type PreviewBundle } from '@gitifact/core';
+import { parsePreviewFiles, parsePreviewBundle, SpecPreviewError, parseProjectConfig, recordPathPattern, STORE_DIRS, WIKI_DIR, type PreviewSpec, type PreviewBundle } from '@gitifact/core';
 
-/** Every path prefix Git reads for the record set: spec folders in both store names plus the document folders. */
-export const RECORD_PATHSPECS = [...STORE_DIRS.map(d => d + '/spec/'), ...Object.values(DOCUMENT_DIRS).map(d => d + '/')];
+/** Every path prefix Git reads for the record set: spec folders in both store names plus the wiki. */
+export const RECORD_PATHSPECS = [...STORE_DIRS.map(d => d + '/spec/'), WIKI_DIR + '/'];
 import { createGitRunner } from './run-git.js';
 import { commandScoped } from './command-scope.js';
 import { t } from '../../shared/i18n/index.js';
@@ -32,8 +32,8 @@ export function specPreviewReader(cwd: string) {
         if (!match) throw new SpecPreviewError(t('reader.invalidIndexEntry'));
         const [, mode, oid, stage, path] = match;
         if (!['100644', '100755'].includes(mode!) || stage !== '0') throw new SpecPreviewError(t('reader.stagingConflictOrLink'));
-        // Non-Markdown files in the document folders are outside the record set and simply ignored.
-        if (!recordPathPattern.test(path!)) { if (/^\.gitifact\/(?:product|guides)\//.test(path!)) continue; throw new SpecPreviewError(t('reader.stagingUnsupported')); }
+        // Non-Markdown files in the wiki folder are outside the record set and simply ignored.
+        if (!recordPathPattern.test(path!)) { if (path!.startsWith(WIKI_DIR + '/')) continue; throw new SpecPreviewError(t('reader.stagingUnsupported')); }
         files.set(path!, oid!);
       }
       return files;

@@ -30,5 +30,6 @@ export function contentType(path: string): string {
   if (/\.jpe?g$/.test(path)) return 'image/jpeg';
   if (path.endsWith('.gif')) return 'image/gif';
   if (path.endsWith('.webp')) return 'image/webp';
+  if (path.endsWith('.pdf')) return 'application/pdf';
   return 'application/octet-stream';
 }
