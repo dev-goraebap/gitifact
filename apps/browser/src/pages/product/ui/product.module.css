@@ -85,20 +85,25 @@
 /* Header: the observed time sits left of the refresh button. */
 .headerActions { align-items:center; flex-shrink:0; white-space:nowrap; }
 
-/* Guides: Finder-style columns across the whole content area; the page fills the card so the columns and preview scroll on their own. */
-.pageFill { min-width:0; min-height:100%; }
-.fill { flex:1; min-height:0; min-width:0; }
-.fillContent { flex:1; min-height:0; min-width:0; animation:reveal .22s ease-out both; }
-.columns { flex:1; align-items:stretch; overflow-x:auto; min-height:22rem; }
-.browserColumn { flex:0 0 14rem; min-width:14rem; border-inline-end:1px solid var(--color-border); padding:var(--spacing-2); overflow-y:auto; }
-.browserColumn [aria-selected="true"] { background:var(--color-background-muted, var(--color-background-surface)); }
-.columnFiller { flex:1 1 12rem; min-width:10rem; align-items:center; justify-content:center; padding:var(--spacing-5); text-align:center; }
-.preview { flex:1 1 24rem; min-width:20rem; min-height:0; overflow-y:auto; overflow-wrap:anywhere; scrollbar-width:thin; }
-.previewHead { position:sticky; top:0; z-index:1; justify-content:space-between; align-items:flex-start; padding:var(--spacing-4) var(--spacing-5) var(--spacing-3); background:var(--color-background-surface); border-bottom:1px solid var(--color-border); }
-.previewTitle { min-width:0; flex:1; }
-.previewTitle h2 { font-size:1.25rem; line-height:1.4; }
-.previewBody { padding:var(--spacing-3) var(--spacing-5) var(--spacing-8); }
-.previewBody p, .previewBody li { line-height:1.8; }
+/* Wiki: a repository-style explorer. The page fills the card so the tree and the pane scroll on their own. */
+.pageFill { min-width:0; min-height:100%; flex:0 0 auto; }
+/* These grow with the explorer instead of clipping it, so the sticky page header keeps a containing block as tall as the page. */
+.fill { flex:1 0 auto; min-width:0; }
+.fillContent { flex:1 0 auto; min-width:0; animation:reveal .22s ease-out both; }
+.explorer { flex:1; align-items:flex-start; min-width:0; --explorer-visible:calc(100dvh - var(--gitifact-topbar-height) - var(--spacing-2) * 2 - 2px); }
+/* The card is the only scroller: the tree and the path bar stick under the page header while the page scrolls past them. */
+.explorerTree { flex:0 0 17rem; min-width:0; position:sticky; top:var(--gitifact-topbar-height); align-self:flex-start; height:var(--explorer-visible); box-sizing:border-box; padding:var(--spacing-3) var(--spacing-2); overflow-y:auto; scrollbar-width:thin; border-inline-end:1px solid var(--color-border); }
+/* Folders carry the one hue of the explorer (the first categorical data colour); files stay quiet. */
+.explorerFolder, .explorerFile { display:inline-flex; }
+.explorerFolder svg { color:var(--color-data-categorical-blue, #0171E3); }
+.explorerFile svg { color:var(--color-text-secondary); }
+.explorerPane { flex:1 1 0; min-width:0; min-height:var(--explorer-visible); overflow-wrap:anywhere; scroll-margin-top:var(--gitifact-topbar-height); }
+.explorerCrumbs { position:sticky; top:var(--gitifact-topbar-height); z-index:1; display:flex; align-items:center; box-sizing:border-box; height:2.75rem; padding-inline:var(--spacing-6); background:var(--color-background-surface); border-bottom:1px solid var(--color-border); }
+.explorerBody { padding:var(--spacing-5) var(--spacing-6) var(--spacing-8); max-width:56rem; width:100%; box-sizing:border-box; margin-inline:auto; }
+.explorerList li { padding-block:var(--spacing-1); border-radius:0; }
+.explorerList li + li { border-top:1px solid var(--color-border); }
+.explorerList { border:1px solid var(--color-border); border-radius:var(--radius-md, .5rem); overflow:hidden; }
+.explorerReadme { border:1px solid var(--color-border); border-radius:var(--radius-md, .5rem); padding:var(--spacing-5); }
 .crumb { font-size:.8125rem; color:var(--color-text-secondary); text-decoration:none; }
 .crumb:hover { text-decoration:underline; }
 
@@ -116,12 +121,11 @@
 .recentRow { align-items:center; padding-block:var(--spacing-2); border-bottom:1px solid var(--color-border); min-width:0; }
 .recentRow:last-child { border-bottom:0; }
 .recentBody { flex:1; min-width:0; align-items:center; }
-@media(width<64rem){ .dashboardHead h1{font-size:1.5rem} .preview{ min-width:16rem; } }
+@media(width<64rem){ .dashboardHead h1{font-size:1.5rem} .explorerTree{ flex-basis:13rem; } }
 .documentBody { padding-block:var(--spacing-2) var(--spacing-8); overflow-wrap:anywhere; }
 .documentBody p, .documentBody li { line-height:1.9; }
 .productBody { padding-block:var(--spacing-2) var(--spacing-8); overflow-wrap:anywhere; }
 .productBody p, .productBody li { line-height:1.9; }
 .productBody img { max-width:100%; height:auto; border-radius:var(--radius-element); }
-@media(width<64rem){ .browserColumn { flex-basis:11rem; min-width:11rem; } }
-/* Narrow screens: the observed time yields to the breadcrumb, and the guide columns stack above the preview instead of scrolling sideways. */
-@media(width<48rem){ .headerTime{ display:none; } .columns{ flex-direction:column; overflow-x:visible; } .browserColumn{ flex:0 0 auto; min-width:0; max-height:14rem; border-inline-end:0; border-bottom:1px solid var(--color-border); } .preview{ flex:1 1 auto; min-width:0; } }
+/* Narrow screens: the observed time yields to the breadcrumb, and the wiki tree is hidden because the folder list already navigates. */
+@media(width<48rem){ .headerTime{ display:none; } .explorerTree{ display:none; } .explorerCrumbs, .explorerBody{ padding-inline:var(--spacing-4); } .explorerCrumbs{ top:var(--gitifact-topbar-height); } }

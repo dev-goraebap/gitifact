@@ -39,9 +39,9 @@ export function ProductPanel({session,view,featureId,email,documentId,search,cha
  // The wiki entry page doubles as the product description; the dashboard links to it as a wiki page.
  const entryPage=first?.documents.find(d=>d.path===wikiEntryPath);
  const detailDocument=documentId?first?.documents.find(d=>d.id===documentId):undefined;
- // Detail pages and the product dashboard carry their own heading; the wiki browser fills the whole content area with columns.
+ // Detail pages and the product dashboard carry their own heading; the wiki explorer fills the whole content area with its tree and pane.
  const detailPage=!!(featureId||email||documentId)||productPage;
- const browsing=wiki&&!documentId;
+ const browsing=wiki;
  const root={history:'/',features:'/features',contributors:'/contributors',product:'/product',wiki:'/wiki'}[view];
  const trail=[{label:title,to:root},...(detailFeature?[{label:detailFeature.title}]:[]),...(detailPerson?[{label:detailPerson.name}]:[]),...(detailDocument?[{label:detailDocument.title}]:[])];
  const filters=ready&&!detailPage&&!wiki&&<HStack gap={3} wrap="wrap" className={`${styles.filters} ${styles.filtersSticky}`}><TextInput label={t('filters.search')} isLabelHidden placeholder={view==='features'?t('filters.searchFeatures'):view==='contributors'?t('filters.searchContributors'):t('filters.searchEvents')} value={search.q??''} hasClear onChange={q=>change({...search,q:q||undefined},true)}/>

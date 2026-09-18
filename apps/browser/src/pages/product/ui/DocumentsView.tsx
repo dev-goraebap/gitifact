@@ -1,10 +1,12 @@
+import { useEffect, useRef } from 'react';
 import type { SpecDocument } from '@gitifact/contracts';
 import { VStack } from '@astryxdesign/core/VStack';
 import { HStack } from '@astryxdesign/core/HStack';
 import { Heading } from '@astryxdesign/core/Heading';
 import { Text } from '@astryxdesign/core/Text';
-import { Button } from '@astryxdesign/core/Button';
 import { List, ListItem } from '@astryxdesign/core/List';
+import { TreeList, type TreeListItemData } from '@astryxdesign/core/TreeList';
+import { Breadcrumbs, BreadcrumbItem } from '@astryxdesign/core/Breadcrumbs';
 import { MetadataList, MetadataListItem } from '@astryxdesign/core/MetadataList';
 import { Timestamp } from '@astryxdesign/core/Timestamp';
 import { Link, useNavigate } from '@tanstack/react-router';
@@ -13,7 +15,6 @@ import { HgiDocument } from '../../../shared/ui/icons/HgiDocument';
 import type { ProductSearch } from '../model/search';
 import styles from './product.module.css';
 import { PageState } from '../../../shared/ui/page-state';
-import { StateIllustration } from '../../../shared/ui/page-state/StateIllustration';
 import { DocumentBody, wikiEntryPath } from '../../../shared/ui/document';
 import { t } from '../../../shared/i18n';
 
@@ -40,63 +41,84 @@ function tree(documents: SpecDocument[]): Node {
 }
 const countDocuments = (node: Node): number => node.documents.length + node.folders.reduce((sum, folder) => sum + countDocuments(folder), 0);
 const folderOf = (doc: SpecDocument) => relativePath(doc).split('/').slice(0, -1).join('/');
-/** Walks the folder chain named by `folder`; unknown segments stop at the last known folder. */
-function chainOf(root: Node, folder: string): Node[] {
-  const chain: Node[] = [root];
-  for (const part of folder.split('/').filter(Boolean)) {
-    const next = chain[chain.length - 1]!.folders.find(f => f.name === part);
-    if (!next) break; chain.push(next);
-  }
-  return chain;
+/** The folder named by `folder`, or undefined when no such folder exists. */
+function folderAt(root: Node, folder: string): Node | undefined {
+  let node: Node | undefined = root;
+  for (const part of folder.split('/').filter(Boolean)) node = node?.folders.find(f => f.name === part);
+  return node;
 }
+const fileName = (doc: SpecDocument) => relativePath(doc).split('/').pop()!;
 
+/**
+ * A repository-style explorer: the whole wiki as a tree on the left, and on the right either the chosen folder's
+ * contents or the chosen page. Folders live in the `folder` search param, pages in the `/wiki/$documentId` path.
+ */
 export function DocumentsView({ documents, documentId, search }: { documents: SpecDocument[]; documentId?: string | undefined; search: ProductSearch; change: (s: ProductSearch) => void }) {
-  const selected = documentId ? documents.find(d => d.id === documentId) : undefined;
-  if (documentId && !selected) return <PageState kind="not-found" title={t('documents.notFoundTitle')} description={t('documents.notFoundDescription', { id: documentId })} actions={<Link to="/wiki">{t('documents.backToList')}</Link>}/>;
-  if (selected) return <DocumentPage doc={selected}/>;
-  if (!documents.length) return <PageState kind="empty" title={t('documents.emptyTitle')} description={t('documents.emptyDescription')}/>;
-  return <ColumnBrowser documents={documents} search={search}/>;
-}
-
-/** Finder-style columns across the whole content area: each folder opens to the right, a chosen document previews in the remaining space. */
-function ColumnBrowser({ documents, search }: { documents: SpecDocument[]; search: ProductSearch }) {
   const navigate = useNavigate();
-  const preview = search.selected ? documents.find(d => d.id === search.selected) : undefined;
-  // A previewed document keeps its own folder open even when the URL only names the document.
-  const chain = chainOf(tree(documents), search.folder ?? (preview ? folderOf(preview) : ''));
+  // A new folder or page starts at the top instead of where the previous one was left.
+  const pane = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    // The content card scrolls, not the pane: find that scroller and return it to the top. The router's scroll
+    // restoration writes the previous offset back during the same frame, so the reset waits for the frame after it.
+    let second = 0;
+    const first = requestAnimationFrame(() => { second = requestAnimationFrame(() => {
+      for (let el = pane.current?.parentElement; el; el = el.parentElement) {
+        if (/auto|scroll/.test(getComputedStyle(el).overflowY)) { el.scrollTop = 0; break; }
+      }
+    }); });
+    return () => { cancelAnimationFrame(first); cancelAnimationFrame(second); };
+  }, [documentId, search.folder]);
+  if (!documents.length && !documentId) return <PageState kind="empty" title={t('documents.emptyTitle')} description={t('documents.emptyDescription')}/>;
+  const root = tree(documents);
+  const selected = documentId ? documents.find(d => d.id === documentId) : undefined;
+  const folder = selected ? folderOf(selected) : folderAt(root, search.folder ?? '') ? search.folder ?? '' : '';
   const openFolder = (path: string) => { void navigate({ to: '/wiki', search: { folder: path || undefined } }); };
-  const openDocument = (doc: SpecDocument) => { void navigate({ to: '/wiki', search: { folder: folderOf(doc) || undefined, selected: doc.id } }); };
-  return <HStack gap={0} className={styles.columns} aria-label={t('documents.browse')}>
-    {chain.map((node, index) => {
-      const nextName = chain[index + 1]?.name;
-      const items = [...node.folders.map(f => ({ key: 'd:' + f.path, folder: f })), ...node.documents.map(d => ({ key: d.id, doc: d }))];
-      return <VStack key={node.path || 'root'} gap={0} className={styles.browserColumn} aria-label={node.name || t('documents.document')}>
-        {items.length ? <List density="compact">
-          {items.map(item => 'folder' in item
-            ? <ListItem key={item.key} label={item.folder.name} description={t('documents.folderCount', { count: countDocuments(item.folder) })} startContent={<HgiFolder size={16}/>} endContent={<Text type="supporting" color="secondary">›</Text>} isSelected={item.folder.name === nextName} onClick={() => openFolder(item.folder.path)}/>
-            : <ListItem key={item.key} label={item.doc.title} description={relativePath(item.doc).split('/').pop()} startContent={<HgiDocument size={16}/>} isSelected={item.doc.id === preview?.id} onClick={() => openDocument(item.doc)}/>)}
-        </List> : <Text type="supporting" color="secondary">{t('documents.emptyFolder')}</Text>}
-      </VStack>;
-    })}
-    {preview ? <VStack gap={0} className={styles.preview} aria-label={t('documents.preview')}>
-      <HStack gap={3} wrap="wrap" className={styles.previewHead}>
-        <VStack gap={1} className={styles.previewTitle}>
-          <Heading level={2}>{preview.title}</Heading>
-          <Text type="supporting" color="secondary">{relativePath(preview)} · {preview.id}</Text>
-        </VStack>
-        <Button label={t('documents.openDetail')} size="sm" onClick={() => { void navigate({ to: '/wiki/$documentId', params: { documentId: preview.id } }); }}/>
-      </HStack>
-      <VStack gap={0} className={styles.previewBody}><DocumentBody headingLevelStart={3} density="compact" path={preview.path}>{bodyOf(preview)}</DocumentBody></VStack>
-    </VStack> : <VStack gap={3} className={styles.columnFiller} aria-hidden="true">
-      <StateIllustration kind="empty" compact/>
-      <Text type="supporting" color="secondary">{t('documents.choose')}</Text>
-    </VStack>}
+  const openDocument = (doc: SpecDocument) => { void navigate({ to: '/wiki/$documentId', params: { documentId: doc.id } }); };
+  const plain = (e: React.MouseEvent) => !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey && e.button === 0;
+  // Folders on the way to the current location start open; the tree keeps what the reader toggles after that.
+  const items = (node: Node): TreeListItemData[] => [
+    ...node.folders.map(f => ({ id: 'd:' + f.path, label: f.name, startContent: <span className={styles.explorerFolder}><HgiFolder size={16}/></span>, children: items(f),
+      isExpanded: folder === f.path || folder.startsWith(f.path + '/'), isSelected: !selected && folder === f.path, onClick: () => openFolder(f.path) })),
+    ...node.documents.map(d => ({ id: d.id, label: fileName(d), startContent: <span className={styles.explorerFile}><HgiDocument size={16}/></span>, href: `/wiki/${encodeURIComponent(d.id)}`, isSelected: d.id === selected?.id,
+      onClick: (e: React.MouseEvent) => { if (plain(e)) { e.preventDefault(); openDocument(d); } } })),
+  ];
+  const crumbs = folder.split('/').filter(Boolean);
+  const crumbClick = (path: string) => (e: React.MouseEvent) => { if (plain(e)) { e.preventDefault(); openFolder(path); } };
+  return <HStack gap={0} className={styles.explorer}>
+    <VStack as="nav" gap={0} className={styles.explorerTree} aria-label={t('documents.tree')}>
+      <TreeList density="balanced" aria-label={t('documents.tree')} items={items(root)}/>
+    </VStack>
+    <div className={styles.explorerPane} ref={pane}>
+      <Breadcrumbs label={t('documents.path')} className={styles.explorerCrumbs}>
+        <BreadcrumbItem href="/wiki" onClick={crumbClick('')} isCurrent={!crumbs.length && !selected && !documentId}>wiki</BreadcrumbItem>
+        {crumbs.map((part, index) => { const path = crumbs.slice(0, index + 1).join('/'); return <BreadcrumbItem key={path} href={`/wiki?folder=${encodeURIComponent(path)}`} onClick={crumbClick(path)} isCurrent={!selected && index === crumbs.length - 1}>{part}</BreadcrumbItem>; })}
+        {selected && <BreadcrumbItem isCurrent>{fileName(selected)}</BreadcrumbItem>}
+      </Breadcrumbs>
+      {documentId && !selected ? <PageState kind="not-found" title={t('documents.notFoundTitle')} description={t('documents.notFoundDescription', { id: documentId })} actions={<Link to="/wiki">{t('documents.backToList')}</Link>}/>
+        : selected ? <DocumentPage doc={selected}/>
+        : <FolderListing node={folderAt(root, folder)!} openFolder={openFolder} openDocument={openDocument}/>}
+    </div>
   </HStack>;
 }
 
+/** The contents of one folder, folders first; a README.md in it is shown below the list, as a repository host does. */
+function FolderListing({ node, openFolder, openDocument }: { node: Node; openFolder: (path: string) => void; openDocument: (doc: SpecDocument) => void }) {
+  const readme = node.documents.find(d => fileName(d) === 'README.md');
+  return <VStack gap={5} className={styles.explorerBody}>
+    {node.folders.length + node.documents.length ? <VStack gap={0} className={styles.explorerList}><List density="compact" aria-label={t('documents.browse')}>
+      {node.folders.map(f => <ListItem key={'d:' + f.path} label={f.name} description={t('documents.folderCount', { count: countDocuments(f) })} startContent={<span className={styles.explorerFolder}><HgiFolder size={16}/></span>} onClick={() => openFolder(f.path)}/>)}
+      {node.documents.map(d => <ListItem key={d.id} label={fileName(d)} description={d.title} startContent={<span className={styles.explorerFile}><HgiDocument size={16}/></span>}
+        endContent={<Text type="supporting" color="secondary">{d.updatedAt ? <Timestamp value={d.updatedAt} format="relative"/> : t('common.inProgress')}</Text>} onClick={() => openDocument(d)}/>)}
+    </List></VStack> : <Text type="supporting" color="secondary">{t('documents.emptyFolder')}</Text>}
+    {readme && <VStack as="section" gap={3} aria-label={readme.title} className={styles.explorerReadme}>
+      <Heading level={2}>{readme.title}</Heading>
+      <DocumentBody headingLevelStart={3} path={readme.path}>{bodyOf(readme)}</DocumentBody>
+    </VStack>}
+  </VStack>;
+}
+
 function DocumentPage({ doc }: { doc: SpecDocument }) {
-  return <VStack as="article" aria-label={t('documents.document')} gap={0} className={styles.featureDetail}>
-    <Link to="/wiki" search={{ folder: folderOf(doc) || undefined, selected: doc.id }} className={styles.featureBack}>← {t('nav.wiki')}{folderOf(doc) ? ` / ${folderOf(doc)}` : ''}</Link>
+  return <VStack as="article" aria-label={t('documents.document')} gap={0} className={styles.explorerBody}>
     <VStack gap={3} className={styles.documentHeading}>
       <Heading level={1}>{doc.title}</Heading>
       <MetadataList orientation="horizontal">

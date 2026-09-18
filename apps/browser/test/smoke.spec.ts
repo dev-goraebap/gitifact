@@ -31,7 +31,7 @@ test('built app loads Astryx and supports navigation, reload, and history', asyn
   const intro = page.getByRole('article', { name: 'Gitifact 소개' });
   await expect(intro.getByRole('img', { name: 'GITIFACT' })).toBeVisible();
   await expect(intro).not.toContainText('<p align');
-  await expect(intro.getByRole('link', { name: '제품 개요' })).toHaveAttribute('href', '/product');
+  await expect(intro.getByRole('link', { name: '아키텍처 안내' })).toHaveAttribute('href', '/wiki');
   await expect(intro.getByRole('link', { name: '요구사항' })).toHaveAttribute('href', '/features');
   await expect(intro.getByRole('link', { name: '개발 환경' })).toHaveAttribute('href', /^https:\/\/github\.com\//);
   await page.reload();

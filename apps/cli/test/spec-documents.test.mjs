@@ -50,7 +50,9 @@ test('wiki pages are created, committed with reasons, moved and compared by ID',
  assert.deepEqual(diff.changes.map(c=>[c.id,c.types]),[[page,['moved','modified']]]);assert.equal(diff.changes[0].reasons[0].reason,'폴더를 ui로 정리했다.');
  const api=await createSpecBrowserReader(f.repo,'fixture',f.env)();
  assert.equal(api.version,2);assert.equal(api.documents.length,2);assert.equal(api.documents.find(d=>d.id===page).path,'.gitifact/wiki/ui/layout.md');assert.ok(api.documents.every(d=>d.updatedAt&&!('kind' in d)));
- assert.deepEqual(api.events.map(e=>[e.id,e.kind,e.types]),[[page,'wiki',['moved','modified']],[page,'wiki',['created']],[entry,'wiki',['created']]]);
+ // Changes of one commit are ordered by ID, and IDs are random: compare the first commit's two creations as a set.
+ assert.deepEqual(api.events.slice(0,1).map(e=>[e.id,e.kind,e.types]),[[page,'wiki',['moved','modified']]]);
+ assert.deepEqual(api.events.slice(1).map(e=>[e.id,e.kind,e.types]).sort(),[[page,'wiki',['created']],[entry,'wiki',['created']]].sort());
  assert.deepEqual(api.events[0].reasons,['폴더를 ui로 정리했다.']);
 });
 

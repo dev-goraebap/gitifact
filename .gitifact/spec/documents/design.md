@@ -35,7 +35,7 @@ core의 `extractLinks`는 코드 블록 밖의 Markdown 링크·이미지를 모
 ## 화면
 <!-- gitifact-ref: R-oh4oevufr3, R-rir7dn3eez -->
 
-왼쪽 메뉴의 첫 항목은 제품 개요(`/product`)이며 제품 문서 보기가 진입 페이지의 상세(`/wiki/<id>`)로 연결한다. 위키 메뉴는 `/wiki`와 `/wiki/$documentId`다. 브라우저 서버는 `/api/v1/assets/<경로>`로 에셋을 제공한다. 이미지는 inline, 그 밖은 attachment이며 응답에 sandbox CSP를 붙여 직접 연 SVG의 스크립트가 실행되지 않게 한다. 링크 해석은 브라우저 명세의 설계를 따른다.
+왼쪽 메뉴의 첫 항목은 제품 개요(`/product`)이며 제품 문서 보기가 진입 페이지의 상세(`/wiki/<id>`)로 연결한다. 위키 메뉴는 `/wiki`(폴더는 `folder` 검색 매개변수)와 `/wiki/$documentId`이며 트리와 본문으로 된 탐색기 하나가 둘을 함께 그린다. 첫 구현은 Finder식 열 보기와 미리보기였으나, 폴더가 깊어지면 열이 본문 자리를 밀어내고 읽기까지 미리보기·상세 두 단계를 거쳐야 해 사용자 요청으로 바꿨다(2026-09-18). 브라우저 서버는 `/api/v1/assets/<경로>`로 에셋을 제공한다. 이미지는 inline, 그 밖은 attachment이며 응답에 sandbox CSP를 붙여 직접 연 SVG의 스크립트가 실행되지 않게 한다. 링크 해석은 브라우저 명세의 설계를 따른다.
 
 ## 주요 설계 결정
 

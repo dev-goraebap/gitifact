@@ -1,34 +1,37 @@
 import { expect, test } from '@playwright/test';
 import { mockApi, specs, status } from './mock-api';
 
-test('wiki pages browse as full-width columns, preview a chosen page and open its detail page from the preview', async ({ page }) => {
+test('the wiki is a repository-style explorer: a tree, the folder contents, and the page in the same pane', async ({ page }) => {
   await mockApi(page); await page.goto('/wiki');
-  // The wiki browser has no page title, search box or view switch; the columns take the whole content area.
-  await expect(page.getByRole('heading', { level: 1 })).toHaveCount(0);
+  // No page title, search box or view switch; the tree and the pane take the whole content area.
   await expect(page.getByRole('textbox', { name: '검색', exact: true })).toHaveCount(0);
-  await expect(page.getByRole('radio', { name: '목록' })).toHaveCount(0);
-  const browser = page.getByLabel('위키 탐색');
-  await expect(browser.getByText('frontend', { exact: true })).toBeVisible();
-  await expect(browser.getByText('README.md', { exact: true })).toBeVisible();
-  await browser.getByText('이름 규칙', { exact: true }).click();
-  await expect(page).toHaveURL(/\/wiki\?selected=W-cccccccccc$/);
-  const preview = page.getByLabel('문서 미리보기');
-  await expect(preview).toContainText('소문자와 하이픈을 씁니다.');
-  await browser.getByText('frontend', { exact: true }).click();
+  const tree = page.getByRole('navigation', { name: '위키 트리' });
+  const list = page.getByRole('list', { name: '폴더 내용' });
+  await expect(tree.getByText('frontend', { exact: true })).toBeVisible();
+  await expect(tree.getByText('README.md', { exact: true })).toBeVisible();
+  // The root lists folders first, then files with their titles, and shows README.md below the list.
+  await expect(list).toContainText('frontend'); await expect(list).toContainText('이름 규칙');
+  await expect(page.getByRole('region', { name: 'Gitifact' })).toContainText('요구사항과 변경 이유를');
+  // A folder opens in the pane and in the URL; its breadcrumb leads back.
+  await list.getByText('frontend', { exact: true }).click();
   await expect(page).toHaveURL(/\/wiki\?folder=frontend$/);
-  await expect(preview).toHaveCount(0);
-  await browser.getByText('레이아웃 지침', { exact: true }).click();
-  await expect(page).toHaveURL(/folder=frontend&selected=W-bbbbbbbbbb$/);
-  await expect(preview).toContainText('중앙 컬럼은 64rem입니다.');
-  await page.reload(); await expect(page.getByLabel('문서 미리보기')).toContainText('중앙 컬럼은 64rem입니다.');
-  await page.getByRole('button', { name: '상세 보기' }).click();
+  await expect(list).toContainText('layout.md'); await expect(list).toContainText('레이아웃 지침');
+  await expect(tree.getByText('layout.md', { exact: true })).toBeVisible();
+  await page.reload(); await expect(page.getByRole('list', { name: '폴더 내용' })).toContainText('layout.md');
+  // A file opens as the page itself; the tree stays and marks it.
+  await page.getByRole('list', { name: '폴더 내용' }).getByText('layout.md', { exact: true }).click();
   await expect(page).toHaveURL(/\/wiki\/W-bbbbbbbbbb$/);
   const article = page.getByRole('article', { name: '위키 페이지' });
+  await expect(article.getByRole('heading', { level: 1 })).toHaveText('레이아웃 지침');
   await expect(article).toContainText('중앙 컬럼은 64rem입니다.');
+  await expect(page.getByRole('navigation', { name: '위키 트리' }).getByText('layout.md', { exact: true })).toBeVisible();
   await expect(page.getByText('미커밋 명세 변경이 있습니다', { exact: false })).toHaveCount(0);
-  await article.getByRole('link', { name: '← 프로젝트 위키 / frontend' }).click();
-  await expect(page).toHaveURL(/folder=frontend&selected=W-bbbbbbbbbb$/);
-  await expect(page.getByLabel('문서 미리보기')).toContainText('중앙 컬럼은 64rem입니다.');
+  await page.getByRole('navigation', { name: '현재 위치' }).getByRole('link', { name: 'frontend' }).click();
+  await expect(page).toHaveURL(/\/wiki\?folder=frontend$/);
+  // The tree navigates on its own too.
+  await page.getByRole('navigation', { name: '위키 트리' }).getByText('naming.md', { exact: true }).click();
+  await expect(page).toHaveURL(/\/wiki\/W-cccccccccc$/);
+  await expect(page.getByRole('article', { name: '위키 페이지' })).toContainText('소문자와 하이픈을 씁니다.');
   await page.goto('/wiki/W-missing0000');
   await expect(page.getByRole('heading', { name: '문서를 찾을 수 없습니다' })).toBeVisible();
   // The old guide routes are gone.
