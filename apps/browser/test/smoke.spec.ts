@@ -15,7 +15,9 @@ test('built app loads Astryx and supports navigation, reload, and history', asyn
   // The browser opens on the product overview.
   await page.goto('/');
   await expect(page).toHaveURL(/\/product$/);
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('제품 개요');
+  // The overview leads with the project, not with the menu label; the breadcrumb keeps the location.
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('project');
+  await expect(page.locator('header[aria-label="현재 위치"]')).toContainText('제품 개요');
   const button = page.getByRole('link', { name: '소개', exact: true });
   await expect(button).toBeVisible();
   // Confirms that the shipped component CSS and theme have both loaded.
@@ -38,7 +40,9 @@ test('built app loads Astryx and supports navigation, reload, and history', asyn
   await page.reload();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Gitifact 소개');
   await page.goBack();
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('제품 개요');
+  // The overview leads with the project, not with the menu label; the breadcrumb keeps the location.
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('project');
+  await expect(page.locator('header[aria-label="현재 위치"]')).toContainText('제품 개요');
   expect(errors).toEqual([]);
 });
 

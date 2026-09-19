@@ -1,4 +1,5 @@
-import type { SpecDocument, SpecEvent, SpecFeature, BrowserSpecsV2 } from '@gitifact/contracts';
+import type { SpecDocument, SpecEvent, SpecFeature, BrowserSessionV2, BrowserSpecsV2 } from '@gitifact/contracts';
+import { useQuery } from '@tanstack/react-query';
 import { VStack } from '@astryxdesign/core/VStack';
 import { HStack } from '@astryxdesign/core/HStack';
 import { Grid } from '@astryxdesign/core/Grid';
@@ -6,10 +7,10 @@ import { Card } from '@astryxdesign/core/Card';
 import { Heading } from '@astryxdesign/core/Heading';
 import { Text } from '@astryxdesign/core/Text';
 import { Token } from '@astryxdesign/core/Token';
-import { ProgressBar } from '@astryxdesign/core/ProgressBar';
 import { Timestamp } from '@astryxdesign/core/Timestamp';
 import { Link } from '@tanstack/react-router';
 import { Person } from './Person';
+import { statusOptions } from '../../../entities/project';
 import styles from './product.module.css';
 import { t } from '../../../shared/i18n';
 
@@ -22,6 +23,7 @@ const tail = 'var(--color-data-neutral, #8494A3)';
 const changeNames: Record<ChangeType, string> = { created: t('change.created'), modified: t('change.modified'), moved: t('change.moved'), deleted: t('change.deleted') };
 const changeOrder: ChangeType[] = ['created', 'modified', 'moved', 'deleted'];
 const kindNames: Record<NonNullable<SpecEvent['kind']>, string> = { requirement: t('kind.requirement'), design: t('kind.design'), wiki: t('kind.wiki') };
+const day = 86_400_000;
 
 type Segment = { label: string; value: number; color: string };
 
@@ -48,83 +50,131 @@ function StackedBar({ segments, label }: { segments: Segment[]; label: string })
   </VStack>;
 }
 
-function Stat({ label, value, detail }: { label: string; value: number | string; detail?: string }) {
-  return <Card padding={4}><VStack gap={1}>
-    <Text type="supporting" color="secondary">{label}</Text>
-    <Heading level={2}>{value}</Heading>
-    {detail && <Text type="supporting" color="secondary">{detail}</Text>}
-  </VStack></Card>;
+/**
+ * Changes per day across the loaded history, as one column per day. A single series, so it carries no legend; the
+ * caption states that it counts the loaded range rather than the whole repository.
+ */
+function Pulse({ events }: { events: SpecEvent[] }) {
+  const times = events.map(e => Date.parse(e.date)).filter(Number.isFinite);
+  if (!times.length) return null;
+  const last = new Date(Math.max(...times)); last.setHours(0, 0, 0, 0);
+  const span = 21;
+  const counts = Array.from({ length: span }, (_, i) => {
+    const start = last.getTime() - (span - 1 - i) * day;
+    return { start, value: times.filter(time => time >= start && time < start + day).length };
+  });
+  const peak = Math.max(1, ...counts.map(c => c.value));
+  const width = 100 / span;
+  return <VStack gap={2} className={styles.pulse}>
+    <svg role="img" aria-label={t('overview.pulse', { days: span })} width="100%" height="44" preserveAspectRatio="none" viewBox="0 0 100 44">
+      {counts.map(c => {
+        const height = c.value ? Math.max(3, (c.value / peak) * 44) : 2;
+        return <rect key={c.start} x={`${(c.start - counts[0]!.start) / day * width + width * 0.15}`} width={width * 0.7} y={44 - height} height={height} rx="1"
+          className={c.value ? styles.pulseBar : styles.pulseEmpty}>
+          <title>{`${new Date(c.start).toLocaleDateString()} ${c.value}`}</title>
+        </rect>;
+      })}
+    </svg>
+    <Text type="supporting" color="secondary">{t('overview.pulse', { days: span })} · {t('overview.loadedEvents', { count: events.length })}</Text>
+  </VStack>;
 }
 
-/** The product page as a dashboard: headline counts and charts drawn from the loaded specs answer. The wiki README is the wiki's policy, not a product document, so the dashboard does not link to it. */
-export function ProductOverview({ features, documents, events, contributors, working }: { features: SpecFeature[]; documents: SpecDocument[]; events: SpecEvent[]; contributors: Contributor[]; working: boolean }) {
+/**
+ * One commit: the reason it was made, then the records it touched. Grouping by commit is what keeps the reason
+ * readable — the same sentence is recorded against every record the commit changed, and listing it per record
+ * printed the same paragraph several times in a row.
+ */
+function CommitGroup({ events, titleOf }: { events: SpecEvent[]; titleOf: (event: SpecEvent) => string }) {
+  const first = events[0]!;
+  const reasons = [...new Set(events.flatMap(e => e.reasons))];
+  return <VStack as="li" gap={3} className={styles.changeRow}>
+    <HStack gap={3} wrap="wrap" className={styles.changeHead}>
+      <Person name={first.author} email={first.email}/>
+      <Timestamp value={first.date} format="relative"/>
+    </HStack>
+    {reasons.length
+      ? <VStack gap={2}>
+        {reasons.slice(0, 1).map(reason => <Text key={reason} maxLines={2} className={styles.reason}>{reason}</Text>)}
+        {reasons.length > 1 && <Text type="supporting" color="secondary">{t('overview.moreReasons', { count: reasons.length - 1 })}</Text>}
+      </VStack>
+      : <Text color="secondary" className={styles.reason}>{t('activity.noReason')}</Text>}
+    <HStack as="ul" gap={3} wrap="wrap" className={styles.recordList}>
+      {events.map(e => <HStack as="li" key={e.key} gap={2} className={styles.record}>
+        <Token label={e.types.map(type => changeNames[type]).join('·')} size="sm"/>
+        <Text type="supporting" color="secondary">{kindNames[e.kind ?? 'requirement']}</Text>
+        <Link to="/activity" search={{ selected: e.key }} className={styles.changeTitle}>{titleOf(e)}</Link>
+      </HStack>)}
+    </HStack>
+  </VStack>;
+}
+
+/**
+ * The overview opens with the project and its size on one line, then the two loaded-range bars that show how the
+ * recent work is shaped, then the reasons behind the last commits — what the product records and what a returning
+ * reader comes back for. The wiki README is the wiki's policy, not a product document, so the dashboard neither
+ * shows nor links it.
+ */
+export function ProductOverview({ session, features, documents, events, contributors, working }: { session: BrowserSessionV2; features: SpecFeature[]; documents: SpecDocument[]; events: SpecEvent[]; contributors: Contributor[]; working: boolean }) {
+  const status = useQuery(statusOptions(session));
+  const project = status.data?.repository.rootPath?.split(/[\/]/).filter(Boolean).at(-1);
   const requirements = features.reduce((sum, f) => sum + f.requirements.length, 0);
-  const designed = features.filter(f => f.design).length;
-  const ranked = [...features].sort((a, b) => b.requirements.length - a.requirements.length || a.title.localeCompare(b.title));
-  const mostRequirements = Math.max(1, ...features.map(f => f.requirements.length));
   const changes: Segment[] = changeOrder.map((type, i) => ({ label: changeNames[type], value: events.filter(e => e.types.includes(type)).length, color: series[i]! }));
   const byCommits = [...contributors].sort((a, b) => b.commits - a.commits || a.name.localeCompare(b.name));
   const commitShare: Segment[] = [...byCommits.slice(0, 3).map((p, i) => ({ label: p.name, value: p.commits, color: series[i]! })), ...(byCommits.length > 3 ? [{ label: t('overview.otherContributors', { count: byCommits.length - 3 }), value: byCommits.slice(3).reduce((sum, p) => sum + p.commits, 0), color: tail }] : [])];
-  const recent = events.slice(0, 5);
+  // Events arrive newest first, so commits are already contiguous. Three commits, each showing one reason, keep the
+  // section to about one screen; the rest of the record is one click away in the activity timeline.
+  const groups: SpecEvent[][] = [];
+  for (const event of events) {
+    const open = groups.at(-1);
+    if (open && open[0]!.commit === event.commit) open.push(event); else groups.push([event]);
+    if (groups.length > 3) break;
+  }
+  if (groups.length > 3) groups.length = 3;
   const specOf = (e: SpecEvent) => e.kind === 'wiki' ? documents.find(d => d.id === e.id) : features.find(f => f.id === e.id || f.requirements.some(r => r.id === e.id));
-  return <VStack as="article" aria-label={t('nav.product')} gap={6} className={styles.dashboard}>
-    <VStack gap={2} className={styles.dashboardHead}>
-      <Heading level={1}>{t('nav.product')}</Heading>
-      {working && <HStack gap={4} wrap="wrap" className={styles.entryLine}><Token label={t('overview.uncommittedToken')} color="yellow" size="sm"/></HStack>}
-    </VStack>
+  const titleOf = (e: SpecEvent) => e.after?.title ?? e.before?.title ?? specOf(e)?.title ?? e.id;
+  const fact = (label: string, value: number) => <HStack gap={2} as="li" className={styles.fact}>
+    <Text weight="semibold">{value}</Text><Text color="secondary">{label}</Text>
+  </HStack>;
 
-    <Grid columns={{ minWidth: 150, repeat: 'fit', max: 5 }} gap={3} aria-label={t('overview.summary')}>
-      <Stat label={t('overview.stat.features')} value={features.length} detail={working ? t('overview.stat.includesWorking') : t('overview.stat.committedOnly')}/>
-      <Stat label={t('overview.stat.requirements')} value={requirements} detail={t('overview.stat.average', { average: features.length ? (requirements / features.length).toFixed(1) : '0' })}/>
-      <Card padding={4}><VStack gap={1}>
-        <Text type="supporting" color="secondary">{t('overview.stat.designs')}</Text>
-        <Heading level={2}>{designed}<Text type="supporting" color="secondary"> / {features.length}</Text></Heading>
-        <ProgressBar label={t('overview.stat.designRatio')} isLabelHidden value={designed} max={Math.max(1, features.length)} variant="accent"/>
-      </VStack></Card>
-      <Stat label={t('overview.stat.wiki')} value={documents.length} detail={t('overview.stat.wikiDetail')}/>
-      <Stat label={t('overview.stat.contributors')} value={contributors.length} detail={t('overview.stat.contributorsDetail')}/>
-    </Grid>
+  return <VStack as="article" aria-label={t('nav.product')} gap={6} className={styles.dashboard}>
+    <HStack gap={5} wrap="wrap" className={styles.hero}>
+      <VStack gap={3} className={styles.heroText}>
+        <Heading level={1}>{project ?? t('project.local')}</Heading>
+        <HStack as="ul" gap={6} wrap="wrap" className={styles.facts} aria-label={t('overview.summary')}>
+          {fact(t('overview.stat.features'), features.length)}
+          {fact(t('overview.stat.requirements'), requirements)}
+          {fact(t('overview.stat.wiki'), documents.length)}
+          {fact(t('overview.stat.contributors'), contributors.length)}
+        </HStack>
+        <HStack gap={3} wrap="wrap" className={styles.heroState}>
+          {working && <Token label={t('overview.uncommittedToken')} color="yellow" size="sm"/>}
+          {events[0] && <Text type="supporting" color="secondary">{t('common.recentChange')} <Timestamp value={events[0].date} format="relative"/></Text>}
+        </HStack>
+      </VStack>
+      <Pulse events={events}/>
+    </HStack>
 
     <Grid columns={{ minWidth: 300, repeat: 'fit', max: 2 }} gap={4} align="start">
       <Card padding={5}><VStack gap={4}>
-        <Heading level={3}>{t('overview.byFeature')}</Heading>
-        {ranked.length ? <VStack as="ul" gap={3} className={styles.barRows} aria-label={t('overview.byFeatureList')}>
-          {ranked.slice(0, 8).map(f => <VStack as="li" key={f.id} gap={1}>
-            <HStack gap={3} className={styles.barRowHead}>
-              <Link to="/features/$featureId" params={{ featureId: f.id }} className={styles.featureTitle}>{f.title}</Link>
-              <Text type="supporting" color="secondary">{t('overview.requirementCount', { count: f.requirements.length })}{f.design ? '' : ' · ' + t('overview.noDesign')}</Text>
-            </HStack>
-            <ProgressBar label={t('overview.featureRequirements', { title: f.title })} isLabelHidden value={f.requirements.length} max={mostRequirements} variant="accent"/>
-          </VStack>)}
-          {ranked.length > 8 && <Text type="supporting" color="secondary">{t('overview.topFeatures')} <Link to="/features">{t('overview.allRequirements')}</Link></Text>}
-        </VStack> : <Text type="supporting" color="secondary">{t('overview.noFeatures')}</Text>}
+        <HStack gap={3} className={styles.barRowHead}><Heading level={3}>{t('overview.recentChangeTypes')}</Heading><Text type="supporting" color="secondary">{t('overview.loadedEvents', { count: events.length })}</Text></HStack>
+        <StackedBar segments={changes} label={t('overview.recentChangeTypes')}/>
       </VStack></Card>
-      <VStack gap={4}>
-        <Card padding={5}><VStack gap={4}>
-          <HStack gap={3} className={styles.barRowHead}><Heading level={3}>{t('overview.recentChangeTypes')}</Heading><Text type="supporting" color="secondary">{t('overview.loadedEvents', { count: events.length })}</Text></HStack>
-          <StackedBar segments={changes} label={t('overview.recentChangeTypes')}/>
-        </VStack></Card>
-        <Card padding={5}><VStack gap={4}>
-          <HStack gap={3} className={styles.barRowHead}><Heading level={3}>{t('overview.commitsByContributor')}</Heading><Link to="/contributors">{t('overview.contributorsLink')}</Link></HStack>
-          <StackedBar segments={commitShare} label={t('overview.commitsByContributor')}/>
-        </VStack></Card>
-      </VStack>
+      <Card padding={5}><VStack gap={4}>
+        <HStack gap={3} className={styles.barRowHead}><Heading level={3}>{t('overview.commitsByContributor')}</Heading><Link to="/contributors">{t('overview.contributorsLink')}</Link></HStack>
+        <StackedBar segments={commitShare} label={t('overview.commitsByContributor')}/>
+      </VStack></Card>
     </Grid>
 
-    <Card padding={5}><VStack gap={4}>
-      <HStack gap={3} className={styles.barRowHead}><Heading level={3}>{t('activity.recent')}</Heading><Link to="/activity">{t('overview.activityLink')}</Link></HStack>
-      {recent.length ? <VStack as="ul" gap={0} className={styles.recentList} aria-label={t('activity.recent')}>
-        {recent.map(e => { const spec = specOf(e); const title = e.after?.title ?? e.before?.title ?? spec?.title ?? e.id; return <HStack as="li" key={e.key} gap={3} className={styles.recentRow}>
-          <Person name={e.author} email={e.email} avatarOnly/>
-          <HStack gap={2} wrap="wrap" className={styles.recentBody}>
-            <Token label={e.types.map(type => changeNames[type]).join('·')} size="sm"/>
-            <Text type="supporting" color="secondary">{kindNames[e.kind ?? 'requirement']}</Text>
-            <Link to="/activity" search={{ selected: e.key }} className={styles.entryTitle}>{title}</Link>
-          </HStack>
-          <Timestamp value={e.date} format="relative"/>
-        </HStack>; })}
-      </VStack> : <Text type="supporting" color="secondary">{t('overview.noActivity')}</Text>}
-    </VStack></Card>
-
+    <VStack gap={4} className={styles.lead}>
+      <HStack gap={3} className={styles.barRowHead}>
+        <Heading level={2}>{t('overview.changeReasons')}</Heading>
+        <Link to="/activity">{t('overview.activityLink')}</Link>
+      </HStack>
+      {groups.length
+        ? <VStack as="ul" gap={0} className={styles.changeList} aria-label={t('overview.changeReasons')}>
+          {groups.map(group => <CommitGroup key={group[0]!.key} events={group} titleOf={titleOf}/>)}
+        </VStack>
+        : <Text color="secondary">{t('overview.noActivity')}</Text>}
+    </VStack>
   </VStack>;
 }

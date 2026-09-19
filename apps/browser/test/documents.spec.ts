@@ -71,17 +71,26 @@ test('wiki changes appear in the activity feed with their kind and open the curr
   await expect(page).toHaveURL(/\/wiki\/W-bbbbbbbbbb$/);
 });
 
-test('the product page is a dashboard of the loaded specs and does not treat the wiki README as a product document', async ({ page }) => {
+test('the product page leads with what changed and why, and does not treat the wiki README as a product document', async ({ page }) => {
   await mockApi(page); await page.goto('/product');
   const article = page.getByRole('article', { name: '제품 개요' });
-  await expect(article.getByRole('heading', { level: 1 })).toHaveText('제품 개요');
+  // The project leads; the counts orient below it.
+  await expect(article.getByRole('heading', { level: 1 })).toHaveText('project');
   const summary = article.getByLabel('현재 명세 요약');
   await expect(summary).toContainText('기능 명세');
   await expect(summary).toContainText('위키 페이지');
-  await expect(article.getByLabel('기능별 요구사항 수')).toContainText('검색 기능');
+  // The two loaded-range bars keep their legends above the reasons.
   await expect(article.getByLabel('최근 변경 종류 범례').getByRole('listitem').first()).toHaveText('추가1 · 100%');
   await expect(article.getByLabel('참여자별 커밋 범례').getByRole('listitem').first()).toHaveText('Fixture3 · 75%');
-  await expect(article.getByLabel('최근 명세 활동')).toContainText('검색어 입력');
+  // The recorded reason is the subject of the section below them, next to the record it explains.
+  const reasons = article.getByLabel('변경 이유');
+  await expect(reasons).toContainText('사용자가 검색을 요청했습니다.');
+  await expect(reasons).toContainText('검색어 입력');
+  await reasons.getByRole('link', { name: '검색어 입력' }).click();
+  await expect(page).toHaveURL(/\/activity\?selected=/);
+  await page.goBack();
+  // One way into the activity timeline, not two.
+  await expect(article.getByRole('link', { name: '활동 →' })).toHaveCount(1);
   // The README is the wiki's policy: the dashboard neither shows it nor links to it as a product document.
   await expect(article).not.toContainText('요구사항과 변경 이유를 Git에 연결합니다.');
   await expect(article.getByRole('link', { name: '제품 문서 보기' })).toHaveCount(0);
