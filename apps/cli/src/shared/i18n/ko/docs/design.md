@@ -29,6 +29,8 @@ sources:
 
 위 문장은 구조 설명이다. 실제 저장할 때는 파악한 내용으로 채우고 예시 ID와 안내 문장을 그대로 저장하지 않는다. 절 단위 참조는 실제 ID로 `<!-- gitifact-ref: R-ID, R-ID -->`를 쓴다. 코드 블록의 예시는 참조가 아니다. 본문의 상대 링크(`../../assets/flow.png` 등)는 브라우저가 해당 대상으로 연결한다.
 
+본문의 문체는 `gitifact docs writing`을 따른다. 다이어그램과 Alert도 그 문서의 기준대로 쓴다.
+
 ## 저장과 참조
 
 `spec save`의 operations에 `set-design`(type·feature·title·body·선택적 sources 배열)을 사용한다. create·add·set-design을 같은 요청에 담아 두 파일을 저장할 수 있다. CLI가 frontmatter를 작성하며 빈 설계를 자동 생성하지 않는다. 신규 R-ID는 반환된 결과에서 얻은 뒤 참조가 필요한 설계 절을 후속 save로 보완한다. ID를 미리 만들어 넣지 않는다. 설계 삭제는 `delete-design`(type·feature)이다.

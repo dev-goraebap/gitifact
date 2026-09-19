@@ -50,7 +50,7 @@ test('unknown topics and removed options fail on stderr without output', async t
   assert.equal(failure.status, 1); assert.equal(failure.stdout, '');
   const dto = JSON.parse(failure.stderr);
   assert.deepEqual([dto.contract, dto.version, dto.ok, dto.error.code], ['docs', 1, false, 'UNKNOWN_TOPIC']);
-  assert.match(dto.error.message, /workflow, spec, design, wiki, commit/);
+  assert.match(dto.error.message, /workflow, spec, design, wiki, writing, commit/);
   assert.notEqual(run(cwd, 'spec', 'design').status, 0);
   // Guidance overrides were removed; the option no longer exists.
   const eject = run(cwd, 'wiki', '--eject');

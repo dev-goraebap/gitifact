@@ -20,6 +20,8 @@ id: W-CLI가발급한값
 
 다른 페이지·명세·에셋으로 가는 링크는 이 파일 기준 상대 경로로 쓴다. 예: `conventions/code-style.md`, `../spec/posts/requirements.md`, `../assets/diagrams/flow.png`. 에디터와 GitHub에서는 파일 링크로 동작하고, 브라우저는 해당 페이지·기능·에셋으로 연결한다. gitifact 문서가 아닌 저장소 파일로 가는 링크는 브라우저에서 열리지 않고 경로만 복사할 수 있다. 대상이 없는 링크는 `spec working`이 `MISSING_LINK_TARGET`으로 알린다.
 
+페이지 본문의 문체는 `gitifact docs writing`을 따른다.
+
 ## 에셋
 
 이미지·PDF 등 Markdown이 아닌 파일은 `.gitifact/assets/` 아래에 둔다. 하위 폴더는 자유롭고 ID는 없다. 파일을 직접 복사해 넣고 문서에서 상대 경로로 참조한다. 권장 확장자는 png·jpg·gif·webp·svg·pdf, 권장 크기는 파일당 1MB·전체 50MB 이하다. 넘어도 저장·커밋은 되며 `spec working`이 `ASSET_SIZE`·`ASSET_EXTENSION`·`ASSETS_TOTAL_SIZE`로 알린다. 어떤 문서도 참조하지 않는 에셋은 `UNREFERENCED_ASSET`으로 알린다. 브라우저는 이미지를 본문에 표시하고 그 밖의 파일은 다운로드로 제공한다. 에셋 파일 이름을 바꾸면 참조하는 문서도 함께 고친다.

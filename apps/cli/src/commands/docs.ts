@@ -3,7 +3,7 @@ import { dirname, join } from 'node:path';
 import { WIKI_ENTRY_PATH } from '@gitifact/core';
 import { defaultLanguage, t, type Language } from '../shared/i18n/index.js';
 
-export const docTopics = ['workflow', 'spec', 'design', 'wiki', 'commit'] as const;
+export const docTopics = ['workflow', 'spec', 'design', 'wiki', 'writing', 'commit'] as const;
 export type DocTopic = typeof docTopics[number];
 // Every topic ships as `<topic>.md`. The wiki topic is followed by the project's own operating policy, which is the body
 // of `.gitifact/wiki/README.md`; `wiki.default.md` is the bundled policy used when there is no README and the template

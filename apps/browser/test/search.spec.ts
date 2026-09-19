@@ -19,6 +19,8 @@ async function ask(page: import('@playwright/test').Page, query: string) {
 
 test('the palette opens from the shortcut and from the header, and closes with escape', async ({ page }) => {
   await mockApi(page); await page.goto('/product');
+  // The header button is the app's own signal that the page has mounted; a keystroke sent before that is lost.
+  await expect(page.getByRole('button', { name: '문서 검색 열기' })).toBeVisible();
   await expect(page.getByRole('dialog', palette)).toHaveCount(0);
   await page.keyboard.press('Control+k');
   await expect(page.getByRole('dialog', palette)).toBeVisible();

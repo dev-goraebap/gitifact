@@ -97,7 +97,7 @@ id: S-4snufavmgg
 
 ### 범위와 제약
 
-위키 운영 방침은 `.gitifact/wiki/README.md`다. `gitifact docs wiki`는 CLI가 정한 형식 뒤에 README 본문을 운영 방침으로 싣고, README가 없거나 비어 있으면 내장 기본 방침을 싣는다. `init`은 처음 도입할 때 기본 방침으로 README를 만들며 다시 만들지 않는다. 기본 방침은 아키텍처 결정 기록(ADR)을 쌓는 것이다. workflow·spec·design·commit은 CLI 내장 지침만 쓰고 프로젝트가 대체하지 않는다. 형식과 `spec save`의 검증은 README와 무관하다.
+위키 운영 방침은 `.gitifact/wiki/README.md`다. `gitifact docs wiki`는 CLI가 정한 형식 뒤에 README 본문을 운영 방침으로 싣고, README가 없거나 비어 있으면 내장 기본 방침을 싣는다. `init`은 처음 도입할 때 기본 방침으로 README를 만들며 다시 만들지 않는다. 기본 방침은 아키텍처 결정 기록(ADR)을 쌓는 것이다. workflow·spec·design·writing·commit은 CLI 내장 지침만 쓰고 프로젝트가 대체하지 않는다. 형식과 `spec save`의 검증은 README와 무관하다.
 
 ### 수용 조건
 
@@ -107,3 +107,21 @@ id: S-4snufavmgg
    기대 동작: 형식 뒤에 고친 방침이 그대로 실립니다. 에이전트는 그 방침에 따라 위키를 다룹니다.
 3. 조건: 사용자가 README를 지우고 `init`을 다시 실행합니다.
    기대 동작: README를 되살리지 않고, `docs wiki`는 내장 기본 방침을 기본값이라고 밝혀 싣습니다.
+
+## 문서 문체 지침
+<!-- gitifact-req: R-wkp2oca6xx -->
+
+문서를 쓰는 에이전트로서, 프로젝트마다 문체를 다시 정하거나 세션마다 다른 말투로 쓰지 않기 위해 위키·요구사항·설계에 공통으로 적용할 문체 기준을 CLI에서 받고 싶다.
+
+### 범위와 제약
+
+문체 지침은 `gitifact docs writing` 하나이며 CLI가 내장한다. 서술과 구성, 구체성과 정확성, 인용과 Alert·다이어그램을 쓰는 기준, AI가 쓴 문장에서 흔한 상투구·빈 수식어를 덜어내는 기준을 담는다. 문체는 위키 페이지·요구사항·설계 본문에 모두 적용하되 `docs spec`이 정한 사용자 스토리 문형과 `조건: / 기대 동작:` 형식, 식별자·명령·코드 예제·ADR의 상태와 날짜는 바꾸지 않는다. CLI는 문장을 검사하거나 저장을 거부하지 않는다.
+
+### 수용 조건
+
+1. 조건: 에이전트가 `gitifact docs`를 실행합니다.
+   기대 동작: 목록에 writing 항목이 있고 `gitifact docs writing`이 문체 기준을 보여 줍니다.
+2. 조건: 에이전트가 요구사항·설계·위키 중 무엇을 쓰려고 `docs spec`·`docs design`·`docs wiki`를 읽습니다.
+   기대 동작: 각 문서가 문체는 `docs writing`을 따른다고 알립니다. 같은 내용을 문서마다 다시 적지 않습니다.
+3. 조건: 프로젝트가 자기 위키 운영 방침을 씁니다.
+   기대 동작: 문체 지침은 그대로 유지됩니다. 위키 README가 대체하는 것은 운영 방침뿐입니다.
