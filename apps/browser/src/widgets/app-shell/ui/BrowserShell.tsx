@@ -14,6 +14,7 @@ import { HgiBook } from '../../../shared/ui/icons/HgiBook';
 import { HgiInfo } from '../../../shared/ui/icons/HgiInfo';
 import { HgiSettings } from '../../../shared/ui/icons/HgiSettings';
 import { VersionFooter } from './VersionFooter';
+import { SearchPalette } from '../../search-palette';
 import styles from './app-shell.module.css';
 import { t } from '../../../shared/i18n';
 const destinations = [
@@ -68,6 +69,7 @@ export function BrowserShell() {
         <VStack gap={0} className={styles.card}>
           <Outlet />
         </VStack>
+        <SearchPalette/>
       </VStack>
     </AppShell>
   );

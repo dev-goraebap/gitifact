@@ -1,0 +1,25 @@
+/* The result area keeps one height whatever the query returns. Sized to the results, the dialog grew and shrank on
+   every keystroke; a fixed list means the palette stays put and the results scroll inside it. */
+.palette :global(.astryx-command-palette-list) { height: 22rem; max-height: 22rem; }
+/* The slot that holds an empty state also holds the loading placeholder: the illustration centres in it, the
+   placeholder stretches so its first row starts where the first result would. */
+.palette :global(.astryx-command-palette-empty) { min-height: 22rem; padding: 0; display: flex; align-items: center; justify-content: center; }
+/* Same measurements as a rendered result: the list pads 4px, a heading and a row pad 12px more, so text starts at
+   16px from the list edge in both, and a two-line row is the same height as a two-line placeholder. */
+.loading { align-self: stretch; width: 100%; padding-block: var(--spacing-1); }
+.loadingHeading { justify-content: center; padding: var(--spacing-1) var(--spacing-3); min-height: 25px; }
+.loadingRow { padding: var(--spacing-2) var(--spacing-3); }
+/* A result is a title with where it lives, and one line of evidence under it; both stay on one line so the list
+   keeps a steady rhythm while the reader arrows through it. */
+.row { min-width:0; flex:1; }
+.head { align-items:baseline; justify-content:space-between; gap:var(--spacing-3); min-width:0; }
+.head > :first-child { min-width:0; }
+.head > :last-child { flex:0 0 auto; }
+/* The matched run, marked on the theme's own highlight so it reads in both color modes. */
+.hit { background:var(--color-background-yellow); color:inherit; border-radius:2px; padding:0 .1em; }
+/* The header entry into search: a quiet field-shaped button that shows the shortcut it stands for. */
+.trigger { display:inline-flex; align-items:center; gap:var(--spacing-2); min-width:11rem; padding:var(--spacing-1) var(--spacing-2) var(--spacing-1) var(--spacing-3);
+  border:1px solid var(--color-border); border-radius:var(--radius-element); background:var(--color-background-body); color:var(--color-text-secondary); cursor:pointer; }
+.trigger:hover { border-color:var(--color-border-emphasized, var(--color-border)); color:var(--color-text-primary); }
+.trigger span { flex:1; text-align:start; }
+@media(width<48rem){ .trigger { min-width:0; } .trigger span, .trigger kbd { display:none; } }

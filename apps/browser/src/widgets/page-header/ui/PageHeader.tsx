@@ -5,6 +5,7 @@ import { Text } from '@astryxdesign/core/Text';
 import { Link } from '@tanstack/react-router';
 import { ProjectName } from '../../../entities/project';
 import { HgiFolder } from '../../../shared/ui/icons/HgiFolder';
+import { SearchTrigger } from '../../search-palette';
 import styles from './page-header.module.css';
 import { t } from '../../../shared/i18n';
 
@@ -24,7 +25,10 @@ export function PageHeader({ trail, actions }: { trail: Crumb[]; actions?: React
             : <Text type="supporting" maxLines={1}>{crumb.label}</Text>}
         </Fragment>)}
       </HStack>
-      {actions}
+      <HStack gap={3} className={styles.tools}>
+        <SearchTrigger/>
+        {actions}
+      </HStack>
     </HStack>
   );
 }

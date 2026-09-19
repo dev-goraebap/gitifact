@@ -11,10 +11,33 @@ export function ViewSkeleton({ view }: { view: 'history' | 'features' | 'contrib
     <VStack gap={2} className={styles.browserColumn} aria-hidden="true">{rows.map(i => <Skeleton key={i} index={i} width={`${60 + (i % 3) * 12}%`} height="var(--spacing-5)"/>)}</VStack>
     <VStack gap={0} className={styles.columnFiller} aria-hidden="true"/>
   </HStack>;
-  if (view === 'product') return <VStack gap={6} role="status" aria-label={t('request.loadingProject')} aria-busy="true" className={`${styles.skeleton} ${styles.dashboard}`}>
-    <VStack gap={2} className={styles.dashboardHead} aria-hidden="true"><Skeleton width="12rem" height="var(--spacing-8)"/><Skeleton width="20rem" height="var(--spacing-3)"/></VStack>
-    <HStack gap={3} wrap="wrap" aria-hidden="true">{rows.map(i => <Skeleton key={i} index={i} width="9rem" height="5rem" radius={2}/>)}</HStack>
-    <HStack gap={4} wrap="wrap" aria-hidden="true"><Skeleton width="20rem" height="16rem" radius={2}/><Skeleton width="20rem" height="16rem" radius={2}/></HStack>
+  // The overview: the project and its size, the two charts, then the reasons. It borrows the page's own spacing
+  // classes, nested the way the page nests them — the content padding outside, the dashboard inside — so the
+  // placeholder sits exactly where the content will instead of drifting when the page is rearranged.
+  if (view === 'product') return <VStack gap={6} role="status" aria-label={t('request.loadingProject')} aria-busy="true" className={styles.content}>
+    <VStack gap={6} className={`${styles.skeleton} ${styles.dashboard}`}>
+    <HStack gap={5} wrap="wrap" className={styles.hero} aria-hidden="true">
+      <VStack gap={3} className={styles.heroText}>
+        <Skeleton width="13rem" height="2.5rem"/>
+        <Skeleton width="21rem" height="var(--spacing-5)"/>
+        <Skeleton width="11rem" height="var(--spacing-4)"/>
+      </VStack>
+      <VStack gap={2} className={styles.pulse}><Skeleton width="100%" height="2.75rem"/><Skeleton width="12rem" height="var(--spacing-3)"/></VStack>
+    </HStack>
+    <HStack gap={4} wrap="wrap" aria-hidden="true">
+      <Skeleton width="calc(50% - var(--spacing-2))" height="9rem" radius={2}/>
+      <Skeleton width="calc(50% - var(--spacing-2))" height="9rem" radius={2}/>
+    </HStack>
+    <VStack gap={4} className={styles.lead} aria-hidden="true">
+      <Skeleton width="7rem" height="var(--spacing-7)"/>
+      {[0, 1, 2].map(i => <VStack key={i} gap={3} className={styles.changeRow}>
+        <Skeleton index={i} width="9rem" height="var(--spacing-5)"/>
+        <Skeleton index={i} width={`${94 - i * 3}%`} height="var(--spacing-4)"/>
+        <Skeleton index={i} width={`${64 - i * 6}%`} height="var(--spacing-4)"/>
+        <HStack gap={3}><Skeleton index={i} width="13rem" height="var(--spacing-5)"/><Skeleton index={i} width="10rem" height="var(--spacing-5)"/></HStack>
+      </VStack>)}
+    </VStack>
+    </VStack>
   </VStack>;
   return <VStack gap={0} role="status" aria-label={t('request.loadingProject')} aria-busy="true" className={styles.skeleton}>
     <HStack gap={3} wrap="wrap" className={styles.filters} aria-hidden="true">

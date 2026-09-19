@@ -3,3 +3,5 @@
 .trail { align-items: center; color: var(--color-text-secondary); min-width: 0; }
 .crumb { font-size: .8125rem; color: var(--color-text-secondary); text-decoration: none; white-space: nowrap; }
 .crumb:hover { color: var(--color-text-primary); text-decoration: underline; }
+/* Search and the page's own actions share the right end of the bar, so the bar reads as location then tools. */
+.tools { align-items: center; flex-shrink: 0; }
