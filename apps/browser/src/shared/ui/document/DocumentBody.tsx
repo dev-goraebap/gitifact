@@ -3,9 +3,11 @@ import { VStack } from '@astryxdesign/core/VStack';
 import { DocumentPathContext } from './document-scope';
 import { MarkdownLink } from './MarkdownLink';
 import { MarkdownImage } from './MarkdownImage';
+import { MarkdownCode } from './MarkdownCode';
+import { MarkdownBlockquote } from './MarkdownBlockquote';
 import styles from './document.module.css';
 
-const components = { link: MarkdownLink, image: MarkdownImage };
+const components = { link: MarkdownLink, image: MarkdownImage, code: MarkdownCode, blockquote: MarkdownBlockquote };
 
 /**
  * Markdown as a document to read, not interface text: a 48rem measure shared by prose, code, tables and rules

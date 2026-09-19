@@ -5,3 +5,6 @@
 {"id":"H-sjcozgysll","requirements":[],"documents":["W-efxelfxeto","W-hzrkrmfs6y","W-ognoghkj7k","W-sd5galgc7q"],"reason":"이 저장소 위키의 운영 방침을 README로 두었다. 기본 방침에 \"개발 규칙은 rules/에서 관리한다\"를 더한 이 저장소용 방침이다. 재정의를 README로 바꾼 결정을 ADR 0003으로 남기고 0002를 Superseded by 0003으로, 0001을 표준 상태값 Accepted로 바꿨다."}
 {"id":"H-jz7xuiyfot","requirements":[],"documents":["W-dmcvdbs53b"],"reason":"사용자가 확정한 소개 글에서 결정 기록 링크가 빠져, 브라우저 소개 페이지가 앱 안 경로로 바꾸는 링크가 요구사항 하나만 남았다."}
 {"id":"H-v3tons5smq","requirements":[],"documents":["W-xt2mfa2odx"],"reason":"브라우저 경로표·메뉴 이름·검색창 구조를 시작 화면 변경, 기능별 요구사항 메뉴, 한글 입력 수정에 맞췄다."}
+{"id":"H-ruwm5hpwnc","requirements":[],"documents":["W-f7gtcx7hav"],"reason":"문서를 쓰는 사람이 무엇을 쓸 수 있고 무엇이 범위 밖인지 한곳에서 보도록 표기 안내를 둔다. 새 렌더링을 실제 문서로 확인하는 자리도 겸한다."}
+{"id":"H-swqzmo2b7c","requirements":[],"documents":["W-fainrp43qi"],"reason":"집계 차트에 라이브러리를 쓰지 않는다는 기존 방침과 부딪히므로 문서 다이어그램에 한정한 예외와 그 배포 크기 대가를 결정으로 남긴다. mermaid 12.0.0은 라벨 폭을 늘 120px로 계산해 긴 라벨이 잘리므로 11.17.2를 쓴다."}
+{"id":"H-arfjirgr23","requirements":[],"documents":["W-risprbk4wt","W-xt2mfa2odx"],"reason":"브라우저가 그리는 것이 달라졌으므로 Markdown 렌더링 범위와 차트 라이브러리 금지의 적용 범위를 규칙에 맞춘다."}

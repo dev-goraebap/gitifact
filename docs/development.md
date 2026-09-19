@@ -1,5 +1,19 @@
 # 개발 환경
 
+## 2026-09-19 문서의 다이어그램과 알림 렌더링
+
+브라우저가 ```mermaid 펜스를 코드로, `> [!NOTE]` 알림을 `[!NOTE]` 글자가 그대로 남은 인용문으로 보여 주던 것을 고쳤다. 저장소의 `.md`에는 아직 둘 다 쓰인 곳이 없으니 앞으로 쓰기 위한 준비다. 범위는 사용자가 골랐다. mermaid를 지연 로딩으로 담고 알림까지 함께 고치는 안을 택했고, 알림 등 경량 항목만 고치는 안과 mermaid만 넣는 안은 기각했다.
+
+구현은 `shared/ui/document`에 모았다. Astryx Markdown의 `components.code`·`components.blockquote`를 우리 렌더러로 바꾸되, mermaid가 아닌 펜스는 CodeBlock, 표지가 없는 인용은 Blockquote 그대로다. Astryx는 이 슬롯을 바꾸면 감싸개 클래스까지 내주므로 블록 간격은 CSS 모듈이 대신 준다. mermaid는 `import('mermaid')`로만 불러 자기 청크에 두고, 색은 그리기 직전에 그 자리의 테마 토큰 계산값을 읽어 넘기며 화면 모드·색 조합이 바뀌면 다시 그린다. `securityLevel: 'strict'`·`htmlLabels: false`이고 문법 오류는 그 자리에만 원문과 이유를 보여 준다. 설계는 브라우저 design.md의 문서 읽기 절, 결정과 대가는 위키 ADR 0008에 있다.
+
+mermaid는 12.0.0으로 시작했다가 11.17.2로 내렸다. 12.0.0은 라벨 폭을 글자와 무관하게 늘 120px로 계산해 모든 노드 상자가 같은 크기가 되고 긴 라벨이 잘린다. 한글·영문 모두, 앱 밖의 mermaid 단독 페이지에서도 같게 나와 상류 문제로 확인했다. 11.17.2는 같은 입력을 제대로 잰다. 회귀를 막는 테스트(라벨보다 좁은 상자를 잡고, 길이가 다른 두 라벨의 상자가 같으면 실패)를 브라우저 테스트에 넣었다. fastdom·strictdom이 라이선스 파일 없이 README에 MIT 전문을 두어 notices 생성기가 멈췄으므로, 그 절을 `apps/cli/licenses/`에 보관하고 대응을 등록했다.
+
+크기: `apps/browser/dist` 1.5MB → 4.9MB, `apps/cli/dist` 2.8MB → 6.2MB. 늘어난 쪽은 대부분 mermaid가 다이어그램 종류별로 나눠 둔 청크(elk 1.4MB, cytoscape 0.4MB, katex 0.3MB)이고, 쓰지 않는 종류는 내려받지 않지만 패키지에는 실린다. 종류를 골라 담아 줄이는 것은 하지 않았다. THIRD_PARTY_NOTICES는 mermaid의 전이 의존성까지 자동으로 담겼다(186KB).
+
+사용자가 다이어그램 페이지에서 화면이 좌우로 흔들린다고 알려 와 원인을 찾았다. mermaid는 그림을 문서에 넣어 크기를 재는데, 기본값인 `<body>`에 재면 문서가 잠깐 뷰포트보다 150px 커져 세로 스크롤바가 생겼다 사라지고 그만큼 본문이 옆으로 밀린다. 재는 자리를 화면 밖 고정 위치의 요소 하나로 지정해 없앴다. 그 요소를 `visibility:hidden`으로 숨기면 폭이 0으로 측정되므로 숨기지 않는다. 재현 테스트를 먼저 실패시켜 확인했다(문서가 스크롤되면 실패). 이때 테스트가 `vite preview`로 빌드 산출물을 띄운다는 점을 놓쳐 한동안 수정 전후가 같게 나왔다.
+
+검증: `pnpm check` 통과(core 29·contracts 7·intro 3·CLI 136·브라우저 41). 브라우저에 `test/markdown.spec.ts` 7건을 더했다 — mermaid 렌더링과 다른 펜스 유지, 문법 오류 대체, 원문의 click·HTML 라벨이 실행되지 않음, 알림 다섯 종류와 일반 인용 구분, 알림 안의 링크·강조 유지, 라벨보다 넓은 노드 상자, 그리는 동안 문서가 스크롤되지 않음. 실제 CLI 서버로 띄운 위키 페이지에서 라이트·다크와 라벨 잘림을 확인했다(`.tmp/markdown-rendering/`). 표기 안내 페이지 `rules/markdown-notation.md`를 위키에 더했다. 커밋·푸시는 하지 않았다.
+
 ## 2026-09-18 위키 운영 방침을 README로, 지침 내재화
 
 재정의(`.gitifact/overrides/`, `docs --eject`)를 없애고 workflow·spec·design·commit을 CLI 내장 지침 하나씩으로 되돌렸다. 위키만 프로젝트별로 달라져야 해서, 위키 운영 방침을 `.gitifact/wiki/README.md` 자체로 두고 `docs wiki`가 형식 뒤에 README를 싣게 했다. `init`은 처음 도입할 때 기본 방침(아키텍처 결정 기록을 쌓는다)으로 README를 만든다. 결정은 위키 ADR 0003(0002를 대체)에 있다.

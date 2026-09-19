@@ -32,3 +32,27 @@
 /* A page that does not exist is inert text with a strike; a file outside the browser keeps a quiet dashed underline and copies its path. */
 .missingLink { cursor:not-allowed; }
 .outsideLink { text-decoration-style:dashed; cursor:copy; }
+/* Custom Markdown parts replace Astryx's wrappers, so the block rhythm the wrapper classes above carry is restated
+   here: code blocks and diagrams keep the codeblock spacing, quotes and alerts keep the blockquote spacing. */
+.reading .codeblock, .reading .diagram { margin-block:var(--spacing-5); }
+.reading .blockquote, .reading .alert { margin-block:var(--spacing-5); }
+.reading .blockquote { padding:var(--spacing-3) var(--spacing-4); border-inline-start:3px solid var(--color-border-emphasized, var(--color-border)); border-radius:0 var(--radius-element) var(--radius-element) 0; background:var(--color-background-muted); color:var(--color-text-secondary); }
+.reading .blockquote > :last-child { margin-block-end:0; }
+/* A diagram is a picture of the text around it: it scrolls sideways when it is wider than the measure and never
+   crops, and its own background stays out of the way of the reading surface. */
+.reading .diagram { margin-inline:0; overflow-x:auto; }
+.reading .diagram svg { max-width:100%; height:auto; display:block; }
+/* GitHub alerts: the left rule and the label carry the meaning; the fill stays faint so the text keeps its contrast. */
+.reading .alert { padding:var(--spacing-3) var(--spacing-4); border:1px solid var(--color-border); border-inline-start:3px solid var(--color-border); border-radius:var(--radius-element); background:var(--color-background-muted); }
+.reading .alert > :last-child { margin-block-end:0; }
+.reading .alertLabel { color:var(--color-text-primary); }
+.reading .alertNote { border-color:var(--color-border-blue); background:var(--color-background-blue); }
+.reading .alertNote .alertLabel { color:var(--color-icon-blue); }
+.reading .alertTip { border-color:var(--color-border-green); background:var(--color-background-green); }
+.reading .alertTip .alertLabel { color:var(--color-icon-green); }
+.reading .alertImportant { border-color:var(--color-border-purple); background:var(--color-background-purple); }
+.reading .alertImportant .alertLabel { color:var(--color-icon-purple); }
+.reading .alertWarning { border-color:var(--color-border-yellow); background:var(--color-background-yellow); }
+.reading .alertWarning .alertLabel { color:var(--color-icon-yellow); }
+.reading .alertCaution { border-color:var(--color-border-red); background:var(--color-background-red); }
+.reading .alertCaution .alertLabel { color:var(--color-icon-red); }

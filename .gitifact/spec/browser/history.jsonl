@@ -18,3 +18,4 @@
 {"id":"H-xgc5ojpq22","requirements":["R-tkl3lrrlpu"],"reason":"사용자 요청으로 브라우저를 열면 활동 대신 제품 개요가 먼저 보이게 했다. 활동은 /activity로 옮기고, 0.5.0 전의 활동 링크(/?selected=… 등)가 필터를 잃지 않도록 검색 인자가 있는 / 는 같은 인자로 /activity에 보낸다."}
 {"id":"H-npbfnif5vy","requirements":["R-xqf3xsumye"],"reason":"사용자 요청으로 요구사항 메뉴 이름을 기능별 요구사항으로 바꿨다. 목록이 기능 단위임을 드러낸다. 경로 /features는 유지한다."}
 {"id":"H-teqm6njrlu","requirements":[],"designs":["S-jqxgddhsdf"],"reason":"시작 화면을 제품 개요로 바꾸고 활동을 /activity로 옮긴 경로 설계, 기능별 요구사항 메뉴 이름, 한글 조합을 보호하는 검색창(SearchFilter) 구조를 사용자 요청에 따라 반영했다."}
+{"id":"H-yiwqz7fgid","requirements":["R-wa3wnknrlt"],"designs":["S-jqxgddhsdf"],"reason":"설계 문서에 그려 둔 흐름도가 브라우저에서 코드 덩어리로 보이고 GitHub 알림은 [!NOTE] 글자가 그대로 남았다. 사용자가 mermaid를 지연 로딩으로 담고 알림까지 함께 고치는 안을 골랐다. 알림 등 경량 항목만 고치는 안과 mermaid만 넣는 안은 기각했다."}

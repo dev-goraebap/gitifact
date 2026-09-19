@@ -27,6 +27,10 @@ export async function writeNotices() {
       }
       if (!texts.length && key === '@stylexjs/stylex@0.19.0') texts.push(await readFile(new URL('../licenses/stylex-LICENSE', import.meta.url), 'utf8'));
       if (!texts.length && key === '@hugeicons/core-free-icons@4.3.0') texts.push(await readFile(new URL('../licenses/hugeicons-LICENSE', import.meta.url), 'utf8'));
+      // mermaid's fastdom and strictdom keep their MIT text in the README instead of a license file; the copies
+      // under licenses/ are that section, extracted from the installed packages.
+      if (!texts.length && key === 'fastdom@1.0.12') texts.push(await readFile(new URL('../licenses/fastdom-LICENSE', import.meta.url), 'utf8'));
+      if (!texts.length && key === 'strictdom@1.0.1') texts.push(await readFile(new URL('../licenses/strictdom-LICENSE', import.meta.url), 'utf8'));
       if (!texts.length) missingLicenses.push(key);
       seen.set(key, `${key} (${typeof pkg.license === 'string' ? pkg.license : 'see license text'})\n\n${texts.join('\n\n')}`);
     }
