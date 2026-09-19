@@ -3,7 +3,7 @@ import { mkdir, open, readFile, rename, rmdir, unlink, writeFile } from 'node:fs
 import { join } from 'node:path';
 import { prepareSpecPreview, pendingPreviewReasons } from '@gitifact/core';
 import { createGitRunner } from '../adapters/git/run-git.js';
-import { previewExpected, readPreviewContext } from '../adapters/filesystem/spec-preview-prepare.js';
+import { previewExpected, readPreviewContext } from '../adapters/filesystem/spec-preview-context.js';
 import { failOnLegacyLock, generatePreviewId, PreservedPreviewError, previewTransaction, readLockedPreviewState } from '../adapters/filesystem/spec-preview-store.js';
 import { checkLegacySelection, fail, fingerprint, hash, info, object, optional, paths, policyPaths, record, text } from './spec-commit-files.js';
 import { t } from '../shared/i18n/index.js';

@@ -13,3 +13,4 @@
 {"id":"H-vmialdinhs","requirements":[],"documents":["W-xt2mfa2odx"],"reason":"화면 머리에 검색 입구가 생기고 검색어 반영에 대기 시간이 붙었으므로 화면·레이아웃·데이터 흐름 절에 반영한다."}
 {"id":"H-7q5bj4uqjh","requirements":[],"documents":["W-xt2mfa2odx"],"reason":"목록 표의 행을 한 줄·같은 높이로 두는 규칙, 대부분의 행이 같은 값인 항목을 열로 두지 않는 규칙, 수량 열의 비교 막대, 필터·정렬을 검색 인자에 두고 상세까지 넘기는 규칙을 적었다. 화면 표와 제품 개요 절 이름도 현재 화면에 맞췄다."}
 {"id":"H-z2skiu2lz3","requirements":[],"documents":["W-f7gtcx7hav","W-tdpi4fswa7"],"reason":"공통 문체를 내장 지침으로 옮기면서 이 저장소의 위키를 맞췄다. 문서 문체 페이지는 이 저장소에만 해당하는 것만 남기고, 문서 표기 페이지의 다이어그램·알림 절은 쓰는 기준을 내장 지침으로 넘기고 브라우저가 그리는 예를 남겼다."}
+{"id":"H-s4qhz7yiwc","requirements":[],"documents":["W-dmcvdbs53b"],"reason":"0.5.0에서 예고한 대로 deprecated였던 prepare·verify·commit-plan·commit-apply를 0.6.0에서 삭제해, CLI 규칙의 해당 문장을 삭제 사실로 바꿨다."}

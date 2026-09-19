@@ -4,16 +4,15 @@ import { comparePreviewBundles, SpecPreviewError, RepositoryReadError, InitError
 import { specPreviewReader } from '../adapters/git/spec-preview-reader.js';
 import { withCommandScope } from '../adapters/git/command-scope.js';
 import { readWorkingPreview, saveWorkingPreview } from '../adapters/filesystem/spec-preview-store.js';
-import { prepareWorkingPreview, readFinalPreviewChanges, verifyPreparedPreview } from '../adapters/filesystem/spec-preview-prepare.js';
+import { readFinalPreviewChanges } from '../adapters/filesystem/spec-preview-context.js';
 import { fileInfo, readConfigFile } from '../adapters/filesystem/config-file.js';
 import { initRepository } from '../adapters/git/init-repository.js';
 import { discardAgentInput, prepareAgentInputs, type AgentInputControls } from '../adapters/filesystem/agent-inputs.js';
-import { previewCommit } from './spec-preview-commit.js';
 import { specCommit } from './spec-commit.js';
 import { t } from '../shared/i18n/index.js';
 
-type Action = 'read' | 'diff' | 'working' | 'save' | 'changes' | 'prepare' | 'verify' | 'commit-plan' | 'commit-apply' | 'commit';
-type Options = { ref?: string; from?: string; to?: string; file?: string; staged?: boolean; dryRun?: boolean; stamp?: boolean; feature?: string; ids?: boolean };
+type Action = 'read' | 'diff' | 'working' | 'save' | 'changes' | 'commit';
+type Options = { ref?: string; from?: string; to?: string; file?: string; dryRun?: boolean; stamp?: boolean; feature?: string; ids?: boolean };
 export interface SpecPreviewControls extends AgentInputControls { stdin?: AsyncIterable<Uint8Array> }
 const operations = ['MERGE_HEAD', 'CHERRY_PICK_HEAD', 'REVERT_HEAD', 'rebase-merge', 'rebase-apply', 'sequencer', 'BISECT_START', 'index.lock'];
 
@@ -32,7 +31,7 @@ async function execute(action: Action, options: Options, controls: SpecPreviewCo
     const config = parseManagedConfig(raw);
     if (!('schemaVersion' in config)) throw new SpecPreviewError(t('preview.legacyProject'));
     await initRepository(root).validateBaseline(config, root, 'HEAD', objectFormat);
-    if (['working', 'save', 'changes', 'prepare', 'verify', 'commit-plan', 'commit-apply', 'commit'].includes(action)) {
+    if (['working', 'save', 'changes', 'commit'].includes(action)) {
       let result;
       // The input paths ride on the reads an agent already runs before save and commit; a failure only omits them.
       const inputs = () => prepareAgentInputs(root, controls).catch(() => undefined);
@@ -45,9 +44,6 @@ async function execute(action: Action, options: Options, controls: SpecPreviewCo
         try { input = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes)); }
         catch { throw new SpecPreviewError(t('preview.inputJson')); }
         result = action === 'commit' ? await specCommit(process.cwd(), input, !!options.dryRun)
-          : action === 'commit-plan' || action === 'commit-apply' ? await previewCommit(process.cwd(), action === 'commit-plan' ? 'plan' : 'apply', input)
-          : action === 'prepare' ? await prepareWorkingPreview(process.cwd(), input)
-          : action === 'verify' ? await verifyPreparedPreview(process.cwd(), input, !!options.staged)
           : await saveWorkingPreview(process.cwd(), input);
         // Only a certain success consumes the input; failures, dry runs and uncertain commits keep it for the retry.
         const consumed = action === 'save' || (action === 'commit' && (result as { outcome?: string }).outcome === 'committed');

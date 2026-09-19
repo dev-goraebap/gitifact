@@ -1,5 +1,13 @@
 # 개발 환경
 
+## 2026-09-19 deprecated 커밋 준비 명령 삭제
+
+0.5.0에서 예고한 대로 `spec prepare`·`spec verify`·`spec commit-plan`·`spec commit-apply`를 삭제했다. 이유 기록과 커밋은 `spec commit` 하나다. `spec-preview-commit.ts`와 두 명령만 쓰던 어댑터 함수(`prepareWorkingPreview`·`verifyPreparedPreview`)를 지웠고, 남은 공통 부분(저장소 맥락 읽기, expected 해시, 최종 변경 조회)은 `spec commit`과 `spec changes`가 계속 쓰므로 `spec-preview-context.ts`로 이름을 바꿨다. 쓰이지 않게 된 문구 21개를 지웠다. core의 `prepareSpecPreview`는 `spec commit`이 쓰므로 그대로 둔다.
+
+테스트는 지운 만큼 줄었지만 명령이 아니라 기록의 규칙을 보던 것은 옮겼다. `spec-commit.test.mjs`에 요구사항을 옮기면 이유가 목적지 history에, 지우면 원본에 남는지와, 없는 R-ID·중복 R-ID를 파일을 쓰지 않고 거부하는지, 커밋된 history 줄을 고치면 `changes`가 거부하는지를 더했다. 미커밋 이유를 남기는 방법도 바꿨다. 전에는 `prepare`가 그 상태를 만들었으므로, 이제 커밋한 뒤 `git reset --mixed HEAD~1`로 되돌려 같은 상태를 만든다. `spec-init.test.mjs`의 prepare→commit-plan→commit-apply 흐름은 `spec commit` 한 번으로 바꿨다. CLI 테스트는 136개에서 123개가 됐고 전부 통과한다.
+
+문서에서도 함께 지웠다. 내장 `docs commit`의 deprecated 안내 줄, 이 저장소 AGENTS.md와 위키 CLI 규칙의 같은 문장을 삭제 사실로 바꿨다. [MVP 전환 계획](mvp-transition.md)의 단일 커밋 명령 절에는 삭제 시점을 덧붙이고 그 위의 설명은 그때의 기록으로 남겼다.
+
 ## 2026-09-19 문체 지침을 내장 항목으로
 
 사용자가 톤 앤 매너 지침을 내장 기본으로 제공하자고 했다. AI 슬롭 절은 요구사항·설계에도 해당하므로 둘 자리를 먼저 정했고, 사용자가 독립 항목을 골랐다. `docs writing`이 여섯 번째 topic이 되고 `spec.md`·`design.md`·`wiki.md`는 한 줄로 그것을 가리킨다. 기각한 안과 이유는 [에이전트 작업 흐름 설계](../.gitifact/spec/agent-workflow/design.md)의 문서 문체 지침 절에 있다.

@@ -63,18 +63,10 @@ program.command('migrate')
   .action(runMigrate);
 
 const spec = program.command('spec').description(t('help.spec'));
-const replaced = t('help.deprecated');
 spec.command('commit').description(t('help.specCommit')).allowExcessArguments(false)
   .requiredOption('--file <path>', t('help.specCommitFile'))
   .option('--dry-run', t('help.specCommitDryRun')).action(o => runSpecPreview('commit', o));
-for (const action of ['commit-plan', 'commit-apply'] as const) spec.command(action).description(replaced).allowExcessArguments(false)
-  .requiredOption('--file <path>', t('help.specCommitPlanFile')).action(o => runSpecPreview(action, o));
 spec.command('changes').description(t('help.specChanges')).allowExcessArguments(false).action(o => runSpecPreview('changes', o));
-spec.command('prepare').description(replaced).allowExcessArguments(false)
-  .requiredOption('--file <path>', t('help.specPrepareFile')).action(o => runSpecPreview('prepare', o));
-spec.command('verify').description(replaced).allowExcessArguments(false)
-  .requiredOption('--file <path>', t('help.specVerifyFile')).option('--staged', t('help.specVerifyStaged'))
-  .action(o => runSpecPreview('verify', o));
 spec.command('working').description(t('help.specWorking')).allowExcessArguments(false)
   .addOption(new Option('--stamp', t('help.specWorkingStamp')).conflicts(['feature', 'ids']))
   .option('--feature <name>', t('help.specWorkingFeature')).option('--ids', t('help.specWorkingIds'))

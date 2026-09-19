@@ -70,7 +70,7 @@ ID는 CLI가 발급하는 소문자 base32 10자다. 명세 S-, 요구사항 R-,
 
 ## 저장과 커밋 흐름
 
-`spec working` → `spec save --file`(expected stamp와 operations) → `spec commit --file`(reasons·paths·message·authorization)이다. save는 잠금 아래 stamp를 대조하고 실제로 바뀐 파일만 반영하며 실패 시 원복하고 복구 자료를 남긴다. commit은 격리 index로 선택 파일만 staging하고, 훅·필터가 원문을 바꾸면 거부하며, HEAD가 바뀐 불확실한 실행은 복구 자료를 보존한다. 커밋 메시지 트레일러는 `Gitifact-Req`·`Gitifact-Design`·`Gitifact-Doc`이다. deprecated인 `prepare·verify·commit-plan·commit-apply`에는 기능을 확대하지 않는다.
+`spec working` → `spec save --file`(expected stamp와 operations) → `spec commit --file`(reasons·paths·message·authorization)이다. save는 잠금 아래 stamp를 대조하고 실제로 바뀐 파일만 반영하며 실패 시 원복하고 복구 자료를 남긴다. commit은 격리 index로 선택 파일만 staging하고, 훅·필터가 원문을 바꾸면 거부하며, HEAD가 바뀐 불확실한 실행은 복구 자료를 보존한다. 커밋 메시지 트레일러는 `Gitifact-Req`·`Gitifact-Design`·`Gitifact-Doc`이다. `prepare·verify·commit-plan·commit-apply`는 0.6.0에서 삭제했다. 이유 기록과 커밋은 `spec commit` 하나다.
 
 ## 로컬 서버
 

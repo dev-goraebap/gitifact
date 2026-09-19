@@ -193,6 +193,12 @@ Tryce에서 Gitifact로 이름을 바꾼 첫 배포다. 패키지 `gitifact@0.1.
 
 레지스트리에서 새 임시 폴더에 로컬로 설치한 dist 66개 파일이 검증 빌드와 모두 같았고, 설치본의 `--version`은 0.5.1이다. 새 Git 저장소를 레지스트리의 0.4.4로 init해 schemaVersion 1 설정을 만든 뒤, 설치본 0.5.1의 init이 레지스트리 확인을 켠 채 `outcome: "replaced"`, `update.status: "up-to-date"`로 설정을 schemaVersion 2로 바꾸고 `spec working`이 동작함을 확인했다. 이 PC의 npm 전역 설치는 변경하지 않았다. 기존 인증 세션으로 게시했으며 인증 파일과 토큰은 조회·변경하지 않았다.
 
+## 0.6.0 배포 준비
+
+0.5.1 이후의 브라우저 기능과 내장 문체 지침, deprecated 명령 삭제를 담는다. 브라우저는 문서의 mermaid 다이어그램·GitHub 알림을 그리고, `mod+K` 문서 검색과 기능 목록의 설계 여부·참여자·정렬 필터를 제공하며, 제품 개요가 최근 변경 이력을 본문으로 보여 준다. 불러온 이력은 화면을 옮겨도 유지되고 체크아웃은 첫 페이지에만 실린다. `docs writing`이 위키·요구사항·설계에 공통으로 적용하는 문체 지침이다. `spec prepare/verify/commit-plan/commit-apply`는 0.5.0의 예고대로 삭제했다. 변경 내용은 [패치노트](../apps/cli/src/shared/i18n/ko/changelog.md), 작업 기록은 [개발 환경](development.md)에 있다.
+
+`pnpm check`를 통과했다. core 29개·contracts 7개·intro 3개·CLI 123개·브라우저 51개와 workspace 밖 오프라인 설치·실행을 확인했다. CLI 테스트 감소는 삭제한 명령의 테스트 제거에 따른 것이며, 그중 기록 규칙을 보던 검사는 `spec commit` 테스트로 옮겼다. CLI 번들 SHA-256은 `2806f86a927cc221bd96df2ff54ef5dfd145be88ddb13ae997e0937278ea9cc1`이다. 게시 결과는 아래에 이어서 기록한다.
+
 ## 이전 Tryce 배포 기록
 
 아래 패키지 이름·버전·커밋·무결성은 당시 배포의 사실이다. Gitifact 0.1.0의 게시 결과로 해석하거나 새 이름으로 일괄 치환하지 않는다.

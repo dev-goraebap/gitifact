@@ -43,15 +43,16 @@ test('init refuses legacy records and malformed config without mutation', async 
   const before = fingerprint(f.repo); assert.match(call(f, ['init'], false).stderr, /MIGRATION_REQUIRED/); assert.deepEqual(fingerprint(f.repo), before);
   f.write('.gitifact/config.json', '{}'); const invalid = fingerprint(f.repo); call(f, ['init'], false); assert.deepEqual(fingerprint(f.repo), invalid);
 });
-test('spec command writes, prepares and commits through initialized format', async t => {
+test('spec command writes and commits through initialized format', async t => {
   const f = fixture(t); f.git(['config', 'user.name', 'Fixture']); f.git(['config', 'user.email', 'fixture@example.invalid']); f.git(['config', 'commit.gpgsign', 'false']); f.git(['config', 'core.autocrlf', 'false']);
   call(f, ['spec', 'working'], false); call(f, ['init', '--skip-agents']);
   const saved = input(f, 'save', { expected: call(f, ['spec', 'working']).stamp, operations: [{type:'create', feature:'posts', title:'게시물 관리'}, {type:'add',feature:'posts',title:'게시물 생성',body:'제목을 입력한다.'}] });
   const id = saved.results[1].id;
-  const prepared = input(f, 'prepare', { expected: call(f, ['spec','changes']).expected, reasons:[{ requirements:[id], reason:'기능 도입'}] });
-  // init also wrote the wiki policy page; the plan must select every pending record.
-  const plan = input(f, 'commit-plan', {verification:prepared.verification, paths:['.gitifact/config.json','.gitifact/wiki/README.md','.gitifact/spec/posts/requirements.md','.gitifact/spec/posts/history.jsonl'], message:'Add posts specification', authorization:{basis:'project-policy',evidence:'Isolated test policy'}});
-  assert.equal(input(f, 'commit-apply', plan.plan).outcome, 'committed');
+  // init also wrote the wiki policy page; the commit must select every pending record.
+  const committed = input(f, 'commit', { expected: call(f, ['spec','changes']).expected, reasons:[{ requirements:[id], reason:'기능 도입'}],
+    paths:['.gitifact/config.json','.gitifact/wiki/README.md','.gitifact/spec/posts/requirements.md','.gitifact/spec/posts/history.jsonl'],
+    message:'Add posts specification', authorization:{basis:'project-policy',evidence:'Isolated test policy'}});
+  assert.equal(committed.outcome, 'committed');
   assert.equal(call(f, ['spec','read']).specs[0].requirements[0].id, id);
   assert.equal(f.git(['status','--porcelain']).stdout, '');
 });
@@ -75,9 +76,9 @@ test('explicit legacy replacement can prepare and commit deletion without retain
   f.write('.gitifact/config.json',JSON.stringify({schemaVersion:2,baseline:config.baseline})+'\n');
   const {unlinkSync}=await import('node:fs'); unlinkSync(join(f.repo,oldPath));
   const saved=input(f,'save',{expected:call(f,['spec','working']).stamp,operations:[{type:'create',feature:'product',title:'제품 요구사항'},{type:'add',feature:'product',title:'사용자 의도 기록',body:'최종 요구사항을 기록한다.'}]});
-  const prepared=input(f,'prepare',{expected:call(f,['spec','changes']).expected,reasons:[{requirements:[saved.results[1].id],reason:'사용자가 요청한 새 형식 전환'}]});
-  const plan=input(f,'commit-plan',{verification:prepared.verification,paths:['.gitifact/config.json',oldPath,'.gitifact/spec/product/requirements.md','.gitifact/spec/product/history.jsonl'],message:'Adopt Markdown records',authorization:{basis:'project-policy',evidence:'Fixture transition'}});
-  assert.equal(input(f,'commit-apply',plan.plan).outcome,'committed');
+  const committed=input(f,'commit',{expected:call(f,['spec','changes']).expected,reasons:[{requirements:[saved.results[1].id],reason:'사용자가 요청한 새 형식 전환'}],
+    paths:['.gitifact/config.json',oldPath,'.gitifact/spec/product/requirements.md','.gitifact/spec/product/history.jsonl'],message:'Adopt Markdown records',authorization:{basis:'project-policy',evidence:'Fixture transition'}});
+  assert.equal(committed.outcome,'committed');
   assert.equal(call(f,['spec','read']).specs.length,1); assert.equal(f.git(['status','--porcelain']).stdout,'');
   assert.equal(existsSync(join(f.repo,oldPath)),false);
 });

@@ -307,7 +307,7 @@ Git 커밋 후 실제 tree·부모·브랜치·R-ID 참조·임시 index를 확�
 
 ### 단일 커밋 명령 spec commit
 
-2026-09-15 `spec commit --file <입력.json> [--dry-run]`을 추가했다. `prepare`·`verify`·`commit-plan`·`commit-apply`는 deprecated로 표시하고 0.6.0에서 제거한다. 위 두 절의 저장·검사 규칙은 새 명령에서도 유지한다.
+2026-09-15 `spec commit --file <입력.json> [--dry-run]`을 추가했다. `prepare`·`verify`·`commit-plan`·`commit-apply`는 deprecated로 표시하고 0.6.0에서 제거한다. 위 두 절의 저장·검사 규칙은 새 명령에서도 유지한다. 2026-09-19 예고대로 0.6.0에서 그 네 명령을 삭제했다. 위 두 절의 prepare·verify·commit-plan/apply 설명은 그 시기의 기록이다.
 
 실제 tryce 커밋 두 건(0.4.0 릴리스, 브라우저 MVP)은 네 명령을 스크립트로 연속 호출했다. 이유와 파일 범위는 changes 전에 이미 정해져 있었고 명령 사이에 에이전트 판단이 없었다. 명령을 프로세스별로 나눈 구조 때문에 expected·verification·plan을 넘기며 매번 상태 전체를 다시 읽었다. Windows에서는 한 커밋에 Git 프로세스가 237~265회 실행돼 14~23초가 걸렸다. 측정 방법과 결과는 [개발 환경](development.md#2026-09-15-커밋-성능과-단일-커밋-명령)에 둔다.
 

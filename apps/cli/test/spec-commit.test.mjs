@@ -41,12 +41,42 @@ test('missing reasons warn without blocking and code-only commits reference requ
  assert.deepEqual(code.paths,['app.js']);assert.match(f.git(['log','-1','--format=%B']).stdout,new RegExp('Gitifact-Req: '+f.id));assert.equal(f.git(['status','--porcelain']).stdout,'');
 });
 test('omitted reasons keep uncommitted reasons, and a stale expected value is rejected without changes',t=>{
- const f=setup(t);const changes=ok(cli(f,['spec','changes']));
- ok(cli(f,['spec','prepare','--file',file(f,{expected:changes.expected,reasons:[{requirements:[f.id],reason:'미리 준비한 이유'}]})]));
- const written=readFileSync(join(f.repo,specPaths[1]),'utf8');const {reasons,...rest}=request(f);const before=fingerprint(f.repo);
- assert.equal(commit(f,{...rest,expected:changes.expected}).status,1);assert.deepEqual(fingerprint(f.repo),before);
- const result=ok(commit(f,rest));assert.deepEqual(result.withoutReason,[]);assert.deepEqual(result.historyPaths,[]);
+ const f=setup(t);ok(commit(f,request(f)));const written=readFileSync(join(f.repo,specPaths[1]),'utf8');
+ // Undoing the commit leaves the reason in the working tree, uncommitted: exactly the state a recovered commit leaves.
+ f.git(['reset','--mixed','HEAD~1']);const changes=ok(cli(f,['spec','changes']));
+ assert.equal(changes.pendingReasons[0].id,JSON.parse(written).id);
+ const {reasons,...rest}=request(f);const before=fingerprint(f.repo);
+ assert.equal(commit(f,{...rest,expected:'stale'}).status,1);assert.deepEqual(fingerprint(f.repo),before);
+ const result=ok(commit(f,{...rest,expected:changes.expected}));assert.deepEqual(result.withoutReason,[]);assert.deepEqual(result.historyPaths,[]);
  assert.equal(f.git(['show','HEAD:'+specPaths[1]]).stdout,written);assert.equal(result.reasons[0].id,JSON.parse(written).id);
+});
+
+// Ported from the removed spec prepare tests: where a reason lands when a requirement moves or goes, and that a
+// committed history line cannot be rewritten afterwards.
+test('a moved requirement records its reason at the destination, and a deletion at the source',t=>{
+ const f=setup(t);ok(commit(f,request(f)));
+ const moved=ok(cli(f,['spec','save','--file',file(f,{expected:ok(cli(f,['spec','working'])).stamp,
+   operations:[{type:'create',feature:'profile',title:'프로필'},{type:'move',id:f.id,feature:'profile'}]})]));
+ const destination='.gitifact/spec/profile/history.jsonl';const source=readFileSync(join(f.repo,specPaths[1]),'utf8');
+ const result=ok(commit(f,{reasons:[{requirements:[f.id],reason:'요구사항을 프로필로 옮김'}],
+   paths:[specPaths[0],specPaths[1],'.gitifact/spec/profile/requirements.md',destination],message:'Move the requirement',authorization}));
+ assert.deepEqual(result.changes[0].types,['moved']);
+ assert.equal(readFileSync(join(f.repo,specPaths[1]),'utf8'),source); // The source history keeps only what it already held.
+ assert.equal(JSON.parse(readFileSync(join(f.repo,destination),'utf8').trim()).reason,'요구사항을 프로필로 옮김');
+ const spec=moved.specs.find(s=>s.path.includes('/profile/'));f.write(spec.path,`---\nid: ${spec.id}\n---\n\n# 프로필\n`);
+ const deleted=ok(commit(f,{reasons:[{requirements:[f.id],reason:'기능에서 제외'}],paths:['.gitifact/spec/profile/requirements.md',destination],
+   message:'Drop the requirement',authorization}));
+ assert.deepEqual(deleted.changes[0].types,['deleted']);assert.equal(deleted.reasons[0].specId,spec.id);
+});
+
+test('unknown and duplicated requirements are rejected, and a committed history line cannot be rewritten',t=>{
+ const f=setup(t);const before=fingerprint(f.repo);
+ for(const reasons of [[{requirements:['R-aaaaaaaaaa'],reason:'unknown'}],[{requirements:[f.id,f.id],reason:'duplicate'}]]){
+  assert.equal(commit(f,request(f,{reasons})).status,1);assert.deepEqual(fingerprint(f.repo),before);
+ }
+ ok(commit(f,request(f)));const line=JSON.parse(readFileSync(join(f.repo,specPaths[1]),'utf8'));line.reason='tampered';
+ f.write(specPaths[1],`${JSON.stringify(line)}\n`);const tampered=fingerprint(f.repo);
+ assert.equal(cli(f,['spec','changes']).status,1);assert.deepEqual(fingerprint(f.repo),tampered);
 });
 test('unpaired selection, existing staging and intent-to-add are rejected without changes',t=>{
  const f=setup(t);let before=fingerprint(f.repo);

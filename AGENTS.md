@@ -3,13 +3,13 @@
 <!-- GITIFACT:START -->
 ## Gitifact Guide
 
-gitifact v0.5.1 · ko · 저장 규약 schemaVersion 2
+gitifact v0.6.0 · ko · 저장 규약 schemaVersion 2
 
 CLI: 모든 명령은 `gitifact <cmd>`로 실행한다. 프로젝트 지침이 다른 실행 방법을 지정하면 그것을 따른다.
 
 ### 시작할 때
 
-- `gitifact` 명령이 없으면 이 프로젝트에 참여하는 데 필요한 CLI가 설치되지 않은 것이다. 사용자에게 알리고 동의를 받아 `npm install -g gitifact@0.5.1`으로 설치한 뒤 진행한다. 설치하지 못하면 명세 저장·커밋을 추측으로 대신하지 않는다.
+- `gitifact` 명령이 없으면 이 프로젝트에 참여하는 데 필요한 CLI가 설치되지 않은 것이다. 사용자에게 알리고 동의를 받아 `npm install -g gitifact@0.6.0`으로 설치한 뒤 진행한다. 설치하지 못하면 명세 저장·커밋을 추측으로 대신하지 않는다.
 - `gitifact spec working`으로 위키·기능 명세·경고를 읽고 git status와 기존 staging을 확인한다.
 - 이 블록은 요약이다. 상세 형식은 `gitifact docs <topic>`으로 읽고 기억으로 채우지 않는다.
 
@@ -57,7 +57,7 @@ CLI: 모든 명령은 `gitifact <cmd>`로 실행한다. 프로젝트 지침이 �
 
 프로젝트 사용 빌드와 해시는 [개발 환경](docs/development.md)의 최신 지정을 따른다. 시작할 때 `pnpm cli spec working`과 Git 상태를 읽고 필요한 명세·지침 문서를 원문으로 확인한다. browser는 요구사항 이력·제품 기능·기여자를 읽기 전용으로 제공한다. 구형 req·note·mode·brief·commit 명령은 개발 빌드에서 제거했다.
 
-명세는 `spec working/save`로 관리하고 커밋 요청 시 `spec commit`을 사용한다. deprecated인 `spec prepare/verify/commit-plan/commit-apply`는 새 작업에 쓰지 않는다. 관련 명세·이유·코드·테스트를 함께 담되 기존 staging과 무관한 변경은 보존한다. 자동 기록은 커밋 권한이 아니며 사용자 요청 또는 명시적 프로젝트 정책에 따라 커밋한다. 푸시는 별도 권한을 따른다.
+명세는 `spec working/save`로 관리하고 커밋 요청 시 `spec commit`을 사용한다. `spec prepare/verify/commit-plan/commit-apply`는 0.6.0에서 삭제했다. 관련 명세·이유·코드·테스트를 함께 담되 기존 staging과 무관한 변경은 보존한다. 자동 기록은 커밋 권한이 아니며 사용자 요청 또는 명시적 프로젝트 정책에 따라 커밋한다. 푸시는 별도 권한을 따른다.
 
 ## 2026-09-14 자체 전환
 

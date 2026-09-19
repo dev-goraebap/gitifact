@@ -29,7 +29,6 @@ basis는 user-request 또는 project-policy다. 예시 경로와 근거를 그�
 - 수정 후 원복돼 최종 차이가 없으면 새 이유도 없다. 커밋된 history.jsonl을 덮어쓰지 않는다.
 - history에는 이유와 요구사항·설계·페이지 연결만 두며 원문 before/after·작성자·시각을 복제하지 않는다. 과거 명세는 `spec read --ref`, 변경은 `spec diff --from --to`로 Git 커밋에서 읽는다. Git 작성자를 사용자 요청·승인의 증거로 취급하지 않는다.
 - 훅 등으로 커밋이 거부되고 HEAD가 그대로면 이번에 쓴 이유 파일과 index는 실행 전으로 돌아간다. 원인을 고친 뒤 같은 입력으로 다시 실행한다. 실패 후 훅·서명을 끄지 않는다. HEAD가 바뀐 불확실한 실행은 재시도하지 않고 복구 자료를 확인한다. 잠금이나 index 백업을 임의 삭제하거나 커밋을 reset하지 않는다.
-- `prepare`·`verify`·`commit-plan`·`commit-apply`는 deprecated이며 0.6.0에서 제거된다. 새 작업에는 사용하지 않는다.
 
 커밋 참조는 구현 완료 선언이 아니다. 실제 테스트 결과와 남은 제한을 별도로 알린다.
 
