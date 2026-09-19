@@ -213,6 +213,14 @@ Tryce에서 Gitifact로 이름을 바꾼 첫 배포다. 패키지 `gitifact@0.1.
 
 `pnpm check`를 통과했다. core 29개·contracts 7개·intro 3개·CLI 128개·브라우저 64개와 workspace 밖 오프라인 설치·실행을 확인했다. CLI 번들 SHA-256은 `85d89a1e1b26aa008f3b2d186914196ac2e627aaee5e0f850ad98ff232969509`이다. 게시 결과는 아래에 이어서 기록한다.
 
+## 0.6.1 게시 완료
+
+2026-09-19 커밋 e09a3a7까지 main을 원격에 푸시하고 `apps/cli`에서 Git 검사를 유지한 pnpm publish로 게시했다. latest는 0.6.1, 165개 파일이다. 레지스트리 integrity는 `sha512-MEsfgEGfs+NElTCD7hDLWp23SCJkEmrw99+cu/UNmlwsMDl/PHF6U/ZOyDJsb9l4M/DVdmFja4OscxuTJT2vgg==`, shasum은 `53ff883f90c7b62532eec7585dc35e3c73d388be`다. 모의 실행의 값(`sha512-9OIYe1KH…`, `1d05e41a…`)과 다르다. 0.6.0 때는 같았다. 게시 전후로 빌드·게시 스크립트는 돌지 않았고 로컬 번들 해시도 그대로였다. 레지스트리에서 설치한 파일 164개(package.json 제외)를 로컬 빌드와 하나씩 비교해 모두 같았으므로, 차이는 압축 파일을 만드는 과정에서 생긴 것이고 내용은 같다.
+
+새 폴더에 레지스트리에서 `gitifact@0.6.1`을 설치해 확인했다. `--version`이 0.6.1을 출력하고, 새 Git 저장소에서 `init`, `spec working --stamp`, `spec save`, `spec changes`, `spec commit`이 동작하며 작업 폴더가 깨끗하다. 설치본의 `browser`가 `/api/v1/specs`(v4), `/api/v1/history`(전체 2건), `/api/v1/search`(기능·요구사항·변경 이력)에 답하고, `.git/gitifact/index.sqlite`를 만들며 표준 오류에 아무것도 쓰지 않는다(`node:sqlite` 경고 없음, Node 24.17). 설치된 main.js의 SHA-256은 지정 빌드와 같은 `85d89a1e1b26aa008f3b2d186914196ac2e627aaee5e0f850ad98ff232969509`이다.
+
+이 빌드를 프로젝트 사용 대상으로 지정한다. 실행은 `node apps/cli/dist/main.js` 또는 `pnpm cli`다. 직전 지정 빌드는 0.6.0의 `2806f86a…`였다.
+
 ## 이전 Tryce 배포 기록
 
 아래 패키지 이름·버전·커밋·무결성은 당시 배포의 사실이다. Gitifact 0.1.0의 게시 결과로 해석하거나 새 이름으로 일괄 치환하지 않는다.
