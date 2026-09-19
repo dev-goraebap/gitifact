@@ -1,4 +1,6 @@
-import type { SpecEvent, SpecFeature } from '@gitifact/contracts';
+import type { BrowserChangeV1, SpecEvent, SpecFeature, SpecSnapshot } from '@gitifact/contracts';
+import type { UseQueryResult } from '@tanstack/react-query';
+import { Skeleton } from '@astryxdesign/core/Skeleton';
 import { VStack } from '@astryxdesign/core/VStack';
 import { HStack } from '@astryxdesign/core/HStack';
 import { Heading } from '@astryxdesign/core/Heading';
@@ -10,16 +12,20 @@ import { ChangeCompare } from './ChangeCompare';
 import styles from './product.module.css';
 import { t } from '../../../shared/i18n';
 import { DocumentBody } from '../../../shared/ui/document';
-type SpecBody = NonNullable<SpecEvent['after']>;
 /** Body of one activity entry: the change (a before/after reveal when both exist) and reasons. The surrounding drawer owns the title and close control. */
-export function EventDetail({event:e,features}: {event:SpecEvent;features:SpecFeature[]}) {
+export function EventDetail({event:e,change,features}: {event:SpecEvent;change:UseQueryResult<BrowserChangeV1>;features:SpecFeature[]}) {
   // Snapshot bodies resolve their links from the path they were committed at.
-  const body=(spec:SpecBody)=>e.kind==='design'?<DesignDocument design={spec} path={spec.path} features={features}/>:<DocumentBody headingLevelStart={2} path={spec.path}>{spec.body.replace(/\r?\n([ \t]+)(기대 동작:)/g,'  \n$1$2')}</DocumentBody>;
+  const body=(spec:SpecSnapshot)=>e.kind==='design'?<DesignDocument design={spec} path={spec.path} features={features}/>:<DocumentBody headingLevelStart={2} path={spec.path}>{spec.body.replace(/\r?\n([ \t]+)(기대 동작:)/g,'  \n$1$2')}</DocumentBody>;
   return <VStack gap={5} className={styles.readingPane}>
       <HStack gap={4} wrap="wrap" className={styles.readingAuthor}><Person name={e.author} email={e.email}/><Text type="supporting" color="secondary">{new Date(e.date).toLocaleString()}</Text></HStack>
       <VStack gap={4} className={styles.readingSection}>
         <Heading level={3}>{e.after&&e.before?t('event.changes'):e.after?t('compare.after'):t('event.deletedContent')}</Heading>
-        {e.after&&e.before?<ChangeCompare key={e.key} before={body(e.before)} after={body(e.after)}/>:e.after?body(e.after):e.before?body(e.before):<Text color="secondary">{t('event.noContent')}</Text>}
+        {change.data
+          ?(change.data.after&&change.data.before?<ChangeCompare key={e.key} before={body(change.data.before)} after={body(change.data.after)}/>:change.data.after?body(change.data.after):change.data.before?body(change.data.before):<Text color="secondary">{t('event.noContent')}</Text>)
+          :change.error
+            ?<VStack gap={3} role="alert"><Text>{t('event.bodyFailed')}</Text><Text type="supporting" color="secondary">{change.error.message}</Text></VStack>
+            // Shaped like a few lines of text, so the reveal below does not jump when the body arrives.
+            :<VStack gap={3} role="status" aria-label={t('event.bodyLoading')}>{[92,86,74,58].map((w,i)=><Skeleton key={i} index={i} width={`${w}%`} height="var(--spacing-4)"/>)}</VStack>}
       </VStack>
       <VStack gap={3} className={styles.readingSection}>
         <Heading level={3}>{t('event.reasons')}</Heading>{e.reasons.length?e.reasons.map((r,i)=><Text key={i}>{r}</Text>):<Text color="secondary">{t('event.noReasons')}</Text>}

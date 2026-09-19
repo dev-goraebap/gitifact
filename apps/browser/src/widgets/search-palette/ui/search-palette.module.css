@@ -23,3 +23,6 @@
 .trigger:hover { border-color:var(--color-border-emphasized, var(--color-border)); color:var(--color-text-primary); }
 .trigger span { flex:1; text-align:start; }
 @media(width<48rem){ .trigger { min-width:0; } .trigger span, .trigger kbd { display:none; } }
+
+/* Cut by CSS rather than Text's maxLines, which measures every row each time the results change. */
+.oneLine { display:block; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }

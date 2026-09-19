@@ -24,6 +24,9 @@ export function specPreviewReader(cwd: string) {
     catch { throw new SpecPreviewError(t('reader.notUtf8')); }
   };
   return {
+    /** Git under the same guarded environment, for readers that shape their own commands (the browser's history). */
+    run(args: string[], input?: Buffer) { return git(args, input); },
+    decode,
     async index() {
       const output = decode(await git(['ls-files', '--stage', '-z', '--', ...RECORD_PATHSPECS]));
       const files = new Map<string, string>();

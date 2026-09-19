@@ -5,7 +5,7 @@ import {join} from 'node:path';
 import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import {fixture, fingerprint} from './git-fixture.mjs';
-import {createSpecBrowserReader} from '../.test-build/server/spec-reader.js';
+import { openRecords } from './browser-records.mjs';
 const exe=fileURLToPath(new URL('../dist/main.js',import.meta.url));
 const auth={basis:'user-request',evidence:'Isolated design test'};
 function run(f,args){return spawnSync(process.execPath,[exe,...args],{cwd:f.repo,env:{...f.env,GITIFACT_NO_UPDATE_CHECK: '1'},encoding:'utf8',timeout:45000});}
@@ -28,8 +28,10 @@ for(const format of ['sha1','sha256'])test(`design lifecycle, reasons and real b
  ok(input(f,'commit',request,['--dry-run']));assert.deepEqual(fingerprint(f.repo),before);
  const changed=ok(input(f,'commit',request));assert.deepEqual(changed.requirements,[]);assert.deepEqual(changed.withoutReason,[]);
  assert.ok(readFileSync(join(f.repo,history),'utf8').startsWith(initial));
- const read=createSpecBrowserReader(f.repo,'test',f.env);const page=await read();
- assert.equal(page.events[0].kind,'design');assert.equal(page.events[0].before.body,'## Flow\nPersist posts.');assert.match(page.events[0].after.body,/Use a cache/);
+ const read=openRecords(f.repo, f.env);const page=await read();
+ assert.equal(page.events[0].kind,'design');
+ // The list names the change; the text on both sides is read by key.
+ const change=await read.change(page.events[0].key);assert.equal(change.before.body,'## Flow\nPersist posts.');assert.match(change.after.body,/Use a cache/);
  assert.deepEqual(page.features[0].design.requirements,[rid]);assert.equal(page.events.filter(e=>e.commit===first.commit).length,2);
  const renamed='.gitifact/spec/renamed';f.git(['mv','.gitifact/spec/posts',renamed]);f.git(['reset']);
  const move=ok(run(f,['spec','changes']));assert.equal(move.changes[0].kind,'design');assert.deepEqual(move.changes[0].types,['moved']);

@@ -85,3 +85,27 @@ test('a search field waits for a pause in typing before it searches', async ({ p
   expect(page.url()).not.toContain('q=');
   await expect.poll(() => decodeURIComponent(page.url())).toContain('q=검색');
 });
+
+test('past changes are found by their reason and open in the activity', async ({ page }) => {
+  await mockApi(page); await page.goto('/product');
+  await ask(page, '검색을 요청');
+  const dialog = page.getByRole('dialog', palette);
+  await expect(dialog).toContainText('변경 이력');
+  await page.getByRole('option').filter({ hasText: '사용자가 검색을 요청했습니다.' }).first().click();
+  await expect(page).toHaveURL(/\/activity\?selected=/);
+  await expect(page.getByRole('dialog', { name: '검색어 입력' })).toContainText('검색어를 입력합니다.');
+});
+
+test('while a search is on its way the palette shows the loading rows, never an empty state', async ({ page }) => {
+  await mockApi(page); await page.goto('/product');
+  // Hold the answer, so the moment between the keystroke and the results can be looked at.
+  let release!: () => void; const held = new Promise<void>(resolve => { release = resolve; });
+  await page.route('**/api/v1/search*', async route => { await held; await route.fallback(); });
+  await ask(page, '검색어');
+  const dialog = page.getByRole('dialog', palette);
+  await expect(dialog.getByRole('status', { name: '문서를 읽는 중' })).toBeVisible();
+  await expect(dialog).not.toContainText('검색할 문서가 없습니다.');
+  await expect(dialog).not.toContainText('일치하는 문서가 없습니다.');
+  release();
+  await expect(page.getByRole('option').filter({ hasText: '검색어 입력' }).first()).toBeVisible();
+});

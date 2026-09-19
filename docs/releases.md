@@ -207,6 +207,12 @@ Tryce에서 Gitifact로 이름을 바꾼 첫 배포다. 패키지 `gitifact@0.1.
 
 이 빌드를 프로젝트 사용 대상으로 지정한다. 실행은 `node apps/cli/dist/main.js` 또는 `pnpm cli`다. 직전 지정 빌드는 0.5.0의 `41223f68…`이었다.
 
+## 0.6.1 배포 준비
+
+0.6.0 이후의 브라우저 변경을 담는다. 이력은 `.git/gitifact/index.sqlite`의 로컬 색인(결정 0009)에 두고, 활동의 필터·검색어·건수·페이지와 제품 개요의 집계, 검색창의 지난 변경 찾기를 전체 이력 기준으로 서버가 답한다. 서버 구조는 경로 표(`http/`·`routes/`)로 정리했고 프레임워크는 넣지 않았다. 목록 그리기(Text maxLines 대신 CSS 자르기, 활동 줄 메모이제이션), 검색창 대기 중 빈 상태 깜빡임, 스톤 외 색 조합의 mermaid 색, 위키 로딩 골격, 라이트 모드 글자색·로고, 개요 카드 높이, 아바타 그림을 고쳤다. 브라우저 API 계약은 browser-specs v4(체크아웃만)와 browser-history·browser-history-summary·browser-change·browser-search v1이다. CLI와 브라우저가 한 패키지로 배포되므로 사용자 쪽 호환 문제는 없다. 변경 내용은 [패치노트](../apps/cli/src/shared/i18n/ko/changelog.md), 작업 기록은 [개발 환경](development.md)에 있다.
+
+`pnpm check`를 통과했다. core 29개·contracts 7개·intro 3개·CLI 128개·브라우저 64개와 workspace 밖 오프라인 설치·실행을 확인했다. CLI 번들 SHA-256은 `85d89a1e1b26aa008f3b2d186914196ac2e627aaee5e0f850ad98ff232969509`이다. 게시 결과는 아래에 이어서 기록한다.
+
 ## 이전 Tryce 배포 기록
 
 아래 패키지 이름·버전·커밋·무결성은 당시 배포의 사실이다. Gitifact 0.1.0의 게시 결과로 해석하거나 새 이름으로 일괄 치환하지 않는다.

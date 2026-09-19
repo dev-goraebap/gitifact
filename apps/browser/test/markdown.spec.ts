@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { mockApi, specs } from './mock-api';
+import { mockApi, specs, serve } from './mock-api';
 
 // Every case below is one wiki page, because the document body renders the same way for wiki pages and specs.
 function withBody(body: string) {
@@ -9,7 +9,7 @@ function withBody(body: string) {
 }
 async function openPage(page: Parameters<typeof mockApi>[0], body: string) {
   await mockApi(page);
-  await page.route('**/api/v1/specs*', route => route.fulfill({ json: withBody(body) }));
+  await serve(page, withBody(body));
   await page.goto('/wiki/W-bbbbbbbbbb');
 }
 
@@ -84,7 +84,7 @@ test('drawing diagrams never makes the document itself scroll', async ({ page })
     '```'].join('\n');
   const payload = structuredClone(specs);
   payload.documents[2]!.body = `${diagram(1)}\n\n${diagram(2)}`;
-  await page.route('**/api/v1/specs*', route => route.fulfill({ json: payload }));
+  await serve(page, payload);
   // The first load has settling of its own, so the watch starts on a page without diagrams and the diagrams are
   // opened from there without remounting the shell.
   await page.goto('/wiki/W-bbbbbbbbbb');

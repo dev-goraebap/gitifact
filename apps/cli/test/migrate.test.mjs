@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { fixture, fingerprint } from './git-fixture.mjs';
-import { createSpecBrowserReader } from '../.test-build/server/spec-reader.js';
+import { openRecords } from './browser-records.mjs';
 
 const exe = fileURLToPath(new URL('../dist/main.js', import.meta.url));
 const cli = (f, args) => spawnSync(process.execPath, [exe, ...args], { cwd: f.repo, env: { ...f.env, GITIFACT_NO_UPDATE_CHECK: '1' }, encoding: 'utf8', timeout: 45000 });
@@ -68,7 +68,7 @@ test('a Tryce checkout is refused until migrated, and migration keeps IDs, reaso
   const second = ok(cli(f, ['spec', 'commit', '--file', file(f, { reasons: [{ requirements: ['R-abcdefghij'], reason: '빈 제목 저장을 막습니다.' }], paths: [newFiles[0], newFiles[2]], message: 'Require a title', authorization })]));
   assert.deepEqual(second.requirements, ['R-abcdefghij']);
   assert.match(f.git(['log', '-1', '--format=%B']).stdout, /Gitifact-Req: R-abcdefghij/);
-  const feed = await createSpecBrowserReader(f.repo, 'fixture', f.env)();
+  const feed = await openRecords(f.repo, f.env)();
   assert.deepEqual(feed.events.map(e => [e.message, e.id, e.types]), [['Require a title', 'R-abcdefghij', ['modified']], ['Legacy spec', 'R-abcdefghij', ['created']], ['Legacy spec', 'S-abcdefghij', ['created']]]);
   assert.equal(feed.events[0].reasons[0], '빈 제목 저장을 막습니다.');
   assert.equal(feed.events[1].before, null); assert.equal(feed.events[1].after.path, legacyFiles[0]);

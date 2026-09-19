@@ -1,10 +1,14 @@
 import {test, expect} from '@playwright/test';
-import {mockApi, specs} from './mock-api';
+import {mockApi, specs, changeBodies, serve, type Fixture } from './mock-api';
 const design={title:'검색 구현 설계',body:'## 처리 흐름\n<!-- gitifact-ref: R-abcdefghij -->\n검색 색인을 조회합니다.\n\n<!-- gitifact-ref: R-zzzzzzzzzz -->',requirements:['R-abcdefghij','R-zzzzzzzzzz'],sources:[{title:'레이아웃 지침',path:'../../wiki/frontend/layout.md',note:'열 폭 기준'},{title:'React 참조',url:'https://react.dev/reference/react',note:'훅 규칙'},{title:'옮겨진 페이지',path:'../../wiki/gone.md'}]};
-function data(){return {...structuredClone(specs), features:specs.features.map(f=>({...f,design})), events:[
- {...specs.events[0]!,key:specs.head+':S-abcdefghij',id:'S-abcdefghij',kind:'design',types:['modified'],before:{...specs.events[0]!.after,title:design.title,body:'이전 설계'},after:{...specs.events[0]!.after,id:'S-abcdefghij',title:design.title,body:design.body,path:'.gitifact/spec/search/design.md'},reasons:['검색 부하를 줄입니다.']},...specs.events]};}
+// The list names the design change; its text on both sides is what the drawer reads from the change endpoint.
+const designKey=specs.head+':S-abcdefghij';
+const designSide={id:'S-abcdefghij',specId:'S-abcdefghij',path:'.gitifact/spec/search/design.md',title:design.title};
+changeBodies[designKey]={before:{...designSide,body:'이전 설계'},after:{...designSide,body:design.body}};
+function data(): Fixture {return {...structuredClone(specs), features:specs.features.map(f=>({...f,design})), events:[
+ {...specs.events[0]!,key:designKey,id:'S-abcdefghij',kind:'design' as const,types:['modified' as const],before:designSide,after:designSide,reasons:['검색 부하를 줄입니다.']},...specs.events]};}
 test('design tab, explicit references and URL restoration',async({page})=>{
- await mockApi(page);await page.route('**/api/v1/specs*',r=>r.fulfill({json:data()}));
+ await mockApi(page);await serve(page, data());
  await page.goto('/features/S-abcdefghij');await page.getByRole('tab',{name:'설계',exact:true}).click();
  await expect(page).toHaveURL(/tab=design/);await expect(page.getByRole('tabpanel',{name:'설계'})).toContainText('검색 색인을 조회합니다.');
  await expect(page.getByText('R-zzzzzzzzzz (현재 명세에 없음)')).toBeVisible();
@@ -14,7 +18,7 @@ test('design tab, explicit references and URL restoration',async({page})=>{
  await page.screenshot({path:'../../.tmp/design-development/features-design.png',fullPage:true});
 });
 test('mixed commit history, design filter and before/after panel',async({page})=>{
- await mockApi(page);await page.route('**/api/v1/specs*',r=>r.fulfill({json:data()}));await page.goto('/activity');
+ await mockApi(page);await serve(page, data());await page.goto('/activity');
  await expect(page.getByText('ccccccc',{exact:true})).toHaveCount(2);
  await page.getByRole('link',{name:'검색 구현 설계',exact:true}).click();
  const detail=page.getByRole('dialog',{name:'검색 구현 설계'});await expect(detail).toContainText('검색 부하를 줄입니다.');
@@ -26,13 +30,13 @@ test('mixed commit history, design filter and before/after panel',async({page})=
 });
 test('optional design empty state and mobile safe Markdown',async({page})=>{
  await mockApi(page);await page.goto('/features/S-abcdefghij?tab=design');await expect(page.getByRole('heading',{name:'아직 작성된 설계가 없습니다.'})).toBeVisible();
- const payload=data();payload.features[0]!.design.body+='<script>window.bad=true</script>\n[bad](javascript:alert(1))';
- await page.route('**/api/v1/specs*',r=>r.fulfill({json:payload}));await page.setViewportSize({width:390,height:844});await page.emulateMedia({colorScheme:'dark'});await page.reload();
+ const payload=data();payload.features[0]!.design!.body+='<script>window.bad=true</script>\n[bad](javascript:alert(1))';
+ await serve(page, payload);await page.setViewportSize({width:390,height:844});await page.emulateMedia({colorScheme:'dark'});await page.reload();
  await expect(page.getByRole('tabpanel',{name:'설계'})).toContainText('검색 색인');await expect(page.locator('article script,article a[href^="javascript:"]')).toHaveCount(0);
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });
 test('design sources list above the body: wiki pages open in the app, URLs open in a new tab, missing pages are disabled',async({page})=>{
- await mockApi(page);await page.route('**/api/v1/specs*',r=>r.fulfill({json:data()}));
+ await mockApi(page);await serve(page, data());
  await page.goto('/features/S-abcdefghij?tab=design');
  const sources=page.getByRole('tabpanel',{name:'설계'}).getByLabel('참고 문서');
  await expect(sources).toContainText('열 폭 기준');await expect(sources).toContainText('frontend/layout.md');

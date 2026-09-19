@@ -3,13 +3,13 @@
 <!-- GITIFACT:START -->
 ## Gitifact Guide
 
-gitifact v0.6.0 · ko · 저장 규약 schemaVersion 2
+gitifact v0.6.1 · ko · 저장 규약 schemaVersion 2
 
 CLI: 모든 명령은 `gitifact <cmd>`로 실행한다. 프로젝트 지침이 다른 실행 방법을 지정하면 그것을 따른다.
 
 ### 시작할 때
 
-- `gitifact` 명령이 없으면 이 프로젝트에 참여하는 데 필요한 CLI가 설치되지 않은 것이다. 사용자에게 알리고 동의를 받아 `npm install -g gitifact@0.6.0`으로 설치한 뒤 진행한다. 설치하지 못하면 명세 저장·커밋을 추측으로 대신하지 않는다.
+- `gitifact` 명령이 없으면 이 프로젝트에 참여하는 데 필요한 CLI가 설치되지 않은 것이다. 사용자에게 알리고 동의를 받아 `npm install -g gitifact@0.6.1`으로 설치한 뒤 진행한다. 설치하지 못하면 명세 저장·커밋을 추측으로 대신하지 않는다.
 - `gitifact spec working`으로 위키·기능 명세·경고를 읽고 git status와 기존 staging을 확인한다.
 - 이 블록은 요약이다. 상세 형식은 `gitifact docs <topic>`으로 읽고 기억으로 채우지 않는다.
 

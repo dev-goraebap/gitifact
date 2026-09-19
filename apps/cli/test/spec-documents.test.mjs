@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { fixture } from './git-fixture.mjs';
-import { createSpecBrowserReader } from '../.test-build/server/spec-reader.js';
+import { openRecords } from './browser-records.mjs';
 import { startBrowserServer } from '../.test-build/server/browser-server.js';
 const exe=fileURLToPath(new URL('../dist/main.js',import.meta.url));
 const cli=(f,args)=>spawnSync(process.execPath,[exe,...args],{cwd:f.repo,env:{...f.env,GITIFACT_NO_UPDATE_CHECK: '1'},encoding:'utf8',timeout:45000});
@@ -51,8 +51,8 @@ test('wiki pages are created, committed with reasons, moved and compared by ID',
   paths:['.gitifact/wiki/frontend/layout.md','.gitifact/wiki/ui/layout.md','.gitifact/wiki/history.jsonl'],message:'Move layout page',authorization})]));
  const diff=ok(cli(f,['spec','diff','--from',first,'--to','HEAD']));
  assert.deepEqual(diff.changes.map(c=>[c.id,c.types]),[[page,['moved','modified']]]);assert.equal(diff.changes[0].reasons[0].reason,'폴더를 ui로 정리했다.');
- const api=await createSpecBrowserReader(f.repo,'fixture',f.env)();
- assert.equal(api.version,3);assert.equal(api.documents.length,2);assert.equal(api.documents.find(d=>d.id===page).path,'.gitifact/wiki/ui/layout.md');assert.ok(api.documents.every(d=>d.updatedAt&&!('kind' in d)));
+ const api=await openRecords(f.repo, f.env)();
+ assert.equal(api.version,4);assert.equal(api.documents.length,2);assert.equal(api.documents.find(d=>d.id===page).path,'.gitifact/wiki/ui/layout.md');assert.ok(api.documents.every(d=>d.updatedAt&&!('kind' in d)));
  // Changes of one commit are ordered by ID, and IDs are random: compare the first commit's two creations as a set.
  assert.deepEqual(api.events.slice(0,1).map(e=>[e.id,e.kind,e.types]),[[page,'wiki',['moved','modified']]]);
  assert.deepEqual(api.events.slice(1).map(e=>[e.id,e.kind,e.types]).sort(),[[page,'wiki',['created']],[entry,'wiki',['created']]].sort());

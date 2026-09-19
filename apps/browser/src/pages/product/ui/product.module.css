@@ -165,3 +165,8 @@
 .featureTitleRow .featureDescription { flex:1 1 auto; min-width:0; }
 .countCell { align-items:center; justify-content:flex-end; }
 .countCell > :last-child { flex:1; min-width:2.5rem; max-width:6rem; }
+
+/* Text cut by the browser alone. Astryx Text's maxLines measures each element to decide on a tooltip and forces a
+   layout per element, which a long list pays once per row (see ActivityTimeline). */
+.oneLine { display:block; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.twoLines { display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden; overflow-wrap:anywhere; }

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { mockApi, specs } from './mock-api';
+import { mockApi, specs, serve } from './mock-api';
 
 // Three features so an order can be told apart from the store's own: they differ in design, contributor, requirement
 // count and last change, and one carries a long description to prove the row keeps its height.
@@ -21,7 +21,7 @@ many.features = [
 
 async function listing(page: Page, url = '/features') {
   await mockApi(page);
-  await page.route('**/api/v1/specs*', route => route.fulfill({ json: many }));
+  await serve(page, many);
   await page.goto(url);
   await expect(page.getByRole('table')).toBeVisible();
   return rowsOf(page);

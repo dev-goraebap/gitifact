@@ -1,6 +1,6 @@
 import type React from 'react';
-import { useEffect, useMemo, useRef } from 'react';
-import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { CommandPalette } from '@astryxdesign/core/CommandPalette';
 import { CommandPaletteInput, CommandPaletteFooter } from '@astryxdesign/core/CommandPalette';
@@ -12,20 +12,31 @@ import { Skeleton } from '@astryxdesign/core/Skeleton';
 import { PageState } from '../../../shared/ui/page-state';
 import { useHotkeys } from '@astryxdesign/core/hooks';
 import type { SearchableItem, SearchSource } from '@astryxdesign/core/Typeahead';
-import type { BrowserSessionV2 } from '@gitifact/contracts';
-import { sessionOptions, specsOptions, checkoutOf } from '../../../entities/project';
+import type { BrowserSessionV2, BrowserSearchV1 } from '@gitifact/contracts';
+import { sessionOptions, specsOptions, searchRecords } from '../../../entities/project';
 import { useSearchOpen, openSearch, setSearchOpen, closeSearch, typingDelay } from '../../../shared/lib/search';
 import { t } from '../../../shared/i18n';
 import styles from './search-palette.module.css';
 
-type Kind = 'feature' | 'requirement' | 'design' | 'document';
+type Kind = 'feature' | 'requirement' | 'design' | 'document' | 'history';
 type Target = { to: string; params?: Record<string, string>; search?: Record<string, string>; hash?: string };
-type Hit = SearchableItem<{ group: string; kind: Kind; where: string; body: string; target: Target; updatedAt: string | null }>;
+// `line` is the matched line the server cut; the opening list shows the start of the body instead.
+type Hit = SearchableItem<{ group: string; kind: Kind; where: string; body: string; line?: string; target: Target; updatedAt: string | null }>;
 
 const groupNames: Record<Kind, string> = {
   feature: t('search.group.feature'), requirement: t('search.group.requirement'),
-  design: t('search.group.design'), document: t('search.group.document'),
+  design: t('search.group.design'), document: t('search.group.document'), history: t('search.group.history'),
 };
+
+/** Where a server hit opens: the feature on the right tab, the wiki page, or the change in the activity. */
+function targetOf(hit: BrowserSearchV1['hits'][number]): Target {
+  if (hit.kind === 'document') return { to: '/wiki/$documentId', params: { documentId: hit.documentId ?? '' } };
+  if (hit.kind === 'history') return { to: '/activity', search: { selected: hit.key ?? '' } };
+  const params = { featureId: hit.featureId ?? '' };
+  if (hit.kind === 'requirement') return { to: '/features/$featureId', params, search: { tab: 'requirements' }, hash: hit.id };
+  if (hit.kind === 'design') return { to: '/features/$featureId', params, search: { tab: 'design' } };
+  return { to: '/features/$featureId', params };
+}
 
 /**
  * Plain text of a Markdown body, so a match is judged and shown on what the reader sees rather than on syntax.
@@ -105,8 +116,8 @@ export function SearchPalette() {
 function LoadedPalette({ session, isOpen }: { session: BrowserSessionV2; isOpen: boolean }) {
   const navigate = useNavigate();
   // The checkout is only read once the palette is opened, so the shell never fetches it just to be ready.
-  const specs = useInfiniteQuery({ ...specsOptions(session), enabled: isOpen });
-  const checkout = checkoutOf(specs.data?.pages);
+  const specs = useQuery({ ...specsOptions(session), enabled: isOpen });
+  const checkout = specs.data;
 
   const entries = useMemo<Hit[]>(() => {
     if (!checkout) return [];
@@ -140,20 +151,16 @@ function LoadedPalette({ session, isOpen }: { session: BrowserSessionV2; isOpen:
       .sort((a, b) => (b.auxiliaryData?.updatedAt ?? '').localeCompare(a.auxiliaryData?.updatedAt ?? ''))
       .slice(0, 6)
       .map(entry => ({ ...entry, auxiliaryData: { ...entry.auxiliaryData!, group: t('search.group.recent') } })),
-    search: (raw: string) => {
-      const query = raw.trim().toLowerCase();
+    // The server searches the checkout and all of history. A title match comes first, then the place, then the text,
+    // then past changes, newest first.
+    search: async (raw: string, signal: AbortSignal): Promise<Hit[]> => {
+      const query = raw.trim();
       if (!query) return [];
-      // A title match is what the reader meant; a body match is still worth showing, below it.
-      const scored = entries.flatMap(entry => {
-        const title = entry.label.toLowerCase().indexOf(query);
-        const body = entry.auxiliaryData!.body.toLowerCase().indexOf(query);
-        const where = entry.auxiliaryData!.where.toLowerCase().includes(query);
-        if (title < 0 && body < 0 && !where) return [];
-        return [{ entry, rank: title === 0 ? 0 : title > 0 ? 1 : where ? 2 : 3 }];
-      });
-      return scored.sort((a, b) => a.rank - b.rank || a.entry.label.localeCompare(b.entry.label)).slice(0, 24).map(s => s.entry);
+      const answer = await searchRecords(session, query, checkout?.head ?? null, signal);
+      return answer.hits.map(hit => ({ id: hit.kind + ':' + hit.id, label: hit.title, auxiliaryData: { group: groupNames[hit.kind], kind: hit.kind,
+        where: hit.where, body: hit.line, line: hit.line, updatedAt: null, target: targetOf(hit) } }));
     },
-  }), [entries]);
+  }), [entries, session, checkout]);
 
   // The palette owns the text field and reports no query, so the last query the source was asked for is what the
   // rows highlight. It is written before the results are set and read while they render, so it is never behind.
@@ -172,12 +179,19 @@ function LoadedPalette({ session, isOpen }: { session: BrowserSessionV2; isOpen:
   }
   useEffect(() => { if (checkout) arrived.current!.done(); }, [checkout]);
 
+  // Between a keystroke and its results the palette narrows what it already shows by title, and shows its empty
+  // state when nothing is left. Typing the first word therefore flashed "no documents" over the opening list for as
+  // long as the search took. While a search is on its way the empty state is the loading placeholder instead. The flag
+  // is raised by the input's own change event: the palette runs the search inside a transition, and a state set there
+  // would only show once the results were in.
+  const [waiting, setWaiting] = useState(false);
   const watching = useMemo<SearchSource<Hit>>(() => {
     let waiting: ReturnType<typeof setTimeout> | undefined;
+    let inflight: AbortController | undefined;
     let queued: ((results: Hit[]) => void)[] = [];
     // Every keystroke's promise is answered, not just the last one. The palette runs each search inside a transition
     // and stays busy until that promise settles, so abandoning the superseded ones left the spinner turning forever.
-    const settle = (results: Hit[]) => { const waiters = queued; queued = []; for (const resolve of waiters) resolve(results); };
+    const settle = (results: Hit[]) => { const waiters = queued; queued = []; setWaiting(false); for (const resolve of waiters) resolve(results); };
     return {
       // The opening list waits for the documents but never for the typing delay, and keeps its own promise: sharing
       // one with the search let a keystroke answer the bootstrap call, and the palette then showed both lists at once.
@@ -188,13 +202,15 @@ function LoadedPalette({ session, isOpen }: { session: BrowserSessionV2; isOpen:
         queued.push(resolve);
         clearTimeout(waiting);
         waiting = setTimeout(() => {
-          void arrived.current!.wait.then(() => {
-            asked.current = query.trim().toLowerCase();
-            settle(shown.current = latest.current.search(query));
-          });
+          // A newer query makes the one still on its way pointless; its answer is dropped.
+          inflight?.abort(); const controller = inflight = new AbortController();
+          void arrived.current!.wait
+            .then(() => latest.current.search(query, controller.signal))
+            .then(results => { if (controller.signal.aborted) return; asked.current = query.trim().toLowerCase(); settle(shown.current = results); })
+            .catch(() => { if (!controller.signal.aborted) settle(shown.current = []); });
         }, typingDelay);
       }),
-      cancel: () => { clearTimeout(waiting); settle(shown.current); },
+      cancel: () => { clearTimeout(waiting); inflight?.abort(); settle(shown.current); },
     };
   }, []);
 
@@ -221,22 +237,22 @@ function LoadedPalette({ session, isOpen }: { session: BrowserSessionV2; isOpen:
     label={t('search.label')}
     width={720}
     className={styles.palette}
-    input={<CommandPaletteInput placeholder={t('search.placeholder')} onKeyDown={openFirstOnEnter}/>}
+    input={<CommandPaletteInput placeholder={t('search.placeholder')} onKeyDown={openFirstOnEnter} onChange={event => { setWaiting(event.currentTarget.value.trim() !== ''); }}/>}
     footer={hints}
-    emptySearchText={noMatch}
-    emptyBootstrapText={specs.isPending ? loading : noDocuments}
+    emptySearchText={waiting ? loading : noMatch}
+    emptyBootstrapText={specs.isPending || waiting ? loading : noDocuments}
     renderItem={(item: Hit) => {
       const data = item.auxiliaryData!;
       const query = asked.current;
-      const line = query ? snippet(data.body, query) : data.body.slice(0, 90);
+      const line = data.line ?? (query ? snippet(data.body, query) : data.body.slice(0, 90));
       return <VStack gap={1} className={styles.row}>
         <HStack gap={3} className={styles.head}>
-          <Text weight="semibold" maxLines={1}>{marked(item.label, query)}</Text>
-          <Text type="supporting" color="secondary" maxLines={1}>{data.where}</Text>
+          <Text weight="semibold" className={styles.oneLine}>{marked(item.label, query)}</Text>
+          <Text type="supporting" color="secondary" className={styles.oneLine}>{data.where}</Text>
         </HStack>
-        {line && <Text type="supporting" color="secondary" maxLines={1}>{marked(line, query)}</Text>}
+        {line && <Text type="supporting" color="secondary" className={styles.oneLine}>{marked(line, query)}</Text>}
       </VStack>;
     }}
-    onValueChange={id => { go(entries.find(entry => entry.id === id)); }}
+    onValueChange={id => { go(shown.current.find(entry => entry.id === id)); }}
   />;
 }

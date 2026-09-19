@@ -62,7 +62,7 @@ function FeatureList({ features, search }: { features: SpecFeature[]; search: Pr
     { key: 'title', header: t('features.column.feature'), width: proportional(1, { minWidth: 160 }), renderCell: f => <HStack gap={3} className={styles.featureTitleRow}>
       <Link to="/features/$featureId" params={{ featureId: f.id }} search={carried} className={styles.featureTitle}>{f.title}</Link>
       {!f.design && <Token label={t('features.noDesignMark')} color="yellow" size="sm"/>}
-      {f.description && <Text type="supporting" color="secondary" maxLines={1} className={styles.featureDescription}>{f.description.replace(/[#*_`]/g, '').replace(/\s+/g, ' ').trim()}</Text>}
+      {f.description && <Text type="supporting" color="secondary" className={`${styles.featureDescription} ${styles.oneLine}`}>{f.description.replace(/[#*_`]/g, '').replace(/\s+/g, ' ').trim()}</Text>}
     </HStack> },
     // The count with a bar of its share of the largest feature: the number answers "how many", the bar "how big is
     // this one next to the rest" without reading every row.

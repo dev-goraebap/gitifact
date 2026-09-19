@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { mockApi, specs, status } from './mock-api';
+import { mockApi, specs, status, serve, checkoutOf } from './mock-api';
 
 test('the wiki is a repository-style explorer: a tree, the folder contents, and the page in the same pane', async ({ page }) => {
   await mockApi(page); await page.goto('/wiki');
@@ -42,7 +42,7 @@ test('the wiki is a repository-style explorer: a tree, the folder contents, and 
 test('a wiki that holds only its policy README opens straight onto it', async ({ page }) => {
   await mockApi(page);
   const policy = { id: 'W-pppppppppp', path: '.gitifact/wiki/README.md', title: '위키 운영 방침', body: '이 위키에는 아키텍처 결정 기록(ADR)을 쌓는다.', updatedAt: null };
-  await page.route('**/api/v1/specs*', route => route.fulfill({ json: { ...structuredClone(specs), documents: [policy] } }));
+  await serve(page, { ...structuredClone(specs), documents: [policy] });
   await page.goto('/wiki');
   // No one-row folder list: the policy itself is the page, and the URL stays on the wiki root.
   const article = page.getByRole('article', { name: '위키 페이지' });
@@ -56,10 +56,10 @@ test('a wiki that holds only its policy README opens straight onto it', async ({
 test('wiki changes appear in the activity feed with their kind and open the current page', async ({ page }) => {
   await mockApi(page);
   const event = specs.events[0]!;
-  const data = { ...structuredClone(specs), events: [{ ...event, key: specs.head + ':W-bbbbbbbbbb', id: 'W-bbbbbbbbbb', kind: 'wiki', types: ['modified'],
-    before: { id: 'W-bbbbbbbbbb', title: '레이아웃 지침', body: '이전 본문', specId: 'wiki', path: '.gitifact/wiki/layout.md' },
-    after: { id: 'W-bbbbbbbbbb', title: '레이아웃 지침', body: '중앙 컬럼은 64rem입니다.', specId: 'wiki', path: '.gitifact/wiki/frontend/layout.md' }, reasons: ['폴더를 정리했습니다.'] }] };
-  await page.route('**/api/v1/specs*', r => r.fulfill({ json: data }));
+  const data = { ...structuredClone(specs), events: [{ ...event, key: specs.head + ':W-bbbbbbbbbb', id: 'W-bbbbbbbbbb', kind: 'wiki' as const, types: ['modified' as const],
+    before: { id: 'W-bbbbbbbbbb', title: '레이아웃 지침', specId: 'wiki', path: '.gitifact/wiki/layout.md' },
+    after: { id: 'W-bbbbbbbbbb', title: '레이아웃 지침', specId: 'wiki', path: '.gitifact/wiki/frontend/layout.md' }, reasons: ['폴더를 정리했습니다.'] }] };
+  await serve(page, data);
   await page.goto('/activity?document=wiki');
   const rows = page.getByRole('list', { name: '활동 목록' }).getByRole('listitem'); await expect(rows).toHaveCount(1);
   await expect(rows.first()).toContainText('위키 페이지');
@@ -80,7 +80,7 @@ test('the product page leads with what changed and why, and does not treat the w
   await expect(summary).toContainText('기능 명세');
   await expect(summary).toContainText('위키 페이지');
   // The two loaded-range bars keep their legends above the reasons.
-  await expect(article.getByLabel('최근 변경 종류 범례').getByRole('listitem').first()).toHaveText('추가1 · 100%');
+  await expect(article.getByLabel('변경 종류 범례').getByRole('listitem').first()).toHaveText('추가1 · 100%');
   await expect(article.getByLabel('참여자별 커밋 범례').getByRole('listitem').first()).toHaveText('Fixture3 · 75%');
   // The recorded reason is the subject of the section below them, next to the record it explains.
   const reasons = article.getByLabel('최근 변경 이력');
@@ -104,7 +104,7 @@ test('the wiki README reads like any page: banner dropped, store assets served, 
   await mockApi(page);
   const data = structuredClone(specs);
   data.documents[0]!.body = '![GITIFACT](../assets/gitifact-logo.svg)\n\n' + data.documents[0]!.body;
-  await page.route('**/api/v1/specs*', r => r.fulfill({ json: data }));
+  await serve(page, data);
   await page.goto('/wiki/W-abcdefghij');
   const reading = page.getByRole('article', { name: '위키 페이지' });
   await expect(reading.getByRole('heading', { level: 1 })).toHaveText('Gitifact');
@@ -146,7 +146,7 @@ test('relative links in a page resolve to wiki pages, feature specs, assets, mis
 
 test('uncommitted spec changes mark the Git menu and are explained on the Git page instead of above the lists', async ({ page }) => {
   await mockApi(page);
-  await page.route('**/api/v1/specs*', r => r.fulfill({ json: { ...specs, working: true } }));
+  await serve(page, { ...specs, working: true });
   await page.goto('/features');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('기능별 요구사항');
   await expect(page.getByText('작업 중인 내용이고', { exact: false })).toHaveCount(0);
@@ -171,11 +171,11 @@ test('the two overview charts share one height even when one legend wraps', asyn
   await mockApi(page);
   const many = structuredClone(specs);
   many.contributors = Array.from({ length: 7 }, (_, i) => ({ name: 'Person ' + i, email: `p${i}@example.test`, commits: 10 - i, latest: '2026-09-14T00:00:00Z' }));
-  await page.route('**/api/v1/specs*', route => route.fulfill({ json: many }));
+  await serve(page, many);
   await page.goto('/product');
   const card = (name: string) => page.getByRole('heading', { level: 3, name }).locator('xpath=ancestor::*[parent::*[contains(@class,"astryx-grid") or contains(@style,"grid")]][1]');
   await expect(page.getByRole('heading', { level: 3, name: '참여자별 커밋' })).toBeVisible();
-  const heights = await Promise.all(['최근 변경 종류', '참여자별 커밋'].map(async name => Math.round((await card(name).boundingBox())!.height)));
+  const heights = await Promise.all(['변경 종류', '참여자별 커밋'].map(async name => Math.round((await card(name).boundingBox())!.height)));
   expect(heights[0]).toBe(heights[1]);
 });
 
@@ -183,7 +183,7 @@ for (const [url, shape] of [['/wiki', 'folder'], ['/wiki/W-bbbbbbbbbb', 'page']]
   test(`a slow wiki shows the explorer's own shape while it loads (${shape})`, async ({ page }) => {
     await mockApi(page);
     let release!: () => void; const held = new Promise<void>(resolve => { release = resolve; });
-    await page.route('**/api/v1/specs*', async route => { await held; await route.fulfill({ json: specs }); });
+    await page.route('**/api/v1/specs*', async route => { await held; await route.fulfill({ json: checkoutOf(specs) }); });
     await page.goto(url);
     const loading = page.getByRole('status', { name: '프로젝트 불러오는 중' });
     await expect(loading).toBeVisible();

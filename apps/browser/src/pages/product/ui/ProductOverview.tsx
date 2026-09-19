@@ -1,4 +1,4 @@
-import type { SpecDocument, SpecEvent, SpecFeature, BrowserSessionV2, BrowserSpecsV3 } from '@gitifact/contracts';
+import type { SpecDocument, SpecEvent, SpecFeature, BrowserSessionV2, BrowserSpecsV4, BrowserHistorySummaryV1 } from '@gitifact/contracts';
 import { useQuery } from '@tanstack/react-query';
 import { VStack } from '@astryxdesign/core/VStack';
 import { HStack } from '@astryxdesign/core/HStack';
@@ -10,11 +10,11 @@ import { Token } from '@astryxdesign/core/Token';
 import { Timestamp } from '@astryxdesign/core/Timestamp';
 import { Link } from '@tanstack/react-router';
 import { Person } from './Person';
-import { statusOptions } from '../../../entities/project';
+import { statusOptions, summaryOptions } from '../../../entities/project';
 import styles from './product.module.css';
 import { t } from '../../../shared/i18n';
 
-type Contributor = NonNullable<BrowserSpecsV3['contributors']>[number];
+type Contributor = NonNullable<BrowserSpecsV4['contributors']>[number];
 type ChangeType = SpecEvent['types'][number];
 
 // Categorical hues in a fixed order validated for adjacent-pair CVD separation (blue → orange → purple → green); gray closes a tail.
@@ -54,14 +54,15 @@ function StackedBar({ segments, label }: { segments: Segment[]; label: string })
  * Changes per day across the loaded history, as one column per day. A single series, so it carries no legend; the
  * caption states that it counts the loaded range rather than the whole repository.
  */
-function Pulse({ events }: { events: SpecEvent[] }) {
-  const times = events.map(e => Date.parse(e.date)).filter(Number.isFinite);
+function Pulse({ pulse, total }: { pulse: BrowserHistorySummaryV1['pulse']; total: number }) {
+  // The server sends one entry per commit of the last three weeks; they are counted here by the reader's own day.
+  const times = pulse.flatMap(c => { const time = Date.parse(c.date); return Number.isFinite(time) ? [{ time, count: c.count }] : []; });
   if (!times.length) return null;
-  const last = new Date(Math.max(...times)); last.setHours(0, 0, 0, 0);
+  const last = new Date(Math.max(...times.map(c => c.time))); last.setHours(0, 0, 0, 0);
   const span = 21;
   const counts = Array.from({ length: span }, (_, i) => {
     const start = last.getTime() - (span - 1 - i) * day;
-    return { start, value: times.filter(time => time >= start && time < start + day).length };
+    return { start, value: times.filter(c => c.time >= start && c.time < start + day).reduce((sum, c) => sum + c.count, 0) };
   });
   const peak = Math.max(1, ...counts.map(c => c.value));
   const width = 100 / span;
@@ -75,7 +76,7 @@ function Pulse({ events }: { events: SpecEvent[] }) {
         </rect>;
       })}
     </svg>
-    <Text type="supporting" color="secondary">{t('overview.pulse', { days: span })} · {t('overview.loadedEvents', { count: events.length })}</Text>
+    <Text type="supporting" color="secondary">{t('overview.pulse', { days: span })} · {t('overview.totalEvents', { count: total })}</Text>
   </VStack>;
 }
 
@@ -84,7 +85,7 @@ function Pulse({ events }: { events: SpecEvent[] }) {
  * readable — the same sentence is recorded against every record the commit changed, and listing it per record
  * printed the same paragraph several times in a row.
  */
-function CommitGroup({ events, titleOf }: { events: SpecEvent[]; titleOf: (event: SpecEvent) => string }) {
+function CommitGroup({ events, count, titleOf }: { events: SpecEvent[]; count: number; titleOf: (event: SpecEvent) => string }) {
   const first = events[0]!;
   const reasons = [...new Set(events.flatMap(e => e.reasons))];
   return <VStack as="li" gap={3} className={styles.changeRow}>
@@ -95,40 +96,39 @@ function CommitGroup({ events, titleOf }: { events: SpecEvent[]; titleOf: (event
     {reasons.length
       // One reason per commit: a commit that touched several records records the same intent against each of them,
       // and counting the rest here asked the reader to wonder what was hidden. The activity screen has them all.
-      ? <Text maxLines={2} className={styles.reason}>{reasons[0]}</Text>
+      ? <Text className={`${styles.reason} ${styles.twoLines}`}>{reasons[0]}</Text>
       : <Text color="secondary" className={styles.reason}>{t('activity.noReason')}</Text>}
     <HStack as="ul" gap={3} wrap="wrap" className={styles.recordList}>
       {events.map(e => <HStack as="li" key={e.key} gap={2} className={styles.record}>
         <Token label={e.types.map(type => changeNames[type]).join('·')} size="sm"/>
-        <Text type="supporting" color="secondary">{kindNames[e.kind ?? 'requirement']}</Text>
+        <Text type="supporting" color="secondary">{kindNames[e.kind]}</Text>
         <Link to="/activity" search={{ selected: e.key }} className={styles.changeTitle}>{titleOf(e)}</Link>
       </HStack>)}
+      {/* A commit that created hundreds of records lists a few; the activity shows all of them. */}
+      {count > events.length && <li><Link to="/activity">{t('overview.moreRecords', { count: count - events.length })}</Link></li>}
     </HStack>
   </VStack>;
 }
 
 /**
- * The overview opens with the project and its size on one line, then the two loaded-range bars that show how the
- * recent work is shaped, then the reasons behind the last commits — what the product records and what a returning
+ * The overview opens with the project and its size on one line, then the two bars that show how the work is shaped
+ * over all of history and who did it, then the reasons behind the last commits — what the product records and what a returning
  * reader comes back for. The wiki README is the wiki's policy, not a product document, so the dashboard neither
  * shows nor links it.
  */
-export function ProductOverview({ session, features, documents, events, contributors, working }: { session: BrowserSessionV2; features: SpecFeature[]; documents: SpecDocument[]; events: SpecEvent[]; contributors: Contributor[]; working: boolean }) {
+export function ProductOverview({ session, head, features, documents, contributors, working }: { session: BrowserSessionV2; head: string | null; features: SpecFeature[]; documents: SpecDocument[]; contributors: Contributor[]; working: boolean }) {
+  // Counts over all of history and its newest commits, from the server's index; nothing before the first commit.
+  const summary = useQuery({ ...summaryOptions(session, head ?? ''), enabled: !!head }).data;
   const status = useQuery(statusOptions(session));
   const project = status.data?.repository.rootPath?.split(/[\/]/).filter(Boolean).at(-1);
   const requirements = features.reduce((sum, f) => sum + f.requirements.length, 0);
-  const changes: Segment[] = changeOrder.map((type, i) => ({ label: changeNames[type], value: events.filter(e => e.types.includes(type)).length, color: series[i]! }));
+  const changes: Segment[] = changeOrder.map((type, i) => ({ label: changeNames[type], value: summary?.byType[type] ?? 0, color: series[i]! }));
   const byCommits = [...contributors].sort((a, b) => b.commits - a.commits || a.name.localeCompare(b.name));
   const commitShare: Segment[] = [...byCommits.slice(0, 3).map((p, i) => ({ label: p.name, value: p.commits, color: series[i]! })), ...(byCommits.length > 3 ? [{ label: t('overview.otherContributors', { count: byCommits.length - 3 }), value: byCommits.slice(3).reduce((sum, p) => sum + p.commits, 0), color: tail }] : [])];
-  // Events arrive newest first, so commits are already contiguous. Three commits, each showing one reason, keep the
-  // section to about one screen; the rest of the record is one click away in the activity timeline.
-  const groups: SpecEvent[][] = [];
-  for (const event of events) {
-    const open = groups.at(-1);
-    if (open && open[0]!.commit === event.commit) open.push(event); else groups.push([event]);
-    if (groups.length > 3) break;
-  }
-  if (groups.length > 3) groups.length = 3;
+  // Three commits, each showing one reason, keep the section to about one screen; the rest of the record is one
+  // click away in the activity timeline.
+  const groups = summary?.recent ?? [];
+  const newest = groups[0]?.events[0];
   const specOf = (e: SpecEvent) => e.kind === 'wiki' ? documents.find(d => d.id === e.id) : features.find(f => f.id === e.id || f.requirements.some(r => r.id === e.id));
   const titleOf = (e: SpecEvent) => e.after?.title ?? e.before?.title ?? specOf(e)?.title ?? e.id;
   const fact = (label: string, value: number) => <HStack gap={2} as="li" className={styles.fact}>
@@ -147,16 +147,16 @@ export function ProductOverview({ session, features, documents, events, contribu
         </HStack>
         <HStack gap={3} wrap="wrap" className={styles.heroState}>
           {working && <Token label={t('overview.uncommittedToken')} color="yellow" size="sm"/>}
-          {events[0] && <Text type="supporting" color="secondary">{t('common.recentChange')} <Timestamp value={events[0].date} format="relative"/></Text>}
+          {newest && <Text type="supporting" color="secondary">{t('common.recentChange')} <Timestamp value={newest.date} format="relative"/></Text>}
         </HStack>
       </VStack>
-      <Pulse events={events}/>
+      {summary && <Pulse pulse={summary.pulse} total={summary.total}/>}
     </HStack>
 
     {/* The two cards stand side by side, so they take the taller one's height; a short legend no longer leaves one card hanging. */}
     <Grid columns={{ minWidth: 300, repeat: 'fit', max: 2 }} gap={4} align="stretch">
       <Card padding={5}><VStack gap={4}>
-        <HStack gap={3} className={styles.barRowHead}><Heading level={3}>{t('overview.recentChangeTypes')}</Heading><Text type="supporting" color="secondary">{t('overview.loadedEvents', { count: events.length })}</Text></HStack>
+        <HStack gap={3} className={styles.barRowHead}><Heading level={3}>{t('overview.recentChangeTypes')}</Heading><Text type="supporting" color="secondary">{t('overview.totalEvents', { count: summary?.total ?? 0 })}</Text></HStack>
         <StackedBar segments={changes} label={t('overview.recentChangeTypes')}/>
       </VStack></Card>
       <Card padding={5}><VStack gap={4}>
@@ -172,7 +172,7 @@ export function ProductOverview({ session, features, documents, events, contribu
       </HStack>
       {groups.length
         ? <VStack as="ul" gap={0} className={styles.changeList} aria-label={t('overview.changeReasons')}>
-          {groups.map(group => <CommitGroup key={group[0]!.key} events={group} titleOf={titleOf}/>)}
+          {groups.map(group => <CommitGroup key={group.commit} events={group.events} count={group.count} titleOf={titleOf}/>)}
         </VStack>
         : <Text color="secondary">{t('overview.noActivity')}</Text>}
     </VStack>

@@ -15,7 +15,8 @@ apps/cli/src/
   adapters/git/      Git 실행과 스냅샷 읽기
   adapters/filesystem/  파일·잠금·보존·복구 (설정·지침 파일 어댑터)
   output/            core 결과를 버전 있는 DTO·텍스트로 변환
-  server/            HTTP·정적 파일 제공과 실행 수명
+  server/            브라우저 서버: browser-server(수명), http/(검사·라우터·응답·앱 파일),
+                     routes/(경로 표), checkout/(작업 폴더 체크아웃), history/(이력 색인)
   shared/i18n/       사용자에게 보이는 문구와 언어별 Markdown
 packages/core/src/
   domain/            상태·사건·진단

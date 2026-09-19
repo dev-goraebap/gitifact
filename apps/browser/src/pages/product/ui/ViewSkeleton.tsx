@@ -5,6 +5,19 @@ import styles from './product.module.css';
 import { t } from '../../../shared/i18n';
 
 const rows = [0, 1, 2, 3, 4];
+/** The activity timeline's rows: the vertical line with an avatar, then author and time, the change, and its reason. */
+export function TimelineSkeleton() {
+  return <VStack gap={0} className={styles.timeline} role="status" aria-label={t('request.loadingProject')} aria-busy="true">
+    {rows.map(i => <HStack key={i} gap={4} className={styles.entry} aria-hidden="true">
+      <VStack gap={0} className={styles.entryAvatar}><Skeleton index={i} width="var(--spacing-6)" height="var(--spacing-6)" radius="rounded"/></VStack>
+      <VStack gap={2} className={styles.entryBody}>
+        <HStack gap={3} className={styles.entryHead}><Skeleton index={i} width="6rem" height="var(--spacing-4)"/><Skeleton index={i} width="3rem" height="var(--spacing-3)"/></HStack>
+        <HStack gap={2}><Skeleton index={i} width="2.5rem" height="var(--spacing-5)" radius={2}/><Skeleton index={i} width={`${34 - i * 4}%`} height="var(--spacing-4)"/></HStack>
+        <Skeleton index={i} width={`${46 + (i % 3) * 8}%`} height="var(--spacing-3)"/>
+      </VStack>
+    </HStack>)}
+  </VStack>;
+}
 // Depth and label width per tree row: two folders open with a few pages under them, as a small wiki looks.
 const tree: [number, string][] = [[0, '4rem'], [0, '5rem'], [1, '7rem'], [1, '6rem'], [0, '4.5rem'], [1, '8rem'], [1, '5.5rem'], [1, '6.5rem'], [0, '5rem']];
 /** Placeholder shaped like the view it stands in for, so the swap to real data keeps the same layout. */
@@ -83,16 +96,7 @@ export function ViewSkeleton({ view, page = false }: { view: 'history' | 'featur
       {view === 'history' && [0, 1, 2, 3].map(i => <Skeleton key={i} index={i} width="7rem" height="var(--spacing-8)" radius={2}/>)}
     </HStack>
     <VStack gap={0} padding={4} aria-hidden="true">
-      {view === 'history' ? <VStack gap={0} className={styles.timeline}>
-        {rows.map(i => <HStack key={i} gap={4} className={styles.entry}>
-          <VStack gap={0} className={styles.entryAvatar}><Skeleton index={i} width="var(--spacing-6)" height="var(--spacing-6)" radius="rounded"/></VStack>
-          <VStack gap={2} className={styles.entryBody}>
-            <HStack gap={3} className={styles.entryHead}><Skeleton index={i} width="6rem" height="var(--spacing-4)"/><Skeleton index={i} width="3rem" height="var(--spacing-3)"/></HStack>
-            <HStack gap={2}><Skeleton index={i} width="2.5rem" height="var(--spacing-5)" radius={2}/><Skeleton index={i} width={`${34 - i * 4}%`} height="var(--spacing-4)"/></HStack>
-            <Skeleton index={i} width={`${46 + (i % 3) * 8}%`} height="var(--spacing-3)"/>
-          </VStack>
-        </HStack>)}
-      </VStack> : <VStack gap={0}>
+      {view === 'history' ? <TimelineSkeleton/> : <VStack gap={0}>
         <HStack gap={4} className={styles.skeletonRow}><Skeleton width="5rem" height="var(--spacing-3)"/><Skeleton width="4rem" height="var(--spacing-3)"/><Skeleton width="4rem" height="var(--spacing-3)"/></HStack>
         {rows.map(i => <HStack key={i} gap={4} className={styles.skeletonRow}>
           <VStack gap={2} className={styles.entryBody}><Skeleton index={i} width={`${28 + (i % 3) * 10}%`} height="var(--spacing-4)"/><Skeleton index={i} width="40%" height="var(--spacing-3)"/></VStack>

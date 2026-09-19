@@ -1,18 +1,20 @@
 import { createServer } from 'node:http';
-import type { IncomingMessage, ServerResponse } from 'node:http';
 import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import { lstat, readFile } from 'node:fs/promises';
-import { join } from 'node:path';
-import { readRepositoryStatus, isAssetPath, assetExtension, ASSETS_DIR, parseChangelog } from '@gitifact/core';
-import { browserHttpErrorV1, changelogV1 } from '@gitifact/contracts';
+import { readFile } from 'node:fs/promises';
+import { readRepositoryStatus } from '@gitifact/core';
 import type { RepositoryStatusSuccessV1 } from '@gitifact/contracts';
 import { createRepositoryReader } from '../adapters/git/repository-reader.js';
 import { statusDto } from '../output/repository-status.js';
-import { loadBrowserAssets, contentType } from './assets.js';
 import { createStatusSession } from './status-session.js';
-import { createSpecBrowserReader } from './spec-reader.js';
-import { defaultLanguage, t } from '../shared/i18n/index.js';
+import { admit } from './http/guard.js';
+import { fail } from './http/respond.js';
+import { dispatch } from './http/router.js';
+import { loadBrowserAssets, serveStatic } from './http/static-files.js';
+import { projectRoutes } from './routes/project-routes.js';
+import { recordRoutes } from './routes/record-routes.js';
+import { assetRoutes } from './routes/asset-routes.js';
+import { t } from '../shared/i18n/index.js';
 import { checkingUpdate, resolveUpdate } from '../shared/update-check.js';
 import type { FetchLatestVersion } from '../adapters/registry/latest-version.js';
 
@@ -35,6 +37,13 @@ interface Options {
 }
 const readBundledChangelog = (language: string) => readFile(new URL('./i18n/' + language + '/changelog.md', import.meta.url), 'utf8')
   .catch(error => { if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null; throw error; });
+
+/**
+ * The read-only browser server: the built app and its API on 127.0.0.1.
+ *
+ * A request passes the guard (http/guard.ts), then goes to the route table (routes/*, dispatched by http/router.ts)
+ * when it is an API call and to the app's files otherwise. This file only starts, wires and stops the server.
+ */
 export async function startBrowserServer(options: Options) {
   const controller = new AbortController();
   const onAbort = () => controller.abort();
@@ -57,113 +66,24 @@ export async function startBrowserServer(options: Options) {
   }
   const store = createStatusSession(initial, () => read(controller.signal), options.cliVersion);
   const sessionId = store.session.sessionId;
-  const readChangelog = options.readChangelog ?? readBundledChangelog;
+  const root = initial.repository.rootPath;
+  const routes = [
+    ...projectRoutes(store, options.readChangelog ?? readBundledChangelog),
+    ...recordRoutes(root, sessionId, options.env),
+    ...assetRoutes(root),
+  ];
   let updatePending: Promise<void> | undefined;
   let closing = false;
   let origin = '';
-  const readSpecs = createSpecBrowserReader(initial.repository.rootPath, sessionId, options.env);
-  function json(response: ServerResponse, status: number, value: unknown) {
-    response.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
-    response.end(JSON.stringify(value) + '\n');
-  }
-  function fail(response: ServerResponse, status: number, code: 'BAD_REQUEST' | 'FORBIDDEN' | 'NOT_FOUND' | 'METHOD_NOT_ALLOWED' | 'SESSION_CHANGED' | 'SERVER_CLOSING' | 'INTERNAL_ERROR', message: string) {
-    json(response, status, browserHttpErrorV1.parse({ contract: 'browser-http-error', version: 1, error: { code, message } }));
-  }
-  async function handle(request: IncomingMessage, response: ServerResponse) {
-    response.setHeader('X-Content-Type-Options', 'nosniff');
-    response.setHeader('X-Frame-Options', 'DENY');
-    response.setHeader('Referrer-Policy', 'no-referrer');
-    response.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'");
-    if (closing) return fail(response, 503, 'SERVER_CLOSING', t('server.closing'));
-    if (request.headers.host !== new URL(origin).host) return fail(response, 403, 'FORBIDDEN', t('server.forbiddenHost'));
-    const requestOrigin = request.headers.origin;
-    const allowedOrigin = requestOrigin === origin || (options.dev && requestOrigin === 'http://127.0.0.1:5173');
-    if (requestOrigin && !allowedOrigin) return fail(response, 403, 'FORBIDDEN', t('server.forbiddenOrigin'));
-    const raw = request.url ?? '/';
-    if (!raw.startsWith('/') || raw.startsWith('//') || raw.includes('\\')) return fail(response, 400, 'BAD_REQUEST', t('server.badPath'));
-    let url: URL;
-    let path: string;
-    try {
-      url = new URL(raw, origin);
-      path = decodeURIComponent(url.pathname);
-    } catch { return fail(response, 400, 'BAD_REQUEST', t('server.badPath')); }
-    if (path.includes('\0') || path.includes('\\') || path.split('/').some((part) => part === '..' || part === '.')) {
-      return fail(response, 400, 'BAD_REQUEST', t('server.badPath'));
-    }
-    if (request.headers['transfer-encoding'] || (request.headers['content-length'] && request.headers['content-length'] !== '0')) {
-      request.resume();
-      return fail(response, 400, 'BAD_REQUEST', t('server.noBody'));
-    }
-    const api = path === '/api' || path.startsWith('/api/');
-    if (api) {
-      if (request.headers['sec-fetch-site'] === 'cross-site' && !allowedOrigin) return fail(response, 403, 'FORBIDDEN', t('server.crossSite'));
-      if (url.search && path !== '/api/v1/specs' && path !== '/api/v1/changelog') return fail(response, 400, 'BAD_REQUEST', t('server.noQuery'));
-      // Files under .gitifact/assets by path: <img> requests carry no session header, so the route stays read-only and narrow.
-      if (path.startsWith('/api/v1/assets/')) {
-        const relative = path.slice('/api/v1/assets/'.length); const assetPath = ASSETS_DIR + '/' + relative;
-        if (request.method !== 'GET') { response.setHeader('Allow', 'GET'); return fail(response, 405, 'METHOD_NOT_ALLOWED', t('server.methodNotAllowed')); }
-        if (!isAssetPath(assetPath)) return fail(response, 404, 'NOT_FOUND', t('server.assetNotFound'));
-        const file = join(initial.repository.rootPath, ...assetPath.split('/'));
-        const stat = await lstat(file).catch(() => undefined);
-        if (!stat?.isFile() || stat.isSymbolicLink() || stat.size > 20 * 1024 * 1024) return fail(response, 404, 'NOT_FOUND', t('server.assetNotFound'));
-        const bytes = await readFile(file); const extension = assetExtension(relative);
-        // Images render inline; everything else downloads. The sandbox keeps an SVG opened directly from running scripts.
-        const inline = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].includes(extension);
-        response.writeHead(200, { 'Content-Type': contentType('.' + extension), 'Cache-Control': 'no-cache', 'Content-Length': bytes.length,
-          'Content-Security-Policy': "default-src 'none'; sandbox", 'Content-Disposition': inline ? 'inline' : 'attachment; filename="' + encodeURIComponent(relative.split('/').pop()!) + '"' });
-        response.end(bytes); return;
-      }
-      const method = path === '/api/v1/status/refresh' ? 'POST' : 'GET';
-      if (!['/api/v1/session', '/api/v1/status', '/api/v1/status/refresh', '/api/v1/specs', '/api/v1/changelog'].includes(path)) return fail(response, 404, 'NOT_FOUND', t('server.apiNotFound'));
-      if (request.method !== method) {
-        response.setHeader('Allow', method);
-        return fail(response, 405, 'METHOD_NOT_ALLOWED', t('server.methodNotAllowed'));
-      }
-      // Re-reading the session never contacts the registry; it returns the state the single startup check left.
-      if (path === '/api/v1/session') return json(response, 200, store.session);
-      if (request.headers['x-gitifact-session'] !== sessionId) return fail(response, 409, 'SESSION_CHANGED', t('server.sessionChanged'));
-      if (path === '/api/v1/specs') {
-        const cursor = url.searchParams.get('cursor') ?? '0'; const head = url.searchParams.get('head');
-        if ([...url.searchParams.keys()].some(k => !['cursor','head'].includes(k)) || url.searchParams.getAll('cursor').length > 1 || url.searchParams.getAll('head').length > 1
-          || !/^(0|[1-9]\d{0,5})$/.test(cursor) || (head !== null && !/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/.test(head))) return fail(response,400,'BAD_REQUEST',t('server.badRange'));
-        try { json(response,200,await readSpecs(Number(cursor), head ?? undefined)); }
-        catch (error) { fail(response,503,'INTERNAL_ERROR',error instanceof Error ? error.message : t('server.specsUnreadable')); }
-        return;
-      }
-      if (path === '/api/v1/changelog') {
-        const language = url.searchParams.get('lang') ?? defaultLanguage;
-        if ([...url.searchParams.keys()].some(key => key !== 'lang') || url.searchParams.getAll('lang').length > 1 || !/^[a-z]{2}(?:-[A-Z]{2})?$/.test(language)) return fail(response, 400, 'BAD_REQUEST', t('server.badLanguage'));
-        try {
-          // A language without notes falls back to the default one, and the answer says so.
-          const own = await readChangelog(language);
-          const text = own ?? (language === defaultLanguage ? null : await readChangelog(defaultLanguage));
-          if (text === null) return fail(response, 404, 'NOT_FOUND', t('server.changelogNotFound'));
-          json(response, 200, changelogV1.parse({ contract: 'changelog', version: 1, language: own === null ? defaultLanguage : language, fallback: own === null, entries: parseChangelog(text) }));
-        } catch (error) { fail(response, 503, 'INTERNAL_ERROR', error instanceof Error ? error.message : t('server.changelogUnreadable')); }
-        return;
-      }
-      if (method === 'POST' && !allowedOrigin) return fail(response, 403, 'FORBIDDEN', t('server.refreshOrigin'));
-      const value = method === 'POST' ? await store.refresh() : store.latest;
-      if (!response.destroyed) json(response, value.ok ? 200 : 503, value);
-      return;
-    }
-    if (request.method !== 'GET' && request.method !== 'HEAD') {
-      response.setHeader('Allow', 'GET, HEAD');
-      return fail(response, 405, 'METHOD_NOT_ALLOWED', t('server.methodNotAllowed'));
-    }
-    let asset = assets.get(path === '/' ? '/index.html' : path);
-    let assetPath = path === '/' ? '/index.html' : path;
-    if (!asset && !path.startsWith('/assets/') && !path.split('/').some((part) => part.includes('.'))
-      && request.headers.accept?.includes('text/html')) {
-      asset = assets.get('/index.html');
-      assetPath = '/index.html';
-    }
-    if (!asset) return fail(response, 404, 'NOT_FOUND', t('server.fileNotFound'));
-    response.writeHead(200, { 'Content-Type': contentType(assetPath), 'Cache-Control': 'no-cache', 'Content-Length': asset.length });
-    response.end(request.method === 'HEAD' ? undefined : asset);
-  }
+
   const server = createServer({ requestTimeout: 5000, headersTimeout: 5000, maxHeaderSize: 8192 }, (request, response) => {
-    void handle(request, response).catch(() => {
+    void (async () => {
+      if (closing) return fail(response, 503, 'SERVER_CLOSING', t('server.closing'));
+      const admitted = admit(request, response, origin, !!options.dev);
+      if (!admitted) return;
+      if (admitted.api) return dispatch(routes, sessionId, admitted.url, admitted.path, request, response, admitted.allowedOrigin);
+      return serveStatic(request, response, admitted.path, assets);
+    })().catch(() => {
       if (!response.headersSent && !response.destroyed) fail(response, 500, 'INTERNAL_ERROR', t('server.internal'));
       else response.destroy();
     });
