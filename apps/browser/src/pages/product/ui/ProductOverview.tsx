@@ -93,10 +93,9 @@ function CommitGroup({ events, titleOf }: { events: SpecEvent[]; titleOf: (event
       <Timestamp value={first.date} format="relative"/>
     </HStack>
     {reasons.length
-      ? <VStack gap={2}>
-        {reasons.slice(0, 1).map(reason => <Text key={reason} maxLines={2} className={styles.reason}>{reason}</Text>)}
-        {reasons.length > 1 && <Text type="supporting" color="secondary">{t('overview.moreReasons', { count: reasons.length - 1 })}</Text>}
-      </VStack>
+      // One reason per commit: a commit that touched several records records the same intent against each of them,
+      // and counting the rest here asked the reader to wonder what was hidden. The activity screen has them all.
+      ? <Text maxLines={2} className={styles.reason}>{reasons[0]}</Text>
       : <Text color="secondary" className={styles.reason}>{t('activity.noReason')}</Text>}
     <HStack as="ul" gap={3} wrap="wrap" className={styles.recordList}>
       {events.map(e => <HStack as="li" key={e.key} gap={2} className={styles.record}>

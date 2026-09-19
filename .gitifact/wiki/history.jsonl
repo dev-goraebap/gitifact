@@ -11,3 +11,4 @@
 {"id":"H-co2tpvnh3c","requirements":[],"documents":["W-xt2mfa2odx"],"reason":"개요 화면이 달라졌으므로 화면 표·레이아웃·차트 절을 새 구성(프로젝트 이름과 규모, 좌우 차트 두 장, 변경 이유, 활동 링크 하나)에 맞춘다."}
 {"id":"H-76tlu5ezm2","requirements":[],"documents":["W-xt2mfa2odx"],"reason":"명세 조회의 만료 정책과 specs 응답에서 체크아웃이 첫 페이지에만 실린다는 점을 데이터 흐름·서버 계약 절에 남긴다."}
 {"id":"H-vmialdinhs","requirements":[],"documents":["W-xt2mfa2odx"],"reason":"화면 머리에 검색 입구가 생기고 검색어 반영에 대기 시간이 붙었으므로 화면·레이아웃·데이터 흐름 절에 반영한다."}
+{"id":"H-7q5bj4uqjh","requirements":[],"documents":["W-xt2mfa2odx"],"reason":"목록 표의 행을 한 줄·같은 높이로 두는 규칙, 대부분의 행이 같은 값인 항목을 열로 두지 않는 규칙, 수량 열의 비교 막대, 필터·정렬을 검색 인자에 두고 상세까지 넘기는 규칙을 적었다. 화면 표와 제품 개요 절 이름도 현재 화면에 맞췄다."}

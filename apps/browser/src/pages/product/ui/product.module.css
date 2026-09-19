@@ -153,3 +153,11 @@
 .productBody img { max-width:100%; height:auto; border-radius:var(--radius-element); }
 /* Narrow screens: the observed time yields to the breadcrumb, and the wiki tree is hidden because the folder list already navigates. */
 @media(width<48rem){ .headerTime{ display:none; } .explorerTree{ display:none; } .explorerCrumbs, .explorerBody{ padding-inline:var(--spacing-4); } .explorerCrumbs{ top:var(--gitifact-topbar-height); } }
+/* One line per row, and the same height for every row: the title holds its place, a missing design is flagged
+   beside it, and the description takes what is left and truncates. */
+.featureTable tbody td { padding-block:var(--spacing-4); }
+.featureTitleRow { align-items:baseline; min-width:0; flex-wrap:nowrap; }
+.featureTitleRow .featureTitle { flex:0 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.featureTitleRow .featureDescription { flex:1 1 auto; min-width:0; }
+.countCell { align-items:center; justify-content:flex-end; }
+.countCell > :last-child { flex:1; min-width:2.5rem; max-width:6rem; }

@@ -83,7 +83,7 @@ test('the product page leads with what changed and why, and does not treat the w
   await expect(article.getByLabel('최근 변경 종류 범례').getByRole('listitem').first()).toHaveText('추가1 · 100%');
   await expect(article.getByLabel('참여자별 커밋 범례').getByRole('listitem').first()).toHaveText('Fixture3 · 75%');
   // The recorded reason is the subject of the section below them, next to the record it explains.
-  const reasons = article.getByLabel('변경 이유');
+  const reasons = article.getByLabel('최근 변경 이력');
   await expect(reasons).toContainText('사용자가 검색을 요청했습니다.');
   await expect(reasons).toContainText('검색어 입력');
   await reasons.getByRole('link', { name: '검색어 입력' }).click();
