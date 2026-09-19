@@ -153,7 +153,8 @@ export function ProductOverview({ session, features, documents, events, contribu
       <Pulse events={events}/>
     </HStack>
 
-    <Grid columns={{ minWidth: 300, repeat: 'fit', max: 2 }} gap={4} align="start">
+    {/* The two cards stand side by side, so they take the taller one's height; a short legend no longer leaves one card hanging. */}
+    <Grid columns={{ minWidth: 300, repeat: 'fit', max: 2 }} gap={4} align="stretch">
       <Card padding={5}><VStack gap={4}>
         <HStack gap={3} className={styles.barRowHead}><Heading level={3}>{t('overview.recentChangeTypes')}</Heading><Text type="supporting" color="secondary">{t('overview.loadedEvents', { count: events.length })}</Text></HStack>
         <StackedBar segments={changes} label={t('overview.recentChangeTypes')}/>

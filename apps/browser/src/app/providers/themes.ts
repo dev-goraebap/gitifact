@@ -1,9 +1,10 @@
 import { defineTheme } from '@astryxdesign/core/theme';
 import { stoneTheme as stoneSource } from '@astryxdesign/theme-stone';
-import { stoneTheme } from '@astryxdesign/theme-stone/built';
-import { paletteColors, paletteTokens, type Palette } from '../../shared/lib/appearance';
+import { paletteColors, paletteTokens, softText, type Palette } from '../../shared/lib/appearance';
 
-// Stone is the prebuilt default, so the first paint needs no style injection. The other palettes extend its source
-// (type, radius, icons, component overrides carry over) and set their color tokens explicitly; they inject at runtime.
+// Every palette extends the Stone source (type, radius, icons, component overrides carry over) and sets its colour
+// tokens explicitly. Stone itself only softens its light-mode text, which means it is defined here too rather than
+// taken prebuilt: its tokens are injected at runtime like the others.
 const derived = (name: Exclude<Palette, 'stone'>) => defineTheme({ name: 'gitifact-' + name, extends: stoneSource, tokens: paletteTokens(paletteColors[name]) });
-export const themes = { stone: stoneTheme, sage: derived('sage'), olive: derived('olive'), slate: derived('slate'), clay: derived('clay') } satisfies Record<Palette, unknown>;
+const stone = defineTheme({ name: 'gitifact-stone', extends: stoneSource, tokens: softText });
+export const themes = { stone, sage: derived('sage'), olive: derived('olive'), slate: derived('slate'), clay: derived('clay') } satisfies Record<Palette, unknown>;

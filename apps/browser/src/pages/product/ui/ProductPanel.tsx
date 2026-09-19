@@ -63,7 +63,7 @@ export function ProductPanel({session,view,featureId,email,documentId,search,cha
  {!detailPage&&!wiki&&<VStack gap={1} className={styles.pageTitle}><Heading level={1}>{title}</Heading></VStack>}
  {query.error&&first&&<VStack padding={4} role="alert"><Text>{query.error.message}</Text><Text>{t('history.staleData')}</Text></VStack>}
  {!first&&query.error&&<RequestState error={query.error} retry={()=>{if(disconnected)window.location.reload();else void query.refetch();}}/>}
- {skeleton&&<ViewSkeleton view={view}/>}
+ {skeleton&&<ViewSkeleton view={view} page={!!documentId}/>}
  {filters}
  {ready&&<VStack gap={3} className={browsing?styles.fillContent:styles.content}>
  <DocumentIndexProvider index={first}>{view==='history'?<HistoryView events={events} features={first.features} search={search} change={change}/>:view==='features'?<FeatureView features={first.features} featureId={featureId} search={search} change={change}/>:productPage?<ProductOverview session={session} features={first.features} documents={first.documents} events={events} contributors={first.contributors} working={first.working}/>:wiki?<DocumentsView documents={first.documents} documentId={documentId} search={search} change={change}/>:<ContributorsView people={first.contributors} events={events} features={first.features} email={email} search={search}/>}</DocumentIndexProvider>

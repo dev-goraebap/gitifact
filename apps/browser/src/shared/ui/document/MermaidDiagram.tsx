@@ -15,13 +15,20 @@ type State = { kind: 'pending' } | { kind: 'ready'; svg: string } | { kind: 'fai
 
 // Mermaid writes colors into the SVG, so it cannot read var(--color-*) itself. The tokens are resolved from the
 // element that holds the diagram, which puts it under the same theme and mode as the surrounding text.
+// A token is read as the colour it paints, not as its declared text: a theme may declare `light-dark(a, b)`, which
+// only the browser resolves and mermaid cannot parse, and then nothing is drawn at all.
 function themeVariables(host: HTMLElement): Record<string, string> {
   const style = getComputedStyle(host);
-  const token = (name: string) => style.getPropertyValue(name).trim();
+  const probe = host.appendChild(document.createElement('span'));
+  const token = (name: string) => {
+    if (!style.getPropertyValue(name).trim()) return '';
+    probe.style.color = `var(${name})`;
+    return getComputedStyle(probe).color;
+  };
   const text = token('--color-text-primary');
   const line = token('--color-text-secondary');
   const border = token('--color-border-emphasized') || token('--color-border');
-  return {
+  const colors = {
     background: token('--color-background-card'),
     primaryColor: token('--color-background-muted'), primaryTextColor: text, primaryBorderColor: border,
     secondaryColor: token('--color-background-surface'), secondaryTextColor: text, secondaryBorderColor: border,
@@ -29,8 +36,9 @@ function themeVariables(host: HTMLElement): Record<string, string> {
     lineColor: line, textColor: text, mainBkg: token('--color-background-muted'), nodeBorder: border,
     clusterBkg: token('--color-background-surface'), clusterBorder: token('--color-border'),
     titleColor: text, edgeLabelBackground: token('--color-background-card'),
-    fontFamily: style.fontFamily, fontSize: style.fontSize,
   };
+  probe.remove();
+  return { ...colors, fontFamily: style.fontFamily, fontSize: style.fontSize };
 }
 
 // mermaid measures a diagram by putting it in the document first. Left to itself it appends that element to

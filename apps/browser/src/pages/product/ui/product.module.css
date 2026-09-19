@@ -1,6 +1,10 @@
  .page { min-width:0; } .content {padding:var(--spacing-4);min-width:0;animation:reveal .22s ease-out both}
 .skeleton { min-height:24rem; animation:reveal .2s ease-out both; }
 .skeletonRow { align-items:center; padding-block:var(--spacing-3); border-bottom:1px solid var(--color-border); }
+/* Wiki placeholder rows, sized to the tree items and list items they stand in for. */
+.skeletonTreeRow { align-items:center; min-height:2.375rem; padding-inline-end:var(--spacing-2); }
+.skeletonListRow { align-items:center; padding:var(--spacing-2); }
+.skeletonListRow + .skeletonListRow { border-top:1px solid var(--color-border); }
 @keyframes reveal { from { opacity:0; transform:translateY(4px); } }
 @media (prefers-reduced-motion: reduce) { .content { animation:none; } } .highlight {border-inline-start:2px solid var(--color-border-accent,var(--color-border));padding-inline-start:var(--spacing-3)}
 

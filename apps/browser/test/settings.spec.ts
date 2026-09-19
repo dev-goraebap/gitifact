@@ -5,10 +5,15 @@ test.beforeEach(async ({ page }) => {
   await mockApi(page);
 });
 
-const accent = (page: import('@playwright/test').Page) =>
-  page.getByRole('heading', { level: 1 }).evaluate(element => getComputedStyle(element).getPropertyValue('--color-accent').trim());
-const surface = (page: import('@playwright/test').Page) =>
-  page.getByRole('heading', { level: 1 }).evaluate(element => getComputedStyle(element).getPropertyValue('--color-background-surface').trim());
+// A token can hold `light-dark(a, b)`, which reads the same in both modes; paint a probe with it and compare the colour
+// the browser actually resolved.
+const resolved = (page: import('@playwright/test').Page, token: string) =>
+  page.getByRole('heading', { level: 1 }).evaluate((element, name) => {
+    const probe = document.createElement('span'); probe.style.color = `var(${name})`; element.appendChild(probe);
+    const colour = getComputedStyle(probe).color; probe.remove(); return colour;
+  }, token);
+const accent = (page: import('@playwright/test').Page) => resolved(page, '--color-accent');
+const surface = (page: import('@playwright/test').Page) => resolved(page, '--color-background-surface');
 
 test('settings is the last workspace menu and switches mode and palette for this browser only', async ({ page }) => {
   const requests: string[] = [];
@@ -70,4 +75,17 @@ test('a damaged stored preference falls back to the defaults', async ({ page }) 
   await page.goto('/settings');
   await expect(page.getByRole('radiogroup', { name: '화면 모드' }).getByRole('radio', { name: '시스템' })).toBeChecked();
   await expect(page.getByRole('region', { name: '색 조합' }).getByRole('checkbox', { name: '스톤', exact: true })).toBeChecked();
+});
+
+test('light text is softened from near-black in every palette, and the wordmark follows it', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'light' });
+  await page.goto('/product');
+  const heading = page.getByRole('heading', { level: 1 });
+  await expect(heading).toBeVisible();
+  // Stone's shipped #25252a read heavier than the surfaces around it; the wordmark draws in the same colour.
+  await expect.poll(() => heading.evaluate(e => getComputedStyle(e).color)).toBe('rgb(58, 58, 64)');
+  expect(await page.locator('.gitifact-wordmark').evaluate(e => getComputedStyle(e, '::before').backgroundColor)).toBe('rgb(58, 58, 64)');
+  // Dark mode keeps its own light text.
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await expect.poll(() => heading.evaluate(e => getComputedStyle(e).color)).toBe('rgb(243, 243, 245)');
 });

@@ -104,3 +104,18 @@ test('drawing diagrams never makes the document itself scroll', async ({ page })
   await page.waitForTimeout(300);
   expect(await page.evaluate(() => (window as unknown as { overflow: number }).overflow)).toBe(0);
 });
+
+// Every palette declares its colours as light-dark() pairs, which mermaid cannot parse; the diagram has to be handed
+// the colours the browser resolved, or nothing is drawn. Checked in each mode, since the pair resolves differently.
+for (const scheme of ['light', 'dark'] as const) test(`a diagram is drawn in every palette (${scheme})`, async ({ page }) => {
+  await page.emulateMedia({ colorScheme: scheme });
+  for (const palette of ['stone', 'sage']) {
+    await page.addInitScript(value => { window.localStorage.setItem('gitifact-appearance', value); }, JSON.stringify({ mode: 'system', palette }));
+    await openPage(page, '```mermaid\nflowchart LR\n  A[시작] --> B[끝]\n```');
+    const diagram = page.getByRole('img', { name: '다이어그램' });
+    await expect(diagram.locator('svg')).toBeVisible();
+    // The text in the drawing is the page's text colour, resolved to a plain value.
+    const fill = await diagram.locator('svg text, svg tspan').first().evaluate(e => getComputedStyle(e).fill);
+    expect(fill).toMatch(/^rgb/);
+  }
+});

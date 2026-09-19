@@ -57,7 +57,7 @@ a {
 .gitifact-wordmark::before {
   content: '';
   display: block;
-  width: calc(var(--spacing-4) * 12);
+  width: calc(var(--spacing-4) * 8);
   max-width: 100%;
   aspect-ratio: 2013 / 329;
   background-color: currentColor;

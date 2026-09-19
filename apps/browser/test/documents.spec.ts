@@ -166,3 +166,33 @@ test('a direct visit to the Git page reads uncommitted store paths from the repo
   await expect(page.getByText('제품 개요·기능별 요구사항·위키 화면은 작업 중인 내용이고', { exact: false })).toBeVisible();
   await expect(page.getByRole('navigation', { name: '사이드 탐색' }).getByLabel('미커밋 명세 변경 있음')).toBeVisible();
 });
+
+test('the two overview charts share one height even when one legend wraps', async ({ page }) => {
+  await mockApi(page);
+  const many = structuredClone(specs);
+  many.contributors = Array.from({ length: 7 }, (_, i) => ({ name: 'Person ' + i, email: `p${i}@example.test`, commits: 10 - i, latest: '2026-09-14T00:00:00Z' }));
+  await page.route('**/api/v1/specs*', route => route.fulfill({ json: many }));
+  await page.goto('/product');
+  const card = (name: string) => page.getByRole('heading', { level: 3, name }).locator('xpath=ancestor::*[parent::*[contains(@class,"astryx-grid") or contains(@style,"grid")]][1]');
+  await expect(page.getByRole('heading', { level: 3, name: '참여자별 커밋' })).toBeVisible();
+  const heights = await Promise.all(['최근 변경 종류', '참여자별 커밋'].map(async name => Math.round((await card(name).boundingBox())!.height)));
+  expect(heights[0]).toBe(heights[1]);
+});
+
+for (const [url, shape] of [['/wiki', 'folder'], ['/wiki/W-bbbbbbbbbb', 'page']] as const) {
+  test(`a slow wiki shows the explorer's own shape while it loads (${shape})`, async ({ page }) => {
+    await mockApi(page);
+    let release!: () => void; const held = new Promise<void>(resolve => { release = resolve; });
+    await page.route('**/api/v1/specs*', async route => { await held; await route.fulfill({ json: specs }); });
+    await page.goto(url);
+    const loading = page.getByRole('status', { name: '프로젝트 불러오는 중' });
+    await expect(loading).toBeVisible();
+    // The placeholder is laid out on the explorer: a tree column as wide as the real one, beside the pane.
+    const tree = (await loading.locator(':scope > div').first().boundingBox())!;
+    release();
+    await expect(loading).toHaveCount(0);
+    const real = (await page.getByRole('navigation', { name: '위키 트리' }).boundingBox())!;
+    expect(Math.round(tree.x)).toBe(Math.round(real.x));
+    expect(Math.round(tree.width)).toBe(Math.round(real.width));
+  });
+}
