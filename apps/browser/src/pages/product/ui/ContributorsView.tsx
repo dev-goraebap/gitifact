@@ -1,4 +1,4 @@
-import type { BrowserSpecsV2, SpecEvent, SpecFeature } from '@gitifact/contracts';
+import type { BrowserSpecsV3, SpecEvent, SpecFeature } from '@gitifact/contracts';
 import { VStack } from '@astryxdesign/core/VStack';
 import { HStack } from '@astryxdesign/core/HStack';
 import { Grid } from '@astryxdesign/core/Grid';
@@ -15,7 +15,7 @@ import styles from './product.module.css';
 import { PageState } from '../../../shared/ui/page-state';
 import { t, tNodes } from '../../../shared/i18n';
 
-type Contributor = BrowserSpecsV2['contributors'][number];
+type Contributor = NonNullable<BrowserSpecsV3['contributors']>[number];
 const names = {created:t('change.created'),modified:t('change.modified'),deleted:t('change.deleted'),moved:t('change.moved')};
 
 export function ContributorsView({people,events,features,email,search}: {people:Contributor[];events:SpecEvent[];features:SpecFeature[];email?:string|undefined;search:ProductSearch}) {

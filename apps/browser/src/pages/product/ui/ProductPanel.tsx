@@ -8,7 +8,7 @@ import { Selector } from '@astryxdesign/core/Selector';
 import { Button } from '@astryxdesign/core/Button';
 import { IconButton } from '@astryxdesign/core/IconButton';
 import { HgiRefresh } from '../../../shared/ui/icons/HgiRefresh';
-import { specsOptions } from '../../../entities/project';
+import { specsOptions, checkoutOf } from '../../../entities/project';
 import { ApiError } from '../../../shared/api/client';
 import type { ProductProps } from './ProductPage';
 import { HistoryView } from './HistoryView';
@@ -28,7 +28,8 @@ export function ProductPanel({session,view,featureId,email,documentId,search,cha
  const wiki=view==='wiki'; const productPage=view==='product';
  const query=useInfiniteQuery(specsOptions(session));
  const disconnected=query.error instanceof ApiError && query.error.code==='SESSION_CHANGED';
- const first=disconnected?undefined:query.data?.pages[0];
+ // Only the first page carries the checkout; the pages after it are history.
+ const first=disconnected?undefined:checkoutOf(query.data?.pages);
  // The skeleton waits 200ms before appearing and then stays at least 300ms, so fast answers never flash and slow ones never blink.
  const skeleton=useLoadingHold(!first&&!query.error);
  const ready=!!first&&!skeleton;

@@ -9,3 +9,4 @@
 {"id":"H-swqzmo2b7c","requirements":[],"documents":["W-fainrp43qi"],"reason":"집계 차트에 라이브러리를 쓰지 않는다는 기존 방침과 부딪히므로 문서 다이어그램에 한정한 예외와 그 배포 크기 대가를 결정으로 남긴다. mermaid 12.0.0은 라벨 폭을 늘 120px로 계산해 긴 라벨이 잘리므로 11.17.2를 쓴다."}
 {"id":"H-arfjirgr23","requirements":[],"documents":["W-risprbk4wt","W-xt2mfa2odx"],"reason":"브라우저가 그리는 것이 달라졌으므로 Markdown 렌더링 범위와 차트 라이브러리 금지의 적용 범위를 규칙에 맞춘다."}
 {"id":"H-co2tpvnh3c","requirements":[],"documents":["W-xt2mfa2odx"],"reason":"개요 화면이 달라졌으므로 화면 표·레이아웃·차트 절을 새 구성(프로젝트 이름과 규모, 좌우 차트 두 장, 변경 이유, 활동 링크 하나)에 맞춘다."}
+{"id":"H-76tlu5ezm2","requirements":[],"documents":["W-xt2mfa2odx"],"reason":"명세 조회의 만료 정책과 specs 응답에서 체크아웃이 첫 페이지에만 실린다는 점을 데이터 흐름·서버 계약 절에 남긴다."}

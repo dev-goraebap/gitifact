@@ -42,6 +42,10 @@ test('history pagination covers every changed commit without duplicates',async t
  const read=createSpecBrowserReader(f.repo,'fixture',f.env),first=await read();assert.equal(first.events.length,10);assert.equal(first.nextCursor,10);
  const second=await read(first.nextCursor,first.head);assert.equal(second.events.length,2);assert.equal(second.nextCursor,null);
  assert.equal(new Set([...first.events,...second.events].map(e=>e.key)).size,12);
+ // The checkout describes the working tree, not this page of history, so only the first page carries it.
+ assert.ok(first.features&&first.documents&&first.contributors);assert.equal(first.working,false);
+ for(const field of ['features','documents','contributors','contributorsLimited','working'])assert.equal(second[field],undefined,field);
+ assert.equal(JSON.stringify(second).includes('Version 0'),true);
 });
 
 test('history stops at the legacy JSON boundary instead of failing', async t => {

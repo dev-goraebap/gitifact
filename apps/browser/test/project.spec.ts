@@ -40,6 +40,30 @@ test('load more retains rows, appends the next page and shows completion', async
  await expect(page.getByRole('button',{name:'이전 이력 더 보기',exact:true})).toHaveCount(0);
 });
 
+test('loaded history is kept across screens and re-read only on refresh', async ({page}) => {
+ // Every specs screen shares one query, so refetching it on each visit re-read every page loaded so far: three
+ // "load more" presses turned a return to the activity screen into three requests.
+ await mockApi(page);
+ let requests = 0;
+ const next = structuredClone(specs); next.events[0]!.key = 'd'.repeat(40)+':R-abcdefghij'; next.events[0]!.after!.title = '이전 검색 요구사항';
+ await page.route('**/api/v1/specs*', route => { requests++;
+  route.fulfill({json:new URL(route.request().url()).searchParams.has('cursor')?next:{...specs,nextCursor:10}}); });
+ await page.goto('/activity');
+ await expect(page.getByText('검색어 입력',{exact:true})).toBeVisible();
+ await page.getByRole('button',{name:'이전 이력 더 보기',exact:true}).click();
+ await expect(page.getByText('이전 검색 요구사항',{exact:true})).toBeVisible();
+ expect(requests).toBe(2);
+ // Leaving and coming back shows the same history without asking the server again.
+ await page.getByRole('link',{name:'제품 개요',exact:true}).click();
+ await expect(page.getByRole('article',{name:'제품 개요'})).toBeVisible();
+ await page.getByRole('link',{name:'활동',exact:true}).click();
+ await expect(page.getByText('이전 검색 요구사항',{exact:true})).toBeVisible();
+ expect(requests).toBe(2);
+ // The refresh button is what re-reads the checkout, and it reads every page that is loaded.
+ await page.getByRole('button',{name:'새로고침'}).click();
+ await expect.poll(() => requests).toBe(4);
+});
+
 test('initial request shows delayed skeleton then the Gentask empty illustration', async ({page}) => {
  await mockApi(page);
  let release!: () => void;
