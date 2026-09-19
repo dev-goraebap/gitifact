@@ -199,6 +199,14 @@ Tryce에서 Gitifact로 이름을 바꾼 첫 배포다. 패키지 `gitifact@0.1.
 
 `pnpm check`를 통과했다. core 29개·contracts 7개·intro 3개·CLI 123개·브라우저 51개와 workspace 밖 오프라인 설치·실행을 확인했다. CLI 테스트 감소는 삭제한 명령의 테스트 제거에 따른 것이며, 그중 기록 규칙을 보던 검사는 `spec commit` 테스트로 옮겼다. CLI 번들 SHA-256은 `2806f86a927cc221bd96df2ff54ef5dfd145be88ddb13ae997e0937278ea9cc1`이다. 게시 결과는 아래에 이어서 기록한다.
 
+## 0.6.0 게시 완료
+
+2026-09-19 커밋 3170bdc까지 main을 원격에 푸시하고 `apps/cli`에서 Git 검사를 유지한 pnpm publish로 게시했다. latest는 0.6.0, 라이선스는 MIT, 165개 파일이다. 레지스트리 integrity `sha512-Nok5Qr3m8VVz8pjs72qYy0d6URw4ON+iuIPEe55DXvXDgFTZwVYE+J6vyuvYtVuO6qg7OYBsm5opB65ltGpWBQ==`와 shasum `2f651350351a1f4d95878bf2ad4ea4e6247885a5`는 모의 실행 값과 같다. 게시 직후 레지스트리 조회는 404였고 약 3분 뒤 반영됐다.
+
+새 폴더에 레지스트리에서 `gitifact@0.6.0`을 설치해 확인했다. `--version`이 0.6.0을, `docs`가 여섯 항목(writing 포함)을, `docs writing`이 문체 지침 본문을 출력한다. 새 Git 저장소에서 `init`(schemaVersion 2), `spec working --stamp`, `spec save`(S·R 발급), `spec changes`, `spec commit`(커밋 ac2f210, 작업 폴더 깨끗), `spec read`가 동작한다. 삭제한 `spec prepare`는 `unknown command 'prepare'`로 거부한다. 설치된 main.js의 SHA-256은 지정 빌드와 같은 `2806f86a927cc221bd96df2ff54ef5dfd145be88ddb13ae997e0937278ea9cc1`이다.
+
+이 빌드를 프로젝트 사용 대상으로 지정한다. 실행은 `node apps/cli/dist/main.js` 또는 `pnpm cli`다. 직전 지정 빌드는 0.5.0의 `41223f68…`이었다.
+
 ## 이전 Tryce 배포 기록
 
 아래 패키지 이름·버전·커밋·무결성은 당시 배포의 사실이다. Gitifact 0.1.0의 게시 결과로 해석하거나 새 이름으로 일괄 치환하지 않는다.
