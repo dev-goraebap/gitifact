@@ -355,3 +355,10 @@ Markdown 명세·변경 이유·Git 커밋 연결과 요구사항 이력·제품
 `pnpm check`를 다시 통과했다(브라우저 81, CLI 134, core 29, 계약 7, 소개 문서 2건과 오프라인 패키지 설치 검사). 실제 브라우저에서 GitHub 링크의 목적지·새 탭 속성과 언어 순서를 확인했다. CLI 번들 SHA-256은 지정된 0.7.0 빌드와 같다(`cef14c6629bfbbe4ca9ac435646b9894a77d84b01d7ee8f34a46216ee4fe33b1`).
 
 첫 게시 시도는 npm 인증 실패로 끝났다. 사용자가 로그인한 뒤 계정 인증은 통과했으나 게시 추가 인증(EOTP)이 요구되었다. 이 시점에 0.7.0은 아직 게시하지 않았다.
+
+
+## 0.7.0 게시 결과
+
+2026-09-20, 커밋 `12776bd`까지 main에 푸시한 뒤 npm 추가 인증을 거쳐 `gitifact@0.7.0`을 공개 게시했다. 게시 요청은 HTTP 202로 접수됐고 수 분 후 공개 조회와 latest가 0.7.0으로 반영됐다. 레지스트리 integrity는 `sha512-uDrnmEDE7dMM97eh/WQvJHWcOkg4X7bTemyp+krTeE78YI6OnQgB4/EnMRgPAfxKZX2W0WEyVM6MZqum2WezFg==`다.
+
+공개 레지스트리에서 새 임시 폴더로 설치해 version·help·한국어/영어 docs, Git 저장소 init·spec working을 확인했다. 설치된 CLI 해시는 지정 빌드와 같고 다크 모드 스크린샷 세 장도 원본과 바이트가 일치한다. 실제 사용자 프로젝트나 전역 설치는 변경하지 않았다.
