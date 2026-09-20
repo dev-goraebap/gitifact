@@ -6,7 +6,7 @@
 .skeletonListRow { align-items:center; padding:var(--spacing-2); }
 .skeletonListRow + .skeletonListRow { border-top:1px solid var(--color-border); }
 @keyframes reveal { from { opacity:0; transform:translateY(4px); } }
-@media (prefers-reduced-motion: reduce) { .content { animation:none; } } .highlight {border-inline-start:2px solid var(--color-border-accent,var(--color-border));padding-inline-start:var(--spacing-3)}
+@media (prefers-reduced-motion: reduce) { .content { animation:none; } }
 
 /* Feature list: a table in the centered column; the detail page replaces the list at the same width. */
 .featureTable table { border-radius:0; }
@@ -25,6 +25,9 @@
 .featureDetail a:hover { text-decoration:underline; }
 .requirementSection { padding-block:var(--spacing-7); border-bottom:1px solid var(--color-border); scroll-margin-top:calc(var(--gitifact-topbar-height) + var(--spacing-4)); }
 .requirementSection h3 { font-size:1.25rem; line-height:1.5; }
+/* Drawn across the words like a highlighter; the same stroke the design's current section gets. */
+.currentMark { background:none; color:inherit; background-image:linear-gradient(transparent 55%, var(--color-background-yellow) 55%, var(--color-background-yellow) 94%, transparent 94%); padding-inline:.15em; box-decoration-break:clone; -webkit-box-decoration-break:clone; }
+.requirementSection[aria-current] { scroll-margin-top:calc(var(--gitifact-topbar-height) + var(--spacing-5)); }
 .requirementSection p,.requirementSection li { line-height:1.9; }
 .requirementSection a,.documentHeading a { font-size:.8125rem; }
 @media(width<64rem){.documentHeading h1{font-size:1.5rem}}
@@ -185,7 +188,36 @@
 /* One line per row, and the same height for every row: the title holds its place, a missing design is flagged
    beside it, and the description takes what is left and truncates. */
 .featureTable tbody td { padding-block:var(--spacing-4); }
+/* A feature heads its group, so its title carries the weight; its requirements hang under it, indented and quiet. */
 .featureTitleRow { align-items:baseline; min-width:0; flex-wrap:nowrap; }
+/* Hatching behind a feature row: the requirements under it are plain rows, so the group's head needs a surface of
+   its own to be told apart at a glance. It is an image, so the hover wash underneath still shows through. */
+.featureTable tbody tr[data-row=feature] td { background-image:repeating-linear-gradient(-45deg, var(--color-background-muted) 0 1px, transparent 1px 7px); }
+.featureTable tbody tr[data-row=feature] .featureTitle { font-weight:600; }
+.featureTable tbody tr[data-row=requirement] td:first-child,
+.featureTable tbody tr[data-row=more] td:first-child { padding-inline-start:var(--spacing-6); }
+/* Only a feature starts a group, so the line goes above it and the rows under it read as one block. */
+.featureTable tbody tr[data-row=feature] td { border-top:1px solid var(--color-border); }
+.featureTable tbody tr[data-row=requirement] td, .featureTable tbody tr[data-row=more] td { border-bottom:0; padding-block:var(--spacing-2); }
+/* Empty space closes a group before the next one's hatched band opens. A rule alone was read as one more row
+   divider; the gap is not hatched, so the band starting again is what separates the two. */
+.featureTable tbody tr[data-row=requirement]:has(+ tr[data-row=feature]) td,
+.featureTable tbody tr[data-row=more]:has(+ tr[data-row=feature]) td { padding-bottom:var(--spacing-6); }
+.requirementRow { align-items:baseline; min-width:0; flex-wrap:nowrap; width:100%; }
+.requirementNumber { flex:0 0 auto; font-variant-numeric:tabular-nums; }
+.requirementLink { flex:0 1 auto; min-width:0; color:var(--color-text-primary); text-decoration:none; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.requirementLink:hover, .requirementMore:hover, .requirementDesignLink:hover { text-decoration:underline; }
+/* An action, not an attribute of the title, so it sits at the end of the cell where the row's actions line up. */
+.requirementDesignLink { flex:0 0 auto; margin-inline-start:auto; padding-inline-start:var(--spacing-4); color:var(--color-text-secondary); font-size:.75rem; text-decoration:none; white-space:nowrap; }
+.requirementMore { color:var(--color-text-secondary); font-size:.8125rem; text-decoration:none; }
+/* The pager rides the bottom of the card: a page of forty rows is taller than the screen, and the way to the
+   next one should not be something the reader has to scroll to the end to find. Sticky alone only holds while
+   there is something to scroll, so a short page (the last one, or a narrowed list) left it under the table in the
+   middle of the screen. The column it sits in is stretched to the card instead, and `margin-block-start:auto`
+   pushes it to the floor of that. The stretch is asked for by the pager itself, so every other screen is untouched. */
+.page:has(.featurePager) { min-height:100%; }
+.page:has(.featurePager) .column, .page:has(.featurePager) .content, .page:has(.featurePager) .featureTable { flex:1 1 auto; }
+.featurePager { position:sticky; bottom:0; z-index:2; margin-block-start:auto; align-items:center; margin-inline:calc(var(--spacing-4) * -1); margin-bottom:calc(var(--spacing-4) * -1); padding:var(--spacing-2) var(--spacing-4); background:var(--color-background-surface); border-top:1px solid var(--color-border); }
 .featureTitleRow .featureTitle { flex:0 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .featureTitleRow .featureDescription { flex:1 1 auto; min-width:0; }
 .countCell { align-items:center; justify-content:flex-end; }

@@ -56,3 +56,8 @@
 .reading .alertWarning .alertLabel { color:var(--color-icon-yellow); }
 .reading .alertCaution { border-color:var(--color-border-red); background:var(--color-background-red); }
 .reading .alertCaution .alertLabel { color:var(--color-icon-red); }
+
+/* The section the reader was sent to. The mark is drawn across the words like a highlighter rather than as a rule
+   beside the block: a line at the edge of a long section says something is here, not which line to read. */
+.currentHeading { scroll-margin-top:calc(var(--gitifact-topbar-height) + var(--spacing-5)); }
+.currentMark { background:none; color:inherit; background-image:linear-gradient(transparent 55%, var(--color-background-yellow) 55%, var(--color-background-yellow) 94%, transparent 94%); padding-inline:.15em; box-decoration-break:clone; -webkit-box-decoration-break:clone; }

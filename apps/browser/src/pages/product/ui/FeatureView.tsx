@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import type { SpecFeature } from '@gitifact/contracts';
 import { VStack } from '@astryxdesign/core/VStack';
 import { HStack } from '@astryxdesign/core/HStack';
@@ -5,8 +6,9 @@ import { Heading } from '@astryxdesign/core/Heading';
 import { Text } from '@astryxdesign/core/Text';
 import { Markdown } from '@astryxdesign/core/Markdown';
 import { TabList, Tab } from '@astryxdesign/core/TabList';
-import { Table, pixel, proportional, type TableColumn, type TablePlugin } from '@astryxdesign/core/Table';
+import { Table, pixel, proportional, useTableSortable, type TableColumn, type TablePlugin, type TableSortDirection } from '@astryxdesign/core/Table';
 import { ProgressBar } from '@astryxdesign/core/ProgressBar';
+import { Pagination } from '@astryxdesign/core/Pagination';
 import { Token } from '@astryxdesign/core/Token';
 import { Timestamp } from '@astryxdesign/core/Timestamp';
 import { Avatar } from '@astryxdesign/core/Avatar';
@@ -16,13 +18,15 @@ import { Link, useNavigate } from '@tanstack/react-router';
 import { DesignDocument } from './DesignDocument';
 import { avatarSource, contributorHref } from './Person';
 import type { ProductSearch } from '../model/search';
+import { designSectionsOf } from '../model/design-sections';
+import { pagesOf, type FeatureRow } from '../model/feature-rows';
 import styles from './product.module.css';
 import { PageState } from '../../../shared/ui/page-state';
 import { DocumentBody, designPathOf } from '../../../shared/ui/document';
 import { t } from '../../../shared/i18n';
 
 export function FeatureView({ features, featureId, search, change }: { features: SpecFeature[]; featureId?: string | undefined; search: ProductSearch; change: (s: ProductSearch) => void }) {
-  if (!featureId) return <FeatureList features={features} search={search}/>;
+  if (!featureId) return <FeatureList features={features} search={search} change={change}/>;
   const selected = features.find(f => f.id === featureId);
   if (!selected) return <PageState kind="not-found" title={t('features.notFoundTitle')} description={t('features.notFoundDescription', { id: featureId })} actions={<Link to="/features">{t('features.backToList')}</Link>}/>;
   return <FeatureDetail feature={selected} features={features} search={search} change={change}/>;
@@ -38,53 +42,95 @@ function Contributors({ people }: { people: SpecFeature['contributors'] }) {
   </AvatarGroup>;
 }
 
-function FeatureList({ features, search }: { features: SpecFeature[]; search: ProductSearch }) {
+/** The columns a reader can order the list by; every other column holds nothing to compare. */
+type SortKey = 'title' | 'requirements' | 'updatedAt';
+
+function FeatureList({ features, search, change }: { features: SpecFeature[]; search: ProductSearch; change: (s: ProductSearch) => void }) {
   const navigate = useNavigate();
   const mobile = useMediaQuery('(max-width: 767px)');
-  const sort = search.sort ?? 'recent';
+  // The column headers carry the order now, so the state is a column and a direction rather than a named preset.
+  // Ascending first suits a name; a count and a date are read newest-and-largest first, so they open descending.
+  const opens: Record<SortKey, TableSortDirection> = { title: 'ascending', requirements: 'descending', updatedAt: 'descending' };
+  const key: SortKey = search.sort === 'title' || search.sort === 'requirements' ? search.sort : 'updatedAt';
+  const direction: TableSortDirection = search.dir === 'asc' ? 'ascending' : search.dir === 'desc' ? 'descending' : opens[key];
+  const way = direction === 'ascending' ? 1 : -1;
   const query = search.q?.toLowerCase();
-  const filtered = features
-    .filter(f => !query || [f.title, f.id, ...f.requirements.map(r => r.title + ' ' + r.id)].join(' ').toLowerCase().includes(query))
+  // A word may name the feature or one of its requirements. Naming the feature keeps all of them; naming a
+  // requirement keeps that one, so the list answers with the requirement rather than the document holding it.
+  const named = (f: SpecFeature) => !query || (f.title + ' ' + f.id).toLowerCase().includes(query);
+  const groups = features
     .filter(f => !search.design || (search.design === 'yes') === !!f.design)
     .filter(f => !search.author || f.contributors.some(p => p.email === search.author))
-    // Recent first by default: the list is read to see where the work is, and the store order says nothing.
-    .sort((a, b) => sort === 'requirements' ? b.requirements.length - a.requirements.length || a.title.localeCompare(b.title)
-      : sort === 'title' ? a.title.localeCompare(b.title)
-      : (b.updatedAt ?? '').localeCompare(a.updatedAt ?? '') || a.title.localeCompare(b.title));
-  const carried = { q: search.q, design: search.design, author: search.author, sort: search.sort };
+    .map(f => ({ feature: f, requirements: named(f) ? f.requirements : f.requirements.filter(r => (r.title + ' ' + r.id).toLowerCase().includes(query!)) }))
+    .filter(g => named(g.feature) || g.requirements.length)
+    // Recent first by default: the list is read to see where the work is, and the store order says nothing. The
+    // order is the features', not the rows': a requirement keeps the place its document gives it.
+    .sort((a, b) => way * (key === 'requirements' ? a.feature.requirements.length - b.feature.requirements.length
+      : key === 'title' ? a.feature.title.localeCompare(b.feature.title)
+      : (a.feature.updatedAt ?? '').localeCompare(b.feature.updatedAt ?? '')) || a.feature.title.localeCompare(b.feature.title));
+  const carried = { q: search.q, design: search.design, author: search.author, sort: search.sort, dir: search.dir, page: search.page };
   const mostRequirements = Math.max(1, ...features.map(f => f.requirements.length));
-  const open = (f: SpecFeature) => { void navigate({ to: '/features/$featureId', params: { featureId: f.id }, search: carried }); };
-  const columns: TableColumn<SpecFeature>[] = [
-    // A design is the norm here, so only its absence is marked, and it is marked beside the feature it belongs to
-    // rather than in a column whose cells would otherwise all be empty.
-    // Everything on one line: a description under the title made that row taller than the rest, and a list that is
-    // scanned down a column reads better when every row is the same height. A long description truncates instead.
-    { key: 'title', header: t('features.column.feature'), width: proportional(1, { minWidth: 160 }), renderCell: f => <HStack gap={3} className={styles.featureTitleRow}>
-      <Link to="/features/$featureId" params={{ featureId: f.id }} search={carried} className={styles.featureTitle}>{f.title}</Link>
-      {!f.design && <Token label={t('features.noDesignMark')} color="yellow" size="sm"/>}
-      {f.description && <Text type="supporting" color="secondary" className={`${styles.featureDescription} ${styles.oneLine}`}>{f.description.replace(/[#*_`]/g, '').replace(/\s+/g, ' ').trim()}</Text>}
-    </HStack> },
+  const pages = pagesOf(groups);
+  const page = Math.min(Math.max(1, search.page ?? 1), Math.max(1, pages.length));
+  const rows = pages[page - 1] ?? [];
+  const shown = groups.reduce((sum, g) => sum + g.requirements.length, 0);
+  const sections = new Map(groups.map(g => [g.feature.id, g.feature.design ? designSectionsOf(g.feature.design.body) : new Map<string, string>()]));
+  const designOf = (row: FeatureRow) => sections.get(row.feature.id)?.get(row.requirement?.id ?? '');
+  const open = (row: FeatureRow) => {
+    const requirement = row.kind === 'requirement' ? row.requirement!.id : undefined;
+    void navigate({ to: '/features/$featureId', params: { featureId: row.feature.id },
+      search: { ...carried, ...(requirement ? { selected: requirement, tab: 'requirements' } : {}) }, ...(requirement ? { hash: requirement } : {}) });
+  };
+  const columns: TableColumn<FeatureRow>[] = [
+    // One column carries both kinds of row: a feature names the group and its requirements sit under it, indented.
+    // A design is the norm here, so only its absence is marked, beside the feature it belongs to rather than in a
+    // column whose cells would otherwise all be empty.
+    { key: 'title', header: t('features.column.feature'), sortable: true, width: proportional(1, { minWidth: 200 }), renderCell: row => row.kind === 'feature'
+      ? <HStack gap={3} className={styles.featureTitleRow}>
+        <Link to="/features/$featureId" params={{ featureId: row.feature.id }} search={carried} className={styles.featureTitle}>{row.feature.title}</Link>
+        {!row.feature.design && <Token label={t('features.noDesignMark')} color="yellow" size="sm"/>}
+        {row.feature.description && <Text type="supporting" color="secondary" className={`${styles.featureDescription} ${styles.oneLine}`}>{row.feature.description.replace(/[#*_`]/g, '').replace(/\s+/g, ' ').trim()}</Text>}
+      </HStack>
+      : row.kind === 'more'
+        ? <Link to="/features/$featureId" params={{ featureId: row.feature.id }} search={carried} className={styles.requirementMore}>{t('features.moreRequirements', { count: row.hidden! })}</Link>
+        : <HStack gap={3} className={styles.requirementRow}>
+          <Text type="supporting" color="secondary" className={styles.requirementNumber}>{String(row.number!).padStart(2, '0')}</Text>
+          <Link to="/features/$featureId" params={{ featureId: row.feature.id }} search={{ ...carried, selected: row.requirement!.id, tab: 'requirements' }} hash={row.requirement!.id} className={styles.requirementLink}>{row.requirement!.title}</Link>
+          {designOf(row) && <Link to="/features/$featureId" params={{ featureId: row.feature.id }} search={{ ...carried, selected: row.requirement!.id, tab: 'design' }} hash={designOf(row)!} className={styles.requirementDesignLink}>{t('features.designMark')}</Link>}
+        </HStack> },
     // The count with a bar of its share of the largest feature: the number answers "how many", the bar "how big is
     // this one next to the rest" without reading every row.
-    { key: 'requirements', header: t('features.column.requirements'), width: pixel(mobile ? 64 : 128), align: 'end', renderCell: f => <HStack gap={3} className={styles.countCell}>
-      <Text>{f.requirements.length}</Text>
-      {!mobile && <ProgressBar label={t('features.requirementShare', { title: f.title })} isLabelHidden value={f.requirements.length} max={mostRequirements} variant="accent"/>}
+    { key: 'requirements', header: t('features.column.requirements'), sortable: true, width: pixel(mobile ? 64 : 128), align: 'end', renderCell: row => row.kind !== 'feature' ? null : <HStack gap={3} className={styles.countCell}>
+      <Text>{row.feature.requirements.length}</Text>
+      {!mobile && <ProgressBar label={t('features.requirementShare', { title: row.feature.title })} isLabelHidden value={row.feature.requirements.length} max={mostRequirements} variant="accent"/>}
     </HStack> },
   ];
-  columns.push({ key: 'contributors', header: t('features.column.contributors'), width: pixel(mobile ? 88 : 120), renderCell: f => <Contributors people={f.contributors}/> });
-  if (!mobile) columns.push({ key: 'updatedAt', header: t('common.recentChange'), width: pixel(110), align: 'end', renderCell: f => f.updatedAt ? <Timestamp value={f.updatedAt} format="relative"/> : <Text type="supporting" color="secondary">{t('common.inProgress')}</Text> });
-  const interaction: TablePlugin<SpecFeature> = { transformBodyRow: (props, item) => ({ ...props, htmlProps: { ...props.htmlProps, tabIndex: 0,
-    // Links inside the row (title, contributor avatars) navigate on their own; only bare surface clicks open the feature.
+  columns.push({ key: 'contributors', header: t('features.column.contributors'), width: pixel(mobile ? 88 : 120), renderCell: row => row.kind !== 'feature' ? null : <Contributors people={row.feature.contributors}/> });
+  if (!mobile) columns.push({ key: 'updatedAt', header: t('common.recentChange'), sortable: true, width: pixel(110), align: 'end', renderCell: row => row.kind !== 'feature' ? null : row.feature.updatedAt ? <Timestamp value={row.feature.updatedAt} format="relative"/> : <Text type="supporting" color="secondary">{t('common.inProgress')}</Text> });
+  const sorting = useTableSortable<FeatureRow, SortKey>({ sort: [{ sortKey: key, direction }], allowUnsortedState: false,
+    // A column the reader has just reached opens the way that column is normally read, not always ascending.
+    onSortChange: next => { const entry = next[0]; if (!entry) return;
+      const way = entry.sortKey === key ? entry.direction : opens[entry.sortKey];
+      change({ ...search, sort: entry.sortKey === 'updatedAt' ? undefined : entry.sortKey, dir: way === opens[entry.sortKey] ? undefined : way === 'ascending' ? 'asc' : 'desc', page: undefined }); } });
+  const interaction: TablePlugin<FeatureRow> = { transformBodyRow: (props, item) => ({ ...props, htmlProps: { ...props.htmlProps, tabIndex: 0, 'data-row': item.kind,
+    // Links inside the row (title, contributor avatars) navigate on their own; only bare surface clicks open it.
     onClick: (event: { target: EventTarget | null }) => { if (!(event.target as HTMLElement | null)?.closest('a, button')) open(item); }, onKeyDown: event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); open(item); } } } }) };
-  if (!filtered.length) return <PageState kind={features.length ? 'search' : 'empty'} title={t('features.emptyTitle')} description={features.length ? t('features.changeFilters') : t('features.emptyDescription')}/>;
+  if (!groups.length) return <PageState kind={features.length ? 'search' : 'empty'} title={t('features.emptyTitle')} description={features.length ? t('features.changeFilters') : t('features.emptyDescription')}/>;
   return <VStack gap={3} className={styles.featureTable}>
-    <Text type="supporting" color="secondary">{t('features.count', { count: filtered.length })}{filtered.length < features.length ? t('features.ofTotal', { total: features.length }) : ''}</Text>
-    <Table data={filtered} idKey="id" columns={columns} plugins={{ interaction }} density="compact" dividers="rows" hasHover textOverflow="truncate"/>
+    <Text type="supporting" color="secondary">{t('features.count', { count: groups.length })}{groups.length < features.length ? t('features.ofTotal', { total: features.length }) : ''} · {t('features.requirementCount', { count: shown })} · {t('features.countNote')}</Text>
+    <Table data={rows} idKey="id" columns={columns} plugins={{ sorting, interaction }} density="compact" dividers="rows" hasHover textOverflow="truncate"/>
+    {pages.length > 1 && <VStack gap={0} className={styles.featurePager}><Pagination page={page} totalPages={pages.length} onChange={(next: number) => change({ ...search, page: next === 1 ? undefined : next })}/></VStack>}
   </VStack>;
 }
 
 function FeatureDetail({ feature: selected, features, search, change }: { feature: SpecFeature; features: SpecFeature[]; search: ProductSearch; change: (s: ProductSearch) => void }) {
   const tab = search.tab === 'design' ? 'design' : 'requirements';
+  const designSections = selected.design ? designSectionsOf(selected.design.body) : new Map<string, string>();
+  // Where the reader was sent: the requirement itself, or the design section that explains it.
+  const target = search.selected ? (tab === 'design' ? designSections.get(search.selected) : search.selected) : undefined;
+  // The fragment of an address typed or shared from outside is read before this page has drawn the section it
+  // names, so the browser has nothing to scroll to. Router navigation inside the app already lands on it.
+  useEffect(() => { if (target) document.getElementById(target)?.scrollIntoView({ block: 'start' }); }, [target, tab]);
   return <VStack as="article" aria-label={t('features.detail')} gap={0} className={styles.featureDetail}>
     <Link to="/features" search={{ q: search.q, design: search.design, author: search.author, sort: search.sort }} className={styles.featureBack}>{t('features.back')}</Link>
     <VStack gap={4} className={styles.documentHeading}>
@@ -103,23 +149,30 @@ function FeatureDetail({ feature: selected, features, search, change }: { featur
       <Tab value="design" label={t('features.tab.design')} panelId="feature-design"/>
     </TabList>
     {tab === 'design' ? <VStack id="feature-design" role="tabpanel" aria-label={t('features.tab.design')} gap={4} className={styles.designPanel}>
-      {selected.design ? <DesignDocument design={selected.design} path={designPathOf(selected.path)} features={features}/> : <PageState isCompact title={t('features.noDesignTitle')} description={t('features.noDesignDescription')}/>}
+      {selected.design ? <DesignDocument design={selected.design} path={designPathOf(selected.path)} features={features} current={search.selected}/> : <PageState isCompact title={t('features.noDesignTitle')} description={t('features.noDesignDescription')}/>}
     </VStack> : <VStack id="feature-requirements" role="tabpanel" aria-label={t('features.tab.requirements')} gap={0}>
       <VStack as="nav" aria-label={t('features.index')} gap={2} className={styles.documentIndex}>
         <Text type="supporting" color="secondary">{t('features.indexTitle')}</Text>
         {selected.requirements.map((r, index) => <a key={r.id} href={`#${r.id}`}>{String(index + 1).padStart(2, '0')}　{r.title}</a>)}
       </VStack>
-      {selected.requirements.map((r, index) => (
-        <VStack key={r.id} id={r.id} gap={4} className={`${styles.requirementSection} ${r.id === search.selected ? styles.highlight : ''}`}>
+      {selected.requirements.map((r, index) => {
+        const isCurrent = r.id === search.selected;
+        const section = designSections.get(r.id);
+        return <VStack key={r.id} id={r.id} gap={4} className={styles.requirementSection} {...(isCurrent ? { 'aria-current': 'location' as const } : {})}>
           <VStack gap={2}>
             <Text type="supporting" color="secondary">{t('features.requirementNumber', { number: String(index + 1).padStart(2, '0') })}</Text>
-            <Heading level={3}>{r.title}</Heading>
+            {/* The one the reader was sent to is struck through with a highlighter, as the design's section is. */}
+            <Heading level={3}>{isCurrent ? <mark className={styles.currentMark}>{r.title}</mark> : r.title}</Heading>
             <Text type="supporting" color="secondary">{r.id}</Text>
           </VStack>
           <DocumentBody headingLevelStart={4} path={selected.path}>{r.body.replace(/\r?\n([ \t]+)(기대 동작:)/g, '  \n$1$2')}</DocumentBody>
-          <Link to="/activity" search={{ feature: selected.id, q: r.id }}>{t('features.requirementHistory')}</Link>
-        </VStack>
-      ))}
+          <HStack gap={4} wrap="wrap" className={styles.entryLine}>
+            {/* The design names the requirements a section explains; this is that link read the other way round. */}
+            {section && <Link to="/features/$featureId" params={{ featureId: selected.id }} search={{ ...search, tab: 'design', selected: r.id }} hash={section}>{t('features.requirementDesign')}</Link>}
+            <Link to="/activity" search={{ feature: selected.id, q: r.id }}>{t('features.requirementHistory')}</Link>
+          </HStack>
+        </VStack>;
+      })}
       {!selected.requirements.length && <Text>{t('features.noRequirements')}</Text>}
     </VStack>}
   </VStack>;

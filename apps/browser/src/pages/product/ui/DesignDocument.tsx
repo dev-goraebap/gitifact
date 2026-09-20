@@ -6,6 +6,7 @@ import { VStack } from '@astryxdesign/core/VStack';
 import { HStack } from '@astryxdesign/core/HStack';
 import { List, ListItem } from '@astryxdesign/core/List';
 import styles from './product.module.css';
+import { designSectionsOf } from '../model/design-sections';
 import { t } from '../../../shared/i18n';
 
 /** Rows, not cards, for the documents a design drew on: each is a link (wiki page in the app, URL in a new tab) with its note beneath. */
@@ -24,8 +25,13 @@ function DesignSources({ sources, path }: { sources: DesignSource[]; path: strin
 }
 const hostOf = (href: string) => { try { return new URL(href).hostname; } catch { return href; } };
 
-/** `path` is the design file's repository path; its relative links and source paths start from that folder. */
-export function DesignDocument({design, path, features}: {design: {title: string; body: string; sources?: DesignSource[] | undefined}; path: string; features: SpecFeature[]}) {
+/**
+ * `path` is the design file's repository path; its relative links and source paths start from that folder.
+ * `current` is the requirement the reader arrived for: the section that explains it is marked, the way the
+ * requirements tab marks the requirement itself, so the page says which part of the design was meant.
+ */
+export function DesignDocument({design, path, features, current}: {design: {title: string; body: string; sources?: DesignSource[] | undefined}; path: string; features: SpecFeature[]; current?: string | undefined}) {
+  const section = current ? designSectionsOf(design.body).get(current) : undefined;
   let fence: {char: string; size: number} | undefined;
   const body = design.body.split('\n').map(line => {
     if (fence) { if (new RegExp(`^ {0,3}${fence.char}{${fence.size},}\\s*$`).test(line)) fence = undefined; return line; }
@@ -41,6 +47,6 @@ export function DesignDocument({design, path, features}: {design: {title: string
   return <VStack gap={4}>
     <Heading level={3}>{design.title}</Heading>
     {!!design.sources?.length && <DesignSources sources={design.sources} path={path}/>}
-    <DocumentBody headingLevelStart={4} path={path}>{body}</DocumentBody>
+    <DocumentBody headingLevelStart={4} path={path} currentHeading={section}>{body}</DocumentBody>
   </VStack>;
 }
