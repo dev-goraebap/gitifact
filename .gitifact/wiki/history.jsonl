@@ -16,3 +16,4 @@
 {"id":"H-s4qhz7yiwc","requirements":[],"documents":["W-dmcvdbs53b"],"reason":"0.5.0에서 예고한 대로 deprecated였던 prepare·verify·commit-plan·commit-apply를 0.6.0에서 삭제해, CLI 규칙의 해당 문장을 삭제 사실로 바꿨다."}
 {"id":"H-prguri6atp","requirements":[],"documents":["W-xt2mfa2odx"],"reason":"워드마크 폭 128px, 높이가 같은 개요 카드, 그리고 CSS 변수를 읽지 못하는 라이브러리에는 토큰 선언값이 아니라 계산된 색을 넘긴다는 규칙을 적었다."}
 {"id":"H-aznlt4eays","requirements":[],"documents":["W-dmcvdbs53b","W-onjctb4nxj","W-xt2mfa2odx"],"reason":"이력 색인과 서버 경로 표 구조, 목록에서 maxLines 대신 CSS로 자르는 규칙을 브라우저·CLI 규칙에 적고, 색인 위치(.git/gitifact)와 범위, 프레임워크를 넣지 않은 이유를 결정 0009로 남겼다."}
+{"id":"H-rinswec56g","requirements":[],"documents":["W-xt2mfa2odx"],"reason":"활동 타임라인과 제품 개요의 새 구성을 브라우저 규칙에 적었다. 한 항목이 커밋 하나이고 이유를 한 번만 적는 것, 묶음을 나누는 선 대신 간격을 쓰는 것, 기록 줄의 칸과 좁은 폭에서의 들여쓰기, 개요가 같은 타임라인을 쓰며 커밋마다 10개까지 그리는 것과 요약이 오기 전의 골격이다."}

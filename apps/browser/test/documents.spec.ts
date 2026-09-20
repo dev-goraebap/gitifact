@@ -61,7 +61,7 @@ test('wiki changes appear in the activity feed with their kind and open the curr
     after: { id: 'W-bbbbbbbbbb', title: '레이아웃 지침', specId: 'wiki', path: '.gitifact/wiki/frontend/layout.md' }, reasons: ['폴더를 정리했습니다.'] }] };
   await serve(page, data);
   await page.goto('/activity?document=wiki');
-  const rows = page.getByRole('list', { name: '활동 목록' }).getByRole('listitem'); await expect(rows).toHaveCount(1);
+  const rows = page.getByRole('list', { name: '이 이유로 바뀐 기록' }).getByRole('listitem'); await expect(rows).toHaveCount(1);
   await expect(rows.first()).toContainText('위키 페이지');
   await expect(rows.first()).toContainText('frontend/layout.md');
   await rows.first().getByRole('link', { name: '레이아웃 지침' }).click();
@@ -83,12 +83,15 @@ test('the product page leads with what changed and why, and does not treat the w
   await expect(article.getByLabel('변경 종류 범례').getByRole('listitem').first()).toHaveText('추가1 · 100%');
   await expect(article.getByLabel('참여자별 커밋 범례').getByRole('listitem').first()).toHaveText('Fixture3 · 75%');
   // The recorded reason is the subject of the section below them, next to the record it explains.
-  const reasons = article.getByLabel('최근 변경 이력');
+  const reasons = article.getByLabel('최신 활동');
   await expect(reasons).toContainText('사용자가 검색을 요청했습니다.');
   await expect(reasons).toContainText('검색어 입력');
   await reasons.getByRole('link', { name: '검색어 입력' }).click();
   await expect(page).toHaveURL(/\/activity\?selected=/);
   await page.goBack();
+  // The overview draws the activity screen's own timeline, so its parts are here too.
+  await expect(reasons.getByRole('list', { name: '활동 목록' })).toHaveCount(1);
+  await expect(reasons.getByRole('list', { name: '이 이유로 바뀐 기록' })).toHaveCount(1);
   // One way into the activity timeline, not two.
   await expect(article.getByRole('link', { name: '활동 →' })).toHaveCount(1);
   // The README is the wiki's policy: the dashboard neither shows it nor links to it as a product document.
@@ -196,3 +199,42 @@ for (const [url, shape] of [['/wiki', 'folder'], ['/wiki/W-bbbbbbbbbb', 'page']]
     expect(Math.round(tree.width)).toBe(Math.round(real.width));
   });
 }
+
+
+test('a commit that touched a great many records shows ten of them and carries on to the activity', async ({ page }) => {
+  await mockApi(page);
+  const event = specs.events[0]!;
+  // One introducing commit with 25 records; the server sends the first twelve and the whole count.
+  const data = { ...structuredClone(specs), events: Array.from({ length: 25 }, (_, i) =>
+    ({ ...event, key: specs.head + ':R-' + 'abcdefghij'.slice(0, 8) + 'abcdefghijklmnopqrstuvwxyz234567'[i >> 5] + 'abcdefghijklmnopqrstuvwxyz234567'[i & 31],
+      after: { ...event.after!, title: '도입 기록 ' + i } })) };
+  await serve(page, data);
+  await page.goto('/product');
+  const activity = page.getByRole('article', { name: '제품 개요' }).getByLabel('최신 활동');
+  await expect(activity.getByRole('list', { name: '이 이유로 바뀐 기록' }).getByRole('listitem')).toHaveCount(10);
+  // The count names every record of the commit, and the link accounts for the ones not drawn.
+  await expect(activity).toContainText('기록 25건');
+  const more = activity.getByRole('link', { name: '기록 15건 더 →' });
+  await expect(more).toHaveCount(1);
+  await more.click();
+  await expect(page).toHaveURL(/\/activity/);
+  // The activity screen itself draws them all; nothing is capped there.
+  await expect(page.getByRole('list', { name: '이 이유로 바뀐 기록' }).getByRole('listitem')).toHaveCount(25);
+});
+
+test('while history is still being counted the overview says nothing about zero or emptiness', async ({ page }) => {
+  await mockApi(page);
+  let release!: () => void;
+  const pending = new Promise<void>(resolve => { release = resolve; });
+  await page.route(url => url.pathname === '/api/v1/history/summary', async route => { await pending; await route.fallback(); });
+  await page.goto('/product');
+  const article = page.getByRole('article', { name: '제품 개요' });
+  await expect(article.getByRole('heading', { name: '최신 활동' })).toBeVisible();
+  // The count and the two empty states belong to an answer that has not arrived.
+  await expect(article).not.toContainText('커밋된 명세 활동이 아직 없습니다.');
+  await expect(article).not.toContainText('전체 활동 0건');
+  await expect(article).not.toContainText('아직 자료가 없습니다.');
+  release();
+  await expect(article.getByLabel('최신 활동').getByRole('list', { name: '활동 목록' })).toBeVisible();
+  await expect(article).toContainText('전체 활동 1건');
+});

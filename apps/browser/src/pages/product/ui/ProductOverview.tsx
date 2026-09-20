@@ -9,7 +9,9 @@ import { Text } from '@astryxdesign/core/Text';
 import { Token } from '@astryxdesign/core/Token';
 import { Timestamp } from '@astryxdesign/core/Timestamp';
 import { Link } from '@tanstack/react-router';
-import { Person } from './Person';
+import { Skeleton } from '@astryxdesign/core/Skeleton';
+import { ActivityTimeline } from './ActivityTimeline';
+import { TimelineSkeleton } from './ViewSkeleton';
 import { statusOptions, summaryOptions } from '../../../entities/project';
 import styles from './product.module.css';
 import { t } from '../../../shared/i18n';
@@ -24,6 +26,8 @@ const changeNames: Record<ChangeType, string> = { created: t('change.created'), 
 const changeOrder: ChangeType[] = ['created', 'modified', 'moved', 'deleted'];
 const kindNames: Record<NonNullable<SpecEvent['kind']>, string> = { requirement: t('kind.requirement'), design: t('kind.design'), wiki: t('kind.wiki') };
 const day = 86_400_000;
+// A commit that introduced the project can hold hundreds of records; the overview shows this many and links on.
+const RECENT_RECORDS = 10;
 
 type Segment = { label: string; value: number; color: string };
 
@@ -81,36 +85,6 @@ function Pulse({ pulse, total }: { pulse: BrowserHistorySummaryV1['pulse']; tota
 }
 
 /**
- * One commit: the reason it was made, then the records it touched. Grouping by commit is what keeps the reason
- * readable — the same sentence is recorded against every record the commit changed, and listing it per record
- * printed the same paragraph several times in a row.
- */
-function CommitGroup({ events, count, titleOf }: { events: SpecEvent[]; count: number; titleOf: (event: SpecEvent) => string }) {
-  const first = events[0]!;
-  const reasons = [...new Set(events.flatMap(e => e.reasons))];
-  return <VStack as="li" gap={3} className={styles.changeRow}>
-    <HStack gap={3} wrap="wrap" className={styles.changeHead}>
-      <Person name={first.author} email={first.email}/>
-      <Timestamp value={first.date} format="relative"/>
-    </HStack>
-    {reasons.length
-      // One reason per commit: a commit that touched several records records the same intent against each of them,
-      // and counting the rest here asked the reader to wonder what was hidden. The activity screen has them all.
-      ? <Text className={`${styles.reason} ${styles.twoLines}`}>{reasons[0]}</Text>
-      : <Text color="secondary" className={styles.reason}>{t('activity.noReason')}</Text>}
-    <HStack as="ul" gap={3} wrap="wrap" className={styles.recordList}>
-      {events.map(e => <HStack as="li" key={e.key} gap={2} className={styles.record}>
-        <Token label={e.types.map(type => changeNames[type]).join('·')} size="sm"/>
-        <Text type="supporting" color="secondary">{kindNames[e.kind]}</Text>
-        <Link to="/activity" search={{ selected: e.key }} className={styles.changeTitle}>{titleOf(e)}</Link>
-      </HStack>)}
-      {/* A commit that created hundreds of records lists a few; the activity shows all of them. */}
-      {count > events.length && <li><Link to="/activity">{t('overview.moreRecords', { count: count - events.length })}</Link></li>}
-    </HStack>
-  </VStack>;
-}
-
-/**
  * The overview opens with the project and its size on one line, then the two bars that show how the work is shaped
  * over all of history and who did it, then the reasons behind the last commits — what the product records and what a returning
  * reader comes back for. The wiki README is the wiki's policy, not a product document, so the dashboard neither
@@ -118,19 +92,23 @@ function CommitGroup({ events, count, titleOf }: { events: SpecEvent[]; count: n
  */
 export function ProductOverview({ session, head, features, documents, contributors, working }: { session: BrowserSessionV2; head: string | null; features: SpecFeature[]; documents: SpecDocument[]; contributors: Contributor[]; working: boolean }) {
   // Counts over all of history and its newest commits, from the server's index; nothing before the first commit.
-  const summary = useQuery({ ...summaryOptions(session, head ?? ''), enabled: !!head }).data;
+  const history = useQuery({ ...summaryOptions(session, head ?? ''), enabled: !!head });
+  const summary = history.data;
+  // History is its own query, so it can still be on its way after the checkout has drawn the page. Until it
+  // answers there is no count yet — saying zero, or that nothing has been committed, states the opposite.
+  const counting = !!head && !summary && !history.error;
   const status = useQuery(statusOptions(session));
   const project = status.data?.repository.rootPath?.split(/[\/]/).filter(Boolean).at(-1);
   const requirements = features.reduce((sum, f) => sum + f.requirements.length, 0);
   const changes: Segment[] = changeOrder.map((type, i) => ({ label: changeNames[type], value: summary?.byType[type] ?? 0, color: series[i]! }));
   const byCommits = [...contributors].sort((a, b) => b.commits - a.commits || a.name.localeCompare(b.name));
   const commitShare: Segment[] = [...byCommits.slice(0, 3).map((p, i) => ({ label: p.name, value: p.commits, color: series[i]! })), ...(byCommits.length > 3 ? [{ label: t('overview.otherContributors', { count: byCommits.length - 3 }), value: byCommits.slice(3).reduce((sum, p) => sum + p.commits, 0), color: tail }] : [])];
-  // Three commits, each showing one reason, keep the section to about one screen; the rest of the record is one
-  // click away in the activity timeline.
+  // The newest commits, drawn by the activity screen's own timeline so the two read alike. A commit that created
+  // hundreds of records at once would bury the page, so each shows RECENT_RECORDS of them and links on for the rest.
   const groups = summary?.recent ?? [];
   const newest = groups[0]?.events[0];
-  const specOf = (e: SpecEvent) => e.kind === 'wiki' ? documents.find(d => d.id === e.id) : features.find(f => f.id === e.id || f.requirements.some(r => r.id === e.id));
-  const titleOf = (e: SpecEvent) => e.after?.title ?? e.before?.title ?? specOf(e)?.title ?? e.id;
+  const recent = groups.flatMap(g => g.events.slice(0, RECENT_RECORDS));
+  const hidden = Object.fromEntries(groups.map(g => [g.commit, Math.max(0, g.count - Math.min(g.events.length, RECENT_RECORDS))]));
   const fact = (label: string, value: number) => <HStack gap={2} as="li" className={styles.fact}>
     <Text weight="semibold">{value}</Text><Text color="secondary">{label}</Text>
   </HStack>;
@@ -156,8 +134,8 @@ export function ProductOverview({ session, head, features, documents, contributo
     {/* The two cards stand side by side, so they take the taller one's height; a short legend no longer leaves one card hanging. */}
     <Grid columns={{ minWidth: 300, repeat: 'fit', max: 2 }} gap={4} align="stretch">
       <Card padding={5}><VStack gap={4}>
-        <HStack gap={3} className={styles.barRowHead}><Heading level={3}>{t('overview.recentChangeTypes')}</Heading><Text type="supporting" color="secondary">{t('overview.totalEvents', { count: summary?.total ?? 0 })}</Text></HStack>
-        <StackedBar segments={changes} label={t('overview.recentChangeTypes')}/>
+        <HStack gap={3} className={styles.barRowHead}><Heading level={3}>{t('overview.recentChangeTypes')}</Heading>{!counting && <Text type="supporting" color="secondary">{t('overview.totalEvents', { count: summary?.total ?? 0 })}</Text>}</HStack>
+        {counting ? <Skeleton width="100%" height="var(--spacing-6)" radius={2}/> : <StackedBar segments={changes} label={t('overview.recentChangeTypes')}/>}
       </VStack></Card>
       <Card padding={5}><VStack gap={4}>
         <HStack gap={3} className={styles.barRowHead}><Heading level={3}>{t('overview.commitsByContributor')}</Heading><Link to="/contributors">{t('overview.contributorsLink')}</Link></HStack>
@@ -167,14 +145,15 @@ export function ProductOverview({ session, head, features, documents, contributo
 
     <VStack gap={4} className={styles.lead}>
       <HStack gap={3} className={styles.barRowHead}>
-        <Heading level={2}>{t('overview.changeReasons')}</Heading>
+        <Heading level={2}>{t('overview.recentActivity')}</Heading>
         <Link to="/activity">{t('overview.activityLink')}</Link>
       </HStack>
-      {groups.length
-        ? <VStack as="ul" gap={0} className={styles.changeList} aria-label={t('overview.changeReasons')}>
-          {groups.map(group => <CommitGroup key={group.commit} events={group.events} count={group.count} titleOf={titleOf}/>)}
-        </VStack>
-        : <Text color="secondary">{t('overview.noActivity')}</Text>}
+      {counting ? <TimelineSkeleton isPlain/>
+        : recent.length
+          ? <VStack gap={0} aria-label={t('overview.recentActivity')}>
+            <ActivityTimeline events={recent} features={features} selected={undefined} hidden={hidden}/>
+          </VStack>
+          : <Text color="secondary">{t('overview.noActivity')}</Text>}
     </VStack>
   </VStack>;
 }

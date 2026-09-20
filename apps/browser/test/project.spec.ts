@@ -107,17 +107,47 @@ test('history rows preview change reasons and mark missing ones', async ({page})
  changeBodies[specs.head+':R-cccccccccc']={before:null,after:{...event.after!,id:'R-cccccccccc',title:'이유 없는 변경',body:'본문만 있습니다.'}};
  await serve(page, data);
  await page.goto('/activity');
- const rows=page.getByRole('list',{name:'활동 목록'}).getByRole('listitem');await expect(rows).toHaveCount(2);
- await expect(rows.nth(0)).toContainText('정렬을 요청했습니다. · 응답 순서를 고정합니다.');
- await expect(rows.nth(0)).not.toContainText('정렬 본문입니다.');
- await expect(rows.nth(1)).toContainText('변경 이유가 기록되지 않았습니다.');
- await rows.nth(0).getByRole('link',{name:'검색 결과 정렬'}).click();
+ // Both changes ride on one commit, so the timeline has one entry and each recorded reason heads its own records.
+ const commits=page.getByRole('list',{name:'활동 목록'}).locator('> li');await expect(commits).toHaveCount(1);
+ await expect(commits.first()).toContainText('기록 2건');
+ const reasons=commits.first().getByRole('list',{name:'이 이유로 바뀐 기록'});await expect(reasons).toHaveCount(2);
+ await expect(commits.first()).toContainText('정렬을 요청했습니다.');
+ await expect(commits.first()).toContainText('응답 순서를 고정합니다.');
+ await expect(commits.first()).not.toContainText('정렬 본문입니다.');
+ await expect(commits.first()).toContainText('변경 이유가 기록되지 않았습니다.');
+ await reasons.nth(0).getByRole('link',{name:'검색 결과 정렬'}).click();
  const pane=page.getByRole('dialog',{name:'검색 결과 정렬'});
  await expect(pane.getByRole('heading',{name:'변경 내용',exact:true})).toBeVisible();
  await expect(pane).toContainText('정렬 본문입니다.');
  const reveal=pane.getByRole('separator',{name:'변경 전 드러내기'});await expect(reveal).toBeVisible();
  const before=pane.getByLabel('변경 전',{exact:true});expect(await before.evaluate(el=>getComputedStyle(el).clipPath)).toContain('100%');
  await pane.getByRole('button',{name:'변경 전',exact:true}).click();await expect.poll(async()=>before.evaluate(el=>getComputedStyle(el).clipPath)).toContain('0px');
+});
+
+test('a reason is written once over the records it explains, and each day is marked once', async ({page}) => {
+ await mockApi(page);
+ const event=specs.events[0]!;
+ const shared='한 번만 적히는 이유입니다.';
+ const record=(commit:string,date:string,id:string,title:string,reason:string)=>
+  ({...event,commit,date,key:commit+':'+id,id,after:{...event.after!,id,title},reasons:[reason]});
+ const older='d'.repeat(40);
+ const data={...structuredClone(specs),events:[
+  record(specs.head!,'2026-09-14T00:00:00Z','R-1111111111','첫 기록',shared),
+  record(specs.head!,'2026-09-14T00:00:00Z','R-2222222222','둘째 기록',shared),
+  record(specs.head!,'2026-09-14T00:00:00Z','R-3333333333','셋째 기록',shared),
+  record(older,'2026-09-12T00:00:00Z','R-4444444444','앞선 기록','다른 날의 이유입니다.'),
+ ]};
+ await serve(page, data);
+ await page.goto('/activity');
+ const commits=page.getByRole('list',{name:'활동 목록'}).locator('> li');await expect(commits).toHaveCount(2);
+ // The same sentence is stored against all three records. Printing it per record is what made the timeline unreadable.
+ await expect(page.getByText(shared,{exact:true})).toHaveCount(1);
+ await expect(commits.first().getByRole('list',{name:'이 이유로 바뀐 기록'}).getByRole('listitem')).toHaveCount(3);
+ await expect(commits.first()).toContainText('기록 3건');
+ // Each calendar day is named where it turns over, and a commit alone on its day carries no count.
+ await expect(commits.first()).toContainText('2026년 9월 14일');
+ await expect(commits.nth(1)).toContainText('2026년 9월 12일');
+ await expect(commits.nth(1)).not.toContainText('기록 1건');
 });
 
 test('a list row carries no body; opening it reads the change once and shows its text', async ({page}) => {

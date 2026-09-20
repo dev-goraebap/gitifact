@@ -28,7 +28,8 @@ export function HistoryView({features,search,change,session,head}: {features:Spe
  const close=()=>change({...search,selected:undefined});
  const drawer=search.selected&&<ActivityDetailDialog key={search.selected} changeKey={search.selected} listed={selected} features={features} session={session} close={close}/>;
  if(!head) return <VStack gap={0}><PageState kind="empty" title={t('history.emptyTitle')} description={t('history.emptyDescription')}/>{drawer}</VStack>;
- if(query.isPending) return <VStack gap={0} padding={4}><TimelineSkeleton/></VStack>;
+ // No padding of its own: the list it stands in for sits directly in the content, and a gap here shifted the swap.
+ if(query.isPending) return <VStack gap={0}><TimelineSkeleton/></VStack>;
  if(query.error&&!first) return <RequestState error={query.error} retry={()=>{void query.refetch();}}/>;
  return <VStack gap={0}>
   {!!events.length&&<ActivityTimeline events={events} features={features} selected={selected}/>}

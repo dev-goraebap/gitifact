@@ -1,60 +1,20 @@
-import { memo } from 'react';
 import type { SpecEvent, SpecFeature } from '@gitifact/contracts';
 import { VStack } from '@astryxdesign/core/VStack';
-import { HStack } from '@astryxdesign/core/HStack';
-import { Text } from '@astryxdesign/core/Text';
-import { Token } from '@astryxdesign/core/Token';
-import { Timestamp } from '@astryxdesign/core/Timestamp';
-import { Link } from '@tanstack/react-router';
-import { Person } from './Person';
+import { groupCommits } from '../model/activity-groups';
+import { TimelineCommit } from './TimelineCommit';
 import styles from './product.module.css';
 import { t } from '../../../shared/i18n';
-const names = {created:t('change.created'),modified:t('change.modified'),deleted:t('change.deleted'),moved:t('change.moved')};
-const colors = {created:'green',modified:'blue',deleted:'red',moved:'purple'} as const;
-const kinds = {requirement:t('kind.requirement'),design:t('kind.design'),wiki:t('kind.wiki')};
 
 /**
- * Vertical timeline: one rail on the left, each entry's avatar sits on the rail.
- * One-line text is cut by CSS, not by Text's maxLines: maxLines measures every element to decide on a tooltip, which
- * forces a layout per row, and a list of 334 rows took 2.7 s to draw again when the reader came back to it.
+ * Vertical timeline: one rail on the left, a marker where the date turns over, and one node per commit.
+ * The commit is the entry, not the record. A reason is recorded against every record the commit changed, so a list
+ * of records printed the same paragraph once per record — 209 times over this repository's 81 reasons. Here the
+ * reason is written once and the records it explains sit under it.
  */
-export function ActivityTimeline({events,features,selected}: {events:SpecEvent[];features:SpecFeature[];selected:SpecEvent|undefined}) {
+export function ActivityTimeline({events,features,selected,hidden}: {events:SpecEvent[];features:SpecFeature[];selected:SpecEvent|undefined;hidden?:Record<string,number>}) {
  return <VStack as="ol" aria-label={t('activity.list')} gap={0} className={styles.timeline}>
-  {events.map((e,index)=>{
-   const spec=e.after??e.before;
-   return <TimelineEntry key={e.key} event={e} feature={features.find(f=>f.id===spec?.specId)}
-    continued={index>0&&events[index-1]!.commit===e.commit} current={selected?.key===e.key}/>;
-  })}
+  {groupCommits(events).map(group=>
+   <TimelineCommit key={group.commit} events={group.events} day={group.day} features={features} hidden={hidden?.[group.commit]??0}
+    selected={selected&&group.events.some(e=>e.key===selected.key)?selected.key:undefined}/>)}
  </VStack>;
 }
-
-/**
- * One entry. Its props are the event and feature objects the queries keep between renders, so "load more" draws the
- * fifty new entries and leaves the ones already on screen alone; before, every press drew the whole list again and
- * took longer the more had been loaded.
- */
-const TimelineEntry = memo(function TimelineEntry({event:e,feature,continued,current}: {event:SpecEvent;feature:SpecFeature|undefined;continued:boolean;current:boolean}) {
- const spec=e.after??e.before;
- const kind=e.types.includes('deleted')?'deleted':e.types.includes('modified')?'modified':e.types.includes('moved')?'moved':'created';
- return <HStack as="li" gap={4} className={`${styles.entry} ${continued?styles.entryContinued:''}`} aria-current={current?true:undefined}>
-  <VStack gap={0} className={styles.entryAvatar}><Person name={e.author} email={e.email} avatarOnly/></VStack>
-  <VStack gap={1} className={styles.entryBody}>
-   <HStack gap={3} className={styles.entryHead}>
-    <Text weight="semibold" className={styles.oneLine}>{e.author}</Text>
-    <Timestamp value={e.date} format="relative"/>
-   </HStack>
-   <HStack gap={2} wrap="wrap" className={styles.entryLine}>
-    <Token label={e.types.map(type=>names[type]).join(' · ')} color={colors[kind]}/>
-    <Text type="supporting" color="secondary">{kinds[e.kind]}</Text>
-    <Link to="/activity" search={s=>({...s,selected:e.key})} className={styles.entryTitle}>{spec?.title??e.id}</Link>
-    {feature&&<Text type="supporting" color="secondary">·</Text>}
-    {feature&&<Link to="/features/$featureId" params={{featureId:feature.id}} className={styles.entryFeature}>{feature.title}</Link>}
-    {e.kind==='wiki'&&e.after&&<><Text type="supporting" color="secondary">·</Text><Link to="/wiki/$documentId" params={{documentId:e.id}} className={styles.entryFeature}>{e.after.path.replace(/^\.gitifact\/wiki\//,'')}</Link></>}
-   </HStack>
-   <HStack gap={2} className={styles.entryLine}>
-    <Text type="code" color="secondary">{e.commit.slice(0,7)}</Text>
-    <Text type="supporting" color="secondary" className={styles.oneLine}>{e.reasons.length?e.reasons.join(' · '):t('activity.noReason')}</Text>
-   </HStack>
-  </VStack>
- </HStack>;
-});
