@@ -138,3 +138,10 @@ GITIFACT 메뉴에서 소개 다음에 `/getting-started`를 둔다. `pages/gett
 한국어·영어 원본은 `packages/intro/<lang>/getting-started.md`다. packages/intro의 공개 export를 shared/i18n이 가져와 localDocument로 제공한다. 소개와 같은 언어별 문서 방식으로 번들하므로 별도 HTTP 조회나 명세 저장소에 의존하지 않는다. 현재 CLI 도움말·내장 지침으로 확인한 사용 흐름을 한국어로 작성한 뒤 영어판을 만들었으며 npm README도 영어 원문과 일치시킨다. 입력 JSON의 상세 형식은 복제하지 않고 docs spec·commit으로 안내한다.
 
 메뉴 순서, 소개 링크, 키보드 이동, 직접 진입·새로고침과 모바일 두 테마를 검사한다. 명세가 없는 임시 Git 저장소에서도 실제 CLI 서버가 안내를 제공하는지 확인한다.
+
+## GitHub 저장소 바로가기
+<!-- gitifact-ref: R-aplhjskqow -->
+
+BrowserShell의 SideNav footer에서 버전 표시 옆에 GitHub 로고와 이름을 둔다. 기존 SvgIcon과 Hugeicons의 GithubIcon을 사용하고 외부 이미지를 가져오지 않는다. 링크는 고정된 제품 저장소 주소를 가리키며 target="_blank"와 rel="noopener noreferrer"로 새 탭에서 연다. 현재 체크아웃의 Git 원격 주소를 사용하지 않는다.
+
+모바일 탐색에서도 같은 footer를 사용한다. 링크는 세션 조회 성공 여부와 무관하게 표시하고 새 탭 안내 툴팁은 현재 표시 언어를 따른다.

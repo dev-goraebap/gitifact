@@ -40,8 +40,8 @@ export function SettingsPage() {
             <HStack gap={0}>
               <SegmentedControl label={t('settings.language')} value={language} onChange={value => setLanguage(value as LanguagePreference)}>
                 <SegmentedControlItem value="system" label={t('settings.language.system')} />
-                <SegmentedControlItem value="ko" label="한국어" />
                 <SegmentedControlItem value="en" label="English" />
+                <SegmentedControlItem value="ko" label="한국어" />
               </SegmentedControl>
             </HStack>
           </VStack>

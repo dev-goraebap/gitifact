@@ -1,5 +1,6 @@
 ## 0.7.0 - 2026-09-20
 ### Added
+- A GitHub link at the bottom of the sidebar opens the project repository in a new tab.
 - English and Korean in the browser and CLI. Choose a language in browser Settings or use the CLI's `--lang en` / `--lang ko` option. Unsupported environment languages fall back to English.
 - A Getting started page below About, covering setup, development, the wiki, viewing records, and CLI commands.
 ### Changed

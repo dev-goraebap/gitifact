@@ -276,5 +276,6 @@
   "documents.tree": "위키 트리",
   "documents.path": "현재 위치",
   "settings.language": "언어",
-  "settings.language.system": "브라우저 설정"
+  "settings.language.system": "브라우저 설정",
+  "shell.githubTooltip": "Gitifact GitHub 저장소 (새 탭)"
 }

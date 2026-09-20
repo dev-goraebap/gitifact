@@ -3,12 +3,15 @@ import { AppShell } from '@astryxdesign/core/AppShell';
 import { SideNav, SideNavItem, SideNavSection } from '@astryxdesign/core/SideNav';
 import { StatusDot } from '@astryxdesign/core/StatusDot';
 import { VStack } from '@astryxdesign/core/VStack';
+import { HStack } from '@astryxdesign/core/HStack';
+import { Button } from '@astryxdesign/core/Button';
 import { Link, Outlet, useNavigate, useRouterState } from '@tanstack/react-router';
 import { useWorkingChanges } from '../../../entities/project';
 import { HgiHistory } from '../../../shared/ui/icons/HgiHistory';
 import { HgiRequirement } from '../../../shared/ui/icons/HgiRequirement';
 import { HgiMembers } from '../../../shared/ui/icons/HgiMembers';
 import { HgiGit } from '../../../shared/ui/icons/HgiGit';
+import { HgiGithub } from '../../../shared/ui/icons/HgiGithub';
 import { HgiProduct } from '../../../shared/ui/icons/HgiProduct';
 import { HgiBook } from '../../../shared/ui/icons/HgiBook';
 import { HgiRocket } from '../../../shared/ui/icons/HgiRocket';
@@ -44,7 +47,12 @@ export function BrowserShell() {
         <SideNav
           resizable={{ defaultWidth: 240, minWidth: 200, maxWidth: 400, autoSaveId: 'gitifact-sidenav' }}
           header={<Link to="/product" className="gitifact-wordmark" aria-label={t('shell.home')} />}
-          footer={<VersionFooter />}
+          footer={<HStack gap={1} hAlign="between" vAlign="center">
+            <VersionFooter />
+            <Button label="GitHub" icon={<HgiGithub/>} variant="ghost" size="sm"
+              href="https://github.com/dev-goraebap/gitifact" target="_blank" rel="noopener noreferrer"
+              tooltip={t('shell.githubTooltip')} />
+          </HStack>}
         >
           <SideNavSection title="WORKSPACE">
             {destinations().map(([to, label, MenuIcon]) => (

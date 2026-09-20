@@ -346,3 +346,12 @@ Markdown 명세·변경 이유·Git 커밋 연결과 요구사항 이력·제품
 2026-09-15 준비 커밋 75db585까지 main을 푸시하고 `apps/cli`에서 Git 검사를 유지한 pnpm publish로 공개 게시했다. latest는 0.5.0, 라이선스는 MIT다. 모의 게시·실제 게시·레지스트리의 integrity는 모두 `sha512-hLeY9nUCHa1P6Eje+s7R4u4rWG7saPUK1sovRKBlZ8Ni9HlDSwA3izo1HHcWQEYfChqK/F82/G9xCWjNQ5AKMA==`다. 배포물 281개 파일은 dist·README·LICENSE·package.json 범위에 한정됐고 SVG 로고가 포함되고 Unbounded 폰트는 빠졌다.
 
 레지스트리에서 새 폴더에 설치한 dist 278개 파일이 로컬 검증 빌드와 바이트 단위로 일치했고 main.js는 지정 빌드 해시와 같다. 새 Git 시험 프로젝트에서 version·help(삭제한 명령 없음), schemaVersion 1 초기화, spec save, spec commit dry-run·실행, spec read와 깨끗한 작업 폴더를 확인했다. 브라우저 서버의 명세 API와 로고 경로는 응답했고 제거한 project API는 404였다. 확인 스크립트와 로그는 `.tmp/releases/0.5.0/`에 보관한다. 기존 인증 세션으로 게시했으며 인증 파일과 토큰은 조회·변경하지 않았다.
+
+
+## 0.7.0 배포 준비
+
+한국어·영어 표시 언어, 시작하기 안내, 영문 기본 README와 공통 데모 스크린샷을 포함한다. 최종 점검에서 사이드바 하단에 GitHub 저장소 링크를 추가하고 언어 선택에서 English를 한국어 앞에 두었다. README 이미지 세 장은 사이드바가 보이는 1368×1242 다크 모드 화면으로 다시 촬영했다. 언어 순서 변경은 사용자 요청에 따라 별도 요구사항으로 기록하지 않았다.
+
+`pnpm check`를 다시 통과했다(브라우저 81, CLI 134, core 29, 계약 7, 소개 문서 2건과 오프라인 패키지 설치 검사). 실제 브라우저에서 GitHub 링크의 목적지·새 탭 속성과 언어 순서를 확인했다. CLI 번들 SHA-256은 지정된 0.7.0 빌드와 같다(`cef14c6629bfbbe4ca9ac435646b9894a77d84b01d7ee8f34a46216ee4fe33b1`).
+
+첫 게시 시도는 npm 인증 실패로 끝났다. 사용자가 로그인한 뒤 계정 인증은 통과했으나 게시 추가 인증(EOTP)이 요구되었다. 이 시점에 0.7.0은 아직 게시하지 않았다.
