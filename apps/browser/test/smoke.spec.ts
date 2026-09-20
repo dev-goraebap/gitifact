@@ -73,3 +73,24 @@ test('unknown routes show an explicit missing page and a working return link', a
   await page.getByRole('link', { name: '처음으로' }).click();
   await expect(page).toHaveURL(/\/product$/);
 });
+
+test('the wordmark, the menu and the version share one left edge', async ({ page }) => {
+  await mockApi(page);
+  await page.goto('/product');
+  await expect(page.getByRole('link', { name: '기능별 요구사항' })).toBeVisible();
+  const edges = await page.evaluate(() => {
+    const left = (n: Element | null | undefined) => (n ? Math.round(n.getBoundingClientRect().left) : -1);
+    const leaf = (root: ParentNode, text: string) => [...root.querySelectorAll('*')].find(n => n.children.length === 0 && n.textContent?.trim() === text);
+    const mark = document.querySelector('.gitifact-wordmark')!;
+    const item = [...document.querySelectorAll('a')].find(a => a.getAttribute('href') === '/features')!;
+    const version = [...document.querySelectorAll('a,button')].find(n => /^v\d/.test(n.textContent!.trim()))!;
+    return {
+      // The wordmark is drawn by the link's ::before, so its own padding is where the image starts.
+      logo: Math.round(mark.getBoundingClientRect().left + parseFloat(getComputedStyle(mark).paddingLeft)),
+      section: left(leaf(document, 'WORKSPACE')),
+      icon: left(item.querySelector('svg')),
+      version: left(leaf(version, version.textContent!.trim())),
+    };
+  });
+  expect(new Set(Object.values(edges)).size).toBe(1);
+});

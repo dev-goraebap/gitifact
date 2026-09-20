@@ -2,3 +2,8 @@
 .frame { --gitifact-topbar-height: 2.75rem; height: 100%; min-height: 0; box-sizing: border-box; padding: var(--spacing-2); padding-inline-start: 0; }
 .card { overflow-x: hidden; overflow-y: auto; scrollbar-gutter: stable; scrollbar-width: thin; scrollbar-color: var(--color-border-emphasized, var(--color-border)) transparent; height: 100%; min-height: 0; min-width: 0; background: var(--color-background-surface); border: 1px solid var(--color-border); border-radius: var(--radius-container); box-shadow: var(--shadow-low); }
 @media (width < 64rem) { .frame { --gitifact-topbar-height: 2.75rem; padding: 0; } .card { border: 0; border-radius: 0; box-shadow: none; } }
+
+/* The version reads as the last line of the menu, so its text starts where the menu icons do. It is a ghost
+   button, whose own padding would otherwise set it 4px further in than the icons above it. */
+.versionFooter { padding: var(--spacing-2) 0 var(--spacing-3); }
+.versionFooter > :first-child { margin-inline-start: calc(var(--spacing-1) * -1); }

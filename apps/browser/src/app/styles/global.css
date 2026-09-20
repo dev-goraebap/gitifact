@@ -48,9 +48,11 @@ a {
   font-weight: 800;
   letter-spacing: -.035em;
 }
+/* The menu's own left edge is its icons, so the wordmark starts there too rather than a step further in. Its
+   inline padding is the menu item's; the block padding is the air above and below it. */
 .gitifact-wordmark {
   display: block;
-  padding: var(--spacing-4);
+  padding: var(--spacing-4) var(--spacing-2) 0;
   text-decoration: none;
   color: var(--color-text-primary);
 }
