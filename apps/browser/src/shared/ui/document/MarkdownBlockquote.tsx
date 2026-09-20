@@ -9,7 +9,7 @@ import Idea01Icon from '@hugeicons/core-free-icons/Idea01Icon';
 import InformationCircleIcon from '@hugeicons/core-free-icons/InformationCircleIcon';
 import Megaphone01Icon from '@hugeicons/core-free-icons/Megaphone01Icon';
 import { SvgIcon } from '../icons/SvgIcon';
-import { t } from '../../i18n';
+import { t, useLanguage } from '../../i18n';
 import styles from './document.module.css';
 
 /**
@@ -48,6 +48,7 @@ function takeMarker(node: ReactNode): { kind: Kind; body: ReactNode } | undefine
 }
 
 export function MarkdownBlockquote({ children }: { children: ReactNode }) {
+  useLanguage();
   const alert = takeMarker(children);
   if (!alert) return <Blockquote className={styles.blockquote}>{children}</Blockquote>;
   const kind = kinds[alert.kind];

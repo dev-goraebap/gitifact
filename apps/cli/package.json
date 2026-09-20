@@ -1,6 +1,6 @@
 {
   "name": "gitifact",
-  "version": "0.6.2",
+  "version": "0.7.0",
   "description": "Git-backed requirements and change history for coding agents.",
   "license": "MIT",
   "repository": { "type": "git", "url": "git+https://github.com/dev-goraebap/gitifact.git", "directory": "apps/cli" },
@@ -22,7 +22,7 @@
     "build": "node scripts/build.mjs",
     "dev": "node scripts/build.mjs --watch",
     "typecheck": "tsc --noEmit",
-    "test:built": "tsc -p tsconfig.test.json && node --test --test-concurrency=4 test/*.test.mjs"
+    "test:built": "tsc -p tsconfig.test.json && node --import ./test/locale.mjs --test --test-concurrency=4 test/*.test.mjs"
   },
   "devDependencies": {
     "@gitifact/core": "workspace:*",

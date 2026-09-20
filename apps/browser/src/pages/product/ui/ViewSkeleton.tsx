@@ -2,7 +2,7 @@ import { VStack } from '@astryxdesign/core/VStack';
 import { HStack } from '@astryxdesign/core/HStack';
 import { Skeleton } from '@astryxdesign/core/Skeleton';
 import styles from './product.module.css';
-import { t } from '../../../shared/i18n';
+import { t, useLanguage } from '../../../shared/i18n';
 
 const rows = [0, 1, 2, 3, 4];
 // How many records sit under each commit's reasons, as a few commits of a working day look.
@@ -13,6 +13,7 @@ const overviewCommits = [[3, 2], [4], [2]];
  * The overview draws the same timeline inside its own status region, so there it stands in without one of its own.
  */
 export function TimelineSkeleton({ isPlain = false }: { isPlain?: boolean } = {}) {
+  useLanguage();
   const region = isPlain ? {} : { role: 'status', 'aria-label': t('request.loadingProject'), 'aria-busy': true } as const;
   return <VStack gap={0} className={styles.timeline} {...region}>
     {(isPlain ? overviewCommits : commits).map((reasons, i) => <HStack key={i} gap={4} className={`${styles.commit} ${styles.commitRow}`} aria-hidden="true">
@@ -40,6 +41,7 @@ export function TimelineSkeleton({ isPlain = false }: { isPlain?: boolean } = {}
 const tree: [number, string][] = [[0, '4rem'], [0, '5rem'], [1, '7rem'], [1, '6rem'], [0, '4.5rem'], [1, '8rem'], [1, '5.5rem'], [1, '6.5rem'], [0, '5rem']];
 /** Placeholder shaped like the view it stands in for, so the swap to real data keeps the same layout. */
 export function ViewSkeleton({ view, page = false }: { view: 'history' | 'features' | 'contributors' | 'product' | 'wiki'; page?: boolean }) {
+  useLanguage();
   // The wiki explorer: the tree on the left, then the path bar and the body on the right. A page (`/wiki/$id`) reads
   // as a heading, a line of facts and paragraphs; a folder (`/wiki`) as a bordered list of entries. Both use the
   // explorer's own classes so the tree and the pane keep their widths when the real content replaces them.

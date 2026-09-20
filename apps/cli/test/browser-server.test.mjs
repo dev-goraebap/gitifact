@@ -206,27 +206,27 @@ test('session carries the CLI version and one background registry check, disable
 
 test('release notes are parsed per language with a fallback and never read outside the bundle', async (t) => {
   const f = fixture(t);
-  const notes = { ko: '## 0.4.0 - 2026-09-17\n### Added\n- 패치노트 페이지\n### Removed\n- 옛 명령\n\n## 0.3.2 - 2026-09-17\n### Fixed\n- 오타\n' };
+  const notes = { en: '## 0.4.0 - 2026-09-17\n### Added\n- 패치노트 페이지\n### Removed\n- 옛 명령\n\n## 0.3.2 - 2026-09-17\n### Fixed\n- 오타\n' };
   const asked = [];
   const server = await startBrowserServer({ cwd: f.repo, env: f.env, assetsDirectory, readChangelog: async language => { asked.push(language); return notes[language] ?? null; } });
   try {
     const get = (query = '', extra = headers(server)) => fetch(server.url + '/api/v1/changelog' + query, { headers: extra });
-    const own = changelogV1.parse(await (await get('?lang=ko')).json());
-    assert.deepEqual([own.language, own.fallback, own.entries.map(entry => entry.version)], ['ko', false, ['0.4.0', '0.3.2']]);
+    const own = changelogV1.parse(await (await get('?lang=en')).json());
+    assert.deepEqual([own.language, own.fallback, own.entries.map(entry => entry.version)], ['en', false, ['0.4.0', '0.3.2']]);
     assert.deepEqual(own.entries[0], { version: '0.4.0', date: '2026-09-17', added: ['패치노트 페이지'], changed: [], removed: ['옛 명령'], fixed: [] });
     assert.deepEqual(changelogV1.parse(await (await get()).json()), own);
-    const other = changelogV1.parse(await (await get('?lang=en')).json());
-    assert.deepEqual([other.language, other.fallback, other.entries.length], ['ko', true, 2]);
-    assert.deepEqual(asked, ['ko', 'ko', 'en', 'ko']);
+    const other = changelogV1.parse(await (await get('?lang=fr')).json());
+    assert.deepEqual([other.language, other.fallback, other.entries.length], ['en', true, 2]);
+    assert.deepEqual(asked, ['en', 'en', 'fr', 'en']);
     for (const query of ['?lang=../ko', '?lang=KO', '?lang=ko&lang=en', '?lang=ko&x=1', '?lang=']) assert.equal((await get(query)).status, 400, query);
-    assert.equal((await get('?lang=ko', { Origin: server.url })).status, 409);
+    assert.equal((await get('?lang=en', { Origin: server.url })).status, 409);
     assert.equal((await fetch(server.url + '/api/v1/changelog', { method: 'POST', headers: headers(server) })).status, 405);
-    notes.ko = '## not a version\n';
-    const broken = await get('?lang=ko');
+    notes.en = '## not a version\n';
+    const broken = await get('?lang=en');
     assert.equal(broken.status, 503);
     assert.equal((await broken.json()).error.code, 'INTERNAL_ERROR');
-    delete notes.ko;
-    assert.equal((await get('?lang=ko')).status, 404);
+    delete notes.en;
+    assert.equal((await get('?lang=en')).status, 404);
   } finally { await server.close(); }
   // The packaged notes are served by default and start with the package version.
   const { version } = JSON.parse(await (await import('node:fs/promises')).readFile(new URL('../package.json', import.meta.url), 'utf8'));

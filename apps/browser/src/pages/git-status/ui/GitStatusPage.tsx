@@ -8,9 +8,10 @@ import { RepositoryPanel } from './RepositoryPanel';
 import { PageHeader } from '../../../widgets/page-header';
 import { RequestState } from '../../../shared/ui/request-state';
 import styles from './git-status.module.css';
-import { t } from '../../../shared/i18n';
+import { t, useLanguage } from '../../../shared/i18n';
 
 export function GitStatusPage() {
+  useLanguage();
   const session = useQuery(sessionOptions());
   const client = useQueryClient();
   const [connection, setConnection] = useState(0);

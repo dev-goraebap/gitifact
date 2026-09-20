@@ -1,0 +1,119 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { spawnSync } from 'node:child_process';
+import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { fixture, fingerprint } from './git-fixture.mjs';
+import { environmentLanguage, withLanguage, t as message } from '../.test-build/shared/i18n/index.js';
+import { RepositoryReadError, parseChangelog } from '@gitifact/core';
+import { startBrowserServer } from '../.test-build/server/browser-server.js';
+
+const root = fileURLToPath(new URL('../../../', import.meta.url));
+const entry = join(root, 'apps/cli/dist/main.js');
+function run(f, args, language = 'en', more = {}) {
+  const result = spawnSync(process.execPath, [entry, ...args], { cwd: f.repo,
+    env: { ...f.env, GITIFACT_LANG: language, GITIFACT_NO_UPDATE_CHECK: '1', ...more }, encoding: 'utf8', timeout: 15000 });
+  assert.ifError(result.error); return result;
+}
+function success(f, args, language, more) {
+  const r = run(f, args, language, more); assert.equal(r.status, 0, r.stderr); return r.stdout;
+}
+test('all message catalogs have matching keys and placeholders', () => {
+  const placeholders = s => [...s.matchAll(/\{(\w+)\}/g)].map(m => m[1]).sort();
+  for (const scope of ['apps/browser', 'apps/cli', 'packages/core']) {
+    const read = lang => JSON.parse(readFileSync(join(root, scope, 'src/shared/i18n', lang, 'messages.json'), 'utf8'));
+    const ko = read('ko'), en = read('en');
+    assert.deepEqual(Object.keys(en).sort(), Object.keys(ko).sort(), scope);
+    for (const key of Object.keys(ko)) {
+      assert.deepEqual(placeholders(en[key]), placeholders(ko[key]), scope + ':' + key);
+      assert.doesNotMatch(en[key], /[가-힣]/, scope + ':' + key);
+    }
+  }
+});
+test('environment precedence, region tags, and unsupported locales', () => {
+  assert.equal(environmentLanguage({ GITIFACT_LANG: 'ko', LC_ALL: 'en_US.UTF-8' }), 'ko');
+  assert.equal(environmentLanguage({ LC_ALL: 'en_GB.UTF-8', LANG: 'ko_KR.UTF-8' }), 'en');
+  assert.equal(environmentLanguage({ LC_MESSAGES: 'ko_KR.UTF-8', LANG: 'en_US' }), 'ko');
+  for (const LANG of ['ko', 'ko-KR', 'KO_kr.UTF-8']) assert.equal(environmentLanguage({ LANG }), 'ko');
+  for (const LANG of ['C', 'ja_JP.UTF-8', 'kok', 'en-US']) assert.equal(environmentLanguage({ LANG }), 'en');
+});
+test('CLI help, documentation and errors follow language without changing contracts', t => {
+  const f = fixture(t);
+  assert.match(success(f, ['--help']), /Output language/);
+  assert.match(success(f, ['--lang', 'ko', '--help']), /출력 언어/);
+  for (const lang of ['ko', 'en']) {
+    for (const topic of ['workflow', 'spec', 'design', 'writing', 'commit']) {
+      assert.equal(success(f, ['--lang', lang, 'docs', topic]), readFileSync(join(root, 'apps/cli/src/shared/i18n', lang, 'docs', topic + '.md'), 'utf8'));
+    }
+  }
+  assert.match(success(f, ['docs', 'spec', '--lang=ko']), /Markdown 명세/);
+  assert.match(success(f, ['--lang=en', 'docs', 'wiki'], 'ko'), /# Project wiki format/);
+  assert.match(success(f, ['docs', 'spec'], '', { LC_ALL: 'ja_JP.UTF-8' }), /# Markdown specification format/);
+  for (const args of [['--lang', 'ja', 'docs'], ['--lang'], ['--lang=']]) assert.notEqual(run(f, args).status, 0);
+  const errors = ['ko', 'en'].map(lang => JSON.parse(run(f, ['--lang', lang, 'spec', 'working']).stderr));
+  assert.equal(errors[0].error.code, errors[1].error.code);
+  assert.match(errors[0].error.message, /[가-힣]/);
+  assert.doesNotMatch(errors[1].error.message, /[가-힣]/);
+});
+test('updates preserve Korean blocks and records; explicit language changes only blocks', t => {
+  const f = fixture(t);
+  success(f, ['--lang', 'ko', 'init']);
+  const agents = join(f.repo, 'AGENTS.md');
+  const initial = readFileSync(agents, 'utf8').replace('v0.7.0', 'v0.6.2') + '\nUser instructions outside the block.\n';
+  writeFileSync(agents, initial);
+  const records = fingerprint(join(f.repo, '.gitifact'));
+  const stamp = JSON.parse(success(f, ['spec', 'working', '--stamp'])).stamp;
+  success(f, ['update'], 'en');
+  assert.match(readFileSync(agents, 'utf8'), /v0\.7\.0 · ko ·/);
+  assert.ok(readFileSync(agents, 'utf8').endsWith('User instructions outside the block.\n'));
+  success(f, ['init'], 'en');
+  assert.match(readFileSync(agents, 'utf8'), /· ko ·/);
+  success(f, ['--lang', 'en', 'update']);
+  assert.match(readFileSync(agents, 'utf8'), /v0\.7\.0 · en · storage schemaVersion 2/);
+  assert.ok(readFileSync(agents, 'utf8').endsWith('User instructions outside the block.\n'));
+  assert.deepEqual(fingerprint(join(f.repo, '.gitifact')), records);
+  assert.equal(JSON.parse(success(f, ['spec', 'working', '--stamp'])).stamp, stamp);
+  assert.match(success(f, ['--lang', 'en', 'docs', 'wiki']), /이 위키에는 아키텍처 결정 기록/);
+});
+test('English setup ships complete assets and preserves user text', t => {
+  const f = fixture(t);
+  success(f, ['init']);
+  assert.match(readFileSync(join(f.repo, 'AGENTS.md'), 'utf8'), /· en ·/);
+  assert.match(readFileSync(join(f.repo, '.gitifact/wiki/README.md'), 'utf8'), /This wiki holds architecture decision records/);
+  const working = JSON.parse(success(f, ['spec', 'working']));
+  writeFileSync(working.inputs.save, JSON.stringify({ expected: working.stamp, operations: [
+    { type: 'create', feature: 'original', title: '원래 제목' },
+    { type: 'add', feature: 'original', title: '원래 요구사항', body: '사용자가 작성한 한국어 문서입니다.' },
+  ] }));
+  success(f, ['spec', 'save', '--file', working.inputs.save]);
+  const ko = JSON.parse(success(f, ['spec', 'working'], 'ko'));
+  const en = JSON.parse(success(f, ['spec', 'working'], 'en'));
+  assert.deepEqual(en.specs, ko.specs);
+  assert.equal(en.specs[0].requirements[0].body, '사용자가 작성한 한국어 문서입니다.');
+  const notes = lang => parseChangelog(readFileSync(join(root, 'apps/cli/dist/i18n', lang, 'changelog.md'), 'utf8'));
+  assert.deepEqual(notes('en').map(n => [n.version, n.date]), notes('ko').map(n => [n.version, n.date]));
+  assert.deepEqual(readdirSync(join(root, 'apps/cli/dist/i18n/en/docs')).sort(), readdirSync(join(root, 'apps/cli/dist/i18n/ko/docs')).sort());
+});
+test('concurrent languages remain isolated, including core errors and cached failures', async t => {
+  const errors = await Promise.all(['ko', 'en'].map(lang => withLanguage(lang, async () => {
+    await new Promise(resolve => setTimeout(resolve, lang === 'ko' ? 10 : 1));
+    return [message('server.internal'), new RepositoryReadError('GIT_FAILED').message];
+  })));
+  errors[0].forEach(value => assert.match(value, /[가-힣]/));
+  errors[1].forEach(value => assert.doesNotMatch(value, /[가-힣]/));
+  const f = fixture(t); let reads = 0;
+  const server = await startBrowserServer({ cwd: f.repo, env: f.env, assetsDirectory: join(root, 'apps/cli/dist/browser'),
+    readStatus: async () => { if (reads++ > 0) throw new RepositoryReadError('GIT_FAILED'); return f.status(); } });
+  t.after(() => server.close());
+  const request = (lang, path, method = 'GET') => fetch(server.url + path, { method,
+    headers: { Origin: server.url, 'X-Gitifact-Session': server.session.sessionId, 'Accept-Language': lang } }).then(r => r.json());
+  const guard = await Promise.all(['ko', 'en'].map(lang => request(lang, '/api/v1/missing')));
+  assert.equal(guard[0].error.code, guard[1].error.code);
+  assert.match(guard[0].error.message, /[가-힣]/);
+  assert.doesNotMatch(guard[1].error.message, /[가-힣]/);
+  await request('ko', '/api/v1/status/refresh', 'POST');
+  const cached = await Promise.all(['ko', 'en'].map(lang => request(lang, '/api/v1/status')));
+  assert.match(cached[0].error.message, /[가-힣]/);
+  assert.doesNotMatch(cached[1].error.message, /[가-힣]/);
+});

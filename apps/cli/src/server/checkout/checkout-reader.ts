@@ -5,7 +5,7 @@ import { specPreviewReader } from '../../adapters/git/spec-preview-reader.js';
 import { readWorkingPreviewState } from '../../adapters/filesystem/spec-preview-store.js';
 import { readConfigFile } from '../../adapters/filesystem/config-file.js';
 import type { SearchDocument } from '../history/history-index.js';
-import { t } from '../../shared/i18n/index.js';
+import { t, getLanguage } from '../../shared/i18n/index.js';
 
 type Contributor = BrowserSpecsV4['contributors'][number];
 const tally = (people: Map<string, Contributor>, name: string, email: string, latest: string) => {
@@ -106,10 +106,11 @@ export function createCheckoutReader(root: string, sessionId: string, inherited 
     return { checkout, stamp: current.stamp, search };
   }
 
-  /** Concurrent callers share one read. */
+  /** Concurrent callers share one read per language, including its errors. */
   return () => {
-    let value = pending.get('');
-    if (!value) { value = read().finally(() => pending.delete('')); pending.set('', value); }
+    const language = getLanguage();
+    let value = pending.get(language);
+    if (!value) { value = read().finally(() => pending.delete(language)); pending.set(language, value); }
     return value;
   };
 }

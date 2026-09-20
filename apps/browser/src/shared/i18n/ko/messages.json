@@ -1,4 +1,6 @@
 {
+  "gettingStarted.title": "시작하기",
+  "nav.gettingStarted": "시작하기",
   "about.title": "Gitifact 소개",
   "activity.changedRecords": "이 이유로 바뀐 기록",
   "activity.list": "활동 목록",
@@ -272,5 +274,7 @@
   "link.copied": "경로를 복사했습니다",
   "link.copyFailed": "경로를 복사하지 못했습니다: {path}",
   "documents.tree": "위키 트리",
-  "documents.path": "현재 위치"
+  "documents.path": "현재 위치",
+  "settings.language": "언어",
+  "settings.language.system": "브라우저 설정"
 }

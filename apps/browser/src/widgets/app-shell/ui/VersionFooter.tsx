@@ -6,10 +6,11 @@ import { sessionOptions } from '../../../entities/project';
 import { RouterLink } from '../../../shared/ui/router-link/RouterLink';
 import { UpdateDialog } from './UpdateDialog';
 import styles from './app-shell.module.css';
-import { t } from '../../../shared/i18n';
+import { t, useLanguage } from '../../../shared/i18n';
 
 /** Running CLI version (links to the release notes) and, only when the server found one, the newer release. */
 export function VersionFooter() {
+  useLanguage();
   const session = useQuery(sessionOptions());
   const [open, setOpen] = useState(false);
   // No version is shown until the session answers; a placeholder would look like a real release.

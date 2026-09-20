@@ -5,7 +5,7 @@ import { createCheckoutReader } from '../checkout/checkout-reader.js';
 import { createHistoryIndex } from '../history/history-index.js';
 import { HttpError } from '../http/respond.js';
 import { ok, route } from '../http/router.js';
-import { t } from '../../shared/i18n/index.js';
+import { t, getLanguage } from '../../shared/i18n/index.js';
 
 /** A page of history unless the reader asks for another size. */
 const PAGE = 50;
@@ -19,8 +19,9 @@ export function recordRoutes(root: string, sessionId: string, env?: NodeJS.Proce
   // Whole-store snapshots, for the few commits the index cannot read by their changed files alone.
   const snapshots = new Map<string, Promise<PreviewBundle>>();
   const snapshot = (oid: string) => {
-    let value = snapshots.get(oid);
-    if (!value) { value = reader.readBundle(oid).catch(e => { snapshots.delete(oid); throw e; }); snapshots.set(oid, value); }
+    const key = oid + ':' + getLanguage();
+    let value = snapshots.get(key);
+    if (!value) { value = reader.readBundle(oid).catch(e => { snapshots.delete(key); throw e; }); snapshots.set(key, value); }
     if (snapshots.size > 128) snapshots.delete(snapshots.keys().next().value!);
     return value;
   };
@@ -28,7 +29,7 @@ export function recordRoutes(root: string, sessionId: string, env?: NodeJS.Proce
   const history = createHistoryIndex(root, snapshot);
   // The search rows describe the checkout this worktree last showed, so a search finds what is on screen.
   const scope = 'checkout:' + root;
-  const unreadable = t('server.specsUnreadable');
+  const unreadable = () => t('server.specsUnreadable');
   // Reading the checkout writes its search rows; the first search of a server that has not read one yet reads it.
   let synced: Promise<void> | undefined;
   const checkout = async () => {

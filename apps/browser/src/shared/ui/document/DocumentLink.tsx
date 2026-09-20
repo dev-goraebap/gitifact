@@ -7,7 +7,7 @@ import { useToast } from '@astryxdesign/core/Toast';
 import { RouterLink as AppLink } from '../router-link/RouterLink';
 import type { ResolvedLink } from './resolveDocumentLink';
 import styles from './document.module.css';
-import { t } from '../../i18n';
+import { t, useLanguage } from '../../i18n';
 
 /**
  * One resolved document link as something the reader can act on. Wiki pages and features open in the app, assets and
@@ -15,6 +15,7 @@ import { t } from '../../i18n';
  * of navigating, so no relative link ever lands on a 404.
  */
 export function DocumentLink({ link, children }: { link: ResolvedLink; children: ReactNode }) {
+  useLanguage();
   const toast = useToast();
   switch (link.kind) {
     case 'external': return <a href={link.href} target="_blank" rel="noopener noreferrer">{children}</a>;

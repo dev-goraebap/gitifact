@@ -1,0 +1,1 @@
+{"id":"H-iukejmjfav","requirements":["R-eeyxmpd37g","R-l2cviw6kk7","R-lwzfbzmgi4","R-y6gszx7dg6"],"designs":["S-pjrke4hidh"],"reason":"브라우저와 CLI를 한국어·영어로 사용할 수 있게 하고 저장소와 npm 안내는 영어를 기본으로 제공한다. 기존 사용자 문서와 저장 규약은 유지하며 한국어 원문을 기준으로 영어 안내를 작성한다. 두 언어의 README는 같은 영문 데모 스크린샷을 공유한다."}

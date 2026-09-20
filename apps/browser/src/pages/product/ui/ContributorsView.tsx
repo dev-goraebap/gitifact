@@ -15,12 +15,13 @@ import { avatarSource, contributorHref } from './Person';
 import type { ProductSearch } from '../model/search';
 import styles from './product.module.css';
 import { PageState } from '../../../shared/ui/page-state';
-import { t, tNodes } from '../../../shared/i18n';
+import { t, tNodes, useLanguage } from '../../../shared/i18n';
 
 type Contributor = NonNullable<BrowserSpecsV4['contributors']>[number];
-const names = {created:t('change.created'),modified:t('change.modified'),deleted:t('change.deleted'),moved:t('change.moved')};
+const names = () => ({created:t('change.created'),modified:t('change.modified'),deleted:t('change.deleted'),moved:t('change.moved')});
 
 export function ContributorsView({session,head,people,features,email,search}: {session:BrowserSessionV2;head:string|null;people:Contributor[];features:SpecFeature[];email?:string|undefined;search:ProductSearch}) {
+  useLanguage();
   if (!email) return <ContributorGrid people={people} features={features} search={search}/>;
   const selected = people.find(p => p.email === email);
   if (!selected) return <PageState kind="not-found" title={t('contributors.notFoundTitle')} description={t('contributors.notFoundDescription', { email })} actions={<Link to="/contributors">{t('contributors.backToList')}</Link>}/>;
@@ -29,6 +30,7 @@ export function ContributorsView({session,head,people,features,email,search}: {s
 
 /** Card per Git author; the whole card opens the contributor page. */
 function ContributorGrid({people,features,search}: {people:Contributor[];features:SpecFeature[];search:ProductSearch}) {
+  useLanguage();
   const filtered = people.filter(p => !search.q || (p.name + ' ' + p.email).toLowerCase().includes(search.q.toLowerCase()));
   if (!filtered.length) return <PageState kind={search.q ? 'search' : 'empty'} title={t('contributors.emptyTitle')} description={t('contributors.emptyDescription')}/>;
   return <VStack gap={3}>
@@ -57,6 +59,7 @@ function ContributorGrid({people,features,search}: {people:Contributor[];feature
 }
 
 function ContributorDetail({session,head,person,features}: {session:BrowserSessionV2;head:string|null;person:Contributor;features:SpecFeature[]}) {
+  useLanguage();
   // This person's ten newest changes in all of history, asked of the server rather than looked for in loaded pages.
   const recent = useInfiniteQuery({ ...historyOptions(session, head ?? '', { author: person.email }, 10), enabled: !!head });
   const activities = recent.data?.pages[0]?.events ?? [];
@@ -90,7 +93,7 @@ function ContributorDetail({session,head,person,features}: {session:BrowserSessi
       <Heading level={3}>{t('activity.recent')}</Heading>
       {activities.length ? <VStack gap={0} className={styles.personActivity}>
         {activities.map(e => <HStack key={e.key} gap={3} className={styles.personActivityRow}>
-          <Token label={e.types.map(type => names[type]).join(' · ')} color={e.types.includes('deleted') ? 'red' : e.types.includes('modified') ? 'blue' : e.types.includes('moved') ? 'purple' : 'green'}/>
+          <Token label={e.types.map(type => names()[type]).join(' · ')} color={e.types.includes('deleted') ? 'red' : e.types.includes('modified') ? 'blue' : e.types.includes('moved') ? 'purple' : 'green'}/>
           <Text type="supporting" color="secondary">{e.kind === 'design' ? t('kind.design') : e.kind === 'wiki' ? t('kind.wiki') : t('kind.requirement')}</Text>
           <Link to="/activity" search={{selected:e.key}} className={styles.entryTitle}>{(e.after ?? e.before)?.title ?? e.id}</Link>
           <Timestamp value={e.date} format="relative"/>

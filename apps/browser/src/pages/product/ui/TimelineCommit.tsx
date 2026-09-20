@@ -9,7 +9,7 @@ import { groupReasons } from '../model/activity-groups';
 import { Person } from './Person';
 import { TimelineRecord } from './TimelineRecord';
 import styles from './product.module.css';
-import { t } from '../../../shared/i18n';
+import { t, useLanguage } from '../../../shared/i18n';
 
 /** `hidden` counts the commit's records this list leaves out — the overview shows a few of a large commit. */
 type Props = {events:SpecEvent[];day:string|undefined;features:SpecFeature[];selected:string|undefined;hidden:number};
@@ -28,6 +28,7 @@ function nearbyDay(iso:string) {
  * press drew the whole list again and took longer the more had been loaded.
  */
 export const TimelineCommit = memo(function TimelineCommit({events,day,features,selected,hidden}: Props) {
+  useLanguage();
  const first=events[0]!;
  return <VStack as="li" gap={0} className={styles.commit}>
   {day&&<HStack gap={2} className={styles.day}>

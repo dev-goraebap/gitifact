@@ -1,3 +1,5 @@
+import { useEffect } from 'react';
+import { useLanguage } from '../../shared/i18n';
 import { LayerProvider } from '@astryxdesign/core/Layer';
 import { LinkProvider } from '@astryxdesign/core/Link';
 import { RouterLink } from '../../shared/ui/router-link/RouterLink';
@@ -33,10 +35,15 @@ declare module '@tanstack/react-router' {
 
 export function AppProviders() {
   const { mode, palette } = useAppearance();
+  const language = useLanguage();
+  useEffect(() => {
+    // Retry displayed errors in the new language without discarding cached project data.
+    void queryClient.invalidateQueries({ predicate: query => query.state.status === 'error' });
+  }, [language]);
   return (
     <Theme theme={themes[palette]} mode={mode}>
       <SyntaxTheme theme={documentSyntax}>
-      <InternationalizationProvider locale="ko-KR" messages={{ 'ko-KR': koKR }}>
+      <InternationalizationProvider locale={language === 'ko' ? 'ko-KR' : 'en-US'} messages={{ 'ko-KR': koKR }}>
         <LayerProvider>
           <LinkProvider component={RouterLink}>
             <QueryClientProvider client={queryClient}>

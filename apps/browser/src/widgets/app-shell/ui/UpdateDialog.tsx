@@ -2,10 +2,11 @@ import { Dialog, DialogHeader } from '@astryxdesign/core/Dialog';
 import { Layout, LayoutContent, VStack } from '@astryxdesign/core/Layout';
 import { Text } from '@astryxdesign/core/Text';
 import { CodeBlock } from '@astryxdesign/core/CodeBlock';
-import { t } from '../../../shared/i18n';
+import { t, useLanguage } from '../../../shared/i18n';
 
 /** How to update. The server never installs anything: the user hands the prompt to their agent or runs the command. */
 export function UpdateDialog({ current, latest, close }: { current: string; latest: string; close: () => void }) {
+  useLanguage();
   const onOpenChange = (open: boolean) => { if (!open) close(); };
   // Layout gives the header and body their dialog spacing. A titled CodeBlock puts the copy button in its
   // header bar; without one the button floats over the first line and covers wrapped text.

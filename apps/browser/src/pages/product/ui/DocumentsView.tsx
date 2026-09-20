@@ -16,7 +16,7 @@ import type { ProductSearch } from '../model/search';
 import styles from './product.module.css';
 import { PageState } from '../../../shared/ui/page-state';
 import { DocumentBody, wikiEntryPath } from '../../../shared/ui/document';
-import { t } from '../../../shared/i18n';
+import { t, useLanguage } from '../../../shared/i18n';
 
 /** Path inside the wiki folder, e.g. `frontend/layout.md` for `.gitifact/wiki/frontend/layout.md`. */
 export const relativePath = (doc: SpecDocument) => doc.path.replace(/^\.gitifact\/wiki\//, '');
@@ -54,6 +54,7 @@ const fileName = (doc: SpecDocument) => relativePath(doc).split('/').pop()!;
  * contents or the chosen page. Folders live in the `folder` search param, pages in the `/wiki/$documentId` path.
  */
 export function DocumentsView({ documents, documentId, search }: { documents: SpecDocument[]; documentId?: string | undefined; search: ProductSearch; change: (s: ProductSearch) => void }) {
+  useLanguage();
   const navigate = useNavigate();
   // A new folder or page starts at the top instead of where the previous one was left.
   const pane = useRef<HTMLDivElement>(null);
@@ -105,6 +106,7 @@ export function DocumentsView({ documents, documentId, search }: { documents: Sp
 
 /** The contents of one folder, folders first; a README.md in it is shown below the list, as a repository host does. */
 function FolderListing({ node, openFolder, openDocument }: { node: Node; openFolder: (path: string) => void; openDocument: (doc: SpecDocument) => void }) {
+  useLanguage();
   const readme = node.documents.find(d => fileName(d) === 'README.md');
   return <VStack gap={5} className={styles.explorerBody}>
     {node.folders.length + node.documents.length ? <VStack gap={0} className={styles.explorerList}><List density="compact" aria-label={t('documents.browse')}>
@@ -120,6 +122,7 @@ function FolderListing({ node, openFolder, openDocument }: { node: Node; openFol
 }
 
 function DocumentPage({ doc }: { doc: SpecDocument }) {
+  useLanguage();
   return <VStack as="article" aria-label={t('documents.document')} gap={0} className={styles.explorerBody}>
     <VStack gap={3} className={styles.documentHeading}>
       <Heading level={1}>{doc.title}</Heading>

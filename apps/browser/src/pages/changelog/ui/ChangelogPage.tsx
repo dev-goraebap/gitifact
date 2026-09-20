@@ -10,19 +10,20 @@ import type { BrowserSessionV2 } from '../../../entities/project';
 import { PageHeader } from '../../../widgets/page-header';
 import { RequestState } from '../../../shared/ui/request-state';
 import { PageState } from '../../../shared/ui/page-state';
-import { defaultLanguage, t } from '../../../shared/i18n';
+import { t, useLanguage } from '../../../shared/i18n';
 import styles from './changelog.module.css';
 
 // Section keys are language-independent tokens from the notes file; only their labels are translated here.
-const sections = [
+const sections = () => ([
   ['added', t('changelog.added'), 'green'],
   ['changed', t('changelog.changed'), 'blue'],
   ['removed', t('changelog.removed'), 'red'],
   ['fixed', t('changelog.fixed'), 'orange'],
-] as const;
+] as const);
 
 function Releases({ session }: { session: BrowserSessionV2 }) {
-  const notes = useQuery(changelogOptions(session, defaultLanguage));
+  const language = useLanguage();
+  const notes = useQuery(changelogOptions(session, language));
   if (notes.error) return <RequestState error={notes.error} retry={() => { void notes.refetch(); }} />;
   if (!notes.data) return <RequestState />;
   if (notes.data.entries.length === 0) return <PageState kind="empty" title={t('changelog.empty')} />;
@@ -37,7 +38,7 @@ function Releases({ session }: { session: BrowserSessionV2 }) {
             {entry.version === session.cliVersion && <Token label={t('changelog.current')} size="sm" color="green" />}
             <Text type="supporting" color="secondary"><time dateTime={entry.date}>{entry.date}</time></Text>
           </HStack>
-          {sections.map(([key, label, color]) => entry[key].length > 0 && (
+          {sections().map(([key, label, color]) => entry[key].length > 0 && (
             <VStack key={key} gap={2}>
               <HStack gap={0}><Token label={label} size="sm" color={color} /></HStack>
               <VStack gap={0} className={styles.items}><Markdown>{entry[key].map(item => '- ' + item).join('\n')}</Markdown></VStack>
@@ -49,6 +50,7 @@ function Releases({ session }: { session: BrowserSessionV2 }) {
   );
 }
 export function ChangelogPage() {
+  useLanguage();
   const session = useQuery(sessionOptions());
   return (
     <VStack gap={0} className={styles.page}>

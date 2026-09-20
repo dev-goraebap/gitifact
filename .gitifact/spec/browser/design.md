@@ -129,3 +129,12 @@ WORKSPACE 그룹의 마지막 메뉴인 `/settings`에서 화면 모드(시스�
 문서 링크는 원문을 두고 렌더링 때 번역한다. `resolveDocumentLink.ts`가 문서의 저장소 경로(`from`)와 링크로 대상을 계산한다. 스킴이 있거나 `//`로 시작하면 외부(새 탭, noopener), `#`만 있으면 페이지 안 앵커, `/`로 시작하면 앱 경로다. 그 밖은 `from`의 폴더 기준으로 `.`·`..`를 풀어 저장소 상대 경로를 만들고, 위키 페이지 경로와 같으면 `/wiki/$documentId`, `spec/<기능>/requirements.md`·`design.md`면 `/features/$featureId`의 해당 탭, `.gitifact/assets/` 아래면 `/api/v1/assets/<인코딩한 경로>`로 바꾼다. 저장소 루트 위로 올라가거나 그 밖의 저장소 파일이면 "브라우저 밖" 상태다. href 없는 Astryx Link를 흐린 색과 점선 밑줄로 그리고 Tooltip을 붙이며, 클릭하면 clipboard에 저장소 경로를 복사하고 toast로 알린다. 대상이 없는 페이지·기능은 취소선 Text와 툴팁이다(비활성 button은 hover가 없어 툴팁이 뜨지 않아 링크 모양을 쓰지 않았다). 이미지는 같은 규칙으로 src를 바꾸고 해석되지 않으면 대체 텍스트만 보인다. 문서 경로는 `DocumentBody`의 `path`로 받아 context에 두고, `DocumentIndexProvider`가 첫 명세 응답의 페이지·기능 목록을 제공한다. 서버는 `.gitifact` 밖 파일을 제공하지 않는다.
 
 설계 탭은 `sources`가 있으면 본문 위에 "참고 문서" 목록을 compact List로 그린다. 제목이 링크(위키 경로는 같은 해석 규칙, url은 새 탭)이고 설명에 note와 호스트 또는 상대 경로를 둔다. 카드 대신 행으로 둔 것은 디자인 시스템 지침의 조밀한 자료 규칙을 따른 것이다.
+
+## 시작하기 안내
+<!-- gitifact-ref: R-m7fyerzqti -->
+
+GITIFACT 메뉴에서 소개 다음에 `/getting-started`를 둔다. `pages/getting-started`는 소개와 같은 64rem 중앙 컬럼, PageHeader와 DocumentBody를 사용한다. 페이지 제목은 화면 문구 카탈로그에서 읽고 Markdown의 최상위 제목은 표시할 때 제거해 중복하지 않는다. 소개의 GitHub CLI 안내 링크는 앱 안에서 이 경로로 연결한다.
+
+한국어·영어 원본은 `packages/intro/<lang>/getting-started.md`다. packages/intro의 공개 export를 shared/i18n이 가져와 localDocument로 제공한다. 소개와 같은 언어별 문서 방식으로 번들하므로 별도 HTTP 조회나 명세 저장소에 의존하지 않는다. 현재 CLI 도움말·내장 지침으로 확인한 사용 흐름을 한국어로 작성한 뒤 영어판을 만들었으며 npm README도 영어 원문과 일치시킨다. 입력 JSON의 상세 형식은 복제하지 않고 docs spec·commit으로 안내한다.
+
+메뉴 순서, 소개 링크, 키보드 이동, 직접 진입·새로고침과 모바일 두 테마를 검사한다. 명세가 없는 임시 Git 저장소에서도 실제 CLI 서버가 안내를 제공하는지 확인한다.

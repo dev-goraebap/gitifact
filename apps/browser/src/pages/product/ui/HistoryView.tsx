@@ -11,13 +11,14 @@ import type { ProductSearch } from '../model/search';
 import { PageState } from '../../../shared/ui/page-state';
 import { RequestState } from '../../../shared/ui/request-state';
 import styles from './product.module.css';
-import { t } from '../../../shared/i18n';
+import { t, useLanguage } from '../../../shared/i18n';
 
 /**
  * The activity timeline. Filters and the search word go to the server, which answers from all of history — a filter
  * finds changes that were never loaded, and the count is the whole count — fifty at a time.
  */
 export function HistoryView({features,search,change,session,head}: {features:SpecFeature[];search:ProductSearch;change:(s:ProductSearch)=>void;session:BrowserSessionV2;head:string|null}) {
+  useLanguage();
  const filter={kind:search.kind,document:search.document,feature:search.feature,author:search.author,q:search.q};
  const filtering=Object.values(filter).some(Boolean);
  // While a new filter is answered the list that is on screen stays, instead of the page going blank.

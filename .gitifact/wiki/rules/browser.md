@@ -8,7 +8,7 @@ id: W-xt2mfa2odx
 
 ## 화면
 
-브라우저는 제품 개요에서 시작한다. 메뉴 순서는 제품 개요 → 기능별 요구사항 → 프로젝트 위키 → 활동 → 참여자 → Git 상태이며, 아래 GITIFACT 절에 소개가 있다.
+브라우저는 제품 개요에서 시작한다. 메뉴 순서는 제품 개요 → 기능별 요구사항 → 프로젝트 위키 → 활동 → 참여자 → Git 상태이며, 아래 GITIFACT 절에는 소개 → 시작하기 → 패치노트가 있다.
 
 | 경로 | 화면 |
 | :--- | :--- |
@@ -20,6 +20,7 @@ id: W-xt2mfa2odx
 | `/contributors`, `/contributors/$email` | 참여자 카드와 상세 |
 | `/git` | Git 상태 |
 | `/about` | Gitifact 소개. README와 같은 내용 |
+| `/getting-started` | 선택한 언어의 사용 안내. 설치·개발·위키·업데이트와 CLI 명령 |
 
 모든 화면 머리에 문서 검색 입구가 있다. `mod+K`와 그 버튼이 같은 검색창을 열며, 별도 주소는 두지 않는다.
 
@@ -79,3 +80,9 @@ Markdown은 Astryx의 안전한 렌더링을 쓰고 원시 HTML을 실행하지 
 ## 문서 링크
 
 문서 본문의 상대 링크는 원문을 바꾸지 않고 그릴 때 해석한다. `shared/ui/document/resolveDocumentLink.ts`가 문서의 저장소 경로를 기준으로 대상을 계산하고 Astryx `Markdown`의 `components.link`·`components.image`로 렌더링한다. 위키 페이지는 `/wiki/$documentId`, 명세는 `/features/$featureId?tab=requirements|design`, 에셋은 `/api/v1/assets/<경로>`, 외부 URL은 새 탭이다. 저장소의 다른 파일은 이동하지 않는 링크 모양으로 두고 클릭하면 경로를 복사한다. 대상이 없는 페이지·기능은 취소선 텍스트와 툴팁으로 표시한다. 문서 경로는 context로 전달하며 `DocumentIndexProvider`가 첫 명세 응답의 페이지·기능 목록을 제공한다. 앞에 `/`가 붙은 링크는 앱 경로로 본다. 이메일 기반 아바타는 로컬에서 생성하며 외부 서비스에 이메일을 보내지 않는다.
+
+시작하기 본문은 `packages/intro/<lang>/getting-started.md`를 같은 shared/i18n 경로로 가져온다. 소개의 CLI 안내 링크는 앱 안에서 `/getting-started`로 연결한다. 문서 원본을 번들하며 프로젝트 명세 API를 호출하지 않는다.
+
+## 표시 언어
+
+설정에서 브라우저 설정·한국어·영어를 선택한다. 선택은 같은 출처의 localStorage에 저장하고 storage 이벤트로 열린 탭에 반영한다. 기본은 navigator.language이며 미지원 언어는 영어다. shared/i18n의 useLanguage로 표시 컴포넌트가 변경을 구독하고 Astryx locale·날짜·소개·시작하기·패치노트도 같은 언어를 따른다. 사용자 문서는 번역하지 않는다. API는 Accept-Language로 표시 언어만 전달하며 JSON 계약을 바꾸지 않는다. 언어 변경 때문에 현재 주소·검색·선택이나 프로젝트 Query 캐시를 초기화하지 않는다.

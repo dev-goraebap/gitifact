@@ -1,3 +1,4 @@
+import { getLanguage } from '../../shared/i18n/index.js';
 import type { DatabaseSync } from 'node:sqlite';
 import type { PreviewBundle } from '@gitifact/core';
 import { createCommitChanges, type CommitChanges, type HistoryEvent } from './commit-changes.js';
@@ -80,10 +81,11 @@ export function createHistoryIndex(root: string, snapshot: (oid: string) => Prom
   /** Makes sure the index holds every commit of `head` and their order; concurrent callers share one build. */
   function ensure(head: string): Promise<void> {
     if (built.has(head)) return Promise.resolve();
-    let pending = building.get(head);
+    const key = head + ':' + getLanguage();
+    let pending = building.get(key);
     if (!pending) {
-      pending = build(head).then(() => { built.add(head); }).finally(() => building.delete(head));
-      building.set(head, pending);
+      pending = build(head).then(() => { built.add(head); }).finally(() => building.delete(key));
+      building.set(key, pending);
     }
     return pending;
   }

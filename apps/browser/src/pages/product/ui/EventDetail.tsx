@@ -10,14 +10,15 @@ import { DesignDocument } from './DesignDocument';
 import { Person } from './Person';
 import { ChangeCompare } from './ChangeCompare';
 import styles from './product.module.css';
-import { t } from '../../../shared/i18n';
+import { t, useLanguage, getLanguage } from '../../../shared/i18n';
 import { DocumentBody } from '../../../shared/ui/document';
 /** Body of one activity entry: the change (a before/after reveal when both exist) and reasons. The surrounding drawer owns the title and close control. */
 export function EventDetail({event:e,change,features}: {event:SpecEvent;change:UseQueryResult<BrowserChangeV1>;features:SpecFeature[]}) {
+  useLanguage();
   // Snapshot bodies resolve their links from the path they were committed at.
-  const body=(spec:SpecSnapshot)=>e.kind==='design'?<DesignDocument design={spec} path={spec.path} features={features}/>:<DocumentBody headingLevelStart={2} path={spec.path}>{spec.body.replace(/\r?\n([ \t]+)(기대 동작:)/g,'  \n$1$2')}</DocumentBody>;
+  const body=(spec:SpecSnapshot)=>e.kind==='design'?<DesignDocument design={spec} path={spec.path} features={features}/>:<DocumentBody headingLevelStart={2} path={spec.path}>{spec.body.replace(/\r?\n([ \t]+)(기대 동작:|Expected behavior:)/g,'  \n$1$2')}</DocumentBody>;
   return <VStack gap={5} className={styles.readingPane}>
-      <HStack gap={4} wrap="wrap" className={styles.readingAuthor}><Person name={e.author} email={e.email}/><Text type="supporting" color="secondary">{new Date(e.date).toLocaleString()}</Text></HStack>
+      <HStack gap={4} wrap="wrap" className={styles.readingAuthor}><Person name={e.author} email={e.email}/><Text type="supporting" color="secondary">{new Date(e.date).toLocaleString(getLanguage())}</Text></HStack>
       <VStack gap={4} className={styles.readingSection}>
         <Heading level={3}>{e.after&&e.before?t('event.changes'):e.after?t('compare.after'):t('event.deletedContent')}</Heading>
         {change.data

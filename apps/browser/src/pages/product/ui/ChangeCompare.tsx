@@ -4,7 +4,7 @@ import { HStack } from '@astryxdesign/core/HStack';
 import { Button } from '@astryxdesign/core/Button';
 import { Text } from '@astryxdesign/core/Text';
 import styles from './product.module.css';
-import { t } from '../../../shared/i18n';
+import { t, useLanguage } from '../../../shared/i18n';
 
 /**
  * Before/after reveal: the after body sits underneath, the before body is layered on top and clipped to the
@@ -14,6 +14,7 @@ import { t } from '../../../shared/i18n';
  * work for a line that has to be grabbed anywhere over flowing text.
  */
 export function ChangeCompare({ before, after }: { before: ReactNode; after: ReactNode }) {
+  useLanguage();
   const container = useRef<HTMLDivElement>(null);
   const [reveal, setReveal] = useState(0);
   const [dragging, setDragging] = useState(false);

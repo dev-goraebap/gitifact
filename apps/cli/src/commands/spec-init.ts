@@ -8,10 +8,10 @@ import { applyAgentDocs, planAgentDocs, skippedAgentDocs, type AgentDocsOptions 
 import { readBundledDoc } from './docs.js';
 import { generatePreviewId } from '../adapters/filesystem/spec-preview-store.js';
 import { disabledUpdate, npmGlobalInstall } from '../shared/update-check.js';
-import { defaultLanguage, t } from '../shared/i18n/index.js';
+import { getLanguage, t } from '../shared/i18n/index.js';
 
 export async function initializeSpecProject(cwd: string, dryRun = false, env = process.env, beforePublish?: () => Promise<void>, agentDocs?: AgentDocsOptions,
-  readDoc: (name: string) => Promise<string> = name => readBundledDoc(name, defaultLanguage), update: UpdateStateV1 | Promise<UpdateStateV1> = disabledUpdate) {
+  readDoc: (name: string) => Promise<string> = name => readBundledDoc(name, getLanguage()), update: UpdateStateV1 | Promise<UpdateStateV1> = disabledUpdate) {
   const repo = initRepository(cwd, env); const first = await repo.inspect(); const root = first.state.repository.rootPath;
   // Agent-doc targets are read and validated first so malformed markers refuse the run before any write.
   const docsPlan = agentDocs ? await planAgentDocs(root, agentDocs) : skippedAgentDocs;

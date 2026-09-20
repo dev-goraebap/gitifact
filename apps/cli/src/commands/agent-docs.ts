@@ -1,5 +1,6 @@
+import { explicitLanguage, getLanguage, type Language } from '../shared/i18n/index.js';
 import { managedRead, managedWrite } from '../adapters/filesystem/managed-file.js';
-import { agentPresets, boilerplateFor, candidatePaths, claudeWrapperFor, CLAUDE_WRAPPER_PATH, findBlock, injectBlock, isGeneratedClaudeWrapper, isWrapperFile, lacksClaudeFile, removeBlock, renderAgentBlock, resolveAgentPaths, type AgentBlockControls, type AgentPreset, type CandidatePath } from './agent-block.js';
+import { agentPresets, boilerplateFor, candidatePaths, claudeWrapperFor, CLAUDE_WRAPPER_PATH, findBlock, injectBlock, isGeneratedClaudeWrapper, isWrapperFile, lacksClaudeFile, removeBlock, renderAgentBlock, parseAgentBlock, resolveAgentPaths, type AgentBlockControls, type AgentPreset, type CandidatePath } from './agent-block.js';
 
 export interface AgentDocsOptions extends AgentBlockControls { version: string; agent?: AgentPreset | undefined; remove?: boolean | undefined; skip?: boolean | undefined;
   // update: rewrite only files that already carry a block and never create one.
@@ -36,19 +37,25 @@ export async function planAgentDocs(root: string, options: AgentDocsOptions): Pr
     }
     return { mode: 'remove', paths, writes, missing: [] };
   }
-  const block = await renderAgentBlock(options.version, options);
+  const blocks = new Map<Language, string>();
+  const blockFor = async (previous?: string) => {
+    const stored = previous ? parseAgentBlock(previous)?.language : undefined;
+    const language = explicitLanguage() ?? (stored === 'ko' || stored === 'en' ? stored : getLanguage());
+    if (!blocks.has(language)) blocks.set(language, await renderAgentBlock(options.version, options, language));
+    return blocks.get(language)!;
+  };
   const { inject, create } = options.onlyExisting
     ? { inject: candidatePaths.filter(path => existing.has(path) && findBlock(existing.get(path)!) && !isWrapperFile(existing.get(path)!)), create: null }
     : resolveAgentPaths(options.agent, existing);
   for (const path of inject) {
     const previous = existing.get(path)!;
-    const next = injectBlock(previous, block, boilerplateFor(path));
+    const next = injectBlock(previous, await blockFor(previous), boilerplateFor(path));
     paths.push(path);
     if (next !== previous) writes.push({ path, previous, next });
   }
   if (create) {
     paths.push(create);
-    writes.push({ path: create, previous: null, next: injectBlock(null, block, boilerplateFor(create)) });
+    writes.push({ path: create, previous: null, next: injectBlock(null, await blockFor(), boilerplateFor(create)) });
   }
   const missing: CandidatePath[] = [];
   if (paths.includes('AGENTS.md') && lacksClaudeFile(existing)) {

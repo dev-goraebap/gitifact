@@ -14,7 +14,7 @@ import { ActivityTimeline } from './ActivityTimeline';
 import { TimelineSkeleton } from './ViewSkeleton';
 import { statusOptions, summaryOptions } from '../../../entities/project';
 import styles from './product.module.css';
-import { t } from '../../../shared/i18n';
+import { t, useLanguage, getLanguage } from '../../../shared/i18n';
 
 type Contributor = NonNullable<BrowserSpecsV4['contributors']>[number];
 type ChangeType = SpecEvent['types'][number];
@@ -22,9 +22,9 @@ type ChangeType = SpecEvent['types'][number];
 // Categorical hues in a fixed order validated for adjacent-pair CVD separation (blue → orange → purple → green); gray closes a tail.
 const series = ['var(--color-data-categorical-blue, #0171E3)', 'var(--color-data-categorical-orange, #EB6E00)', 'var(--color-data-categorical-purple, #6B1EFD)', 'var(--color-data-categorical-green, #0B991F)'] as const;
 const tail = 'var(--color-data-neutral, #8494A3)';
-const changeNames: Record<ChangeType, string> = { created: t('change.created'), modified: t('change.modified'), moved: t('change.moved'), deleted: t('change.deleted') };
+const changeNames: () => Record<ChangeType, string> = () => ({ created: t('change.created'), modified: t('change.modified'), moved: t('change.moved'), deleted: t('change.deleted') });
 const changeOrder: ChangeType[] = ['created', 'modified', 'moved', 'deleted'];
-const kindNames: Record<NonNullable<SpecEvent['kind']>, string> = { requirement: t('kind.requirement'), design: t('kind.design'), wiki: t('kind.wiki') };
+const kindNames: () => Record<NonNullable<SpecEvent['kind']>, string> = () => ({ requirement: t('kind.requirement'), design: t('kind.design'), wiki: t('kind.wiki') });
 const day = 86_400_000;
 // A commit that introduced the project can hold hundreds of records; the overview shows this many and links on.
 const RECENT_RECORDS = 10;
@@ -33,6 +33,7 @@ type Segment = { label: string; value: number; color: string };
 
 /** One horizontal part-to-whole bar; each segment carries its own title for hover and a 2px surface gap from its neighbour. */
 function StackedBar({ segments, label }: { segments: Segment[]; label: string }) {
+  useLanguage();
   const total = segments.reduce((sum, s) => sum + s.value, 0);
   const shown = segments.filter(s => s.value > 0);
   if (!total) return <Text type="supporting" color="secondary">{t('overview.noData')}</Text>;
@@ -59,6 +60,7 @@ function StackedBar({ segments, label }: { segments: Segment[]; label: string })
  * caption states that it counts the loaded range rather than the whole repository.
  */
 function Pulse({ pulse, total }: { pulse: BrowserHistorySummaryV1['pulse']; total: number }) {
+  useLanguage();
   // The server sends one entry per commit of the last three weeks; they are counted here by the reader's own day.
   const times = pulse.flatMap(c => { const time = Date.parse(c.date); return Number.isFinite(time) ? [{ time, count: c.count }] : []; });
   if (!times.length) return null;
@@ -76,7 +78,7 @@ function Pulse({ pulse, total }: { pulse: BrowserHistorySummaryV1['pulse']; tota
         const height = c.value ? Math.max(3, (c.value / peak) * 44) : 2;
         return <rect key={c.start} x={`${(c.start - counts[0]!.start) / day * width + width * 0.15}`} width={width * 0.7} y={44 - height} height={height} rx="1"
           className={c.value ? styles.pulseBar : styles.pulseEmpty}>
-          <title>{`${new Date(c.start).toLocaleDateString()} ${c.value}`}</title>
+          <title>{`${new Date(c.start).toLocaleDateString(getLanguage())} ${c.value}`}</title>
         </rect>;
       })}
     </svg>
@@ -91,6 +93,7 @@ function Pulse({ pulse, total }: { pulse: BrowserHistorySummaryV1['pulse']; tota
  * shows nor links it.
  */
 export function ProductOverview({ session, head, features, documents, contributors, working }: { session: BrowserSessionV2; head: string | null; features: SpecFeature[]; documents: SpecDocument[]; contributors: Contributor[]; working: boolean }) {
+  useLanguage();
   // Counts over all of history and its newest commits, from the server's index; nothing before the first commit.
   const history = useQuery({ ...summaryOptions(session, head ?? ''), enabled: !!head });
   const summary = history.data;
@@ -100,7 +103,7 @@ export function ProductOverview({ session, head, features, documents, contributo
   const status = useQuery(statusOptions(session));
   const project = status.data?.repository.rootPath?.split(/[\/]/).filter(Boolean).at(-1);
   const requirements = features.reduce((sum, f) => sum + f.requirements.length, 0);
-  const changes: Segment[] = changeOrder.map((type, i) => ({ label: changeNames[type], value: summary?.byType[type] ?? 0, color: series[i]! }));
+  const changes: Segment[] = changeOrder.map((type, i) => ({ label: changeNames()[type], value: summary?.byType[type] ?? 0, color: series[i]! }));
   const byCommits = [...contributors].sort((a, b) => b.commits - a.commits || a.name.localeCompare(b.name));
   const commitShare: Segment[] = [...byCommits.slice(0, 3).map((p, i) => ({ label: p.name, value: p.commits, color: series[i]! })), ...(byCommits.length > 3 ? [{ label: t('overview.otherContributors', { count: byCommits.length - 3 }), value: byCommits.slice(3).reduce((sum, p) => sum + p.commits, 0), color: tail }] : [])];
   // The newest commits, drawn by the activity screen's own timeline so the two read alike. A commit that created

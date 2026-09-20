@@ -237,5 +237,6 @@
   "server.assetNotFound": "에셋을 찾을 수 없습니다.",
   "docs.wikiPolicyProject": "운영 방침 (.gitifact/wiki/README.md)",
   "docs.wikiPolicyDefault": "운영 방침 (기본값. .gitifact/wiki/README.md가 없어 내장 방침을 싣는다)",
-  "init.wikiReadmeTitle": "위키 운영 방침"
+  "init.wikiReadmeTitle": "위키 운영 방침",
+  "help.lang": "출력 언어 (ko 또는 en)"
 }

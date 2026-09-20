@@ -15,7 +15,7 @@ import type { SearchableItem, SearchSource } from '@astryxdesign/core/Typeahead'
 import type { BrowserSessionV2, BrowserSearchV1 } from '@gitifact/contracts';
 import { sessionOptions, specsOptions, searchRecords } from '../../../entities/project';
 import { useSearchOpen, openSearch, setSearchOpen, closeSearch, typingDelay } from '../../../shared/lib/search';
-import { t } from '../../../shared/i18n';
+import { t, useLanguage } from '../../../shared/i18n';
 import styles from './search-palette.module.css';
 
 type Kind = 'feature' | 'requirement' | 'design' | 'document' | 'history';
@@ -23,10 +23,10 @@ type Target = { to: string; params?: Record<string, string>; search?: Record<str
 // `line` is the matched line the server cut; the opening list shows the start of the body instead.
 type Hit = SearchableItem<{ group: string; kind: Kind; where: string; body: string; line?: string; target: Target; updatedAt: string | null }>;
 
-const groupNames: Record<Kind, string> = {
+const groupNames: () => Record<Kind, string> = () => ({
   feature: t('search.group.feature'), requirement: t('search.group.requirement'),
   design: t('search.group.design'), document: t('search.group.document'), history: t('search.group.history'),
-};
+});
 
 /** Where a server hit opens: the feature on the right tab, the wiki page, or the change in the activity. */
 function targetOf(hit: BrowserSearchV1['hits'][number]): Target {
@@ -86,34 +86,36 @@ const loadingGroup = (key: number, heading: string, rows: number[]) => <VStack k
   <VStack gap={0} className={styles.loadingHeading}><Skeleton index={key} width={heading} height="var(--spacing-3)"/></VStack>
   {rows.map(loadingRow)}
 </VStack>;
-const loading = <VStack gap={0} role="status" aria-label={t('search.loading')} aria-busy="true" className={styles.loading}>
+const loading = () => (<VStack gap={0} role="status" aria-label={t('search.loading')} aria-busy="true" className={styles.loading}>
   {loadingGroup(0, '4rem', [0, 1, 2])}
   {loadingGroup(1, '5.5rem', [3, 4])}
-</VStack>;
-const noMatch = <PageState kind="search" isCompact title={t('search.noMatch')} description={t('search.noMatchDescription')}/>;
-const noDocuments = <PageState kind="empty" isCompact title={t('search.empty')} description={t('search.emptyDescription')}/>;
+</VStack>);
+const noMatch = () => (<PageState kind="search" isCompact title={t('search.noMatch')} description={t('search.noMatchDescription')}/>);
+const noDocuments = () => (<PageState kind="empty" isCompact title={t('search.empty')} description={t('search.emptyDescription')}/>);
 
-// Astryx's default footer spells its hints in English; the rest of this app speaks the project's language.
-const hints = <CommandPaletteFooter>
+// Keep keyboard hints in the selected display language.
+const hints = () => (<CommandPaletteFooter>
   <HStack gap={4}>
     <HStack gap={2}><Kbd keys="up"/><Kbd keys="down"/><Text type="supporting" color="secondary">{t('search.hint.move')}</Text></HStack>
     <HStack gap={2}><Kbd keys="enter"/><Text type="supporting" color="secondary">{t('search.hint.open')}</Text></HStack>
     <HStack gap={2}><Kbd keys="escape"/><Text type="supporting" color="secondary">{t('search.hint.close')}</Text></HStack>
   </HStack>
-</CommandPaletteFooter>;
+</CommandPaletteFooter>);
 
 /** The shortcut and the dialog exist from the first paint; the documents arrive with the session. */
 export function SearchPalette() {
+  useLanguage();
   const isOpen = useSearchOpen();
   useHotkeys([{ keys: 'mod+k', onPress: openSearch, allowInInputs: true }]);
   const session = useQuery(sessionOptions());
   if (!session.data) return <CommandPalette isOpen={isOpen} onOpenChange={setSearchOpen} searchSource={nothing}
-    label={t('search.label')} width={720} className={styles.palette} input={<CommandPaletteInput placeholder={t('search.placeholder')}/>} footer={hints}
-    emptyBootstrapText={loading} emptySearchText={loading}/>;
+    label={t('search.label')} width={720} className={styles.palette} input={<CommandPaletteInput placeholder={t('search.placeholder')}/>} footer={hints()}
+    emptyBootstrapText={loading()} emptySearchText={loading()}/>;
   return <LoadedPalette session={session.data} isOpen={isOpen}/>;
 }
 
 function LoadedPalette({ session, isOpen }: { session: BrowserSessionV2; isOpen: boolean }) {
+  const language = useLanguage();
   const navigate = useNavigate();
   // The checkout is only read once the palette is opened, so the shell never fetches it just to be ready.
   const specs = useQuery({ ...specsOptions(session), enabled: isOpen });
@@ -123,25 +125,25 @@ function LoadedPalette({ session, isOpen }: { session: BrowserSessionV2; isOpen:
     if (!checkout) return [];
     const out: Hit[] = [];
     for (const feature of checkout.features) {
-      out.push({ id: feature.id, label: feature.title, auxiliaryData: { group: groupNames.feature, kind: 'feature',
+      out.push({ id: feature.id, label: feature.title, auxiliaryData: { group: groupNames().feature, kind: 'feature',
         where: feature.path.replace(/^\.gitifact\//, ''), body: plain(feature.description), updatedAt: feature.updatedAt,
         target: { to: '/features/$featureId', params: { featureId: feature.id } } } });
       for (const requirement of feature.requirements) {
-        out.push({ id: requirement.id, label: requirement.title, auxiliaryData: { group: groupNames.requirement, kind: 'requirement',
+        out.push({ id: requirement.id, label: requirement.title, auxiliaryData: { group: groupNames().requirement, kind: 'requirement',
           where: feature.title, body: plain(requirement.body), updatedAt: feature.updatedAt,
           target: { to: '/features/$featureId', params: { featureId: feature.id }, search: { tab: 'requirements' }, hash: requirement.id } } });
       }
-      if (feature.design) out.push({ id: feature.id + ':design', label: feature.design.title, auxiliaryData: { group: groupNames.design, kind: 'design',
+      if (feature.design) out.push({ id: feature.id + ':design', label: feature.design.title, auxiliaryData: { group: groupNames().design, kind: 'design',
         where: feature.title, body: plain(feature.design.body), updatedAt: feature.updatedAt,
         target: { to: '/features/$featureId', params: { featureId: feature.id }, search: { tab: 'design' } } } });
     }
     for (const document of checkout.documents) {
-      out.push({ id: document.id, label: document.title, auxiliaryData: { group: groupNames.document, kind: 'document',
+      out.push({ id: document.id, label: document.title, auxiliaryData: { group: groupNames().document, kind: 'document',
         where: document.path.replace(/^\.gitifact\/wiki\//, ''), body: plain(document.body), updatedAt: document.updatedAt,
         target: { to: '/wiki/$documentId', params: { documentId: document.id } } } });
     }
     return out;
-  }, [checkout]);
+  }, [checkout, language]);
 
   const source = useMemo(() => ({
     // Nothing typed yet: the files touched most recently. Requirements and designs carry their feature's timestamp,
@@ -157,10 +159,10 @@ function LoadedPalette({ session, isOpen }: { session: BrowserSessionV2; isOpen:
       const query = raw.trim();
       if (!query) return [];
       const answer = await searchRecords(session, query, checkout?.head ?? null, signal);
-      return answer.hits.map(hit => ({ id: hit.kind + ':' + hit.id, label: hit.title, auxiliaryData: { group: groupNames[hit.kind], kind: hit.kind,
+      return answer.hits.map(hit => ({ id: hit.kind + ':' + hit.id, label: hit.title, auxiliaryData: { group: groupNames()[hit.kind], kind: hit.kind,
         where: hit.where, body: hit.line, line: hit.line, updatedAt: null, target: targetOf(hit) } }));
     },
-  }), [entries, session, checkout]);
+  }), [entries, session, checkout, language]);
 
   // The palette owns the text field and reports no query, so the last query the source was asked for is what the
   // rows highlight. It is written before the results are set and read while they render, so it is never behind.
@@ -238,9 +240,9 @@ function LoadedPalette({ session, isOpen }: { session: BrowserSessionV2; isOpen:
     width={720}
     className={styles.palette}
     input={<CommandPaletteInput placeholder={t('search.placeholder')} onKeyDown={openFirstOnEnter} onChange={event => { setWaiting(event.currentTarget.value.trim() !== ''); }}/>}
-    footer={hints}
-    emptySearchText={waiting ? loading : noMatch}
-    emptyBootstrapText={specs.isPending || waiting ? loading : noDocuments}
+    footer={hints()}
+    emptySearchText={waiting ? loading() : noMatch()}
+    emptyBootstrapText={specs.isPending || waiting ? loading() : noDocuments()}
     renderItem={(item: Hit) => {
       const data = item.auxiliaryData!;
       const query = asked.current;

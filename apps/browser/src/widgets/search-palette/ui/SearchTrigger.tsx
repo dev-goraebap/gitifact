@@ -3,7 +3,7 @@ import { Text } from '@astryxdesign/core/Text';
 import SearchIcon from '@hugeicons/core-free-icons/Search01Icon';
 import { SvgIcon } from '../../../shared/ui/icons/SvgIcon';
 import { openSearch } from '../../../shared/lib/search';
-import { t } from '../../../shared/i18n';
+import { t, useLanguage } from '../../../shared/i18n';
 import styles from './search-palette.module.css';
 
 /**
@@ -11,6 +11,7 @@ import styles from './search-palette.module.css';
  * because a hotkey nobody can see is not a way in; below 48rem only the glyph stays, since the header is a thin bar.
  */
 export function SearchTrigger() {
+  useLanguage();
   return <button type="button" className={styles.trigger} onClick={openSearch} aria-label={t('search.open')} aria-keyshortcuts="Meta+K Control+K">
     <SvgIcon data={SearchIcon} size={16}/>
     <Text type="supporting" color="secondary">{t('search.trigger')}</Text>

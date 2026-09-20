@@ -5,9 +5,10 @@ import { Skeleton } from '@astryxdesign/core/Skeleton';
 import { Text } from '@astryxdesign/core/Text';
 import { Button } from '@astryxdesign/core/Button';
 import { PageState } from '../page-state';
-import { t } from '../../i18n';
+import { t, useLanguage } from '../../i18n';
 
 export function RequestState({ error, retry }: { error?: Error | null; retry?: () => void }) {
+  useLanguage();
   const [visible, setVisible] = useState(false);
   useEffect(() => {
     const timer = window.setTimeout(() => setVisible(true), 200);

@@ -7,6 +7,8 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseChangelog } from '../packages/core/dist/index.js';
 
+// Keep the original Korean fixtures deterministic; English is checked separately below.
+process.env.GITIFACT_LANG = 'ko';
 const workspace = fileURLToPath(new URL('../', import.meta.url));
 const packageManager = process.env.npm_execpath;
 assert.ok(packageManager, 'Run this check through pnpm test or pnpm test:built.');
@@ -87,6 +89,10 @@ try {
   assert.match(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', 'docs'], temporaryRoot), /^workflow /m);
   assert.equal(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', 'docs', 'spec'], temporaryRoot),
     await readFile(join(workspace, 'apps/cli/src/shared/i18n/ko/docs/spec.md'), 'utf8'), 'Bundled docs must match the asset source.');
+  assert.equal(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', '--lang', 'en', 'docs', 'spec'], temporaryRoot),
+    await readFile(join(workspace, 'apps/cli/src/shared/i18n/en/docs/spec.md'), 'utf8'), 'The offline package must include English guides.');
+  const [englishNotes] = parseChangelog(await readFile(join(installedRoot, 'dist/i18n/en/changelog.md'), 'utf8'));
+  assert.equal(englishNotes.version, version);
   // A real install writes the wiki policy on first adoption, and docs wiki carries it as the project's policy.
   const policy = await readFile(join(temporaryRoot, '.gitifact', 'wiki', 'README.md'), 'utf8');
   assert.match(policy, /^---\nid: W-[a-z2-7]{10}\n---\n\n# 위키 운영 방침\n\n이 위키에는 아키텍처 결정 기록\(ADR\)을 쌓는다\./);

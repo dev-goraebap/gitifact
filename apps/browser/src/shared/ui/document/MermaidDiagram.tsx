@@ -3,7 +3,7 @@ import { CodeBlock } from '@astryxdesign/core/CodeBlock';
 import { Text } from '@astryxdesign/core/Text';
 import { VStack } from '@astryxdesign/core/VStack';
 import { useAppearance } from '../../lib/appearance';
-import { t } from '../../i18n';
+import { t, useLanguage } from '../../i18n';
 import styles from './document.module.css';
 
 /**
@@ -73,6 +73,7 @@ function useThemeSignature(): string {
 }
 
 export function MermaidDiagram({ code }: { code: string }) {
+  useLanguage();
   const host = useRef<HTMLElement>(null);
   const [state, setState] = useState<State>({ kind: 'pending' });
   const signature = useThemeSignature();

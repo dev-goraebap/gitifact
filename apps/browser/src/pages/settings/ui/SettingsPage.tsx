@@ -7,23 +7,25 @@ import { SegmentedControl, SegmentedControlItem } from '@astryxdesign/core/Segme
 import { SelectableCard } from '@astryxdesign/core/SelectableCard';
 import { PageHeader } from '../../../widgets/page-header';
 import { modes, palettes, paletteColors, setAppearance, stonePreview, useAppearance, type Mode, type Palette } from '../../../shared/lib/appearance';
-import { t } from '../../../shared/i18n';
+import { t, setLanguage, useLanguagePreference, type LanguagePreference, useLanguage } from '../../../shared/i18n';
 import styles from './settings.module.css';
 
-const modeLabels: Record<Mode, string> = { system: t('settings.mode.system'), light: t('settings.mode.light'), dark: t('settings.mode.dark') };
-const paletteLabels: Record<Palette, [string, string]> = {
+const modeLabels: () => Record<Mode, string> = () => ({ system: t('settings.mode.system'), light: t('settings.mode.light'), dark: t('settings.mode.dark') });
+const paletteLabels: () => Record<Palette, [string, string]> = () => ({
   stone: [t('settings.palette.stone'), t('settings.palette.stoneHint')],
   sage: [t('settings.palette.sage'), t('settings.palette.sageHint')],
   olive: [t('settings.palette.olive'), t('settings.palette.oliveHint')],
   slate: [t('settings.palette.slate'), t('settings.palette.slateHint')],
   clay: [t('settings.palette.clay'), t('settings.palette.clayHint')],
-};
+});
 // Each card previews the palette on both sides: page floor, surface, text and accent, light above dark.
 const preview = (palette: Palette) => palette === 'stone' ? stonePreview : paletteColors[palette];
 const sides = [0, 1] as const;
 
 export function SettingsPage() {
+  useLanguage();
   const { mode, palette } = useAppearance();
+  const language = useLanguagePreference();
   return (
     <VStack gap={0} className={styles.page}>
       <PageHeader trail={[{ label: t('settings.title') }]} />
@@ -33,18 +35,28 @@ export function SettingsPage() {
           <Text type="supporting" color="secondary">{t('settings.subtitle')}</Text>
         </VStack>
         <VStack gap={0} className={styles.sections}>
+          <VStack as="section" gap={3} className={styles.section} aria-label={t('settings.language')}>
+            <VStack gap={1}><Heading level={2}>{t('settings.language')}</Heading></VStack>
+            <HStack gap={0}>
+              <SegmentedControl label={t('settings.language')} value={language} onChange={value => setLanguage(value as LanguagePreference)}>
+                <SegmentedControlItem value="system" label={t('settings.language.system')} />
+                <SegmentedControlItem value="ko" label="한국어" />
+                <SegmentedControlItem value="en" label="English" />
+              </SegmentedControl>
+            </HStack>
+          </VStack>
           <VStack as="section" gap={3} className={styles.section} aria-label={t('settings.mode')}>
             <VStack gap={1}><Heading level={2}>{t('settings.mode')}</Heading><Text type="supporting" color="secondary">{t('settings.modeHint')}</Text></VStack>
             <HStack gap={0}>
               <SegmentedControl label={t('settings.mode')} value={mode} onChange={value => setAppearance({ mode: value as Mode })}>
-                {modes.map(value => <SegmentedControlItem key={value} value={value} label={modeLabels[value]} />)}
+                {modes.map(value => <SegmentedControlItem key={value} value={value} label={modeLabels()[value]} />)}
               </SegmentedControl>
             </HStack>
           </VStack>
           <VStack as="section" gap={3} className={styles.section} aria-label={t('settings.palette')}>
             <VStack gap={1}><Heading level={2}>{t('settings.palette')}</Heading><Text type="supporting" color="secondary">{t('settings.paletteHint')}</Text></VStack>
             <Grid columns={{ minWidth: 176, repeat: 'fit', max: 5 }} gap={3}>
-              {palettes.map(value => { const colors = preview(value); const [label, hint] = paletteLabels[value]; return (
+              {palettes.map(value => { const colors = preview(value); const [label, hint] = paletteLabels()[value]; return (
                 // A palette cannot be switched off, only replaced, so deselecting the current card is ignored.
                 <SelectableCard key={value} label={label} isSelected={palette === value} onChange={selected => { if (selected) setAppearance({ palette: value }); }}>
                   <VStack gap={3}>

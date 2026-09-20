@@ -1,15 +1,26 @@
+import { AsyncLocalStorage } from 'node:async_hooks';
+import { configureCoreLanguage } from '@gitifact/core';
 import ko from './ko/messages.json' with { type: 'json' };
+import en from './en/messages.json' with { type: 'json' };
 
-// One language is one folder. One-line strings live in <lang>/messages.json and are bundled into main.js;
-// long-form Markdown ships beside the built entry point as dist/i18n/<lang>/.
-export const defaultLanguage = 'ko' as const;
-export type Language = typeof defaultLanguage;
+export const defaultLanguage = 'en' as const;
+export type Language = 'ko' | 'en';
 export type MessageKey = keyof typeof ko;
-// A new language is declared as Record<MessageKey, string> so a missing key is a compile error.
-const catalogs: Record<Language, Record<MessageKey, string>> = { ko };
-
-// Fills {name} placeholders. Values are converted like string concatenation, and a placeholder without a
-// value is left as written so a missing argument is visible instead of silently empty.
-export function t(key: MessageKey, values: Record<string, unknown> = {}, lang: Language = defaultLanguage): string {
+const catalogs: Record<Language, Record<MessageKey, string>> = { ko, en };
+const requestLanguage = new AsyncLocalStorage<Language>();
+let current: Language = environmentLanguage();
+let explicit: Language | undefined;
+export function resolveLanguage(value: string | undefined): Language {
+  return /^ko(?:[-_.@]|$)/i.test(value ?? '') ? 'ko' : 'en';
+}
+export function environmentLanguage(env: NodeJS.ProcessEnv = process.env): Language {
+  return resolveLanguage(env.GITIFACT_LANG || env.LC_ALL || env.LC_MESSAGES || env.LANG || Intl.DateTimeFormat().resolvedOptions().locale);
+}
+export function configureLanguage(language: Language, selected?: Language) { current = language; explicit = selected; }
+export const getLanguage = (): Language => requestLanguage.getStore() ?? current;
+export const explicitLanguage = () => explicit;
+export function withLanguage<T>(language: Language, action: () => T): T { return requestLanguage.run(language, action); }
+configureCoreLanguage(getLanguage);
+export function t(key: MessageKey, values: Record<string, unknown> = {}, lang: Language = getLanguage()): string {
   return catalogs[lang][key].replace(/\{(\w+)\}/g, (whole, name: string) => (name in values ? String(values[name]) : whole));
 }

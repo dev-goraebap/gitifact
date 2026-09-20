@@ -9,9 +9,9 @@ import { useMediaQuery } from '@astryxdesign/core/hooks';
 import { changeOptions } from '../../../entities/project';
 import { EventDetail } from './EventDetail';
 import styles from './product.module.css';
-import { t } from '../../../shared/i18n';
-const names={created:t('change.created'),modified:t('change.modified'),deleted:t('change.deleted'),moved:t('change.moved')};
-const kinds={requirement:t('kind.requirement'),design:t('kind.design'),wiki:t('kind.wiki')};
+import { t, useLanguage } from '../../../shared/i18n';
+const names=() => ({created:t('change.created'),modified:t('change.modified'),deleted:t('change.deleted'),moved:t('change.moved')});
+const kinds=() => ({requirement:t('kind.requirement'),design:t('kind.design'),wiki:t('kind.wiki')});
 /**
  * Detail drawer for one change, opened by its key. The change is read by that key, so a link to any change opens —
  * one from a contributor's page or an old bookmark, not only one in the loaded list. When the entry is in the list
@@ -19,11 +19,12 @@ const kinds={requirement:t('kind.requirement'),design:t('kind.design'),wiki:t('k
  * panel docked to the end edge; the dialog scrolls and the header stays pinned.
  */
 export function ActivityDetailDialog({changeKey,listed,features,session,close}: {changeKey:string;listed:SpecEvent|undefined;features:SpecFeature[];session:BrowserSessionV2;close:()=>void}) {
+  useLanguage();
   const narrow=useMediaQuery('(max-width: 1023px)');
   const pane=useResizable({defaultSize:700,minSize:420,maxSize:1100,autoSaveId:'gitifact-activity-detail'});
   const change=useQuery(changeOptions(session,changeKey));
   const e=listed??change.data?.event;
-  const subtitle=e?`${kinds[e.kind]} ${e.types.map(type=>names[type]).join(' · ')} · ${e.id} · ${e.commit.slice(0,7)}`:'';
+  const subtitle=e?`${kinds()[e.kind]} ${e.types.map(type=>names()[type]).join(' · ')} · ${e.id} · ${e.commit.slice(0,7)}`:'';
   const onOpenChange=(open:boolean)=>{if(!open)close();};
   const docked=narrow?{variant:'fullscreen' as const}:{variant:'standard' as const,width:pane.size,position:{end:0,top:0},className:styles.drawer};
   return <Dialog isOpen onOpenChange={onOpenChange} purpose="info" padding={0} maxHeight="100dvh" {...docked}>

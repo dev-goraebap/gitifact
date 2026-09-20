@@ -5,11 +5,16 @@
   "type": "module",
   "exports": {
     "./ko/intro.md": "./ko/intro.md",
-    "./assets/gitifact-logo.svg": "./assets/gitifact-logo.svg"
+    "./ko/getting-started.md": "./ko/getting-started.md",
+    "./assets/gitifact-logo.svg": "./assets/gitifact-logo.svg",
+    "./assets/screenshots/*.jpg": "./assets/screenshots/*.jpg",
+    "./en/intro.md": "./en/intro.md",
+    "./en/getting-started.md": "./en/getting-started.md"
   },
   "files": [
     "ko",
-    "assets"
+    "assets",
+    "en"
   ],
   "scripts": {
     "test:built": "node --test test/*.test.mjs"

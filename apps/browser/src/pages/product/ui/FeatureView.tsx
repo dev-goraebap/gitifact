@@ -23,9 +23,10 @@ import { pagesOf, type FeatureRow } from '../model/feature-rows';
 import styles from './product.module.css';
 import { PageState } from '../../../shared/ui/page-state';
 import { DocumentBody, designPathOf } from '../../../shared/ui/document';
-import { t } from '../../../shared/i18n';
+import { t, useLanguage } from '../../../shared/i18n';
 
 export function FeatureView({ features, featureId, search, change }: { features: SpecFeature[]; featureId?: string | undefined; search: ProductSearch; change: (s: ProductSearch) => void }) {
+  useLanguage();
   if (!featureId) return <FeatureList features={features} search={search} change={change}/>;
   const selected = features.find(f => f.id === featureId);
   if (!selected) return <PageState kind="not-found" title={t('features.notFoundTitle')} description={t('features.notFoundDescription', { id: featureId })} actions={<Link to="/features">{t('features.backToList')}</Link>}/>;
@@ -34,6 +35,7 @@ export function FeatureView({ features, featureId, search, change }: { features:
 
 /** Overlapping author avatars; the fourth and later collapse into a "+N" count. */
 function Contributors({ people }: { people: SpecFeature['contributors'] }) {
+  useLanguage();
   if (!people.length) return <Text type="supporting" color="secondary">{t('common.uncommitted')}</Text>;
   const shown = people.slice(0, 3);
   return <AvatarGroup size="sm" shape="circle">
@@ -46,6 +48,7 @@ function Contributors({ people }: { people: SpecFeature['contributors'] }) {
 type SortKey = 'title' | 'requirements' | 'updatedAt';
 
 function FeatureList({ features, search, change }: { features: SpecFeature[]; search: ProductSearch; change: (s: ProductSearch) => void }) {
+  useLanguage();
   const navigate = useNavigate();
   const mobile = useMediaQuery('(max-width: 767px)');
   // The column headers carry the order now, so the state is a column and a direction rather than a named preset.
@@ -124,6 +127,7 @@ function FeatureList({ features, search, change }: { features: SpecFeature[]; se
 }
 
 function FeatureDetail({ feature: selected, features, search, change }: { feature: SpecFeature; features: SpecFeature[]; search: ProductSearch; change: (s: ProductSearch) => void }) {
+  useLanguage();
   const tab = search.tab === 'design' ? 'design' : 'requirements';
   const designSections = selected.design ? designSectionsOf(selected.design.body) : new Map<string, string>();
   // Where the reader was sent: the requirement itself, or the design section that explains it.
@@ -165,7 +169,7 @@ function FeatureDetail({ feature: selected, features, search, change }: { featur
             <Heading level={3}>{isCurrent ? <mark className={styles.currentMark}>{r.title}</mark> : r.title}</Heading>
             <Text type="supporting" color="secondary">{r.id}</Text>
           </VStack>
-          <DocumentBody headingLevelStart={4} path={selected.path}>{r.body.replace(/\r?\n([ \t]+)(기대 동작:)/g, '  \n$1$2')}</DocumentBody>
+          <DocumentBody headingLevelStart={4} path={selected.path}>{r.body.replace(/\r?\n([ \t]+)(기대 동작:|Expected behavior:)/g, '  \n$1$2')}</DocumentBody>
           <HStack gap={4} wrap="wrap" className={styles.entryLine}>
             {/* The design names the requirements a section explains; this is that link read the other way round. */}
             {section && <Link to="/features/$featureId" params={{ featureId: selected.id }} search={{ ...search, tab: 'design', selected: r.id }} hash={section}>{t('features.requirementDesign')}</Link>}

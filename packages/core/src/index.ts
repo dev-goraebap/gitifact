@@ -8,3 +8,5 @@ export * from './formats/spec-preview.js';
 export * from './formats/changelog.js';
 export * from './use-cases/edit-spec-preview.js';
 export * from './use-cases/prepare-spec-preview.js';
+
+export { configureCoreLanguage } from './shared/i18n/index.js';

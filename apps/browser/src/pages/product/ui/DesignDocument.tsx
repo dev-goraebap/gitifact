@@ -7,10 +7,11 @@ import { HStack } from '@astryxdesign/core/HStack';
 import { List, ListItem } from '@astryxdesign/core/List';
 import styles from './product.module.css';
 import { designSectionsOf } from '../model/design-sections';
-import { t } from '../../../shared/i18n';
+import { t, useLanguage } from '../../../shared/i18n';
 
 /** Rows, not cards, for the documents a design drew on: each is a link (wiki page in the app, URL in a new tab) with its note beneath. */
 function DesignSources({ sources, path }: { sources: DesignSource[]; path: string }) {
+  useLanguage();
   const index = useDocumentIndex();
   return <VStack as="section" gap={2} aria-label={t('design.sources')} className={styles.designSources}>
     <Text type="supporting" color="secondary">{t('design.sources')}</Text>
@@ -31,6 +32,7 @@ const hostOf = (href: string) => { try { return new URL(href).hostname; } catch 
  * requirements tab marks the requirement itself, so the page says which part of the design was meant.
  */
 export function DesignDocument({design, path, features, current}: {design: {title: string; body: string; sources?: DesignSource[] | undefined}; path: string; features: SpecFeature[]; current?: string | undefined}) {
+  useLanguage();
   const section = current ? designSectionsOf(design.body).get(current) : undefined;
   let fence: {char: string; size: number} | undefined;
   const body = design.body.split('\n').map(line => {

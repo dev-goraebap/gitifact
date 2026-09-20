@@ -17,7 +17,7 @@ import { PageHeader } from '../../../widgets/page-header';
 import { PageState } from '../../../shared/ui/page-state';
 import { HgiRefresh } from '../../../shared/ui/icons/HgiRefresh';
 import styles from './git-status.module.css';
-import { t, tNodes } from '../../../shared/i18n';
+import { t, tNodes, useLanguage, getLanguage } from '../../../shared/i18n';
 
 type Change = RepositoryStatusSuccessV1['changes'][number];
 type State = { label: string; color: 'red' | 'green' | 'blue' | 'gray' };
@@ -42,6 +42,7 @@ function submoduleNote(change: Change) {
 }
 
 export function RepositoryPanel({ session, reconnect }: { session: BrowserSessionV2; reconnect: () => void }) {
+  useLanguage();
   const client = useQueryClient();
   const query = useQuery(statusOptions(session));
   const working = useWorkingChanges();
@@ -71,7 +72,7 @@ export function RepositoryPanel({ session, reconnect }: { session: BrowserSessio
   return (
     <VStack gap={0} className={styles.page} aria-busy={busy}>
       <PageHeader trail={[{ label: t('nav.git') }]} actions={<HStack gap={3} className={styles.headerActions}>
-        {data && <Text type="supporting" color="secondary" className={styles.headerTime}>{tNodes('header.observedAt', { time: <time dateTime={data.observation.completedAt}>{new Date(data.observation.completedAt).toLocaleString()}</time> })}</Text>}
+        {data && <Text type="supporting" color="secondary" className={styles.headerTime}>{tNodes('header.observedAt', { time: <time dateTime={data.observation.completedAt}>{new Date(data.observation.completedAt).toLocaleString(getLanguage())}</time> })}</Text>}
         <IconButton label={busy ? t('git.refreshing') : t('git.refresh')} icon={<HgiRefresh />} variant="ghost" size="sm" isLoading={busy} isDisabled={busy || needsReconnect} onClick={() => refresh.mutate()} />
       </HStack>} />
       <VStack gap={0} className={styles.column}>

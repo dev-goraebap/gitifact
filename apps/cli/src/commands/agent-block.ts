@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { InitError } from '@gitifact/core';
-import { defaultLanguage, t, type Language } from '../shared/i18n/index.js';
+import { getLanguage, t, type Language } from '../shared/i18n/index.js';
 import { docTopics } from './docs.js';
 
 // Text logic for the managed GITIFACT block in agent instruction files. Only renderAgentBlock reads a file,
@@ -25,7 +25,7 @@ export function boilerplateFor(path: string) {
 // The block body is one Markdown file per language; only {version}, {language} and {topics} are filled here.
 const readBundledBlock = (lang: Language) => readFile(new URL('./i18n/' + lang + '/block.md', import.meta.url), 'utf8');
 export interface AgentBlockControls { readBlock?: (lang: Language) => Promise<string> }
-export async function renderAgentBlock(version: string, controls: AgentBlockControls = {}, lang: Language = defaultLanguage) {
+export async function renderAgentBlock(version: string, controls: AgentBlockControls = {}, lang: Language = getLanguage()) {
   const body = await (controls.readBlock ?? readBundledBlock)(lang);
   const filled = body.trimEnd().replace(/\{(version|language|topics)\}/g, (_whole, name: string) =>
     name === 'version' ? version : name === 'language' ? lang : docTopics.join(', '));
@@ -36,7 +36,7 @@ export async function renderAgentBlock(version: string, controls: AgentBlockCont
 export function parseAgentBlock(text: string) {
   const match = /^gitifact v(\S+)(?: · ([a-z][a-z-]*))? · .*schemaVersion (\d+)$/m.exec(text);
   if (!match) return null;
-  return { version: match[1]!, language: (match[2] ?? defaultLanguage) as Language, schemaVersion: Number(match[3]) };
+  return { version: match[1]!, language: (match[2] ?? 'ko') as Language, schemaVersion: Number(match[3]) };
 }
 export function findBlock(text: string) {
   const start = text.indexOf(AGENT_START);

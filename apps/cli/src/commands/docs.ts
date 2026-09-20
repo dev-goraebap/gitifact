@@ -1,7 +1,7 @@
 import { lstat, readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { WIKI_ENTRY_PATH } from '@gitifact/core';
-import { defaultLanguage, t, type Language } from '../shared/i18n/index.js';
+import { getLanguage, t, type Language } from '../shared/i18n/index.js';
 
 export const docTopics = ['workflow', 'spec', 'design', 'wiki', 'writing', 'commit'] as const;
 export type DocTopic = typeof docTopics[number];
@@ -13,7 +13,7 @@ export const isDocTopic = (value: string): value is DocTopic => (docTopics as re
 // Bundled Markdown ships next to the built entry point as dist/i18n/<lang>/docs/<name>.md.
 export const readBundledDoc = (name: string, lang: Language) => readFile(new URL('./i18n/' + lang + '/docs/' + name + '.md', import.meta.url), 'utf8');
 const info = (path: string) => lstat(path).catch(e => { if (e.code === 'ENOENT') return undefined; throw e; });
-export function listDocTopics(lang: Language = defaultLanguage) {
+export function listDocTopics(lang: Language = getLanguage()) {
   const width = Math.max(...docTopics.map(topic => topic.length));
   return docTopics.map(topic => topic.padEnd(width) + '  ' + t(`docs.summary.${topic}`, {}, lang)).join('\n') + '\n';
 }
@@ -40,7 +40,7 @@ async function readWikiPolicy(root: string | undefined) {
   }).join('\n').trim();
   return body || undefined;
 }
-export async function renderDoc(topic: DocTopic, controls: DocsControls = {}, lang: Language = defaultLanguage) {
+export async function renderDoc(topic: DocTopic, controls: DocsControls = {}, lang: Language = getLanguage()) {
   const read = controls.readDoc ?? readBundledDoc;
   const format = (await read(topic, lang)).trimEnd();
   if (topic !== 'wiki') return format + '\n';

@@ -21,9 +21,10 @@ import { RequestState } from '../../../shared/ui/request-state';
 import { PageHeader } from '../../../widgets/page-header';
 import { useLoadingHold } from '../../../shared/ui/request-state/useLoadingHold';
 import { ViewSkeleton } from './ViewSkeleton';
-import { t, tNodes } from '../../../shared/i18n';
+import { t, tNodes, useLanguage, getLanguage } from '../../../shared/i18n';
 import { DocumentIndexProvider } from '../../../shared/ui/document';
 export function ProductPanel({session,view,featureId,email,documentId,search,change}:ProductProps&{session:BrowserSessionV2}) {
+  useLanguage();
  const wiki=view==='wiki'; const productPage=view==='product';
  const query=useQuery(specsOptions(session));
  const disconnected=query.error instanceof ApiError && query.error.code==='SESSION_CHANGED';
@@ -50,7 +51,7 @@ export function ProductPanel({session,view,featureId,email,documentId,search,cha
  <Selector label={t('filters.author')} isLabelHidden value={search.author??''} options={[{value:'',label:t('filters.allAuthors')},...first.contributors.map(p=>({value:p.email,label:p.name}))]} onChange={author=>change({...search,author:author||undefined})}/></>}
  </HStack>;
  const actions=<HStack gap={3} className={styles.headerActions}>
- {first&&<Text type="supporting" color="secondary" className={styles.headerTime}>{tNodes('header.observedAt', { time: <time dateTime={first.observedAt}>{new Date(first.observedAt).toLocaleString()}</time> })}</Text>}
+ {first&&<Text type="supporting" color="secondary" className={styles.headerTime}>{tNodes('header.observedAt', { time: <time dateTime={first.observedAt}>{new Date(first.observedAt).toLocaleString(getLanguage())}</time> })}</Text>}
  <IconButton label={t('common.refresh')} icon={<HgiRefresh/>} variant="ghost" size="sm" isLoading={query.isFetching} isDisabled={query.isFetching} onClick={()=>{void query.refetch();}}/>
  </HStack>;
  const notes=first?.contributorsLimited&&<HStack gap={3} wrap="wrap"><Text type="supporting">{t('history.contributorsLimited')}</Text></HStack>;

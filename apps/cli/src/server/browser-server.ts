@@ -14,7 +14,7 @@ import { loadBrowserAssets, serveStatic } from './http/static-files.js';
 import { projectRoutes } from './routes/project-routes.js';
 import { recordRoutes } from './routes/record-routes.js';
 import { assetRoutes } from './routes/asset-routes.js';
-import { t } from '../shared/i18n/index.js';
+import { t, resolveLanguage, getLanguage, withLanguage } from '../shared/i18n/index.js';
 import { checkingUpdate, resolveUpdate } from '../shared/update-check.js';
 import type { FetchLatestVersion } from '../adapters/registry/latest-version.js';
 
@@ -77,14 +77,16 @@ export async function startBrowserServer(options: Options) {
   let origin = '';
 
   const server = createServer({ requestTimeout: 5000, headersTimeout: 5000, maxHeaderSize: 8192 }, (request, response) => {
-    void (async () => {
+    const header = request.headers['accept-language'];
+    const language = typeof header === 'string' ? resolveLanguage(header.split(',')[0]?.split(';')[0]?.trim()) : getLanguage();
+    void withLanguage(language, async () => {
       if (closing) return fail(response, 503, 'SERVER_CLOSING', t('server.closing'));
       const admitted = admit(request, response, origin, !!options.dev);
       if (!admitted) return;
       if (admitted.api) return dispatch(routes, sessionId, admitted.url, admitted.path, request, response, admitted.allowedOrigin);
       return serveStatic(request, response, admitted.path, assets);
-    })().catch(() => {
-      if (!response.headersSent && !response.destroyed) fail(response, 500, 'INTERNAL_ERROR', t('server.internal'));
+    }).catch(() => {
+      if (!response.headersSent && !response.destroyed) fail(response, 500, 'INTERNAL_ERROR', t('server.internal', {}, language));
       else response.destroy();
     });
   });

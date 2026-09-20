@@ -16,7 +16,7 @@ export interface Route<Q = Record<string, never>> {
   /** The accepted query string; a route without one refuses any query. */
   query?: QuerySchema<Q>;
   /** The message a read failure is reported with when the error carries none. */
-  unreadable?: string;
+  unreadable?: () => string;
   handle(context: RouteContext<Q>): Promise<Reply> | Reply;
 }
 /** Declares a route with its query type inferred from the schema. */
@@ -52,6 +52,6 @@ export async function dispatch(routes: Route<unknown>[], sessionId: string, url:
     if (reply && !response.destroyed) json(response, reply.status, reply.body);
   } catch (error) {
     if (error instanceof HttpError) return fail(response, error.status, error.code, error.message);
-    fail(response, 503, 'INTERNAL_ERROR', error instanceof Error && error.message ? error.message : found.unreadable ?? t('server.internal'));
+    fail(response, 503, 'INTERNAL_ERROR', error instanceof Error && error.message ? error.message : found.unreadable?.() ?? t('server.internal'));
   }
 }

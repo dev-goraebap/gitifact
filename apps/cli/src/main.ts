@@ -7,12 +7,22 @@ import { runUpdate } from './commands/update.js';
 import { agentPresetNames } from './commands/agent-block.js';
 import { runSpecPreview } from './commands/spec-preview.js';
 import { runMigrate } from './commands/migrate.js';
-import { t } from './shared/i18n/index.js';
+import { t, configureLanguage, environmentLanguage, type Language } from './shared/i18n/index.js';
 
 declare const __CLI_VERSION__: string;
 
+// Resolve before constructing help text; Commander still validates the actual option.
+const languageArgs = process.argv.slice(2).slice(0, process.argv.slice(2).indexOf('--') < 0 ? undefined : process.argv.slice(2).indexOf('--'));
+let selectedLanguage: Language | undefined;
+for (let i = 0; i < languageArgs.length; i++) {
+  const arg = languageArgs[i]!;
+  const value = arg === '--lang' ? languageArgs[++i] : arg.startsWith('--lang=') ? arg.slice(7) : undefined;
+  if (value === 'ko' || value === 'en') selectedLanguage = value;
+}
+configureLanguage(selectedLanguage ?? environmentLanguage(), selectedLanguage);
 const program = new Command()
   .name('gitifact')
+  .addOption(new Option('--lang <language>', t('help.lang')).choices(['ko', 'en']))
   .description(t('help.program'))
   .version(__CLI_VERSION__)
   .allowExcessArguments(false)

@@ -94,3 +94,41 @@ test('the wordmark, the menu and the version share one left edge', async ({ page
   });
   expect(new Set(Object.values(edges)).size).toBe(1);
 });
+
+
+test('getting started follows the intro and keeps Korean guidance on reload', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await page.goto('/about');
+  await expect(page.getByRole('link', { name: '시작하기', exact: true })).toBeVisible();
+  const links = await page.locator('a[href]').evaluateAll(nodes => nodes.map(node => node.getAttribute('href')));
+  expect(links.indexOf('/about')).toBeGreaterThanOrEqual(0);
+  expect(links.indexOf('/getting-started')).toBe(links.indexOf('/about') + 1);
+  await page.getByRole('article').getByRole('link', { name: 'CLI 안내' }).click();
+  await expect(page).toHaveURL(/\/getting-started$/);
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('시작하기');
+  const article = page.getByRole('article', { name: '시작하기' });
+  await expect(article).toContainText('npm install -g gitifact@latest');
+  await expect(article).toContainText('프로젝트에 맞게 위키 구성하기');
+  await expect(article).toContainText('gitifact spec commit');
+  await page.reload();
+  await expect(article).toBeVisible();
+  await page.goBack();
+  await expect(page).toHaveURL(/\/about$/);
+  const link = page.getByRole('link', { name: '시작하기', exact: true });
+  await link.focus();
+  await page.keyboard.press('Enter');
+  await expect(page).toHaveURL(/\/getting-started$/);
+  expect(errors).toEqual([]);
+});
+
+for (const colorScheme of ['light', 'dark'] as const) {
+  test(`getting started is readable on mobile in ${colorScheme}`, async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.emulateMedia({ colorScheme });
+    await page.goto('/getting-started');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('시작하기');
+    await expect(page.getByRole('article')).toContainText('직접 명령 실행하기');
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  });
+}
