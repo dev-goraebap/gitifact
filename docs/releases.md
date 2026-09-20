@@ -362,3 +362,5 @@ Markdown 명세·변경 이유·Git 커밋 연결과 요구사항 이력·제품
 2026-09-20, 커밋 `12776bd`까지 main에 푸시한 뒤 npm 추가 인증을 거쳐 `gitifact@0.7.0`을 공개 게시했다. 게시 요청은 HTTP 202로 접수됐고 수 분 후 공개 조회와 latest가 0.7.0으로 반영됐다. 레지스트리 integrity는 `sha512-uDrnmEDE7dMM97eh/WQvJHWcOkg4X7bTemyp+krTeE78YI6OnQgB4/EnMRgPAfxKZX2W0WEyVM6MZqum2WezFg==`다.
 
 공개 레지스트리에서 새 임시 폴더로 설치해 version·help·한국어/영어 docs, Git 저장소 init·spec working을 확인했다. 설치된 CLI 해시는 지정 빌드와 같고 다크 모드 스크린샷 세 장도 원본과 바이트가 일치한다. 실제 사용자 프로젝트나 전역 설치는 변경하지 않았다.
+
+같은 날 배포 코드 커밋 `12776bd819b156c60eb73945a6c336149e04ac54`에 주석 태그 `v0.7.0`을 만들고 origin에 푸시했다. 0.7.0부터 CLI 패키지 버전과 Git 태그를 맞추며, 이후 문서 기록 커밋으로 배포 태그를 옮기지 않는다.
