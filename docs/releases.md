@@ -227,6 +227,16 @@ Tryce에서 Gitifact로 이름을 바꾼 첫 배포다. 패키지 `gitifact@0.1.
 
 커밋 6e56d31 기준으로 `pnpm check`를 통과했다. intro 3개·contracts 7개·core 29개·브라우저 74개·CLI 128개와 workspace 밖 패키지 설치·실행을 확인했다. CLI 번들 SHA-256은 `61fd0fb9e5b35afae9130856c88c3b545667054dc9ceb6f65ed4ea4411101351`이다. 게시 결과는 아래에 이어서 기록한다.
 
+## 0.6.2 게시 완료
+
+2026-09-20 준비 커밋 b7d9f8e까지 main을 원격에 푸시하고 `apps/cli`에서 Git 검사를 유지한 pnpm publish로 게시했다. latest는 0.6.2, 165개 파일이다. 모의 실행·실제 게시·레지스트리의 integrity가 모두 `sha512-ZM4DxxhE0QD8hXx6kMkXiWtMocd3Npat/TJjXkxG6qAnyUXJ2gGT+xkdkDXkDqmLLW8C5HzlmNi14zIiRq9lMw==`, shasum은 `9e633424d1bbce555bde036e71e2969c9a51576e`로 같다. 0.6.1에서는 달랐다. 배포물은 dist·README·LICENSE·package.json 범위 밖의 파일이 없다. 게시 직후 레지스트리 조회는 404였고 약 4분 30초 뒤 반영됐다.
+
+새 폴더에 레지스트리에서 `gitifact@0.6.2`를 설치해 확인했다. 설치된 main.js의 SHA-256은 지정 빌드와 같은 `61fd0fb9e5b35afae9130856c88c3b545667054dc9ceb6f65ed4ea4411101351`이고 `--version`은 0.6.2, dist-tags의 latest도 0.6.2다. 새 Git 저장소에서 `init`(schemaVersion 2, AGENTS.md 블록 v0.6.2), `spec working --stamp`, `spec save`(S·R 발급), `set-design`, `spec changes`, `spec commit`(커밋 85102f2, 트레일러 Req 2·Design 1·Doc 1)이 동작한다. 이유를 붙이지 않은 명세가 남아 있을 때 `spec commit`은 `INVALID_SPEC_PREVIEW`로 거부하며 자동으로 포함하지 않는다.
+
+설치본의 `browser`로 이번 배포의 화면을 확인했다. 기능별 요구사항 목록이 기능 행 아래에 요구사항 행을 잇고(빗금 바탕, 정렬 가능한 열 머리 3개), 설계가 가리키는 요구사항에만 "설계 →"가 붙는다. 요구사항 행을 누르면 `?selected=…#R-…`로 가서 제목에 형광펜 표시가 남고 "이 요구사항의 설계 →"가 있다. 활동은 커밋 하나를 한 항목으로 두고 이유 묶음 두 개를 보이며, 제품 개요에 "최신 활동" 절이 있다. 콘솔 오류는 없다.
+
+이 빌드를 프로젝트 사용 대상으로 지정한다. 실행은 `node apps/cli/dist/main.js` 또는 `pnpm cli`다. 직전 지정 빌드는 0.6.1의 `85d89a1e…`였다. 기존 인증 세션으로 게시했으며 인증 파일과 토큰은 조회·변경하지 않았다.
+
 ## 이전 Tryce 배포 기록
 
 아래 패키지 이름·버전·커밋·무결성은 당시 배포의 사실이다. Gitifact 0.1.0의 게시 결과로 해석하거나 새 이름으로 일괄 치환하지 않는다.
