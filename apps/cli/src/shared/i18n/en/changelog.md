@@ -1,3 +1,14 @@
+## 0.7.1 - 2026-09-21
+### Added
+- Agent instructions now ask agents to check for updates at the start of a session and refresh the instructions with the user's consent. The new `update --check` command checks for updates without changing files.
+### Changed
+- Setup guidance now uses npx without requiring a global install. Agent instructions pin the CLI version, while everyday examples in the README and Getting started use the shorter `npx gitifact` command.
+### Removed
+- Removed browser update notifications and server-side update checks. The current version and release notes remain available. Also removed the `browser --no-update-check` option.
+### Fixed
+- Merged work now retains the original commit's author and reasons instead of being attributed to the person who merged it. Ordinary merges no longer duplicate activity, while records edited during a merge remain attributed to that merge commit. Existing history indexes are rebuilt automatically.
+- Fixed the project name, search, and refresh header disappearing when scrolling a long, paginated feature requirements list.
+
 ## 0.7.0 - 2026-09-20
 ### Added
 - A GitHub link at the bottom of the sidebar opens the project repository in a new tab.

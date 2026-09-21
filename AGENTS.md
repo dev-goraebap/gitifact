@@ -3,9 +3,9 @@
 <!-- GITIFACT:START -->
 ## Gitifact Guide
 
-gitifact v0.7.0 · ko · 저장 규약 schemaVersion 2
+gitifact v0.7.1 · ko · 저장 규약 schemaVersion 2
 
-CLI: 기본 실행은 `npx --yes gitifact@0.7.0 <cmd>`다. 아래 `gitifact`는 이 실행 방법을 뜻한다. 프로젝트가 로컬 설치본이나 전역 명령 등 다른 실행 방법을 지정하면 그것을 우선한다.
+CLI: 기본 실행은 `npx --yes gitifact@0.7.1 <cmd>`다. 아래 `gitifact`는 이 실행 방법을 뜻한다. 프로젝트가 로컬 설치본이나 전역 명령 등 다른 실행 방법을 지정하면 그것을 우선한다.
 
 ### 시작할 때
 

@@ -11,6 +11,7 @@ import { startBrowserServer } from '../.test-build/server/browser-server.js';
 
 const root = fileURLToPath(new URL('../../../', import.meta.url));
 const entry = join(root, 'apps/cli/dist/main.js');
+const version = JSON.parse(readFileSync(join(root, 'apps/cli/package.json'), 'utf8')).version;
 function run(f, args, language = 'en', more = {}) {
   const result = spawnSync(process.execPath, [entry, ...args], { cwd: f.repo,
     env: { ...f.env, GITIFACT_LANG: language, GITIFACT_NO_UPDATE_CHECK: '1', ...more }, encoding: 'utf8', timeout: 15000 });
@@ -60,17 +61,17 @@ test('updates preserve Korean blocks and records; explicit language changes only
   const f = fixture(t);
   success(f, ['--lang', 'ko', 'init']);
   const agents = join(f.repo, 'AGENTS.md');
-  const initial = readFileSync(agents, 'utf8').replace('v0.7.0', 'v0.6.2') + '\nUser instructions outside the block.\n';
+  const initial = readFileSync(agents, 'utf8').replace('v' + version, 'v0.6.2') + '\nUser instructions outside the block.\n';
   writeFileSync(agents, initial);
   const records = fingerprint(join(f.repo, '.gitifact'));
   const stamp = JSON.parse(success(f, ['spec', 'working', '--stamp'])).stamp;
   success(f, ['update'], 'en');
-  assert.match(readFileSync(agents, 'utf8'), /v0\.7\.0 · ko ·/);
+  assert.ok(readFileSync(agents, 'utf8').includes(`v${version} · ko ·`));
   assert.ok(readFileSync(agents, 'utf8').endsWith('User instructions outside the block.\n'));
   success(f, ['init'], 'en');
   assert.match(readFileSync(agents, 'utf8'), /· ko ·/);
   success(f, ['--lang', 'en', 'update']);
-  assert.match(readFileSync(agents, 'utf8'), /v0\.7\.0 · en · storage schemaVersion 2/);
+  assert.ok(readFileSync(agents, 'utf8').includes(`v${version} · en · storage schemaVersion 2`));
   assert.ok(readFileSync(agents, 'utf8').endsWith('User instructions outside the block.\n'));
   assert.deepEqual(fingerprint(join(f.repo, '.gitifact')), records);
   assert.equal(JSON.parse(success(f, ['spec', 'working', '--stamp'])).stamp, stamp);
