@@ -7,7 +7,7 @@ import { specPreviewReader } from '../../adapters/git/spec-preview-reader.js';
  * Bumped whenever what is stored changes meaning — a column, or how a commit's changes are computed. A file written
  * under another number is dropped and rebuilt; everything in it can be read again from Git.
  */
-export const INDEX_FORMAT = 1;
+export const INDEX_FORMAT = 2;
 
 const SCHEMA = `
   -- Commits already read, and whether the commit's parent was legacy JSON the history does not read past.
@@ -18,7 +18,7 @@ const SCHEMA = `
     id TEXT NOT NULL, kind TEXT NOT NULL, types TEXT NOT NULL, email TEXT NOT NULL, date TEXT NOT NULL,
     before_spec TEXT, after_spec TEXT, needle TEXT NOT NULL, row TEXT NOT NULL, detail TEXT NOT NULL);
   CREATE INDEX changes_by_commit ON changes (oid, ord);
-  -- The commits of one HEAD's first-parent history that touched records, newest first (pos 0).
+  -- All reachable record commits of one HEAD, children before parents (pos 0 is newest).
   CREATE TABLE lineage (head TEXT NOT NULL, pos INTEGER NOT NULL, oid TEXT NOT NULL, PRIMARY KEY (head, pos));
   CREATE INDEX lineage_by_commit ON lineage (head, oid);
   CREATE TABLE heads (head TEXT PRIMARY KEY, seen INTEGER NOT NULL);

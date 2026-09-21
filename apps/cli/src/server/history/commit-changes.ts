@@ -1,6 +1,7 @@
 import { comparePreviewBundles, emptyBundle, parsePreviewBundle, recordPathPattern, SpecPreviewError, STORE_DIRS, WIKI_DIR, WIKI_HISTORY_PATH, type PreviewBundle, type PreviewChange } from '@gitifact/core';
 import { LegacyBaselineError, specPreviewReader } from '../../adapters/git/spec-preview-reader.js';
 import { t } from '../../shared/i18n/index.js';
+import { remergeRecords } from './merge-records.js';
 
 /** One change of one commit, with the full text on both sides. Lists send it without the text. */
 export interface HistoryEvent {
@@ -10,7 +11,7 @@ export interface HistoryEvent {
 }
 export interface CommitChanges { commit: string; events: HistoryEvent[]; boundary: boolean }
 interface RawEntry { oldBlob: string; newBlob: string; path: string }
-interface RawCommit { commit: string; parent: string | undefined; author: string; email: string; date: string; committer: string; message: string; entries: RawEntry[] }
+interface RawCommit { commit: string; parent: string | undefined; parents: string[]; author: string; email: string; date: string; committer: string; message: string; entries: RawEntry[] }
 
 /** The record files a commit must touch to appear in the history: specs, designs, reasons and wiki pages. */
 export const HISTORY_PATHSPECS = [...STORE_DIRS.flatMap(d => [`:(glob)${d}/spec/*/requirements.md`, `:(glob)${d}/spec/*/design.md`, `:(glob)${d}/spec/*/history.jsonl`]),
@@ -49,7 +50,7 @@ export function createCommitChanges(root: string, snapshot: (oid: string) => Pro
         if (!oldBlob || !newBlob || path === undefined) throw new SpecPreviewError(t('specReader.historyUnreadable'));
         if (recordPathPattern.test(path) || isLegacy(path)) entries.push({ oldBlob, newBlob, path });
       }
-      return { commit, parent: parents.split(' ')[0] || undefined, author, email, date, committer, message, entries };
+      return { commit, parent: parents.split(' ')[0] || undefined, parents: parents.split(' ').filter(Boolean), author, email, date, committer, message, entries };
     });
   }
 
@@ -100,10 +101,41 @@ export function createCommitChanges(root: string, snapshot: (oid: string) => Pro
     return { commit: c.commit, events: eventsOf(c, comparePreviewBundles(before, after).changes), boundary };
   }
 
+  async function merge(c: RawCommit): Promise<CommitChanges> {
+    let touched: Set<string> | undefined;
+    if (c.parents.length === 2) {
+      // Git uses a temporary object store for remerge-diff; neither the checkout nor its index is changed.
+      // Disable external diff/text conversion and request enough context for the 1 MiB record-file limit.
+      const patch = reader.decode(await reader.run(['-c', 'merge.conflictStyle=merge', 'show', '--remerge-diff', '--format=',
+        '--no-color', '--no-ext-diff', '--no-textconv', '--no-renames', '--src-prefix=a/', '--dst-prefix=b/', '--unified=1048576', c.commit, '--', ...HISTORY_PATHSPECS]));
+      touched = remergeRecords(patch);
+      if (!touched.size) return { commit: c.commit, events: [], boundary: false };
+    }
+    const after = await snapshot(c.commit); let boundary = false;
+    const parents: PreviewBundle[] = [];
+    for (const parent of c.parents) {
+      try { parents.push(await snapshot(parent)); }
+      catch (error) { if (error instanceof LegacyBaselineError) { parents.push(emptyBundle()); boundary = true; } else throw error; }
+    }
+    // Reasons imported from branches belong to their original commits, and may refer to changes later undone.
+    // Compare content independently, then attach only reasons first recorded by the merge itself.
+    const withoutReasons = (b: PreviewBundle): PreviewBundle => ({ specs: b.specs.map(s => ({ ...s, history: [] })), wiki: { ...b.wiki, history: [] } });
+    const differences = parents.map(p => comparePreviewBundles(withoutReasons(p), withoutReasons(after)).changes);
+    const reasons = (b: PreviewBundle) => [...b.specs.flatMap(s => s.history), ...b.wiki.history];
+    const inherited = new Set(parents.flatMap(p => reasons(p).map(r => r.id)));
+    const added = reasons(after).filter(r => !inherited.has(r.id));
+    // Git cannot remerge octopus commits. Retain records that differ from every parent in that case, rather than
+    // dropping the merge or attributing all the imported branch records to its author.
+    const selected = differences[0]!.filter(change => touched ? touched.has(change.id) : differences.every(d => d.some(v => v.id === change.id)));
+    return { commit: c.commit, events: eventsOf(c, selected.map(change => ({ ...change,
+      reasons: added.filter(r => [...r.requirements, ...(r.designs ?? []), ...(r.documents ?? [])].includes(change.id)),
+    }))), boundary };
+  }
+
   async function batch(commits: RawCommit[]): Promise<CommitChanges[]> {
     // A commit whose own records are still legacy JSON goes the old way, which reads or refuses it as before.
     const names = new Map<RawCommit, { before: string[]; after: string[]; boundary: boolean }>();
-    for (const c of commits.filter(c => !c.entries.some(e => isLegacy(e.path) && !isZero(e.newBlob)))) {
+    for (const c of commits.filter(c => c.parents.length < 2 && !c.entries.some(e => isLegacy(e.path) && !isZero(e.newBlob)))) {
       const files = wanted(c.entries);
       const boundary = c.entries.some(e => isLegacy(e.path) && !isZero(e.oldBlob));
       names.set(c, { after: files.map(f => c.commit + ':' + f), before: c.parent && !boundary ? files.map(f => c.parent + ':' + f) : [], boundary });
@@ -113,6 +145,7 @@ export function createCommitChanges(root: string, snapshot: (oid: string) => Pro
     catch { blobs = undefined; }
     const result: CommitChanges[] = [];
     for (const c of commits) {
+      if (c.parents.length > 1) { result.push(await merge(c)); continue; }
       let value: CommitChanges | undefined;
       const want = names.get(c);
       if (want && blobs) {
@@ -129,12 +162,12 @@ export function createCommitChanges(root: string, snapshot: (oid: string) => Pro
   }
 
   return {
-    /** The commits of `head`'s first-parent history that touched records, newest first. One Git process. */
+    /** All reachable record commits, children before parents even when author clocks differ. */
     async lineage(head: string): Promise<string[]> {
-      const text = reader.decode(await reader.run(['rev-list', '--first-parent', head, '--', ...HISTORY_PATHSPECS]));
+      const text = reader.decode(await reader.run(['rev-list', '--full-history', '--date-order', head, '--', ...HISTORY_PATHSPECS]));
       return text.split('\n').filter(Boolean);
     },
-    /** The changes of the given commits, in the given order; two Git processes per hundred commits. */
+    /** Changes in the given order; ordinary commits are batched, merges also read their resolution diff. */
     async of(commits: string[]): Promise<CommitChanges[]> {
       const out: CommitChanges[] = [];
       for (let i = 0; i < commits.length; i += BATCH) {
