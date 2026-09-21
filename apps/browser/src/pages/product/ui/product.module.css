@@ -215,8 +215,10 @@
    there is something to scroll, so a short page (the last one, or a narrowed list) left it under the table in the
    middle of the screen. The column it sits in is stretched to the card instead, and `margin-block-start:auto`
    pushes it to the floor of that. The stretch is asked for by the pager itself, so every other screen is untouched. */
-.page:has(.featurePager) { min-height:100%; }
-.page:has(.featurePager) .column, .page:has(.featurePager) .content, .page:has(.featurePager) .featureTable { flex:1 1 auto; }
+/* Keep the sticky header's containing block as tall as the rows. Shrinking these stacks to the card's
+   viewport lets the rows overflow their parent and pushes the header away before the list ends. */
+.page:has(.featurePager) { min-height:100%; flex:0 0 auto; }
+.page:has(.featurePager) .column, .page:has(.featurePager) .content, .page:has(.featurePager) .featureTable { flex:1 0 auto; }
 .featurePager { position:sticky; bottom:0; z-index:2; margin-block-start:auto; align-items:center; margin-inline:calc(var(--spacing-4) * -1); margin-bottom:calc(var(--spacing-4) * -1); padding:var(--spacing-2) var(--spacing-4); background:var(--color-background-surface); border-top:1px solid var(--color-border); }
 .featureTitleRow .featureTitle { flex:0 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .featureTitleRow .featureDescription { flex:1 1 auto; min-width:0; }

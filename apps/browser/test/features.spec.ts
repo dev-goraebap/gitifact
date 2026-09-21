@@ -215,3 +215,34 @@ test('the pager sits on the floor of the card even when the page is too short to
   expect(short.scrolls).toBe(false);
   expect(Math.abs(short.gap)).toBeLessThanOrEqual(8);
 });
+
+for (const width of [1440, 760]) for (const colorScheme of ['light', 'dark'] as const) {
+  test(`the page header stays pinned through a long feature list at ${width}px in ${colorScheme}`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 800 });
+    await page.emulateMedia({ colorScheme });
+    const long = structuredClone(many);
+    long.features = [...long.features, { ...long.features[0]!, id: 'S-dddddddddd' }].map((feature, n) => ({ ...feature,
+      requirements: Array.from({ length: 12 }, (_, i) => ({ ...feature.requirements[0]!,
+        id: 'R-' + 'abcd'[n]!.repeat(8) + 'abcdefghijkl'[i] + 'a', title: `요구사항 ${i}` })),
+    }));
+    await mockApi(page);
+    await serve(page, long);
+    await page.goto('/features');
+    await expect(page.getByRole('table')).toBeVisible();
+    await expect(page.getByRole('button', { name: '2 페이지로 이동' })).toBeVisible();
+    const header = page.locator('header[aria-label]');
+    const initial = (await header.boundingBox())!;
+    const card = page.locator('[class*=card]').filter({ has: header });
+    const range = await card.evaluate(el => el.scrollHeight - el.clientHeight);
+    expect(range).toBeGreaterThan(800);
+    for (const fraction of [0.5, 1, 0]) {
+      await card.evaluate((el, top) => { el.scrollTop = top; }, range * fraction);
+      await expect.poll(async () => Math.abs((await header.boundingBox())!.y - initial.y)).toBeLessThanOrEqual(1);
+      // It must remain above the table and filters, not just occupy the right coordinates.
+      expect(await header.evaluate(el => {
+        const r = el.getBoundingClientRect();
+        return el.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2));
+      })).toBe(true);
+    }
+  });
+}

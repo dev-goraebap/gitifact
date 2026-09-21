@@ -32,3 +32,4 @@
 {"id":"H-cpk3niaffq","requirements":["R-m7fyerzqti"],"designs":["S-jqxgddhsdf"],"reason":"사용자가 CLI 안내를 한국어로 검토하고 쉽게 시작할 수 있도록 브라우저 소개 아래에 시작하기를 둔다. 에이전트 지침이 처리하는 기록 절차를 반복해서 요청하도록 쓰지 않고 짧은 일상 언어의 예시로 안내한다."}
 {"id":"H-ungw4wo5oa","requirements":["R-aplhjskqow"],"designs":["S-jqxgddhsdf"],"reason":"0.7.0 배포 전에 사용자가 사이드바에서 Gitifact GitHub 저장소를 새 탭으로 열 수 있도록 요청했다. 버전 옆에 로고와 이름을 두고 현재 프로젝트 화면은 유지한다."}
 {"id":"H-3pnckt5jap","requirements":["R-m7fyerzqti"],"designs":["S-jqxgddhsdf"],"reason":"사용자가 매번 --yes와 버전을 입력하는 예시가 복잡하다고 지적해 사용자 문서는 짧은 npx 명령으로 정리하고 정확한 버전과 --yes는 에이전트 블록에서 관리한다. init·update 안내도 전역 설치 없이 실행할 수 있게 맞추고 갱신된 지침을 공유하면 팀원이 다음 세션부터 같은 버전을 쓰는 절차를 설명한다."}
+{"id":"H-3w4lztgmhr","requirements":[],"designs":["S-jqxgddhsdf"],"reason":"페이지 이동 버튼이 있는 긴 기능 목록에서 컨테이너가 축소되어 프로젝트명·검색·새로고침 헤더가 스크롤 중 사라졌다. 본문 길이만큼 컨테이너가 늘어나도록 고쳐 헤더를 고정하고 짧은 페이지의 푸터 배치는 유지한다."}
