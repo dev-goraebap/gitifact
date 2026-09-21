@@ -13,13 +13,13 @@ Agents can use requirements, designs, and past decisions as context for their wo
 Give this prompt to the agent you use in your project:
 
 ```text
-Run npx --yes gitifact@latest init in this project.
+Run npx gitifact@latest init in this project.
 Read the GITIFACT block that init adds to AGENTS.md or the relevant agent instructions file, and follow it from this session onward.
 ```
 
 Once setup is complete, keep working as usual: describe the feature you want to build or the behavior you want to change. Ask “Open the Gitifact browser” to see the documents and change history.
 
-When the browser viewer shows a new version, ask your agent to update Gitifact. To run commands yourself, see the [CLI guide](https://github.com/dev-goraebap/gitifact/blob/main/apps/cli/README.md).
+At the start of a new session, your agent checks for a newer version and asks whether to update Gitifact. To run commands yourself, see the [CLI guide](https://github.com/dev-goraebap/gitifact/blob/main/apps/cli/README.md).
 
 ## Why I built it
 

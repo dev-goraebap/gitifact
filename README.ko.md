@@ -13,13 +13,13 @@ Gitifact는 AI 에이전트와의 대화에서 나온 요구사항과 설계, �
 아래 프롬프트를 프로젝트에서 사용하는 에이전트에게 전달하세요.
 
 ```text
-이 프로젝트에서 npx --yes gitifact@latest init을 실행하세요.
+이 프로젝트에서 npx gitifact@latest init을 실행하세요.
 init이 AGENTS.md 등에 쓴 GITIFACT 블록을 읽고 이번 세션부터 따르세요.
 ```
 
 설치가 끝나면 평소처럼 에이전트에게 만들고 싶은 기능이나 바꾸고 싶은 동작을 설명하며 개발을 이어가세요. 정리된 문서와 변경 이력은 "gitifact 브라우저를 열어주세요"라고 요청해 확인할 수 있습니다.
 
-브라우저 뷰어에 새 버전 안내가 나타나면 에이전트에게 Gitifact 업데이트를 요청하세요. 직접 명령을 실행하려면 [CLI 안내](https://github.com/dev-goraebap/gitifact/blob/main/apps/cli/README.md)를 참고하세요.
+에이전트는 새 세션에서 새 버전을 확인하고 업데이트할지 묻습니다. 직접 명령을 실행하려면 [CLI 안내](https://github.com/dev-goraebap/gitifact/blob/main/apps/cli/README.md)를 참고하세요.
 
 ## 도구의 목적: 구현 바깥의 맥락
 

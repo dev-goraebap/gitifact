@@ -1,7 +1,7 @@
 import type { UpdateStateV1 } from '@gitifact/contracts';
 import type { FetchLatestVersion } from '../adapters/registry/latest-version.js';
 
-// Shared by the browser server and `gitifact update` so both report the same state for the same answer.
+// Shared by init, update and the read-only update check.
 export const updateCheckTimeoutMs = 3000;
 const release = /^(\d+)\.(\d+)\.(\d+)$/;
 const running = /^(\d+)\.(\d+)\.(\d+)(-[0-9A-Za-z.-]+)?$/;
@@ -20,7 +20,6 @@ export function isNewerRelease(latest: string, current: string) {
 export const updateCheckDisabled = (env: NodeJS.ProcessEnv, flagged = false) =>
   flagged || (env.GITIFACT_NO_UPDATE_CHECK !== undefined && env.GITIFACT_NO_UPDATE_CHECK !== '' && env.GITIFACT_NO_UPDATE_CHECK !== '0');
 
-export const checkingUpdate: UpdateStateV1 = { status: 'checking', latestVersion: null };
 export const disabledUpdate: UpdateStateV1 = { status: 'disabled', latestVersion: null };
 // Never rejects: offline, timeout, abort and malformed answers all become `unavailable`.
 // The deadline is an ordinary timer, not AbortSignal.timeout: that one is unreferenced, so a fetcher that never
@@ -45,3 +44,4 @@ export async function resolveUpdate(current: string, fetchLatest: FetchLatestVer
   finally { clearTimeout(timer); signal?.removeEventListener('abort', abort); }
 }
 export const npmGlobalInstall = (version: string) => 'npm install -g gitifact@' + version;
+export const npxUpdate = (version: string) => 'npx --yes gitifact@' + version + ' update';

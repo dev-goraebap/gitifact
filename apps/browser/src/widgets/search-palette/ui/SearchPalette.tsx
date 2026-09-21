@@ -12,7 +12,7 @@ import { Skeleton } from '@astryxdesign/core/Skeleton';
 import { PageState } from '../../../shared/ui/page-state';
 import { useHotkeys } from '@astryxdesign/core/hooks';
 import type { SearchableItem, SearchSource } from '@astryxdesign/core/Typeahead';
-import type { BrowserSessionV2, BrowserSearchV1 } from '@gitifact/contracts';
+import type { BrowserSessionV3, BrowserSearchV1 } from '@gitifact/contracts';
 import { sessionOptions, specsOptions, searchRecords } from '../../../entities/project';
 import { useSearchOpen, openSearch, setSearchOpen, closeSearch, typingDelay } from '../../../shared/lib/search';
 import { t, useLanguage } from '../../../shared/i18n';
@@ -114,7 +114,7 @@ export function SearchPalette() {
   return <LoadedPalette session={session.data} isOpen={isOpen}/>;
 }
 
-function LoadedPalette({ session, isOpen }: { session: BrowserSessionV2; isOpen: boolean }) {
+function LoadedPalette({ session, isOpen }: { session: BrowserSessionV3; isOpen: boolean }) {
   const language = useLanguage();
   const navigate = useNavigate();
   // The checkout is only read once the palette is opened, so the shell never fetches it just to be ready.

@@ -3,7 +3,7 @@ import test from 'node:test';
 import { request } from 'node:http';
 import { fileURLToPath } from 'node:url';
 import { RepositoryReadError } from '@gitifact/core';
-import { browserSessionV2, changelogV1, repositoryStatusV1 } from '@gitifact/contracts';
+import { browserSessionV3, changelogV1, repositoryStatusV1 } from '@gitifact/contracts';
 import { startBrowserServer } from '../.test-build/server/browser-server.js';
 import { createStatusSession } from '../.test-build/server/status-session.js';
 import { fixture, fingerprint } from './git-fixture.mjs';
@@ -24,7 +24,7 @@ test('real HTTP reads cached status, refreshes Git and serves only bundled brows
   const f = fixture(t);
   const server = await startBrowserServer({ cwd: f.repo, env: f.env, assetsDirectory });
   try {
-    const session = browserSessionV2.parse(await (await fetch(server.url + '/api/v1/session')).json());
+    const session = browserSessionV3.parse(await (await fetch(server.url + '/api/v1/session')).json());
     assert.equal(session.sessionId, server.session.sessionId);
     const first = await (await fetch(server.url + '/api/v1/status', { headers: headers(server) })).json();
     f.write('new.txt', 'changed\n');
@@ -169,39 +169,27 @@ test('occupied port fails without interrupting the existing server', async () =>
   } finally { await server.close(); }
 });
 
-test('session carries the CLI version and one background registry check, disabled unless a fetcher is given', async (t) => {
+test('browser startup and session reads never contact the registry', async (t) => {
   const f = fixture(t);
-  const quiet = await startBrowserServer({ cwd: f.repo, env: f.env, assetsDirectory, cliVersion: '0.4.0' });
+  const originalFetch = globalThis.fetch;
+  const external = [];
+  globalThis.fetch = (input, options) => {
+    if (!String(input).startsWith('http://127.0.0.1:')) {
+      external.push(String(input));
+      return Promise.reject(new Error('External request forbidden'));
+    }
+    return originalFetch(input, options);
+  };
+  t.after(() => { globalThis.fetch = originalFetch; });
+  const server = await startBrowserServer({ cwd: f.repo, env: f.env, assetsDirectory, cliVersion: '0.4.0' });
   try {
-    const session = browserSessionV2.parse(await (await fetch(quiet.url + '/api/v1/session')).json());
-    assert.deepEqual([session.version, session.cliVersion, session.update], [2, '0.4.0', { status: 'disabled', latestVersion: null }]);
-    assert.deepEqual(quiet.session, session);
-  } finally { await quiet.close(); }
-  let asked = 0; let answer;
-  const server = await startBrowserServer({ cwd: f.repo, env: f.env, assetsDirectory, cliVersion: '0.4.0',
-    fetchLatest: () => { asked++; return new Promise(resolve => { answer = resolve; }); } });
-  try {
-    // Startup did not wait for the registry, and re-reading the session never asks again.
-    const read = async () => browserSessionV2.parse(await (await fetch(server.url + '/api/v1/session')).json());
-    const first = await read();
-    assert.deepEqual(first.update, { status: 'checking', latestVersion: null });
-    assert.equal((await read()).sessionId, first.sessionId);
-    answer('0.4.1');
-    await new Promise(resolve => setImmediate(resolve));
-    assert.deepEqual((await read()).update, { status: 'available', latestVersion: '0.4.1' });
-    assert.equal(asked, 1);
+    for (let i = 0; i < 3; i++) {
+      const session = browserSessionV3.parse(await (await fetch(server.url + '/api/v1/session')).json());
+      assert.deepEqual([session.version, session.cliVersion, 'update' in session], [3, '0.4.0', false]);
+      assert.deepEqual(server.session, session);
+    }
   } finally { await server.close(); }
-  for (const [fetchLatest, expected] of [[async () => '0.4.0', 'up-to-date'], [async () => { throw new Error('offline'); }, 'unavailable'],
-    [async () => 'latest', 'unavailable'], [() => new Promise(() => {}), 'unavailable']]) {
-    const other = await startBrowserServer({ cwd: f.repo, env: f.env, assetsDirectory, cliVersion: '0.4.0', fetchLatest, updateCheckTimeoutMs: 50 });
-    try {
-      await new Promise(resolve => setTimeout(resolve, 150));
-      assert.equal((await (await fetch(other.url + '/api/v1/session')).json()).update.status, expected);
-    } finally { await other.close(); }
-  }
-  // Closing while the check is pending does not hang.
-  const pending = await startBrowserServer({ cwd: f.repo, env: f.env, assetsDirectory, fetchLatest: signal => new Promise((_resolve, reject) => signal.addEventListener('abort', () => reject(new Error('aborted')))) });
-  await pending.close();
+  assert.deepEqual(external, []);
 });
 
 test('release notes are parsed per language with a fallback and never read outside the bundle', async (t) => {

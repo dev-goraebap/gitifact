@@ -5,7 +5,7 @@
 프로젝트에서 사용하는 에이전트에게 아래 내용을 전달하세요.
 
 ```text
-이 프로젝트에서 npx --yes gitifact@latest init을 실행하세요.
+이 프로젝트에서 npx gitifact@latest init을 실행하세요.
 init이 AGENTS.md 등에 쓴 GITIFACT 블록을 읽고 이번 세션부터 따르세요.
 ```
 
@@ -59,30 +59,30 @@ init이 AGENTS.md 등에 쓴 GITIFACT 블록을 읽고 이번 세션부터 따�
 
 브라우저 설정에서 한국어, English, 브라우저 설정 중 하나를 고를 수 있습니다. 선택은 해당 브라우저에 저장되며 프로젝트 문서의 언어는 바꾸지 않습니다.
 
-CLI는 실행 환경의 언어를 따르고, 지원하지 않는 언어이면 영어를 사용합니다. 직접 지정하려면 `gitifact --lang ko <명령>` 또는 `gitifact --lang en <명령>`을 사용하세요. 셸의 `GITIFACT_LANG` 환경변수에 `ko`나 `en`을 지정할 수도 있습니다. 기존 프로젝트의 GITIFACT 블록은 `--lang`을 지정하지 않는 한 업데이트 후에도 원래 언어를 유지합니다.
+CLI는 실행 환경의 언어를 따르고, 지원하지 않는 언어이면 영어를 사용합니다. 직접 지정하려면 `npx gitifact --lang ko <명령>` 또는 `npx gitifact --lang en <명령>`을 사용하세요. 셸의 `GITIFACT_LANG` 환경변수에 `ko`나 `en`을 지정할 수도 있습니다. 기존 프로젝트의 GITIFACT 블록은 `--lang`을 지정하지 않는 한 업데이트 후에도 원래 언어를 유지합니다.
 
 ## 업데이트
 
-브라우저 뷰어에 새 버전 안내가 나타나면 에이전트에게 업데이트를 요청하세요.
+에이전트는 새 세션에서 업데이트를 확인하고, 새 버전이 있으면 업데이트할지 묻습니다. 원할 때 직접 요청해도 됩니다.
 
 ```text
 Gitifact를 업데이트해주세요.
 ```
 
-npx로 사용한다면 `npx --yes gitifact@latest update`로 프로젝트 지침을 갱신하세요. 프로젝트 의존성이나 전역 설치로 관리한다면 같은 방식으로 버전을 올린 뒤 해당 설치본으로 `update`를 실행하세요. 브라우저 서버도 새 버전으로 다시 열면 됩니다.
+npx로 사용한다면 `npx gitifact@latest update`로 프로젝트 지침을 갱신하세요. 프로젝트 의존성이나 전역 설치로 관리한다면 같은 방식으로 버전을 올린 뒤 해당 설치본으로 `update`를 실행하세요. 브라우저 서버도 새 버전으로 다시 열면 됩니다.
 
 ## 직접 명령 실행하기
 
 Node.js 24.x와 Git이 설치된 환경에서 대상 Git 저장소 안에서 실행하세요. 전역 설치는 필요하지 않습니다.
 
 ```sh
-npx --yes gitifact@latest init
-npx --yes gitifact@latest browser
+npx gitifact@latest init
+npx gitifact browser
 ```
 
 `browser`가 출력한 로컬 주소를 열면 됩니다. 서버는 터미널에서 Ctrl+C로 종료합니다.
 
-명령 표의 `gitifact`는 GITIFACT 블록에 적힌 실행 방법을 뜻합니다. 도입 후에는 블록에 지정된 버전으로 실행하세요.
+에이전트는 프로젝트 지침에 적힌 버전을 사용합니다.
 
 ### 프로젝트에 설치하기
 
@@ -100,40 +100,40 @@ npx gitifact browser
 
 | 명령 | 용도 |
 | :--- | :--- |
-| `gitifact init --dry-run` | 파일을 바꾸기 전에 도입 계획 확인 |
-| `gitifact init` | 프로젝트에 Gitifact 도입, 에이전트 지침 설치·갱신 |
-| `gitifact browser` | 브라우저 뷰어 실행 |
-| `gitifact status` | 현재 Git 상태 조회 |
-| `gitifact update` | 새 버전 확인과 프로젝트 지침 갱신 |
-| `gitifact docs` | 에이전트 작업 지침의 주제 목록 |
-| `gitifact docs spec` | 요구사항 저장 형식과 작성 규칙 |
-| `gitifact docs design` | 기능 설계 작성 규칙 |
-| `gitifact docs wiki` | 위키 형식과 이 프로젝트의 운영 방침 |
-| `gitifact docs commit` | 변경 이유와 관련 파일을 함께 커밋하는 방법 |
+| `npx gitifact init --dry-run` | 파일을 바꾸기 전에 도입 계획 확인 |
+| `npx gitifact init` | 프로젝트에 Gitifact 도입, 에이전트 지침 설치·갱신 |
+| `npx gitifact browser` | 브라우저 뷰어 실행 |
+| `npx gitifact status` | 현재 Git 상태 조회 |
+| `npx gitifact update --check` | 파일 변경 없이 새 버전 확인 |
+| `npx gitifact@latest update` | 최신 버전으로 프로젝트 지침 갱신 |
+| `npx gitifact docs` | 에이전트 작업 지침의 주제 목록 |
+| `npx gitifact docs spec` | 요구사항 저장 형식과 작성 규칙 |
+| `npx gitifact docs design` | 기능 설계 작성 규칙 |
+| `npx gitifact docs wiki` | 위키 형식과 이 프로젝트의 운영 방침 |
+| `npx gitifact docs commit` | 변경 이유와 관련 파일을 함께 커밋하는 방법 |
 
 ### 명세 조회와 저장
 
 | 명령 | 용도 |
 | :--- | :--- |
-| `gitifact spec working` | 현재 명세·위키와 저장에 필요한 정보 조회 |
-| `gitifact spec save --file <입력 파일>` | 요구사항·설계·위키 저장 |
-| `gitifact spec changes` | HEAD와 작업 중인 명세의 차이, 미커밋 변경 이유 조회 |
-| `gitifact spec commit --file <입력 파일> --dry-run` | 파일을 바꾸지 않고 커밋 계획 확인 |
-| `gitifact spec commit --file <입력 파일>` | 변경 이유 기록과 관련 파일 커밋 |
-| `gitifact spec read --ref HEAD` | 특정 커밋의 명세 조회 |
-| `gitifact spec diff --from <이전 커밋> --to <이후 커밋>` | 두 커밋 사이의 명세 변경 조회 |
+| `npx gitifact spec working` | 현재 명세·위키와 저장에 필요한 정보 조회 |
+| `npx gitifact spec save --file <입력 파일>` | 요구사항·설계·위키 저장 |
+| `npx gitifact spec changes` | HEAD와 작업 중인 명세의 차이, 미커밋 변경 이유 조회 |
+| `npx gitifact spec commit --file <입력 파일> --dry-run` | 파일을 바꾸지 않고 커밋 계획 확인 |
+| `npx gitifact spec commit --file <입력 파일>` | 변경 이유 기록과 관련 파일 커밋 |
+| `npx gitifact spec read --ref HEAD` | 특정 커밋의 명세 조회 |
+| `npx gitifact spec diff --from <이전 커밋> --to <이후 커밋>` | 두 커밋 사이의 명세 변경 조회 |
 
-저장·커밋 입력 형식은 `gitifact docs spec`과 `gitifact docs commit`에서 확인할 수 있습니다.
+저장·커밋 입력 형식은 `npx gitifact docs spec`과 `npx gitifact docs commit`에서 확인할 수 있습니다.
 
 ### 도입과 실행 옵션
 
 | 옵션 | 용도 |
 | :--- | :--- |
-| `gitifact init --agent codex` | 특정 도구의 지침 파일에 설치. `claude`, `cursor`, `codex`, `hermes`, `all` 지원 |
-| `gitifact init --skip-agents` | 에이전트 지침 파일을 수정하지 않고 도입 |
-| `gitifact init --remove-agents` | 에이전트 지침의 GITIFACT 블록 제거 |
-| `gitifact browser --port 4317` | 브라우저 서버의 포트 지정 |
-| `gitifact browser --no-update-check` | npm 새 버전 조회 없이 브라우저 실행 |
+| `npx gitifact init --agent codex` | 특정 도구의 지침 파일에 설치. `claude`, `cursor`, `codex`, `hermes`, `all` 지원 |
+| `npx gitifact init --skip-agents` | 에이전트 지침 파일을 수정하지 않고 도입 |
+| `npx gitifact init --remove-agents` | 에이전트 지침의 GITIFACT 블록 제거 |
+| `npx gitifact browser --port 4317` | 브라우저 서버의 포트 지정 |
 
 `--remove-agents`는 에이전트 지침의 GITIFACT 블록만 제거하며, 프로젝트 기록은 유지합니다.
 

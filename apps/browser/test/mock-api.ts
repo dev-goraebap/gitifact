@@ -1,13 +1,12 @@
 import type { Page } from '@playwright/test';
-import { browserSessionV2, changelogV1, repositoryStatusSuccessV1, type BrowserSpecsV4, type SpecEvent } from '@gitifact/contracts';
+import { browserSessionV3, changelogV1, repositoryStatusSuccessV1, type BrowserSpecsV4, type SpecEvent } from '@gitifact/contracts';
 
-export const session = browserSessionV2.parse({
+export const session = browserSessionV3.parse({
   contract: 'browser-session',
-  version: 2,
+  version: 3,
   sessionId: 'bb17c554-63a2-47f7-af46-2c3ac17952f1',
   repository: { key: 'repo:' + 'a'.repeat(64), worktreeKey: 'worktree:' + 'b'.repeat(64) },
   cliVersion: '0.4.0',
-  update: { status: 'up-to-date', latestVersion: '0.4.0' },
 });
 export const status = repositoryStatusSuccessV1.parse({
   contract: 'repository-status',

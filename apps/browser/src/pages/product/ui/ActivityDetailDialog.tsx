@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import type { BrowserSessionV2, SpecEvent, SpecFeature } from '@gitifact/contracts';
+import type { BrowserSessionV3, SpecEvent, SpecFeature } from '@gitifact/contracts';
 import { Dialog, DialogHeader } from '@astryxdesign/core/Dialog';
 import { VStack } from '@astryxdesign/core/VStack';
 import { Text } from '@astryxdesign/core/Text';
@@ -18,7 +18,7 @@ const kinds=() => ({requirement:t('kind.requirement'),design:t('kind.design'),wi
  * its heading shows at once while the text is read. Full screen below the desktop breakpoint, otherwise a resizable
  * panel docked to the end edge; the dialog scrolls and the header stays pinned.
  */
-export function ActivityDetailDialog({changeKey,listed,features,session,close}: {changeKey:string;listed:SpecEvent|undefined;features:SpecFeature[];session:BrowserSessionV2;close:()=>void}) {
+export function ActivityDetailDialog({changeKey,listed,features,session,close}: {changeKey:string;listed:SpecEvent|undefined;features:SpecFeature[];session:BrowserSessionV3;close:()=>void}) {
   useLanguage();
   const narrow=useMediaQuery('(max-width: 1023px)');
   const pane=useResizable({defaultSize:700,minSize:420,maxSize:1100,autoSaveId:'gitifact-activity-detail'});

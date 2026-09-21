@@ -1,9 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
-import type { BrowserSessionV2 } from '@gitifact/contracts';
+import type { BrowserSessionV3 } from '@gitifact/contracts';
 import { sessionOptions, statusOptions } from './repository';
 import { specsOptions } from './specs';
 
-const noSession: BrowserSessionV2 = { contract: 'browser-session', version: 2, sessionId: '', repository: { key: '', worktreeKey: '' }, cliVersion: '0.0.0', update: { status: 'disabled', latestVersion: null } };
+const noSession: BrowserSessionV3 = { contract: 'browser-session', version: 3, sessionId: '', repository: { key: '', worktreeKey: '' }, cliVersion: '0.0.0' };
 /** Paths whose uncommitted changes count as spec work: the current store and the legacy one the CLI still reads. */
 const storePath = /^\.(?:gitifact|tryce)\//;
 

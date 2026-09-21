@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { browserSessionV2, browserHttpErrorV1, updateStateV1, updateV3 } from '../dist/index.js';
+import { browserSessionV3, updateCheckV1, browserSessionV2, browserHttpErrorV1, updateStateV1, updateV3, updateV4, projectInitV5, projectInitV6 } from '../dist/index.js';
 
 const value = { contract: 'browser-session', version: 2,
   sessionId: '7cc37dc4-4ea7-4252-b9de-24944fbfb5a2',
@@ -46,4 +46,36 @@ test('update command output is versioned, reports the block commit and keeps fai
   assert.equal(updateV3.safeParse({ ...ok, commit: { ...none, state: 'skipped' } }).success, false);
   const failure = { contract: 'update', version: 3, ok: false, error: { code: 'UPDATE_FAILED', message: 'x' } };
   assert.deepEqual(updateV3.parse(failure), failure);
+});
+
+
+test('npx guidance uses new contract versions without changing the previous shapes', () => {
+  const install = { npx: 'npx --yes gitifact@0.7.1 update', npmGlobal: 'npm install -g gitifact@0.7.1' };
+  const update = { contract: 'update', version: 4, ok: true, cliVersion: '0.7.0', update: { status: 'available', latestVersion: '0.7.1' }, install,
+    agentDocs: { state: 'current', paths: [], missing: [] }, commit: { state: 'not-requested', commit: null, paths: [], message: null, reason: null, detail: null } };
+  const init = { contract: 'project-init', version: 6, ok: true, outcome: 'created', rootPath: '/fixture', configPath: '.gitifact/config.json', schemaVersion: 2,
+    baseline: { kind: 'empty' }, agentDocs: { mode: 'install', paths: ['AGENTS.md'] }, update: update.update, install };
+  for (const [schema, old, value, version] of [[updateV4, updateV3, update, 3], [projectInitV6, projectInitV5, init, 5]]) {
+    assert.deepEqual(schema.parse(value), value);
+    assert.equal(schema.safeParse({ ...value, install: { npmGlobal: install.npmGlobal } }).success, false);
+    assert.equal(schema.safeParse({ ...value, version }).success, false);
+    assert.equal(old.safeParse({ ...value, version }).success, false);
+    assert.equal(old.safeParse({ ...value, version, install: { npmGlobal: install.npmGlobal } }).success, true);
+    assert.equal(schema.safeParse({ ...value, install: null, update: { status: 'disabled', latestVersion: null } }).success, true);
+  }
+});
+
+
+test('session v3 removes update state and read-only checks have their own contract', () => {
+  const { update, ...identity } = value;
+  const current = { ...identity, version: 3 };
+  assert.deepEqual(browserSessionV3.parse(current), current);
+  assert.equal(browserSessionV3.safeParse(value).success, false);
+  assert.equal(browserSessionV3.safeParse({ ...current, update }).success, false);
+  assert.equal(browserSessionV2.safeParse(current).success, false);
+  const check = { contract: 'update-check', version: 1, ok: true, cliVersion: '0.4.0', update, command: 'npx --yes gitifact@0.4.1 update' };
+  assert.deepEqual(updateCheckV1.parse(check), check);
+  for (const invalid of [{ ...check, command: null }, { ...check, version: 2 }, { ...check, agentDocs: {} },
+    { ...check, update: { status: 'checking', latestVersion: null }, command: null },
+    { ...check, update: { status: 'disabled', latestVersion: null } }]) assert.equal(updateCheckV1.safeParse(invalid).success, false);
 });

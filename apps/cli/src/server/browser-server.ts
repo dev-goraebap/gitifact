@@ -15,8 +15,6 @@ import { projectRoutes } from './routes/project-routes.js';
 import { recordRoutes } from './routes/record-routes.js';
 import { assetRoutes } from './routes/asset-routes.js';
 import { t, resolveLanguage, getLanguage, withLanguage } from '../shared/i18n/index.js';
-import { checkingUpdate, resolveUpdate } from '../shared/update-check.js';
-import type { FetchLatestVersion } from '../adapters/registry/latest-version.js';
 
 interface Options {
   cwd: string;
@@ -29,9 +27,6 @@ interface Options {
   env?: NodeJS.ProcessEnv;
   // The running CLI version, the same value as `gitifact --version`.
   cliVersion?: string;
-  // Asks the npm registry for the latest release once after startup. Omitted means the check is disabled.
-  fetchLatest?: FetchLatestVersion;
-  updateCheckTimeoutMs?: number;
   // Release notes source for one language; null when that language has no notes. Tests inject it because .test-build has no assets.
   readChangelog?: (language: string) => Promise<string | null>;
 }
@@ -72,7 +67,6 @@ export async function startBrowserServer(options: Options) {
     ...recordRoutes(root, sessionId, options.env),
     ...assetRoutes(root),
   ];
-  let updatePending: Promise<void> | undefined;
   let closing = false;
   let origin = '';
 
@@ -108,11 +102,6 @@ export async function startBrowserServer(options: Options) {
   const address = server.address();
   if (!address || typeof address === 'string') throw new Error(t('server.addressUnknown'));
   origin = 'http://127.0.0.1:' + address.port;
-  // One registry request per server start, in the background so neither startup nor any page waits for it.
-  if (options.fetchLatest) {
-    store.setUpdate(checkingUpdate);
-    updatePending = resolveUpdate(store.session.cliVersion, options.fetchLatest, controller.signal, options.updateCheckTimeoutMs).then(state => { store.setUpdate(state); });
-  }
   let resolveClosed: () => void;
   const closed = new Promise<void>((resolve) => { resolveClosed = resolve; });
   let shutdown: Promise<void> | undefined;
@@ -123,7 +112,6 @@ export async function startBrowserServer(options: Options) {
     shutdown = (async () => {
       await new Promise<void>((resolve) => { server.close(() => resolve()); server.closeAllConnections(); });
       await store.pending;
-      await updatePending;
       options.signal?.removeEventListener('abort', onAbort);
       options.signal?.removeEventListener('abort', closeOnAbort);
       resolveClosed!();

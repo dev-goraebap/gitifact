@@ -6,7 +6,7 @@ import { Token } from '@astryxdesign/core/Token';
 import { Markdown } from '@astryxdesign/core/Markdown';
 import { useQuery } from '@tanstack/react-query';
 import { changelogOptions, sessionOptions } from '../../../entities/project';
-import type { BrowserSessionV2 } from '../../../entities/project';
+import type { BrowserSessionV3 } from '../../../entities/project';
 import { PageHeader } from '../../../widgets/page-header';
 import { RequestState } from '../../../shared/ui/request-state';
 import { PageState } from '../../../shared/ui/page-state';
@@ -21,7 +21,7 @@ const sections = () => ([
   ['fixed', t('changelog.fixed'), 'orange'],
 ] as const);
 
-function Releases({ session }: { session: BrowserSessionV2 }) {
+function Releases({ session }: { session: BrowserSessionV3 }) {
   const language = useLanguage();
   const notes = useQuery(changelogOptions(session, language));
   if (notes.error) return <RequestState error={notes.error} retry={() => { void notes.refetch(); }} />;

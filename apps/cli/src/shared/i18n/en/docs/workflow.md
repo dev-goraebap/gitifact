@@ -8,6 +8,8 @@ Check the working path, branch, Git status, and existing staging. Read applicabl
 
 Do not skip Gitifact work just because the global command is missing or global installation requires permission. Add a project dependency or install globally only when the user chooses that method. If execution or network access is blocked, request the required approval and explain the cause. `--yes` only suppresses npm's installation prompt; it does not grant execution permissions. Continue available investigation, but do not substitute manual specification saves or commits, or claim completion without running the CLI.
 
+Once per new session, run `gitifact update --check` with the pinned version. This command leaves files, the index, and commits unchanged. If the result is `available`, tell the user the current and new versions and ask whether to update. Do not refresh instructions or switch versions before consent. If declined, keep the pinned version and do not ask again in that session. `unavailable` means the check failed, not that the CLI is up to date. If the check fails or is disabled through `GITIFACT_NO_UPDATE_CHECK`, continue with the pinned version.
+
 Update using the project's chosen method. For npx, run `npx --yes gitifact@<new-version> update` to refresh the version in the block. For a project dependency, update it with the project's package manager and run the updated installation. Global installation instructions apply only when using the global command.
 
 Check configuration, actual files, and CLI help to choose the applicable workflow. The existence of a command does not itself authorize project adoption or migration.
@@ -20,7 +22,7 @@ init creates `.gitifact/config.json`, an adoption baseline, and `.gitifact/wiki/
 
 After updating the CLI, run `update` (or `init`) to refresh the block. `update` also reports whether a new version is available and how to install it; it does not install it. Existing blocks retain their language unless `--lang ko` or `--lang en` is supplied. New blocks follow the CLI language. Project documents keep their own language.
 
-When the user requests an update, use `update --commit`. It commits only tracked instruction files whose changes are entirely inside the block, with the fixed message `chore(gitifact): refresh GITIFACT block to v<version>`, preserving other staging. If a file also has changes outside the block, is untracked, or Git rejects the commit, it reports `commit.reason` without committing. Tell the user; do not change the message and commit by another route.
+After updating, reread the block and use its new version. Once the refreshed instructions are committed and shared, teammates use that version in new sessions after pulling. Consent to update does not authorize a commit or push. Use `update --commit` only when committing is also authorized. It commits only tracked instruction files whose changes are entirely inside the block, with the fixed message `chore(gitifact): refresh GITIFACT block to v<version>`, preserving other staging. If a file also has changes outside the block, is untracked, or Git rejects the commit, it reports `commit.reason` without committing. Tell the user; do not change the message and commit by another route.
 
 ## Read context
 

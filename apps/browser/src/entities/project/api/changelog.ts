@@ -1,11 +1,11 @@
 import { queryOptions } from '@tanstack/react-query';
-import { changelogV1, type BrowserSessionV2 } from '@gitifact/contracts';
+import { changelogV1, type BrowserSessionV3 } from '@gitifact/contracts';
 import { requestJson, ApiError } from '../../../shared/api/client';
 import { httpFailure } from './repository';
 import { t, type Language } from '../../../shared/i18n';
 
 // Release notes ship with the CLI, so they change only when the server does; the session id scopes the cache.
-export const changelogOptions = (session: BrowserSessionV2, language: Language) => queryOptions({
+export const changelogOptions = (session: BrowserSessionV3, language: Language) => queryOptions({
   queryKey: ['changelog', 1, window.location.origin, session.sessionId, language],
   staleTime: Infinity, retry: false,
   queryFn: async ({ signal }) => {

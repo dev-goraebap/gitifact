@@ -30,7 +30,7 @@ try {
   assert.equal(name, 'gitifact');
   const installedRoot = join(temporaryRoot, 'node_modules', 'gitifact');
   assert.match(await readFile(join(installedRoot, 'LICENSE'), 'utf8'), /MIT License/);
-  assert.match(await readFile(join(installedRoot, 'README.md'), 'utf8'), /npx --yes gitifact@latest init/);
+  assert.match(await readFile(join(installedRoot, 'README.md'), 'utf8'), /npx gitifact@latest init/);
   assert.match(await readFile(join(installedRoot, 'dist/THIRD_PARTY_NOTICES.txt'), 'utf8'), /Meta Platforms/);
   assert.deepEqual(dependencies, {}, 'The initial bundled CLI must be self-contained.');
   // Publishing a version without its release notes is the mistake this guards against.
@@ -64,7 +64,7 @@ try {
   assert.equal(JSON.parse(npx('spec', 'working')).warnings.length, 0);
   assert.equal(initialized.outcome, 'created');
   assert.equal(initialized.schemaVersion, 2);
-  assert.deepEqual([initialized.version, initialized.update, initialized.install], [5, { status: 'disabled', latestVersion: null }, null]);
+  assert.deepEqual([initialized.version, initialized.update, initialized.install], [6, { status: 'disabled', latestVersion: null }, null]);
   assert.deepEqual(initialized.baseline, { kind: 'empty' });
   const configBefore = await readFile(join(temporaryRoot, '.gitifact', 'config.json'));
   assert.equal(JSON.parse(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', 'init'], temporaryRoot, noRegistry)).outcome, 'already-initialized');
@@ -123,6 +123,10 @@ try {
   // The package check never contacts the npm registry: the update check is switched off and reported as disabled.
   const offline = { ...process.env, GITIFACT_NO_UPDATE_CHECK: '1' };
   await writeFile(agentsPath, agents.replace('gitifact v' + version + ' ', 'gitifact v0.0.1 '));
+  const beforeCheck = await readFile(agentsPath, 'utf8');
+  const checked = JSON.parse(npx('update', '--check'));
+  assert.deepEqual([checked.contract, checked.update.status, checked.command], ['update-check', 'disabled', null]);
+  assert.equal(await readFile(agentsPath, 'utf8'), beforeCheck, 'Check-only must not refresh an old block.');
   const updated = JSON.parse(execFileSync(process.execPath, [join(installedRoot, 'dist', 'main.js'), 'update'], { cwd: temporaryRoot, env: offline, encoding: 'utf8', timeout: 60_000 }));
   assert.deepEqual([updated.contract, updated.cliVersion, updated.update, updated.install, updated.agentDocs],
     ['update', version, { status: 'disabled', latestVersion: null }, null, { state: 'refreshed', paths: ['AGENTS.md'], missing: [] }]);
@@ -154,7 +158,7 @@ try {
     }
     assert.equal((await fetch(new URL('/about', url), { headers: { Accept: 'text/html' } })).status, 200);
     const session = await (await fetch(new URL('/api/v1/session', url))).json();
-    assert.deepEqual([session.version, session.cliVersion, session.update], [2, version, { status: 'disabled', latestVersion: null }]);
+    assert.deepEqual([session.version, session.cliVersion, 'update' in session], [3, version, false]);
     const headers = { 'X-Gitifact-Session': session.sessionId, Origin: new URL(url).origin };
     const notes = await (await fetch(new URL('/api/v1/changelog?lang=ko', url), { headers })).json();
     assert.deepEqual([notes.contract, notes.language, notes.fallback, notes.entries[0].version], ['changelog', 'ko', false, version], 'Release notes must start with the packaged version.');

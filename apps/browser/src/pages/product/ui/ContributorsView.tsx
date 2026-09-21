@@ -1,4 +1,4 @@
-import type { BrowserSessionV2, BrowserSpecsV4, SpecFeature } from '@gitifact/contracts';
+import type { BrowserSessionV3, BrowserSpecsV4, SpecFeature } from '@gitifact/contracts';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { historyOptions } from '../../../entities/project';
 import { VStack } from '@astryxdesign/core/VStack';
@@ -20,7 +20,7 @@ import { t, tNodes, useLanguage } from '../../../shared/i18n';
 type Contributor = NonNullable<BrowserSpecsV4['contributors']>[number];
 const names = () => ({created:t('change.created'),modified:t('change.modified'),deleted:t('change.deleted'),moved:t('change.moved')});
 
-export function ContributorsView({session,head,people,features,email,search}: {session:BrowserSessionV2;head:string|null;people:Contributor[];features:SpecFeature[];email?:string|undefined;search:ProductSearch}) {
+export function ContributorsView({session,head,people,features,email,search}: {session:BrowserSessionV3;head:string|null;people:Contributor[];features:SpecFeature[];email?:string|undefined;search:ProductSearch}) {
   useLanguage();
   if (!email) return <ContributorGrid people={people} features={features} search={search}/>;
   const selected = people.find(p => p.email === email);
@@ -58,7 +58,7 @@ function ContributorGrid({people,features,search}: {people:Contributor[];feature
   </VStack>;
 }
 
-function ContributorDetail({session,head,person,features}: {session:BrowserSessionV2;head:string|null;person:Contributor;features:SpecFeature[]}) {
+function ContributorDetail({session,head,person,features}: {session:BrowserSessionV3;head:string|null;person:Contributor;features:SpecFeature[]}) {
   useLanguage();
   // This person's ten newest changes in all of history, asked of the server rather than looked for in loaded pages.
   const recent = useInfiniteQuery({ ...historyOptions(session, head ?? '', { author: person.email }, 10), enabled: !!head });

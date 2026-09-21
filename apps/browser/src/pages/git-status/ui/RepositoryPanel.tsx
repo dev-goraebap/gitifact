@@ -2,7 +2,7 @@ import { Button } from '@astryxdesign/core/Button';
 import { IconButton } from '@astryxdesign/core/IconButton';
 import { Banner } from '@astryxdesign/core/Banner';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type { BrowserSessionV2, RepositoryStatusSuccessV1 } from '@gitifact/contracts';
+import type { BrowserSessionV3, RepositoryStatusSuccessV1 } from '@gitifact/contracts';
 import { Link } from '@tanstack/react-router';
 import { ApiError } from '../../../shared/api/client';
 import { refreshStatus, statusKey, statusOptions, useWorkingChanges } from '../../../entities/project';
@@ -41,7 +41,7 @@ function submoduleNote(change: Change) {
   ].filter(Boolean).join(', ');
 }
 
-export function RepositoryPanel({ session, reconnect }: { session: BrowserSessionV2; reconnect: () => void }) {
+export function RepositoryPanel({ session, reconnect }: { session: BrowserSessionV3; reconnect: () => void }) {
   useLanguage();
   const client = useQueryClient();
   const query = useQuery(statusOptions(session));

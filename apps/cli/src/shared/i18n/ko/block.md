@@ -7,6 +7,7 @@ CLI: 기본 실행은 `npx --yes gitifact@{version} <cmd>`다. 아래 `gitifact`
 ### 시작할 때
 
 - 전역 설치는 필수가 아니다. 지정 버전의 npx 실행은 같은 버전의 프로젝트 설치본을 사용하고, 없으면 npm 캐시에 받아 실행한다. 실행 권한이나 다운로드가 막히면 필요한 승인을 요청하고 원인을 알린다. CLI 실행 없이 명세 저장·커밋을 대신하거나 완료했다고 보고하지 않는다.
+- 새 세션에서 한 번 `gitifact update --check`로 지정 버전보다 새 버전이 있는지 확인한다. `available`이면 사용자에게 업데이트할지 묻고, 동의한 경우에만 안내된 새 버전으로 `update`를 실행한다. 거절·확인 실패·조회 비활성화 시에는 지정 버전으로 계속하며 같은 세션에서 다시 묻지 않는다. 갱신 후에는 블록을 다시 읽고 새 버전을 사용한다. 커밋·푸시는 별도 권한을 따른다.
 - `gitifact spec working`으로 위키·기능 명세·경고를 읽고 git status와 기존 staging을 확인한다.
 - 이 블록은 요약이다. 상세 형식은 `gitifact docs <topic>`으로 읽고 기억으로 채우지 않는다.
 
@@ -34,7 +35,6 @@ CLI: 기본 실행은 `npx --yes gitifact@{version} <cmd>`다. 아래 `gitifact`
 - SELF-CHECK: save·commit 입력을 만들기 전에 해당 docs를 다시 읽고 형식을 대조한다. 확실하지 않으면 추측하지 말고 `gitifact docs <topic>`을 실행한다.
 - save·commit 입력 JSON은 `spec working`이 알려 준 inputs 경로에 쓴다. 성공하면 CLI가 지운다. 조회 결과와 docs 출력은 파일로 저장하지 않고 필요할 때 다시 실행한다.
 - 사용자가 요구사항·프로젝트 현황·변경 이력을 보여 달라고 하면 `gitifact browser`를 백그라운드로 실행하고 출력된 URL을 알려 준다. 채팅 요약으로 대신하지 않는다.
-
 ### 명령
 
 - `docs <topic>`: {topics}
@@ -42,7 +42,7 @@ CLI: 기본 실행은 `npx --yes gitifact@{version} <cmd>`다. 아래 `gitifact`
 - `spec save --file <json|->`: 요구사항·설계·위키 저장
 - `spec commit --file <json|->`: 변경 이유 기록과 커밋을 한 번에
 - `browser`: 읽기 전용 브라우저 서버 실행, URL 출력 후 계속 실행
-- `update [--commit]`: 새 버전 확인과 설치 안내, 이 블록을 현재 버전으로 갱신. `--commit`은 블록만 바뀐 파일을 고정 메시지로 커밋한다
+- `update [--check | --commit]`: `--check`는 읽기 전용 버전 확인. 옵션 없이는 이 블록을 실행 버전으로 갱신하며 `--commit`은 블록만 바뀐 파일을 고정 메시지로 커밋한다
 - `init`: 처음 도입할 때 설정과 이 블록을 만든다
 
 ---

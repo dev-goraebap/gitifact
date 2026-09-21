@@ -1,4 +1,4 @@
-import type { SpecDocument, SpecEvent, SpecFeature, BrowserSessionV2, BrowserSpecsV4, BrowserHistorySummaryV1 } from '@gitifact/contracts';
+import type { SpecDocument, SpecEvent, SpecFeature, BrowserSessionV3, BrowserSpecsV4, BrowserHistorySummaryV1 } from '@gitifact/contracts';
 import { useQuery } from '@tanstack/react-query';
 import { VStack } from '@astryxdesign/core/VStack';
 import { HStack } from '@astryxdesign/core/HStack';
@@ -92,7 +92,7 @@ function Pulse({ pulse, total }: { pulse: BrowserHistorySummaryV1['pulse']; tota
  * reader comes back for. The wiki README is the wiki's policy, not a product document, so the dashboard neither
  * shows nor links it.
  */
-export function ProductOverview({ session, head, features, documents, contributors, working }: { session: BrowserSessionV2; head: string | null; features: SpecFeature[]; documents: SpecDocument[]; contributors: Contributor[]; working: boolean }) {
+export function ProductOverview({ session, head, features, documents, contributors, working }: { session: BrowserSessionV3; head: string | null; features: SpecFeature[]; documents: SpecDocument[]; contributors: Contributor[]; working: boolean }) {
   useLanguage();
   // Counts over all of history and its newest commits, from the server's index; nothing before the first commit.
   const history = useQuery({ ...summaryOptions(session, head ?? ''), enabled: !!head });

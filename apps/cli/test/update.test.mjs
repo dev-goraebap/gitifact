@@ -4,7 +4,7 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { updateV3 } from '@gitifact/contracts';
+import { updateV4 } from '@gitifact/contracts';
 import { isNewerRelease, resolveUpdate, updateCheckDisabled, npmGlobalInstall } from '../.test-build/shared/update-check.js';
 import { blockCommitMessage, updateCommand } from '../.test-build/commands/update.js';
 import { initializeSpecProject } from '../.test-build/commands/spec-init.js';
@@ -15,6 +15,20 @@ import { fixture, fingerprint } from './git-fixture.mjs';
 const source = readFileSync(fileURLToPath(new URL('../src/shared/i18n/ko/block.md', import.meta.url)), 'utf8');
 const readBlock = async () => source;
 const latest = version => async () => version;
+
+test('init and update text guide both languages to the pinned npx command', t => {
+  const f = fixture(t);
+  const entry = fileURLToPath(new URL('../dist/main.js', import.meta.url));
+  const preload = 'data:text/javascript,' + encodeURIComponent('globalThis.fetch = async () => new Response(JSON.stringify({"dist-tags":{"latest":"9.9.9"}}));');
+  for (const language of ['ko', 'en']) for (const command of ['init', 'update']) {
+    const result = spawnSync(process.execPath, ['--import', preload, entry, '--lang', language, command, '--format', 'text'], {
+      cwd: f.repo, env: { ...f.env, GITIFACT_NO_UPDATE_CHECK: '0' }, encoding: 'utf8', timeout: 35000,
+    });
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /npx --yes gitifact@9\.9\.9 update/);
+    assert.doesNotMatch(result.stdout, /npm install -g|\{command\}/);
+  }
+});
 
 test('only a plain release newer than the running CLI counts as an update', () => {
   for (const [next, now] of [['0.4.1', '0.4.0'], ['0.5.0', '0.4.9'], ['1.0.0', '0.99.99'], ['0.10.0', '0.9.0'], ['0.4.0', '0.4.0-dev.1']]) assert.equal(isNewerRelease(next, now), true, next + ' > ' + now);
@@ -49,7 +63,7 @@ test('update reports versions everywhere and rewrites only existing blocks of an
   const run = (cwd, version, env = f.env, fetchLatest = latest('9.9.9')) => updateCommand(cwd, version, env, { fetchLatest, readBlock });
   // Outside a repository, and in one that was never initialized, only the version check runs.
   const outside = await run(f.root, '0.4.0');
-  assert.deepEqual([outside.update, outside.install, outside.agentDocs], [{ status: 'available', latestVersion: '9.9.9' }, { npmGlobal: 'npm install -g gitifact@9.9.9' }, { state: 'not-initialized', paths: [], missing: [] }]);
+  assert.deepEqual([outside.update, outside.install, outside.agentDocs], [{ status: 'available', latestVersion: '9.9.9' }, { npx: 'npx --yes gitifact@9.9.9 update', npmGlobal: 'npm install -g gitifact@9.9.9' }, { state: 'not-initialized', paths: [], missing: [] }]);
   f.write('AGENTS.md', '# Mine\n');
   const before = fingerprint(f.repo);
   assert.deepEqual((await run(f.repo, '0.4.0')).agentDocs, { state: 'not-initialized', paths: [], missing: [] });
@@ -75,7 +89,7 @@ test('update reports versions everywhere and rewrites only existing blocks of an
   let asked = 0;
   const disabled = await run(f.repo, '0.4.0', { ...f.env, GITIFACT_NO_UPDATE_CHECK: '1' }, async () => { asked++; return '9.9.9'; });
   assert.deepEqual([disabled.update, disabled.install, asked], [{ status: 'disabled', latestVersion: null }, null, 0]);
-  assert.equal(updateV3.safeParse(disabled).success, true);
+  assert.equal(updateV4.safeParse(disabled).success, true);
   // Offline still succeeds and says so.
   assert.equal((await run(f.repo, '0.4.0', f.env, async () => { throw new Error('offline'); })).update.status, 'unavailable');
   // A broken marker pair is refused without touching anything.
@@ -92,11 +106,11 @@ test('built update command prints the contract and a text form without contactin
   const cli = (...args) => spawnSync(process.execPath, [entry, ...args], { cwd: f.repo, env: { ...f.env, GITIFACT_NO_UPDATE_CHECK: '1' }, encoding: 'utf8', timeout: 35000 });
   assert.equal(cli('init').status, 0);
   const json = cli('update'); assert.equal(json.status, 0, json.stderr); assert.equal(json.stderr, '');
-  const dto = updateV3.parse(JSON.parse(json.stdout));
-  assert.deepEqual([dto.version, dto.cliVersion, dto.update.status, dto.install, dto.agentDocs, dto.commit.state], [3, version, 'disabled', null, { state: 'current', paths: ['AGENTS.md'], missing: [] }, 'not-requested']);
+  const dto = updateV4.parse(JSON.parse(json.stdout));
+  assert.deepEqual([dto.version, dto.cliVersion, dto.update.status, dto.install, dto.agentDocs, dto.commit.state], [4, version, 'disabled', null, { state: 'current', paths: ['AGENTS.md'], missing: [] }, 'not-requested']);
   // AGENTS.md was never committed, so --commit refuses it instead of committing a new file.
   const refused = cli('update', '--commit'); assert.equal(refused.status, 0, refused.stderr);
-  assert.deepEqual(updateV3.parse(JSON.parse(refused.stdout)).commit, { state: 'skipped', commit: null, paths: ['AGENTS.md'], message: null, reason: 'untracked', detail: null });
+  assert.deepEqual(updateV4.parse(JSON.parse(refused.stdout)).commit, { state: 'skipped', commit: null, paths: ['AGENTS.md'], message: null, reason: 'untracked', detail: null });
   assert.match(cli('update', '--commit', '--format', 'text').stdout, /Git이 추적하지 않는 지침 파일입니다: AGENTS\.md/);
   const text = cli('update', '--format', 'text'); assert.equal(text.status, 0, text.stderr);
   assert.match(text.stdout, new RegExp('^현재 버전: ' + version.replaceAll('.', '\\.') + '\n'));
@@ -105,12 +119,12 @@ test('built update command prints the contract and a text form without contactin
   // Without the CLAUDE.md init added, update names it and points back to init instead of creating it.
   assert.equal(readFileSync(join(f.repo, 'CLAUDE.md'), 'utf8'), '@AGENTS.md\n');
   rmSync(join(f.repo, 'CLAUDE.md'));
-  assert.deepEqual(updateV3.parse(JSON.parse(cli('update').stdout)).agentDocs, { state: 'current', paths: ['AGENTS.md'], missing: ['CLAUDE.md'] });
-  assert.match(cli('update', '--format', 'text').stdout, /CLAUDE\.md 파일이 없어 .*gitifact init을 다시 실행하면/);
+  assert.deepEqual(updateV4.parse(JSON.parse(cli('update').stdout)).agentDocs, { state: 'current', paths: ['AGENTS.md'], missing: ['CLAUDE.md'] });
+  assert.match(cli('update', '--format', 'text').stdout, /CLAUDE\.md 파일이 없어 .*npx --yes gitifact@\S+ init을 다시 실행하면/);
   assert.equal(existsSync(join(f.repo, 'CLAUDE.md')), false);
   assert.equal(cli('init').status, 0);
   assert.equal(readFileSync(join(f.repo, 'CLAUDE.md'), 'utf8'), '@AGENTS.md\n');
-  assert.deepEqual(updateV3.parse(JSON.parse(cli('update').stdout)).agentDocs.missing, []);
+  assert.deepEqual(updateV4.parse(JSON.parse(cli('update').stdout)).agentDocs.missing, []);
 });
 
 test('update --commit commits only block-only refreshes with the fixed message and keeps other staging', async t => {
@@ -129,7 +143,7 @@ test('update --commit commits only block-only refreshes with the fixed message a
   f.write('work.txt', 'staged\n'); f.git(['add', 'work.txt']); f.write('work.txt', 'unstaged\n');
   const before = head();
   const result = await run('0.4.0');
-  assert.equal(updateV3.safeParse(result).success, true);
+  assert.equal(updateV4.safeParse(result).success, true);
   assert.deepEqual({ ...result.commit, commit: null }, { state: 'committed', commit: null, paths: ['AGENTS.md'], message: blockCommitMessage('0.4.0'), reason: null, detail: null });
   assert.equal(result.commit.commit, head());
   assert.equal(f.git(['rev-parse', 'HEAD^']).stdout.trim(), before);

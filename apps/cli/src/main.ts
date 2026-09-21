@@ -4,6 +4,7 @@ import { runBrowser, parsePort } from './commands/browser.js';
 import { runInit } from './commands/init.js';
 import { runDocs } from './commands/docs.js';
 import { runUpdate } from './commands/update.js';
+import { runUpdateCheck } from './commands/update-check.js';
 import { agentPresetNames } from './commands/agent-block.js';
 import { runSpecPreview } from './commands/spec-preview.js';
 import { runMigrate } from './commands/migrate.js';
@@ -40,7 +41,6 @@ program.command('browser')
   .allowExcessArguments(false)
   .option('--port <port>', t('help.browserPort'), parsePort, 0)
   .option('--dev', t('help.browserDev'))
-  .option('--no-update-check', t('help.browserNoUpdateCheck'))
   .action(options => runBrowser(options, __CLI_VERSION__));
 
 program.command('init')
@@ -64,7 +64,8 @@ program.command('update')
   .allowExcessArguments(false)
   .addOption(new Option('--format <format>', t('help.format')).choices(['json', 'text']).default('json'))
   .option('--commit', t('help.updateCommit'))
-  .action(options => runUpdate(options, __CLI_VERSION__));
+  .addOption(new Option('--check', t('help.updateCheck')).conflicts('commit'))
+  .action(options => options.check ? runUpdateCheck(options.format, __CLI_VERSION__) : runUpdate(options, __CLI_VERSION__));
 
 program.command('migrate')
   .description(t('help.migrate'))

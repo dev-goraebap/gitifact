@@ -1,5 +1,5 @@
 import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query';
-import type { BrowserSessionV2, SpecFeature } from '@gitifact/contracts';
+import type { BrowserSessionV3, SpecFeature } from '@gitifact/contracts';
 import { VStack } from '@astryxdesign/core/VStack';
 import { Text } from '@astryxdesign/core/Text';
 import { Button } from '@astryxdesign/core/Button';
@@ -17,7 +17,7 @@ import { t, useLanguage } from '../../../shared/i18n';
  * The activity timeline. Filters and the search word go to the server, which answers from all of history — a filter
  * finds changes that were never loaded, and the count is the whole count — fifty at a time.
  */
-export function HistoryView({features,search,change,session,head}: {features:SpecFeature[];search:ProductSearch;change:(s:ProductSearch)=>void;session:BrowserSessionV2;head:string|null}) {
+export function HistoryView({features,search,change,session,head}: {features:SpecFeature[];search:ProductSearch;change:(s:ProductSearch)=>void;session:BrowserSessionV3;head:string|null}) {
   useLanguage();
  const filter={kind:search.kind,document:search.document,feature:search.feature,author:search.author,q:search.q};
  const filtering=Object.values(filter).some(Boolean);

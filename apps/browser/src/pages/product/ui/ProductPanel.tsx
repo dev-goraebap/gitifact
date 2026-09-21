@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import type { BrowserSessionV2 } from '@gitifact/contracts';
+import type { BrowserSessionV3 } from '@gitifact/contracts';
 import { VStack } from '@astryxdesign/core/VStack';
 import { HStack } from '@astryxdesign/core/HStack';
 import { Heading } from '@astryxdesign/core/Heading';
@@ -23,7 +23,7 @@ import { useLoadingHold } from '../../../shared/ui/request-state/useLoadingHold'
 import { ViewSkeleton } from './ViewSkeleton';
 import { t, tNodes, useLanguage, getLanguage } from '../../../shared/i18n';
 import { DocumentIndexProvider } from '../../../shared/ui/document';
-export function ProductPanel({session,view,featureId,email,documentId,search,change}:ProductProps&{session:BrowserSessionV2}) {
+export function ProductPanel({session,view,featureId,email,documentId,search,change}:ProductProps&{session:BrowserSessionV3}) {
   useLanguage();
  const wiki=view==='wiki'; const productPage=view==='product';
  const query=useQuery(specsOptions(session));

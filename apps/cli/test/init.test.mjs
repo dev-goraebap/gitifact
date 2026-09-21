@@ -17,7 +17,7 @@ test('dry-run is read-only; unborn init is complete, repeatable and preserves by
   assert.equal((await init(f, { dryRun: true })).outcome, 'planned');
   assert.deepEqual(fingerprint(f.repo), before);
   const created = await init(f);
-  assert.equal(created.outcome, 'created'); assert.equal(created.version, 5); assert.deepEqual(created.baseline, { kind: 'empty' });
+  assert.equal(created.outcome, 'created'); assert.equal(created.version, 6); assert.deepEqual(created.baseline, { kind: 'empty' });
   assert.deepEqual(created.agentDocs, { mode: 'skip', paths: [] });
   preserved(before, fingerprint(f.repo));
   assert.deepEqual(readdirSync(join(f.repo, '.gitifact')), ['config.json']);
@@ -131,7 +131,7 @@ test('init replaces an earlier convention config that has nothing beside it, tra
   f.write('a', 'a'); f.commit('adopted with 0.4.4');
   const head = f.git(['rev-parse', 'HEAD']).stdout.trim();
   const replaced = await init(f);
-  assert.equal(replaced.outcome, 'replaced'); assert.equal(replaced.version, 5);
+  assert.equal(replaced.outcome, 'replaced'); assert.equal(replaced.version, 6);
   assert.deepEqual(JSON.parse(readFileSync(path(f), 'utf8')), { schemaVersion: 2, baseline: { kind: 'commit', objectFormat: 'sha1', commit: head } });
   assert.deepEqual(readdirSync(join(f.repo, '.gitifact')), ['config.json']);
   assert.equal((await init(f)).outcome, 'already-initialized');
@@ -153,7 +153,7 @@ test('an earlier convention with records beside it, or a newer convention, is re
 test('init reports the registry check it was given and how to install a newer release', async t => {
   const f = fixture(t);
   const newer = await initializeSpecProject(f.repo, true, f.env, undefined, undefined, undefined, Promise.resolve({ status: 'available', latestVersion: '9.9.9' }));
-  assert.deepEqual([newer.update, newer.install], [{ status: 'available', latestVersion: '9.9.9' }, { npmGlobal: 'npm install -g gitifact@9.9.9' }]);
+  assert.deepEqual([newer.update, newer.install], [{ status: 'available', latestVersion: '9.9.9' }, { npx: 'npx --yes gitifact@9.9.9 update', npmGlobal: 'npm install -g gitifact@9.9.9' }]);
   const plain = await init(f);
   assert.deepEqual([plain.update, plain.install], [{ status: 'disabled', latestVersion: null }, null]);
 });
