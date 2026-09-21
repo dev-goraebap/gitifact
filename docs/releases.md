@@ -370,3 +370,11 @@ Markdown 명세·변경 이유·Git 커밋 연결과 요구사항 이력·제품
 2026-09-21, npx 기반 도입 안내와 세션 시작 업데이트 확인, 브라우저 업데이트 알림 제거, 병합 이력의 원본 작성자 표시, 기능 목록 스크롤 헤더 수정을 0.7.1로 준비했다. 한국어·영어 패치노트와 AGENTS.md 블록의 버전을 함께 맞춘다. 저장 규약 schemaVersion 2는 유지한다.
 
 타입 검사·빌드, core 29건·contracts 9건·intro 2건, 브라우저 85건·CLI 146건의 검증을 수행했다. 최초 실행의 브라우저 임시 폴더 정리 EBUSY는 단독 재검사에서 통과했다. CLI 다국어 테스트의 고정 버전 기대값을 현재 패키지 버전으로 바꾸고 관련 6건을 재검사해 통과했다. 패키지 오프라인 설치·실행도 통과했다. 세부 경과는 development.md의 0.7.1 사용 빌드를 따른다. CLI 번들 SHA-256은 5e3cb9cbf8fa301732c809363eb633d7141e26b4359ebbf5186ef2e757a164f2다. 게시 결과는 아래에 이어서 기록한다.
+
+## 0.7.1 게시 결과
+
+2026-09-21, 릴리스 준비 커밋 fccb25dc81665abd9975d1be3d6aa94c70dad67d까지 main을 푸시한 뒤 npm 로그인·게시 추가 인증을 거쳐 gitifact@0.7.1을 공개 게시했다. 처리 대기 후 공개 레지스트리의 버전과 latest가 모두 0.7.1로 반영됐다. 모의 실행·실제 게시·레지스트리의 integrity는 sha512-/ZDPPc2FPcBYQbELIHHGrCmV/yApo0J/lw/OXFtaeAn0kPSmdHR9ZUXIGqSRfhvM8EYMR4Q7a5QqPlM76iUK/g==로 일치하고 shasum은 fd6fa93994f9d094a10f0ef8aea6780f04463ba5다. 패키지 179개 파일은 dist·README·LICENSE·package.json으로 한정됐다.
+
+빈 npm 캐시와 새 임시 폴더에서 레지스트리의 0.7.1을 설치했다. dist 176개 파일이 로컬 검증 빌드와 바이트 단위로 일치했고 CLI SHA-256도 5e3cb9cbf8fa301732c809363eb633d7141e26b4359ebbf5186ef2e757a164f2로 같다. version·help, init과 v0.7.1 에이전트 블록, spec working, update --check, 한국어·영어 docs, 브라우저 세션·명세·패치노트 응답을 확인했다. 사용자 프로젝트와 전역 설치는 바꾸지 않았다.
+
+게시 코드 커밋 fccb25d에 주석 태그 v0.7.1을 만들고 origin에 푸시했다. 원격 태그가 해당 커밋을 가리키는 것도 확인했다. 이 게시 결과를 남기는 후속 문서 커밋으로 태그를 옮기지 않는다.
