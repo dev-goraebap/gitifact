@@ -13,7 +13,7 @@ Agents can use requirements, designs, and past decisions as context for their wo
 Give this prompt to the agent you use in your project:
 
 ```text
-Run npm install -g gitifact@latest to install Gitifact, even if it is already installed, so we have the latest version. Then run gitifact init in this project.
+Run npx --yes gitifact@latest init in this project.
 Read the GITIFACT block that init adds to AGENTS.md or the relevant agent instructions file, and follow it from this session onward.
 ```
 

@@ -2,11 +2,11 @@
 
 gitifact v{version} · {language} · 저장 규약 schemaVersion 2
 
-CLI: 모든 명령은 `gitifact <cmd>`로 실행한다. 프로젝트 지침이 다른 실행 방법을 지정하면 그것을 따른다.
+CLI: 기본 실행은 `npx --yes gitifact@{version} <cmd>`다. 아래 `gitifact`는 이 실행 방법을 뜻한다. 프로젝트가 로컬 설치본이나 전역 명령 등 다른 실행 방법을 지정하면 그것을 우선한다.
 
 ### 시작할 때
 
-- `gitifact` 명령이 없으면 이 프로젝트에 참여하는 데 필요한 CLI가 설치되지 않은 것이다. 사용자에게 알리고 동의를 받아 `npm install -g gitifact@{version}`으로 설치한 뒤 진행한다. 설치하지 못하면 명세 저장·커밋을 추측으로 대신하지 않는다.
+- 전역 설치는 필수가 아니다. 지정 버전의 npx 실행은 같은 버전의 프로젝트 설치본을 사용하고, 없으면 npm 캐시에 받아 실행한다. 실행 권한이나 다운로드가 막히면 필요한 승인을 요청하고 원인을 알린다. CLI 실행 없이 명세 저장·커밋을 대신하거나 완료했다고 보고하지 않는다.
 - `gitifact spec working`으로 위키·기능 명세·경고를 읽고 git status와 기존 staging을 확인한다.
 - 이 블록은 요약이다. 상세 형식은 `gitifact docs <topic>`으로 읽고 기억으로 채우지 않는다.
 

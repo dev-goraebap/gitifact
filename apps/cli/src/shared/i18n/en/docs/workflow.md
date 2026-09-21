@@ -4,7 +4,11 @@ The user describes the product and keeps developing. The agent organizes product
 
 ## Start and check the format
 
-Check the working path, branch, Git status, and existing staging. Read applicable AGENTS.md and CLAUDE.md files in full. Use the CLI invocation specified by the project; `gitifact` below stands for that invocation. If the CLI is missing, tell the user and obtain consent before installing the version at the top of the block (`npm install -g gitifact@<version>`). Do not install it or change global configuration unilaterally. Continue available investigation while waiting; do not guess how to save specifications or commit them.
+Check the working path, branch, Git status, and existing staging. Read applicable AGENTS.md and CLAUDE.md files in full. Follow the project's CLI invocation. If none is specified, run `npx --yes gitifact@<version> <command>` with the version at the top of the block. Below, `gitifact` stands for that invocation. npx uses a matching project dependency or downloads the package to the npm cache; no global installation is required.
+
+Do not skip Gitifact work just because the global command is missing or global installation requires permission. Add a project dependency or install globally only when the user chooses that method. If execution or network access is blocked, request the required approval and explain the cause. `--yes` only suppresses npm's installation prompt; it does not grant execution permissions. Continue available investigation, but do not substitute manual specification saves or commits, or claim completion without running the CLI.
+
+Update using the project's chosen method. For npx, run `npx --yes gitifact@<new-version> update` to refresh the version in the block. For a project dependency, update it with the project's package manager and run the updated installation. Global installation instructions apply only when using the global command.
 
 Check configuration, actual files, and CLI help to choose the applicable workflow. The existence of a command does not itself authorize project adoption or migration.
 

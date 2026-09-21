@@ -27,7 +27,7 @@ test('rendered block is versioned, marker-delimited, Markdown-structured and sho
     if (!line || /^(#{2,3} |- |\| |---$|<!--)/.test(line)) continue;
     assert.ok(!lines[index + 1] || /^\| /.test(line), 'plain line runs into the next: ' + line);
   }
-  assert.ok(block.includes('npm install -g gitifact@1.2.3'), 'install hint pins the block version');
+  assert.ok(block.includes('npx --yes gitifact@1.2.3 <cmd>'), 'invocation pins the block version');
   assert.ok(lines.length >= 25 && lines.length <= 50, String(lines.length));
   assert.deepEqual(parseAgentBlock(block), { version: '1.2.3', language: 'ko', schemaVersion: 2 });
   assert.equal(parseAgentBlock('no block'), null);

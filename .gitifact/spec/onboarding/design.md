@@ -17,7 +17,7 @@ CLI의 init-repository 어댑터가 저장소·현재 checkout·HEAD·index를 �
 
 이전 규약 설정의 교체: 설정의 schemaVersion이 현재보다 낮고, `.gitifact`에 config.json 밖의 파일(초기화 임시 파일 제외)이 없고, 루트에 구형 `specs/`도 없을 때만 init이 설정을 바꾼다. 결과의 outcome은 `replaced`이고 기준선은 지금 HEAD로 새로 잡는다. 삭제한 뒤 다시 init한 것과 같다. 임시 파일을 rename으로 덮어쓰며, 직전에 설정 바이트·저장소 내용·HEAD/index가 처음 관측과 같은지 다시 확인한다. 추적 중인 설정이면 수정으로 남고 커밋은 사용자가 한다. 조건에 맞지 않는 이전 규약은 설정과 기록을 두고 `init.legacyRecords`로 할 일을 안내한다. 0.5.0은 거부 안내가 새로 init하라고 했지만 init도 같은 이유로 거부해 빠져나갈 길이 없었다(2026-09-18). 명세가 있는 schemaVersion 1 프로젝트의 자동 전환은 정식 버전 전 규약을 전환하지 않는다는 결정에 따라 하지 않는다.
 
-새 버전 확인: init은 update·browser와 같은 레지스트리 확인(`resolveUpdate`, 3초 제한, 실패는 unavailable)을 초기화와 나란히 실행해 결과의 `update`·`install`에 담는다(project-init v5). 초기화가 실패하면 확인을 취소한다. `GITIFACT_NO_UPDATE_CHECK`로 끄며 테스트와 패키지 검사는 이 값으로 레지스트리에 접속하지 않는다. "없으면 설치"라는 도입 프롬프트 때문에 이미 설치된 0.4.4로 init해 schemaVersion 1 설정이 생긴 사례가 계기다. 도입 프롬프트는 설치돼 있어도 `@latest`로 설치하게 바꿨다. 지침 파일은 managed-file 어댑터가 같은 방식(임시 파일, 조회 중 변경 감지, 링크 또는 교체)으로 쓴다.
+새 버전 확인: init은 update·browser와 같은 레지스트리 확인(`resolveUpdate`, 3초 제한, 실패는 unavailable)을 초기화와 나란히 실행해 결과의 `update`·`install`에 담는다(project-init v5). 초기화가 실패하면 확인을 취소한다. `GITIFACT_NO_UPDATE_CHECK`로 끄며 테스트와 패키지 검사는 이 값으로 레지스트리에 접속하지 않는다. "없으면 설치"라는 도입 프롬프트 때문에 이미 설치된 0.4.4로 init해 schemaVersion 1 설정이 생긴 사례가 계기다. 도입 프롬프트는 `npx --yes gitifact@latest init`으로 최신 CLI를 실행한다. 지침 파일은 managed-file 어댑터가 같은 방식(임시 파일, 조회 중 변경 감지, 링크 또는 교체)으로 쓴다.
 
 ## 초기화 흐름
 <!-- gitifact-ref: R-lpwtvv6ldp, R-rmwolikuep -->
@@ -35,7 +35,7 @@ CLI의 init-repository 어댑터가 저장소·현재 checkout·HEAD·index를 �
 
 설치 대상에 AGENTS.md가 들어가고(옵션 없음·`all`·`codex`·`cursor`·`hermes`) CLAUDE.md와 .claude/CLAUDE.md가 모두 없으면 루트 CLAUDE.md를 `@AGENTS.md` 한 줄로 만든다. 줄바꿈은 AGENTS.md를 따른다. 이 파일은 wrapper라 이후 init·update가 블록을 넣지 않는다. 결과의 `agentDocs.paths`에 CLAUDE.md도 담는다. `--remove-agents`는 AGENTS.md를 삭제할 때 CLAUDE.md의 내용이 공백을 제외하고 정확히 `@AGENTS.md`면 함께 삭제한다. AGENTS.md에 사용자 내용이 남거나 CLAUDE.md를 사용자가 고쳤으면 남긴다. `claude` 프리셋은 AGENTS.md를 쓰지 않으므로 wrapper도 만들지 않는다.
 
-블록 본문은 apps/cli/src/shared/i18n/<lang>/block.md이며 commands/agent-block.ts가 `{version}`·`{language}`·`{topics}` 자리를 채우고 마커로 감싼다. 본문은 `## Gitifact Guide` 제목으로 시작하고 빈 줄 뒤에 CLI 버전·언어·저장 규약 줄(`gitifact vX · ko · 저장 규약 schemaVersion 2`)을 한 문단으로 둬 이후 stale 판정과 언어 유지에 쓴다. 파서는 이 줄을 위치가 아니라 줄 전체 일치로 찾으므로 제목 추가 전 블록도 읽는다. 언어 토큰이 없는 과거 블록도 읽고 한국어로 간주한다. 내용은 `###` 절로 나눈 시작 시 확인할 것(CLI 미설치 시 사용자 동의를 받아 `npm install -g gitifact@{version}`으로 설치), 요구사항 분류 표, 규칙, 명령 목록이다. Markdown은 연속한 일반 줄을 한 문단으로 합치므로 모든 줄을 제목·목록·표·독립 문단으로 쓰고, 끝은 빈 줄과 `---`로 마커 바깥 내용과 구분한다(빈 줄 없이 `---`를 두면 앞 줄이 제목이 된다). 빈 줄을 포함해 50줄 이내다. 설치 안내의 버전은 블록을 쓴 CLI 버전이라 팀원이 같은 버전을 설치한다. 기존 파일의 줄바꿈(CRLF)을 따른다. 마커 쌍이 있으면 그 사이만 교체하고, 없으면 빈 줄 뒤에 덧붙이며, START만 있거나 START가 중복이면 AGENT_DOCS_MALFORMED로 거부한다.
+블록 본문은 apps/cli/src/shared/i18n/<lang>/block.md이며 commands/agent-block.ts가 `{version}`·`{language}`·`{topics}` 자리를 채우고 마커로 감싼다. 본문은 `## Gitifact Guide` 제목으로 시작하고 빈 줄 뒤에 CLI 버전·언어·저장 규약 줄(`gitifact vX · ko · 저장 규약 schemaVersion 2`)을 한 문단으로 둬 이후 stale 판정과 언어 유지에 쓴다. 파서는 이 줄을 위치가 아니라 줄 전체 일치로 찾으므로 제목 추가 전 블록도 읽는다. 언어 토큰이 없는 과거 블록도 읽고 한국어로 간주한다. 내용은 `###` 절로 나눈 시작 시 확인할 것(전역 설치 없이 블록 버전의 npx로 실행하고 권한 차단 시 필요한 승인 요청), 요구사항 분류 표, 규칙, 명령 목록이다. Markdown은 연속한 일반 줄을 한 문단으로 합치므로 모든 줄을 제목·목록·표·독립 문단으로 쓰고, 끝은 빈 줄과 `---`로 마커 바깥 내용과 구분한다(빈 줄 없이 `---`를 두면 앞 줄이 제목이 된다). 빈 줄을 포함해 50줄 이내다. 기본 실행 명령은 `npx --yes gitifact@{version} <cmd>`이며 블록을 쓴 CLI 버전으로 고정한다. 같은 버전의 프로젝트 의존성이 있으면 npm이 이를 사용하고, 없으면 npm 캐시에 설치해 실행한다. 프로젝트가 별도 실행 방법을 지정하면 우선하고 블록 안의 `gitifact`는 그 실행 방법의 약칭으로 읽는다. 실행 환경을 감지하거나 프로젝트 의존성을 자동 추가하지 않는다. 기존 파일의 줄바꿈(CRLF)을 따른다. 마커 쌍이 있으면 그 사이만 교체하고, 없으면 빈 줄 뒤에 덧붙이며, START만 있거나 START가 중복이면 AGENT_DOCS_MALFORMED로 거부한다.
 
 상세 규칙은 apps/cli/src/shared/i18n/<lang>/docs/의 Markdown(workflow·spec·design·wiki·commit 각 형식 파일과 `.default.md` 운영 지침)이며 빌드 시 dist/i18n/<lang>/docs로 복사되고 `gitifact docs <topic>`이 그대로 출력한다. 스킬 파일과 매니페스트·복사본 검사는 두지 않는다. 지침 텍스트의 편집 원본은 한 곳이다.
 
@@ -52,3 +52,11 @@ CLI의 init-repository 어댑터가 저장소·현재 checkout·HEAD·index를 �
 Claude Code는 AGENTS.md를 읽지 않아, Codex로 AGENTS.md만 두고 도입한 프로젝트에 Claude Code 사용자가 참여하자 블록을 보지 못한 채 커밋 형식만 흉내 내 변경 이유 기록이 빠졌다(2026-09-18 보고). CLAUDE.md wrapper를 기본으로 만드는 방식을 택했다. 원본이 하나로 남아 블록뿐 아니라 프로젝트 고유 지침도 전달된다. Claude를 쓰지 않는 프로젝트에도 파일이 하나 생기는 것은 감수한다. `--agent claude`로 블록을 한 벌 더 쓰는 방식은 내용이 중복되고 AGENTS.md의 프로젝트 지침이 전달되지 않아 기각했다. 명세 파일만 바뀌고 이유 기록이 없는 커밋을 막는 훅이나 커밋 트레일러는 지침이 로드된 뒤에도 같은 문제가 반복되는지 보고 판단한다.
 
 init은 작은 명시적 작업으로 유지한다. 기존 프로젝트를 추정해 일괄 전환하지 않는다. 일반적인 구형 기록 마이그레이션은 아직 없으며 합의된 별도 전환이 필요하다. 멀티 레포 통합과 전역 설정 관리는 지원하지 않는다.
+## 전역 설치 없는 도입
+<!-- gitifact-ref: R-b2q2g4sgsd -->
+
+전역 설치 승인 때문에 에이전트가 Gitifact 작업을 건너뛰는 사례에 따라 기본 안내를 npx 실행으로 바꾼다. 한국어·영어 소개, 시작하기, 블록, workflow에 같은 절차를 적용한다. Node.js 프로젝트에서는 개발 의존성으로 버전을 고정하는 선택지도 안내한다. 기존 전역 명령과 프로젝트별 실행 지침은 계속 지원한다.
+
+npx 사용자는 새 버전의 `update`를 실행해 블록의 버전을 갱신한다. 프로젝트 설치 사용자는 기존 패키지 관리자로 버전을 갱신하고 그 설치본으로 `update`를 실행한다. 기존 init·update 응답의 `install.npmGlobal`은 전역 설치 사용자를 위한 안내로 유지하며 모든 사용자에게 실행을 요구하지 않는다. `--yes`가 생략하는 것은 npm 설치 확인뿐이다. 네트워크·실행 권한이 막히면 승인 요청과 원인 안내를 하고, 명세 기록을 수동으로 대체하거나 성공으로 보고하지 않는다.
+
+패키지 검사는 별도 임시 프로젝트에서 같은 버전의 로컬 패키지를 npx로 오프라인 실행해 초기화·조회와 생성 블록의 버전 고정을 확인한다. 실제 에이전트의 승인 요청 행동은 자연어 지침만으로 보장하지 않는다.

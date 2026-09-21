@@ -7,7 +7,7 @@
 Give this prompt to the agent you use in your project:
 
 ```text
-Run npm install -g gitifact@latest to install Gitifact, even if it is already installed, so we have the latest version. Then run gitifact init in this project.
+Run npx --yes gitifact@latest init in this project.
 Read the GITIFACT block that init adds to AGENTS.md or the relevant agent instructions file, and follow it from this session onward.
 ```
 
@@ -71,19 +71,32 @@ When the viewer shows a new version, ask your agent to update:
 Update Gitifact.
 ```
 
-Restart the browser server after updating to use the new version.
+For npx, run `npx --yes gitifact@latest update` to refresh the project instructions. If you use a project dependency or global installation, update it using that method and run `update` with the updated installation. Restart the browser server with the new version.
 
 ## Run commands yourself
 
-Gitifact requires Node.js 24.x and Git. After installing, run commands inside the target Git repository.
+Gitifact requires Node.js 24.x and Git. Run commands inside the target Git repository. A global installation is optional.
 
 ```sh
-npm install -g gitifact@latest
-gitifact init
-gitifact browser
+npx --yes gitifact@latest init
+npx --yes gitifact@latest browser
 ```
 
 Open the local URL printed by `browser`. Press Ctrl+C in the terminal to stop the server.
+
+In the command tables, `gitifact` stands for the invocation in your GITIFACT block. After setup, use the version specified there.
+
+### Install in a project
+
+In a Node.js project, you can add Gitifact as a development dependency so the team shares a version. Use the project's existing package manager. For npm:
+
+```sh
+npm install --save-dev --save-exact gitifact@latest
+npx gitifact init
+npx gitifact browser
+```
+
+The version is recorded in `package.json` and the lockfile. Tell agents to use the project installation in your project instructions. If you prefer a global command, you can still install it with `npm install -g gitifact@latest`.
 
 ### Common commands
 

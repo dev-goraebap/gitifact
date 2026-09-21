@@ -2,11 +2,11 @@
 
 gitifact v{version} · {language} · storage schemaVersion 2
 
-CLI: run commands as `gitifact <cmd>`. Follow a different invocation if the project instructions specify one.
+CLI: use `npx --yes gitifact@{version} <cmd>` by default. Below, `gitifact` stands for this invocation. Follow the project's instructions if they specify another method, such as a local installation or global command.
 
 ### At the start
 
-- If `gitifact` is unavailable, the CLI needed for this project is missing. Tell the user and obtain consent to install it with `npm install -g gitifact@{version}`. If installation is not possible, do not guess how to save specifications or commit them.
+- A global installation is optional. Version-pinned npx uses a matching project dependency or downloads the package to the npm cache. If execution or downloading is blocked, request the required approval and explain the cause. Do not substitute manual specification saves or commits, or claim completion without running the CLI.
 - Run `gitifact spec working` to read wiki pages, feature specifications, and warnings. Check git status and existing staging.
 - This block is a summary. Read `gitifact docs <topic>` for detailed formats instead of relying on memory.
 

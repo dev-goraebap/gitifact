@@ -5,13 +5,13 @@
 프로젝트에서 사용하는 에이전트에게 아래 내용을 전달하세요.
 
 ```text
-npm install -g gitifact@latest로 gitifact를 설치하세요. 이미 설치돼 있어도 최신 버전으로 올리기 위해 실행합니다. 그다음 이 프로젝트에서 gitifact init을 실행하세요.
+이 프로젝트에서 npx --yes gitifact@latest init을 실행하세요.
 init이 AGENTS.md 등에 쓴 GITIFACT 블록을 읽고 이번 세션부터 따르세요.
 ```
 
 ## 개발 이어가기
 
-설치 후에는 평소처럼 에이전트에게 작업을 요청하세요.
+도입 후에는 평소처럼 에이전트에게 작업을 요청하세요.
 
 ```text
 게시물을 삭제할 수 있게 해주세요.
@@ -69,19 +69,32 @@ CLI는 실행 환경의 언어를 따르고, 지원하지 않는 언어이면 �
 Gitifact를 업데이트해주세요.
 ```
 
-업데이트 후 브라우저 서버를 다시 열면 새 버전이 적용됩니다.
+npx로 사용한다면 `npx --yes gitifact@latest update`로 프로젝트 지침을 갱신하세요. 프로젝트 의존성이나 전역 설치로 관리한다면 같은 방식으로 버전을 올린 뒤 해당 설치본으로 `update`를 실행하세요. 브라우저 서버도 새 버전으로 다시 열면 됩니다.
 
 ## 직접 명령 실행하기
 
-Node.js 24.x와 Git이 설치된 환경에서 사용합니다. 설치 후 명령은 대상 Git 저장소 안에서 실행하세요.
+Node.js 24.x와 Git이 설치된 환경에서 대상 Git 저장소 안에서 실행하세요. 전역 설치는 필요하지 않습니다.
 
 ```sh
-npm install -g gitifact@latest
-gitifact init
-gitifact browser
+npx --yes gitifact@latest init
+npx --yes gitifact@latest browser
 ```
 
 `browser`가 출력한 로컬 주소를 열면 됩니다. 서버는 터미널에서 Ctrl+C로 종료합니다.
+
+명령 표의 `gitifact`는 GITIFACT 블록에 적힌 실행 방법을 뜻합니다. 도입 후에는 블록에 지정된 버전으로 실행하세요.
+
+### 프로젝트에 설치하기
+
+Node.js 프로젝트에서 팀이 같은 버전을 관리하려면 개발 의존성으로 추가할 수 있습니다. 기존 프로젝트의 패키지 관리자를 사용하세요. npm을 쓴다면:
+
+```sh
+npm install --save-dev --save-exact gitifact@latest
+npx gitifact init
+npx gitifact browser
+```
+
+`package.json`과 잠금 파일에 버전이 기록됩니다. 이후에는 프로젝트 설치본을 사용하도록 에이전트 지침에 적어두세요. 전역 명령이 편하다면 `npm install -g gitifact@latest`로 설치해 사용할 수도 있습니다.
 
 ### 자주 쓰는 명령
 

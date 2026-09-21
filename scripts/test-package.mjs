@@ -30,7 +30,7 @@ try {
   assert.equal(name, 'gitifact');
   const installedRoot = join(temporaryRoot, 'node_modules', 'gitifact');
   assert.match(await readFile(join(installedRoot, 'LICENSE'), 'utf8'), /MIT License/);
-  assert.match(await readFile(join(installedRoot, 'README.md'), 'utf8'), /npm install -g gitifact/);
+  assert.match(await readFile(join(installedRoot, 'README.md'), 'utf8'), /npx --yes gitifact@latest init/);
   assert.match(await readFile(join(installedRoot, 'dist/THIRD_PARTY_NOTICES.txt'), 'utf8'), /Meta Platforms/);
   assert.deepEqual(dependencies, {}, 'The initial bundled CLI must be self-contained.');
   // Publishing a version without its release notes is the mistake this guards against.
@@ -53,7 +53,15 @@ try {
   assert.equal(status.ok, true);
   assert.deepEqual(status.head, { state: 'unborn', branch: 'main', commit: null });
   assert.deepEqual(status.checks, { state: 'not-run', reason: 'git-status-only' });
-  const initialized = JSON.parse(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', 'init'], temporaryRoot, noRegistry));
+  // A fresh cache and offline mode ensure the pinned npx command uses this project's package, not a global or downloaded CLI.
+  const npxEnv = { ...noRegistry, npm_config_cache: join(temporaryRoot, 'npm-cache') };
+  const npx = (...args) => pnpm(['--dir', temporaryRoot, 'exec', 'npx', '--offline', '--yes', 'gitifact@' + version, ...args], temporaryRoot, npxEnv);
+  const packageBefore = await readFile(join(temporaryRoot, 'package.json'));
+  const lockBefore = await readFile(join(temporaryRoot, 'pnpm-lock.yaml'));
+  const initialized = JSON.parse(npx('init'));
+  assert.deepEqual(await readFile(join(temporaryRoot, 'package.json')), packageBefore);
+  assert.deepEqual(await readFile(join(temporaryRoot, 'pnpm-lock.yaml')), lockBefore);
+  assert.equal(JSON.parse(npx('spec', 'working')).warnings.length, 0);
   assert.equal(initialized.outcome, 'created');
   assert.equal(initialized.schemaVersion, 2);
   assert.deepEqual([initialized.version, initialized.update, initialized.install], [5, { status: 'disabled', latestVersion: null }, null]);
@@ -103,6 +111,7 @@ try {
   assert.equal(await readFile(join(temporaryRoot, 'CLAUDE.md'), 'utf8'), '@AGENTS.md\n', 'init must add a CLAUDE.md that imports AGENTS.md.');
   assert.match(agents, /^# AGENTS\.md\n\nProject-specific guidance for AI coding agents\.\n\n<!-- GITIFACT:START -->\n/);
   assert.ok(agents.includes('gitifact v' + version + ' · ko · 저장 규약 schemaVersion 2'), 'Block must carry the installed version.');
+  assert.ok(agents.includes('npx --yes gitifact@' + version + ' <cmd>'), 'The generated invocation must pin the installed version.');
   assert.ok(agents.includes('gitifact docs spec'), 'Block must point at the bundled docs.');
   assert.match(agents, /<!-- GITIFACT:END -->\n$/);
   await writeFile(agentsPath, agents + '\n## Project rules\n\nKeep me.\n');
