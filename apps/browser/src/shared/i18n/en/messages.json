@@ -31,9 +31,6 @@
   "common.refresh": "Refresh",
   "common.uncommitted": "Uncommitted",
   "compare.after": "After",
-  "compare.before": "Before",
-  "compare.hint": "Drag the handle to the right to reveal the previous content.",
-  "compare.reveal": "Reveal previous content",
   "contributors.activity": "Contributor activity →",
   "contributors.back": "← Contributors",
   "contributors.backToList": "Back to contributors",
@@ -277,5 +274,12 @@
   "document.historyAll": "See all {count} in the activity →",
   "document.pager": "Previous and next design",
   "document.previous": "← {title}",
-  "document.next": "{title} →"
+  "document.next": "{title} →",
+  "diff.fields": "Changed fields",
+  "diff.layout": "Comparison layout",
+  "diff.unified": "Unified",
+  "diff.split": "Side by side",
+  "diff.body": "Body changes",
+  "diff.unfold": "Show {count} unchanged lines",
+  "diff.bodyUnchanged": "The body did not change."
 }

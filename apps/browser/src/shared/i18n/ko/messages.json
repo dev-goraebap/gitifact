@@ -31,9 +31,6 @@
   "common.refresh": "새로고침",
   "common.uncommitted": "미커밋",
   "compare.after": "변경 후",
-  "compare.before": "변경 전",
-  "compare.hint": "핸들을 오른쪽으로 끌면 변경 전 내용이 드러납니다.",
-  "compare.reveal": "변경 전 드러내기",
   "contributors.activity": "이 참여자의 활동 →",
   "contributors.back": "← 참여자",
   "contributors.backToList": "참여자 목록으로",
@@ -277,5 +274,12 @@
   "document.historyAll": "활동에서 {count}건 모두 보기 →",
   "document.pager": "이전·다음 설계",
   "document.previous": "← {title}",
-  "document.next": "{title} →"
+  "document.next": "{title} →",
+  "diff.fields": "바뀐 항목",
+  "diff.layout": "비교 보기",
+  "diff.unified": "통합",
+  "diff.split": "좌우",
+  "diff.body": "본문 변경",
+  "diff.unfold": "바뀌지 않은 {count}줄 펼치기",
+  "diff.bodyUnchanged": "본문은 바뀌지 않았습니다."
 }

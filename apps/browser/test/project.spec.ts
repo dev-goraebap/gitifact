@@ -103,7 +103,9 @@ test('history rows preview change reasons and mark missing ones', async ({page})
   {...event,key:specs.head+':R-cccccccccc',id:'R-cccccccccc',after:{...event.after!,id:'R-cccccccccc',title:'이유 없는 변경'},reasons:[]},
  ]};
  // The rows carry names only; the drawer reads the text on both sides by key.
- changeBodies[specs.head+':R-bbbbbbbbbb']={before:{...event.after!,body:'이전 본문'},after:{...event.after!,id:'R-bbbbbbbbbb',title:'검색 결과 정렬',body:'정렬 **본문**입니다.'}};
+ // Twelve lines where only the sixth changes one word, so the far unchanged lines fold and the word is marked.
+ const sorted=(order:string)=>[...[1,2,3,4,5].map(n=>`${n}번째 줄입니다.`),`검색 결과를 ${order} 정렬합니다.`,...[7,8,9,10,11,12].map(n=>`${n}번째 줄입니다.`)].join('\n');
+ changeBodies[specs.head+':R-bbbbbbbbbb']={before:{...event.after!,id:'R-bbbbbbbbbb',title:'검색 정렬',body:sorted('날짜순으로')},after:{...event.after!,id:'R-bbbbbbbbbb',title:'검색 결과 정렬',body:sorted('이름순으로')}};
  changeBodies[specs.head+':R-cccccccccc']={before:null,after:{...event.after!,id:'R-cccccccccc',title:'이유 없는 변경',body:'본문만 있습니다.'}};
  await serve(page, data);
  await page.goto('/activity');
@@ -118,10 +120,20 @@ test('history rows preview change reasons and mark missing ones', async ({page})
  await reasons.nth(0).getByRole('link',{name:'검색 결과 정렬'}).click();
  const pane=page.getByRole('dialog',{name:'검색 결과 정렬'});
  await expect(pane.getByRole('heading',{name:'변경 내용',exact:true})).toBeVisible();
- await expect(pane).toContainText('정렬 본문입니다.');
- const reveal=pane.getByRole('separator',{name:'변경 전 드러내기'});await expect(reveal).toBeVisible();
- const before=pane.getByLabel('변경 전',{exact:true});expect(await before.evaluate(el=>getComputedStyle(el).clipPath)).toContain('100%');
- await pane.getByRole('button',{name:'변경 전',exact:true}).click();await expect.poll(async()=>before.evaluate(el=>getComputedStyle(el).clipPath)).toContain('0px');
+ // The title changed as a field; the body as source lines, one removed and one added, the changed word marked.
+ await expect(pane.getByRole('region',{name:'바뀐 항목'})).toContainText('title');
+ await expect(pane.getByRole('region',{name:'바뀐 항목'}).locator('del')).toHaveText('검색 정렬');
+ const body=pane.getByRole('table',{name:'본문 변경'});
+ await expect(body.locator('mark')).toHaveText(['날짜순으로','이름순으로']);
+ // Unchanged lines away from the change fold: two at the top and three at the bottom, with three kept beside it.
+ await expect(body.getByRole('button',{name:'바뀌지 않은 2줄 펼치기'})).toBeVisible();
+ await expect(body.getByRole('button',{name:'바뀌지 않은 3줄 펼치기'})).toBeVisible();
+ await expect(body).not.toContainText('1번째 줄입니다.');
+ await body.getByRole('button',{name:'바뀌지 않은 2줄 펼치기'}).click();await expect(body).toContainText('1번째 줄입니다.');
+ // Side by side puts the two versions of the line on one row, and the choice is kept for the next change.
+ await pane.getByRole('radio',{name:'좌우'}).click();
+ await expect(body.locator('tr',{hasText:'날짜순으로'})).toContainText('이름순으로');
+ expect(await page.evaluate(()=>localStorage.getItem('gitifact-diff-view'))).toBe('split');
 });
 
 test('a reason is written once over the records it explains, and each day is marked once', async ({page}) => {

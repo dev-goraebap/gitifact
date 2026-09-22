@@ -3,7 +3,7 @@
  * Documents link to each other by repository-relative paths (`../../wiki/architecture.md`), so the target is resolved
  * against the folder of the document being read and then matched to a wiki page, a feature spec, an asset, or nothing.
  */
-type Located = { id: string; path: string };
+type Located = { id: string; path: string; title?: string };
 export type DocumentIndex = { documents: readonly Located[]; features: readonly (Located & { requirements?: readonly Located[]; designs?: readonly Located[] })[] };
 export type ResolvedLink =
   | { kind: 'external'; href: string }

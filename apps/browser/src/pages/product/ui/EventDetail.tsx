@@ -8,11 +8,11 @@ import { Text } from '@astryxdesign/core/Text';
 import { Link } from '@tanstack/react-router';
 import { DesignDocument } from './DesignDocument';
 import { Person } from './Person';
-import { ChangeCompare } from './ChangeCompare';
+import { ChangeDiff } from './ChangeDiff';
 import styles from './product.module.css';
 import { t, useLanguage, getLanguage } from '../../../shared/i18n';
 import { DocumentBody } from '../../../shared/ui/document';
-/** Body of one activity entry: the change (a before/after reveal when both exist) and reasons. The surrounding drawer owns the title and close control. */
+/** Body of one activity entry: the change (a line diff when both sides exist, the document otherwise) and reasons. The surrounding drawer owns the title and close control. */
 export function EventDetail({event:e,change,features}: {event:SpecEvent;change:UseQueryResult<BrowserChangeV2>;features:SpecFeature[]}) {
   useLanguage();
   // Snapshot bodies resolve their links from the path they were committed at.
@@ -22,7 +22,7 @@ export function EventDetail({event:e,change,features}: {event:SpecEvent;change:U
       <VStack gap={4} className={styles.readingSection}>
         <Heading level={3}>{e.after&&e.before?t('event.changes'):e.after?t('compare.after'):t('event.deletedContent')}</Heading>
         {change.data
-          ?(change.data.after&&change.data.before?<ChangeCompare key={e.key} before={body(change.data.before)} after={body(change.data.after)}/>:change.data.after?body(change.data.after):change.data.before?body(change.data.before):<Text color="secondary">{t('event.noContent')}</Text>)
+          ?(change.data.after&&change.data.before?<ChangeDiff key={e.key} before={change.data.before} after={change.data.after} features={features}/>:change.data.after?body(change.data.after):change.data.before?body(change.data.before):<Text color="secondary">{t('event.noContent')}</Text>)
           :change.error
             ?<VStack gap={3} role="alert"><Text>{t('event.bodyFailed')}</Text><Text type="supporting" color="secondary">{change.error.message}</Text></VStack>
             // Shaped like a few lines of text, so the reveal below does not jump when the body arrives.
