@@ -1,4 +1,4 @@
-import { browserChangeQueryV2, browserChangeV2, browserHistoryQueryV2, browserHistorySummaryQueryV1, browserHistorySummaryV2, browserHistoryV3, browserSearchQueryV1, browserSearchV1 } from '@gitifact/contracts';
+import { browserChangeQueryV2, browserChangeV2, browserHistoryQueryV3, browserHistorySummaryQueryV1, browserHistorySummaryV2, browserHistoryV3, browserSearchQueryV1, browserSearchV1 } from '@gitifact/contracts';
 import { storeReader } from '../../adapters/git/store-reader.js';
 import { openCache } from '../../adapters/cache/index.js';
 import { createCheckoutReader } from '../checkout/checkout-reader.js';
@@ -22,9 +22,9 @@ export function recordRoutes(root: string, sessionId: string, env?: NodeJS.Proce
 
   return [
     route({ method: 'GET', path: '/api/v1/specs', session: true, unreadable, handle: async () => ok((await readCheckout()).checkout) }),
-    route({ method: 'GET', path: '/api/v1/history', session: true, query: browserHistoryQueryV2, unreadable, handle: async ({ query }) => {
+    route({ method: 'GET', path: '/api/v1/history', session: true, query: browserHistoryQueryV3, unreadable, handle: async ({ query }) => {
       const offset = query.offset ?? 0;
-      const page = await cache.history.page(query.head, { kind: query.kind, document: query.document, feature: query.feature, author: query.author, q: query.q }, offset, query.limit ?? PAGE);
+      const page = await cache.history.page(query.head, { kind: query.kind, document: query.document, feature: query.feature, id: query.id, author: query.author, q: query.q }, offset, query.limit ?? PAGE);
       return ok(browserHistoryV3.parse({ contract: 'browser-history', version: 3, sessionId, head: query.head, offset, ...page }));
     } }),
     route({ method: 'GET', path: '/api/v1/history/summary', session: true, query: browserHistorySummaryQueryV1, unreadable, handle: async ({ query }) =>

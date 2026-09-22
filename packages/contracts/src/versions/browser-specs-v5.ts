@@ -85,11 +85,11 @@ export type DesignSource = z.infer<typeof source>;
 // Query strings the browser API accepts. Every value arrives as text; a key given twice is refused before these run.
 const headQuery = oid;
 const count = (max: number) => z.string().regex(/^(0|[1-9]\d{0,6})$/).transform(Number).pipe(z.number().int().min(0).max(max));
-/** `/api/v1/history`: which HEAD, which page, and the filters, all optional but the HEAD. */
-export const browserHistoryQueryV2 = z.strictObject({
+/** `/api/v1/history`: which HEAD, which page, and the filters, all optional but the HEAD. v3 added `id`, one document's changes. */
+export const browserHistoryQueryV3 = z.strictObject({
   head: headQuery, offset: count(1_000_000).optional(), limit: count(100).pipe(z.number().min(1)).optional(),
   kind: changeType.optional(), document: kind.optional(),
-  feature: z.string().regex(/^S-[a-z2-7]{10}$/).optional(), author: z.string().min(1).max(320).optional(), q: z.string().max(200).optional(),
+  feature: z.string().regex(/^S-[a-z2-7]{10}$/).optional(), id: z.string().regex(/^[SRDW]-[a-z2-7]{10}$/).optional(), author: z.string().min(1).max(320).optional(), q: z.string().max(200).optional(),
 });
 export const browserHistorySummaryQueryV1 = z.strictObject({ head: headQuery });
 export const browserChangeQueryV2 = z.strictObject({ key: z.string().regex(/^(?:[a-f0-9]{40}|[a-f0-9]{64}):[SRDW]-[a-z2-7]{10}$/) });

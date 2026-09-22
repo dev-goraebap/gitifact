@@ -97,7 +97,6 @@
   "features.notFoundDescription": "{id} is not in the current specifications. It may have been renamed or removed.",
   "features.notFoundTitle": "Feature not found",
   "features.requirementCount": "Requirements: {count}",
-  "features.requirementDesign": "Design for this requirement →",
   "features.requirementHistory": "Requirement history →",
   "features.requirementNumber": "Requirement {number}",
   "features.tab.design": "Design",
@@ -267,5 +266,16 @@
   "settings.language": "Language",
   "settings.language.system": "Browser default",
   "shell.githubTooltip": "Gitifact on GitHub (opens in a new tab)",
-  "kind.feature": "Feature overview"
+  "kind.feature": "Feature overview",
+  "features.designIndex": "Design index",
+  "features.designIndexTitle": "Designs of this feature",
+  "features.requirementDesigns": "Designs for this requirement:",
+  "document.history": "Changes to this document",
+  "document.historyNone": "No committed changes.",
+  "document.historyFailed": "Could not load the change history.",
+  "document.historyLoading": "Loading the change history.",
+  "document.historyAll": "See all {count} in the activity →",
+  "document.pager": "Previous and next design",
+  "document.previous": "← {title}",
+  "document.next": "{title} →"
 }

@@ -24,7 +24,7 @@ API와 계약은 다음과 같다. 모두 세션 헤더가 필요하고 응답�
 | 경로 | 계약 | 내용 |
 | :--- | :--- | :--- |
 | `/api/v1/specs` | browser-specs v5 | 체크아웃(현재 기능과 그 요구사항·설계 문서, 위키, 참여자, 미커밋 여부, 읽지 못한 파일) 전체 |
-| `/api/v1/history?head&offset&limit&kind&document&feature&author&q` | browser-history v3 | 조건에 맞는 변경 한 페이지와 전체 건수 |
+| `/api/v1/history?head&offset&limit&kind&document&feature&id&author&q` | browser-history v3 | 조건에 맞는 변경 한 페이지와 전체 건수 |
 | `/api/v1/history/summary?head` | browser-history-summary v2 | 종류별 건수, 최근 3주 커밋별 건수, 최신 커밋 셋 |
 | `/api/v1/change?key` | browser-change v2 | 변경 하나의 목록 정보와 전후 본문 |
 | `/api/v1/search?q&head` | browser-search v1 | 체크아웃과 지난 변경의 검색 결과 |

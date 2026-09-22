@@ -135,25 +135,45 @@ test('a fragment typed from outside lands on its section, and only that one lies
   await expect(page.locator('[aria-current=location]')).toHaveCount(1);
 });
 
-test('a design document names its requirements, and each requirement links back to that document', async ({ page }) => {
+test('the design tab reads one document at a time, and each requirement links to every design that names it', async ({ page }) => {
   const linked = structuredClone(many);
   linked.features[1]!.design = undefined;
   linked.features[1]!.designs = [{ title: '알림 설계', requirements: [], sources: [], body: '서버가 밀지 않는다.' },
-    { title: '표시 방식', requirements: ['R-bbbbbbbbbb'], sources: [], body: '조회로 읽는다.' },
+    { title: '표시 방식', requirements: ['R-bbbbbbbbbb', 'R-bbbbbbbbbc'], sources: [], body: '조회로 읽는다.' },
     { title: '끄기', requirements: ['R-bbbbbbbbbc'], sources: [], body: '설정에 둔다.' }];
+  const [shown, off] = ['D-bbbbbbbbb1', 'D-bbbbbbbbb2'];
+  // One change of the design "끄기", so the document lists its own history and nothing of the others.
+  linked.events = [{ ...many.events[0]!, key: many.events[0]!.commit + ':' + off, id: off, kind: 'design', types: ['created'], reasons: ['끄기 설계를 더한다.'] }, ...many.events];
   await mockApi(page);
   await serve(page, linked);
   await page.goto('/features/S-bbbbbbbbbb?tab=requirements');
-  // The requirement the design explains carries the way there; the one it does not name carries nothing.
-  await expect(page.locator('#R-bbbbbbbbbb').getByRole('link', { name: '이 요구사항의 설계 →' })).toHaveCount(1);
-  await expect(page.locator('#R-bbbbbbbbbd').getByRole('link', { name: '이 요구사항의 설계 →' })).toHaveCount(0);
-  await page.locator('#R-bbbbbbbbbc').getByRole('link', { name: '이 요구사항의 설계 →' }).click();
-  await expect(page).toHaveURL(/tab=design/);
-  // The design opens on the document that explains it, marked the same way the requirement was.
-  await expect(page.locator('[aria-current=location] mark')).toHaveText('끄기');
-  await expect(page.locator('[aria-current=location]')).toHaveCount(1);
-  // The same link read the other way round is already there.
-  await expect(page.getByRole('tabpanel', { name: '설계' }).getByRole('link', { name: '알림 끄기' })).toHaveCount(1);
+  // A requirement names every design that explains it, by title; one no design names carries nothing.
+  const designsOf = (id: string) => page.locator('#' + id).getByRole('link').filter({ hasNotText: '이력' });
+  await expect(designsOf('R-bbbbbbbbbc')).toHaveText(['표시 방식', '끄기']);
+  await expect(designsOf('R-bbbbbbbbbb')).toHaveText(['표시 방식']);
+  await expect(page.locator('#R-bbbbbbbbbd').getByText('이 요구사항의 설계:')).toHaveCount(0);
+  await designsOf('R-bbbbbbbbbc').filter({ hasText: '끄기' }).click();
+  await expect(page).toHaveURL(new RegExp('tab=design.*selected=' + off + '|selected=' + off + '.*tab=design'));
+  // Only the chosen document is on the page, and the index marks it among the feature's designs in order.
+  const panel = page.getByRole('tabpanel', { name: '설계' });
+  await expect(panel.locator('mark')).toHaveText(['끄기']);
+  const index = page.getByRole('navigation', { name: '설계 목차' });
+  await expect(index.getByRole('link')).toHaveText(['알림 설계', '표시 방식', '끄기']);
+  await expect(index.locator('[aria-current=page]')).toHaveText('끄기');
+  await expect(panel.getByRole('link', { name: '알림 끄기' })).toHaveCount(1);
+  // Its own changes are beside it and open in the activity.
+  const history = page.getByRole('region', { name: '이 문서의 변경' });
+  await expect(history.getByRole('link', { name: '끄기 설계를 더한다.' })).toHaveAttribute('href', /\/activity\?selected=/);
+  // The last design has only a way back; the first is where the tab opens without a choice.
+  const pager = page.getByRole('navigation', { name: '이전·다음 설계' });
+  await expect(pager.getByRole('link')).toHaveText(['← 표시 방식']);
+  await pager.getByRole('link').click();
+  await expect(page).toHaveURL(new RegExp('selected=' + shown));
+  await expect(pager.getByRole('link')).toHaveText(['← 알림 설계', '끄기 →']);
+  await expect(page.getByRole('region', { name: '이 문서의 변경' })).toContainText('커밋된 변경이 없습니다.');
+  await page.goto('/features/S-bbbbbbbbbb?tab=design');
+  await expect(panel.locator('mark')).toHaveText(['알림 설계']);
+  await expect(index.locator('[aria-current=page]')).toHaveText('알림 설계');
 });
 
 test('the list pages by feature so a feature is never split, and the page is kept in the address', async ({ page }) => {

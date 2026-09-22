@@ -64,7 +64,7 @@ export function ProductPanel({session,view,featureId,email,documentId,search,cha
  {skeleton&&<ViewSkeleton view={view} page={!!documentId}/>}
  {filters}
  {ready&&<VStack gap={3} className={browsing?styles.fillContent:styles.content}>
- <DocumentIndexProvider index={first}>{view==='history'?<HistoryView features={first.features} search={search} change={change} session={session} head={first.head}/>:view==='features'?<FeatureView features={first.features} featureId={featureId} search={search} change={change}/>:productPage?<ProductOverview session={session} head={first.head} features={first.features} documents={first.documents} contributors={first.contributors} working={first.working}/>:wiki?<DocumentsView documents={first.documents} documentId={documentId} search={search} change={change}/>:<ContributorsView session={session} head={first.head} people={first.contributors} features={first.features} email={email} search={search}/>}</DocumentIndexProvider>
+ <DocumentIndexProvider index={first}>{view==='history'?<HistoryView features={first.features} search={search} change={change} session={session} head={first.head}/>:view==='features'?<FeatureView features={first.features} featureId={featureId} search={search} change={change} session={session} head={first.head}/>:productPage?<ProductOverview session={session} head={first.head} features={first.features} documents={first.documents} contributors={first.contributors} working={first.working}/>:wiki?<DocumentsView documents={first.documents} documentId={documentId} search={search} change={change}/>:<ContributorsView session={session} head={first.head} people={first.contributors} features={first.features} email={email} search={search}/>}</DocumentIndexProvider>
  {!browsing&&notes}
  </VStack>}
  </VStack>

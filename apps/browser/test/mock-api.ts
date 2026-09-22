@@ -77,7 +77,7 @@ export async function serve(page: Page, data: Fixture) {
   await page.route(url => url.pathname === '/api/v1/history', route => {
     const q = new URL(route.request().url()).searchParams;
     const matching = events.filter(e => (!q.get('kind') || e.types.includes(q.get('kind') as never)) && (!q.get('document') || e.kind === q.get('document'))
-      && (!q.get('feature') || e.before?.specId === q.get('feature') || e.after?.specId === q.get('feature')) && (!q.get('author') || e.email === q.get('author'))
+      && (!q.get('feature') || e.before?.specId === q.get('feature') || e.after?.specId === q.get('feature')) && (!q.get('author') || e.email === q.get('author')) && (!q.get('id') || e.id === q.get('id'))
       && (!q.get('q') || lower([e.id, e.before?.title, e.after?.title].join(' ')).includes(lower(q.get('q')!))));
     const offset = Number(q.get('offset') ?? 0); const limit = Number(q.get('limit') ?? 50);
     return route.fulfill({ json: { contract: 'browser-history', version: 3, sessionId: session.sessionId, head: data.head, total: matching.length, offset, events: matching.slice(offset, offset + limit) } });

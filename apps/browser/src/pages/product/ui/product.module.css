@@ -34,6 +34,12 @@
   .requirementLayout .documentIndex a { font-size:.8125rem; line-height:1.5; }
   .requirementLayout .documentIndex a[aria-current] { color:var(--color-text-primary); font-weight:600; box-shadow:inset 2px 0 0 var(--color-text-primary); margin-left:calc(-1 * var(--spacing-4)); padding-left:var(--spacing-4); }
 }
+/* The design being read is marked in its index at every width: unlike the requirements, only that one is on the page. */
+.designSection { scroll-margin-top:calc(var(--gitifact-topbar-height) + var(--spacing-4)); }
+.designIndex a[aria-current] { color:var(--color-text-primary); font-weight:600; }
+.documentHistory { padding-top:var(--spacing-5); border-top:1px solid var(--color-border); }
+.documentPager { padding-block:var(--spacing-5); border-top:1px solid var(--color-border); }
+.pagerNext { margin-inline-start:auto; }
 .featureDetail a:hover { text-decoration:underline; }
 .requirementSection { padding-block:var(--spacing-7); border-bottom:1px solid var(--color-border); scroll-margin-top:calc(var(--gitifact-topbar-height) + var(--spacing-4)); }
 .requirementSection h3 { font-size:1.25rem; line-height:1.5; }
@@ -42,9 +48,8 @@
 .requirementSection[aria-current] { scroll-margin-top:calc(var(--gitifact-topbar-height) + var(--spacing-5)); }
 /* The section a link brought the reader to lies on the same hatching as the feature rows of the list. The padding is
    taken back by a negative margin so the text stays in line with the sections around it. */
-.requirementSection[aria-current], .designSection[aria-current] { background-image:repeating-linear-gradient(-45deg, var(--color-background-muted) 0 1px, transparent 1px 7px);
+.requirementSection[aria-current] { background-image:repeating-linear-gradient(-45deg, var(--color-background-muted) 0 1px, transparent 1px 7px);
   margin-inline:calc(-1 * var(--spacing-4)); padding-inline:var(--spacing-4); }
-.designSection[aria-current] { padding-block:var(--spacing-4); }
 .requirementSection p,.requirementSection li { line-height:1.9; }
 .requirementSection a,.documentHeading a { font-size:.8125rem; }
 @media(width<64rem){.documentHeading h1{font-size:1.5rem}}

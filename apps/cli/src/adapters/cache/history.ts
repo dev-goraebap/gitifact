@@ -3,7 +3,7 @@ import { createCommitChanges, type ChangeType, type CommitChanges, type CommitRe
 import { transaction, type CacheDatabase } from './database.js';
 import { containing, snippet } from './search-text.js';
 
-export interface HistoryFilter { kind?: ChangeType | undefined; document?: HistoryEvent['kind'] | undefined; feature?: string | undefined; author?: string | undefined; q?: string | undefined }
+export interface HistoryFilter { kind?: ChangeType | undefined; document?: HistoryEvent['kind'] | undefined; feature?: string | undefined; id?: string | undefined; author?: string | undefined; q?: string | undefined }
 export interface SearchHit { id: string; kind: 'feature' | 'requirement' | 'design' | 'document' | 'history'; title: string; where: string; line: string; featureId?: string; documentId?: string; key?: string }
 
 /** The list row of a change: the document's name and place, without the text on either side. */
@@ -97,6 +97,7 @@ export function createHistory(database: CacheDatabase, git: GitAccess) {
     if (filter.kind) { clauses.push("instr(',' || c.types || ',', ?) > 0"); params.push(',' + filter.kind + ','); }
     if (filter.document) { clauses.push('c.kind = ?'); params.push(filter.document); }
     if (filter.feature) { clauses.push('(c.before_spec = ? OR c.after_spec = ?)'); params.push(filter.feature, filter.feature); }
+    if (filter.id) { clauses.push('c.id = ?'); params.push(filter.id); }
     if (filter.author) { clauses.push('c.email = ?'); params.push(filter.author); }
     if (filter.q?.trim()) { clauses.push('instr(c.needle, ?) > 0'); params.push(filter.q.trim().toLowerCase()); }
     return { sql: clauses.map(c => ' AND ' + c).join(''), params };

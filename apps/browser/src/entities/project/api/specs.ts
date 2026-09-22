@@ -5,7 +5,7 @@ import { httpFailure } from './repository';
 import { t } from '../../../shared/i18n';
 
 /** Filters the server applies to the whole of history. */
-export interface HistoryFilter { kind?: string | undefined; document?: string | undefined; feature?: string | undefined; author?: string | undefined; q?: string | undefined }
+export interface HistoryFilter { kind?: string | undefined; document?: string | undefined; feature?: string | undefined; id?: string | undefined; author?: string | undefined; q?: string | undefined }
 
 // Reads one API answer, checks its shape and that it came from this server session.
 async function read<T extends { sessionId: string }>(session: BrowserSessionV3, path: string, schema: { safeParse(v: unknown): { success: true; data: T } | { success: false } }, signal?: AbortSignal): Promise<T> {
