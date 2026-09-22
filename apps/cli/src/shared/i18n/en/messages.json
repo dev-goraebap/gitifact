@@ -243,5 +243,7 @@
   "commit.unknownDocument": "A reason names documents that do not exist: {ids}",
   "commit.recoveryKept": "Another process changed the reason file, so it was not restored. Review the recovery data, then remove the folder: {path}",
   "init.wikiReadmeDescription": "What this wiki collects and how it is organized",
-  "docs.singleLine": "The {field} must be a single line."
+  "docs.singleLine": "The {field} must be a single line.",
+  "changes.problems": "Document check: {count} problems (see docs check)",
+  "changes.clean": "Document check: no problems"
 }

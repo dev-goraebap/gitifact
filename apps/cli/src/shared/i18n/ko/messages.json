@@ -243,5 +243,7 @@
   "commit.unknownDocument": "이유가 가리키는 문서가 없습니다: {ids}",
   "commit.recoveryKept": "이유 파일이 다른 작업으로 바뀌어 되돌리지 않았습니다. 복구 자료를 확인한 뒤 폴더를 지우세요: {path}",
   "init.wikiReadmeDescription": "이 위키에 무엇을 어떤 구조로 쌓는지",
-  "docs.singleLine": "{field}은 한 줄이어야 합니다."
+  "docs.singleLine": "{field}은 한 줄이어야 합니다.",
+  "changes.problems": "문서 검사: 문제 {count}개 (docs check로 확인)",
+  "changes.clean": "문서 검사: 문제 없음"
 }

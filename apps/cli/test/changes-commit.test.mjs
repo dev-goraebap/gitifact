@@ -51,7 +51,7 @@ test('changes list names changed documents, uncommitted reasons, documents witho
   const f = setup(t);
   const text = f.run(['changes', 'list']);
   assert.equal(text.status, 0, text.stderr);
-  assert.match(text.stdout, new RegExp(`^HEAD 대비 바뀐 문서 2개\\n  created   ${R} 저장 — ${docPaths[1]}\\n  created   ${S} 게시물 — ${docPaths[0]}\\n이유가 없는 문서: ${R}, ${S}\\n커밋 입력 파일: .*commit\\.json\\n$`));
+  assert.match(text.stdout, new RegExp(`^HEAD 대비 바뀐 문서 2개\\n  created   ${R} 저장 — ${docPaths[1]}\\n  created   ${S} 게시물 — ${docPaths[0]}\\n이유가 없는 문서: ${R}, ${S}\\n문서 검사: 문제 없음\\n커밋 입력 파일: .*commit\\.json\\n$`));
   f.done(f.commit(request()));
   assert.equal(f.run(['changes', 'list']).stdout.split('\n')[0], 'HEAD 대비 바뀐 문서가 없습니다.');
   // A moved and edited requirement is one change of that document.
@@ -69,6 +69,9 @@ test('changes list names changed documents, uncommitted reasons, documents witho
 test('a failing document check stops the commit before anything is written', t => {
   const f = setup(t);
   writeFileSync(join(f.repo, docPaths[1]), readFileSync(join(f.repo, docPaths[1]), 'utf8').replace('order: 10\n', 'order: 10\ndraft: true\n'));
+  // changes list shows the problem before a commit is tried.
+  assert.match(f.run(['changes', 'list']).stdout, /\n문서 검사: 문제 1개 \(docs check로 확인\)\n/);
+  assert.deepEqual(f.ok(['changes', 'list']).problems.map(p => p.code), ['DOC_DRAFT']);
   const before = fingerprint(f.repo);
   const result = f.commit(request());
   assert.equal(result.status, 1);

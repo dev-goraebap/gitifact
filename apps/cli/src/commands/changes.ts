@@ -37,15 +37,18 @@ const reasonLine = (r: DocReason) => `${r.id} ${r.docs.join(', ')}: ${r.reason.r
 export const runChangesList = (options: { format: Format }, controls: AgentInputControls = {}) => runCommand('changes', options.format, async () => {
   const project = await openProject(process.cwd());
   const head = await project.head();
-  const { changes, reasons } = await pendingChanges(project, head);
+  const { changes, reasons, working } = await pendingChanges(project, head);
   const withoutReason = uncovered(changes, reasons);
+  // The files are already read, so the commit's own check costs nothing here and a draft shows up before the commit fails.
+  const problems = [...working.problems, ...checkDocuments(working.files).problems];
   // The input folder rides on the read an agent runs before committing; a failure only leaves it out.
   const inputs = await prepareAgentInputs(project.root, controls).catch(() => undefined);
   const out = changes.length ? [t('changes.changed', { count: changes.length }), ...changes.map(c => '  ' + changeLine(c))] : [t('changes.none')];
   out.push(...section(t('changes.pendingReasons', { count: reasons.length }), reasons.map(reasonLine)));
   if (withoutReason.length) out.push(t('changes.withoutReason', { ids: withoutReason.join(', ') }));
+  out.push(problems.length ? t('changes.problems', { count: problems.length }) : t('changes.clean'));
   if (inputs) out.push(t('changes.input', { path: inputs.commit }));
-  return { json: { head, changes, pendingReasons: reasons, withoutReason, inputs: inputs ?? null }, text: text(out) };
+  return { json: { head, changes, pendingReasons: reasons, withoutReason, problems, inputs: inputs ?? null }, text: text(out) };
 });
 
 /** `changes commit`: reads the input, records the reasons and commits, then removes an input file it consumed. */
