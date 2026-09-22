@@ -223,6 +223,7 @@
   "docs.createdNext": "본문을 채운 뒤 프론트매터의 draft: true 줄을 지우고 docs check로 확인하세요.",
   "docs.problems": "문제 {count}개",
   "docs.clean": "문제 없음 (문서 {count}개)",
+  "docs.warnings": "경고 {count}개 (커밋은 막지 않음)",
   "docs.reason": "이유",
   "docs.commit": "커밋",
   "docs.noHistory": "기록된 변경이 없습니다.",
@@ -245,5 +246,6 @@
   "init.wikiReadmeDescription": "이 위키에 무엇을 어떤 구조로 쌓는지",
   "docs.singleLine": "{field}은 한 줄이어야 합니다.",
   "changes.problems": "문서 검사: 문제 {count}개 (docs check로 확인)",
+  "changes.warnings": "문서 경고: {count}개 (docs check로 확인, 커밋은 막지 않음)",
   "changes.clean": "문서 검사: 문제 없음"
 }

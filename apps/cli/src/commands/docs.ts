@@ -1,8 +1,9 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { checkDocuments, classifyDocPath, arrangeDocuments, parseDocumentFile, renderDocumentFile, SPEC_ROOT, WIKI_ROOT,
-  type DesignDoc, type Doc, type DocKind, type DocProblem } from '@gitifact/core';
+  type DesignDoc, type Doc, type DocKind, type DocProblem, type DocWarning } from '@gitifact/core';
 import { createDocumentFile, generateId } from '../adapters/filesystem/document-file.js';
+import { readDocumentWarnings } from '../adapters/filesystem/document-warnings.js';
 import { CommandError, runCommand, section, text, type CommandResult, type Format } from './output.js';
 import { documentsOf, openProject, type Project } from './project.js';
 import { t } from '../shared/i18n/index.js';
@@ -14,7 +15,7 @@ const draftMark = (doc: Doc) => doc.draft ? ' (' + t('docs.draft') + ')' : '';
 /** The path people type and the viewer shows: inside `.gitifact`, without that prefix. */
 const place = (path: string) => path.replace(/^\.gitifact\//, '');
 const line = (doc: Doc) => `${doc.id} ${doc.title}${draftMark(doc)} — ${doc.description}`;
-const problemLines = (problems: DocProblem[]) => problems.map(p => p.code + ' ' + p.message);
+const problemLines = (problems: (DocProblem | DocWarning)[]) => problems.map(p => p.code + ' ' + p.message);
 
 /** `docs list`: frontmatter only, with referenced documents named by title, never a body. */
 export const runDocsList = (options: Options & { feature?: string; kind?: 'spec' | 'wiki' }) => runCommand('docs', options.format, async () => {
@@ -176,15 +177,20 @@ export const runDocsNew = (kind: typeof newKinds[number], path: string, options:
     text: text([t('docs.created', { id, path: target }), t('docs.createdNext')]) };
 });
 
-/** `docs check`: every problem in the whole set of documents and reasons; exit code 1 when there is any. */
+/**
+ * `docs check`: every problem in the whole set of documents and reasons; exit code 1 when there is any. Link and asset
+ * warnings are listed after them and never change the exit code.
+ */
 export const runDocsCheck = (options: Options) => runCommand('docs', options.format, async (): Promise<CommandResult> => {
   const project = await openProject(process.cwd());
   const { files, problems: unreadable } = await project.cache.documents.files();
   const result = checkDocuments(files);
   const problems = [...unreadable, ...result.problems];
-  return { json: { documents: result.documents.length, problems }, failed: problems.length > 0,
-    text: text(problems.length ? [t('docs.problems', { count: problems.length }), ...problemLines(problems).map(l => '  ' + l)]
-      : [t('docs.clean', { count: result.documents.length })]) };
+  const warnings = await readDocumentWarnings(project.root, result.documents);
+  return { json: { documents: result.documents.length, problems, warnings }, failed: problems.length > 0,
+    text: text([...(problems.length ? [t('docs.problems', { count: problems.length }), ...problemLines(problems).map(l => '  ' + l)]
+      : [t('docs.clean', { count: result.documents.length })]),
+      ...section(t('docs.warnings', { count: warnings.length }), problemLines(warnings))]) };
 });
 
 /** `docs history`: why and when one document changed, newest first, from the commits of HEAD. */

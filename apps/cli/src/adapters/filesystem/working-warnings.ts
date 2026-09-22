@@ -1,21 +1,9 @@
-import { lstat, readdir } from 'node:fs/promises';
+import { lstat } from 'node:fs/promises';
 import { join } from 'node:path';
-import { ASSETS_DIR, ASSET_SIZE_LIMIT, ASSETS_TOTAL_LIMIT, RECOMMENDED_ASSET_EXTENSIONS, assetExtension, documentLinks, designReferenceWarnings, type StoreBundle, type StoreWarning } from '@gitifact/core';
+import { listAssets } from './document-warnings.js';
+import { ASSET_SIZE_LIMIT, ASSETS_TOTAL_LIMIT, RECOMMENDED_ASSET_EXTENSIONS, assetExtension, documentLinks, designReferenceWarnings, type StoreBundle, type StoreWarning } from '@gitifact/core';
 
 const info = async (path: string) => lstat(path).catch(e => { if (e.code === 'ENOENT') return undefined; throw e; });
-const posix = (path: string) => path.split('\\').join('/');
-
-/** Files under `.gitifact/assets`, repo-relative with sizes. Links and symlinks are skipped: they are not committed assets. */
-export async function listAssets(root: string): Promise<{ path: string; bytes: number }[]> {
-  const out: { path: string; bytes: number }[] = [];
-  async function visit(relative: string, depth: number) {
-    const stat = await info(join(root, relative)); if (!stat || stat.isSymbolicLink()) return;
-    if (stat.isDirectory()) { if (depth > 8 || out.length > 4000) return; for (const name of (await readdir(join(root, relative))).sort()) await visit(relative + '/' + name, depth + 1); }
-    else if (stat.isFile()) out.push({ path: posix(relative), bytes: stat.size });
-  }
-  await visit(ASSETS_DIR, 0);
-  return out;
-}
 
 /**
  * Advisory findings over the working tree: dangling relative links, assets over the recommended size or outside the

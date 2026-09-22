@@ -223,6 +223,7 @@
   "docs.createdNext": "Write the body, remove the draft: true line from the frontmatter, and run docs check.",
   "docs.problems": "{count} problems",
   "docs.clean": "No problems ({count} documents)",
+  "docs.warnings": "{count} warnings (they do not block a commit)",
   "docs.reason": "Reason",
   "docs.commit": "Commit",
   "docs.noHistory": "No recorded changes.",
@@ -245,5 +246,6 @@
   "init.wikiReadmeDescription": "What this wiki collects and how it is organized",
   "docs.singleLine": "The {field} must be a single line.",
   "changes.problems": "Document check: {count} problems (see docs check)",
+  "changes.warnings": "Document warnings: {count} (see docs check; they do not block a commit)",
   "changes.clean": "Document check: no problems"
 }

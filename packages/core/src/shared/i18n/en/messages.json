@@ -133,5 +133,10 @@
   "doc.DESIGN_OVERVIEW_REQUIRED": "A feature with a design needs design/overview.md: {feature}",
   "doc.FILE_TOO_LARGE": "The document file exceeds 1 MB and was not read: {path}",
   "doc.DOC_DRAFT": "The draft mark docs new added is still there. Remove the draft: true line once the body is written: {path}",
+  "warn.MISSING_LINK_TARGET": "The link target does not exist: {path}: {link}",
+  "warn.ASSET_SIZE": "The asset is over the recommended size (1 MB): {path} ({bytes} bytes)",
+  "warn.ASSET_EXTENSION": "The browser does not preview this extension and offers it only as a download: {path}",
+  "warn.UNREFERENCED_ASSET": "No document refers to this asset: {path}",
+  "warn.ASSETS_TOTAL_SIZE": "All assets together are over the recommended size (50 MB): {bytes} bytes",
   "config.migrationRequired": "This project uses the 0.7 storage convention (schemaVersion 2). The 0.8.0 CLI does not read the old format. Move the documents to the new structure by following gitifact guide show migrate."
 }

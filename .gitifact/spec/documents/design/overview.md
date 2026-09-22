@@ -32,7 +32,7 @@ requirements:
 
 본문 링크는 그 파일 기준 상대 경로이며 브라우저가 그릴 때 대상을 해석한다. 문서 사이의 관계는 링크가 아니라 frontmatter로 나타내므로 CLI는 링크를 참조로 읽지 않는다.
 
-0.7에서는 `spec working`이 core `extractLinks`·`resolveLink`로 링크 대상을 찾아 `MISSING_LINK_TARGET`을, 에셋 폴더를 훑어 `ASSET_SIZE`·`ASSET_EXTENSION`·`ASSETS_TOTAL_SIZE`·`UNREFERENCED_ASSET`을 경고로 냈다(`working-warnings.ts`). 0.8.0 명령에는 이 경고가 아직 없다. `docs check`는 링크와 에셋을 검사하지 않으며, 경고 코드는 옛 store 코드에만 남아 있다. 경고를 되살릴 때도 저장·커밋은 막지 않는다.
+`docs check`는 문제 목록 뒤에 경고를 따로 보이고, `changes list`는 경고 수를 알린다. core `documentWarnings`(`use-cases/document-warnings.ts`)가 모든 문서 본문의 상대 링크를 `extractLinks`·`resolveLink`(`formats/links.ts`)로 찾아, 대상이 문서도 에셋도 아니고 `.gitifact` 밖의 일반 파일도 아니면 `MISSING_LINK_TARGET`을 낸다. 에셋 폴더를 훑어 `ASSET_SIZE`·`ASSET_EXTENSION`·`ASSETS_TOTAL_SIZE`와, 어떤 본문도 가리키지 않는 파일에 `UNREFERENCED_ASSET`을 낸다. 파일 존재 확인과 에셋 목록은 CLI 어댑터(`adapters/filesystem/document-warnings.ts`)가 맡는다. 경고는 종료 코드를 바꾸지 않고 `changes commit`도 막지 않는다.
 
 ## 이력과 비교
 
@@ -46,7 +46,7 @@ requirements:
 
 - 경로가 아니라 파일 안의 ID로 식별한다. 이름 변경과 폴더 이동에도 이력이 이어진다.
 - product·guides를 위키 하나로 합쳤다. 사용자마다 필요한 문서 구성이 달라 고정된 두 폴더가 맞지 않았고, 브라우저 메뉴와 지침도 하나로 단순해진다. 기존 `P-`·`G-` ID를 이어 받는 안은 접두어 세 종류가 남아 기각했고, 정식 버전 전이라 전환 도구도 두지 않는다(2026-09-18 사용자 결정).
-- 에셋에 ID를 두지 않는다. ID 참조는 에디터·GitHub에서 이미지로 보이지 않아 상대 링크 방식과 충돌한다. 대신 깨진 링크를 경고한다(0.8.0 명령에는 아직 없다. 링크와 경고 절).
+- 에셋에 ID를 두지 않는다. ID 참조는 에디터·GitHub에서 이미지로 보이지 않아 상대 링크 방식과 충돌한다. 대신 깨진 링크를 경고한다(링크와 경고 절).
 - 제한은 경고로만 한다. Git 저장소에 큰 파일을 두는 것은 사용자의 선택이며 커밋을 막으면 우회하게 된다.
 
 ## 자체 적용

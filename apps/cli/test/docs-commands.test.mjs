@@ -135,6 +135,27 @@ test('docs check reports every problem across files, including references broken
   ]);
 });
 
+test('docs check and changes list warn about broken links and assets without failing', t => {
+  const f = projectFixture(t); payment(f);
+  const cancel = parseDocumentFile(paths.cancel, readFileSync(join(f.repo, paths.cancel), 'utf8'));
+  put(f, { ...cancel, body: cancel.body + '\n\n![흐름](../../../assets/flow.png) [없는 문서](../missing.md) [개발 안내](../../../../docs/guide.md) [외부](https://example.test/x)' });
+  mkdirSync(join(f.repo, '.gitifact/assets'), { recursive: true }); mkdirSync(join(f.repo, 'docs'));
+  writeFileSync(join(f.repo, '.gitifact/assets/flow.png'), 'png');
+  writeFileSync(join(f.repo, '.gitifact/assets/dump.bin'), Buffer.alloc(1024 * 1024 + 1));
+  writeFileSync(join(f.repo, 'docs/guide.md'), '# guide\n');
+  const json = f.run(['docs', 'check', '--format', 'json']);
+  assert.equal(json.status, 0, json.stderr);
+  assert.deepEqual(JSON.parse(json.stdout).warnings.map(w => [w.code, w.path]), [
+    ['MISSING_LINK_TARGET', paths.cancel], ['ASSET_SIZE', '.gitifact/assets/dump.bin'],
+    ['ASSET_EXTENSION', '.gitifact/assets/dump.bin'], ['UNREFERENCED_ASSET', '.gitifact/assets/dump.bin'],
+  ]);
+  const shown = f.run(['docs', 'check']);
+  assert.equal(shown.status, 0);
+  assert.match(shown.stdout, /^경고 4개 \(커밋은 막지 않음\)\n  MISSING_LINK_TARGET 링크 대상이 없습니다: .*: \.\.\/missing\.md$/m);
+  assert.match(f.run(['changes', 'list']).stdout, /^문서 경고: 4개 /m);
+  assert.equal(f.ok(['changes', 'list']).warnings.length, 4);
+});
+
 test('docs history lists why and when a document changed, newest first', t => {
   const f = projectFixture(t); payment(f);
   const commit = (value, file) => { writeFileSync(file, JSON.stringify(value)); return f.run(['changes', 'commit', '--file', file]); };

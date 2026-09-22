@@ -3,7 +3,7 @@ import test from 'node:test';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { RepositoryReadError, repositoryReadErrorCodes, docProblemCodes } from '../dist/index.js';
+import { RepositoryReadError, repositoryReadErrorCodes, docProblemCodes, docWarningCodes } from '../dist/index.js';
 
 const src = fileURLToPath(new URL('../src/', import.meta.url));
 const catalog = JSON.parse(readFileSync(join(src, 'shared/i18n/ko/messages.json'), 'utf8'));
@@ -39,13 +39,15 @@ test('the catalog is flat and has no unused keys', () => {
     if (key.startsWith('readError.')) { assert.ok(repositoryReadErrorCodes.includes(key.slice('readError.'.length)), key); continue; }
     // Document problems are looked up the same way, by their code.
     if (key.startsWith('doc.')) { assert.ok(docProblemCodes.includes(key.slice('doc.'.length)), key); continue; }
+    if (key.startsWith('warn.')) { assert.ok(docWarningCodes.includes(key.slice('warn.'.length)), key); continue; }
     assert.ok(used.has(key), 'unused key ' + key);
   }
 });
 
-test('every document problem code has a message in both languages', () => {
+test('every document problem and warning code has a message in both languages', () => {
   const en = JSON.parse(readFileSync(join(src, 'shared/i18n/en/messages.json'), 'utf8'));
   for (const code of docProblemCodes) { assert.ok(catalog['doc.' + code], code); assert.ok(en['doc.' + code], code); }
+  for (const code of docWarningCodes) { assert.ok(catalog['warn.' + code], code); assert.ok(en['warn.' + code], code); }
 });
 
 test('every read error code has a message', () => {

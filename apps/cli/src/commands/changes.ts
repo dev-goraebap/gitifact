@@ -7,6 +7,7 @@ import { createGitRunner } from '../adapters/git/run-git.js';
 import { initRepository } from '../adapters/git/init-repository.js';
 import { discardAgentInput, prepareAgentInputs, type AgentInputControls } from '../adapters/filesystem/agent-inputs.js';
 import { generateId } from '../adapters/filesystem/document-file.js';
+import { readDocumentWarnings } from '../adapters/filesystem/document-warnings.js';
 import { MIGRATION_TRAILER } from '../adapters/cache/index.js';
 import { checkStoreSelection, fail, fingerprint, hash, info, object, optional, paths, policyPaths, record, text as bounded } from './commit-files.js';
 import { CommandError, runCommand, section, text, type Format } from './output.js';
@@ -40,15 +41,19 @@ export const runChangesList = (options: { format: Format }, controls: AgentInput
   const { changes, reasons, working } = await pendingChanges(project, head);
   const withoutReason = uncovered(changes, reasons);
   // The files are already read, so the commit's own check costs nothing here and a draft shows up before the commit fails.
-  const problems = [...working.problems, ...checkDocuments(working.files).problems];
+  const checked = checkDocuments(working.files);
+  const problems = [...working.problems, ...checked.problems];
+  // Warnings do not stop the commit; they are counted here so a broken link shows up before it is committed.
+  const warnings = await readDocumentWarnings(project.root, checked.documents);
   // The input folder rides on the read an agent runs before committing; a failure only leaves it out.
   const inputs = await prepareAgentInputs(project.root, controls).catch(() => undefined);
   const out = changes.length ? [t('changes.changed', { count: changes.length }), ...changes.map(c => '  ' + changeLine(c))] : [t('changes.none')];
   out.push(...section(t('changes.pendingReasons', { count: reasons.length }), reasons.map(reasonLine)));
   if (withoutReason.length) out.push(t('changes.withoutReason', { ids: withoutReason.join(', ') }));
   out.push(problems.length ? t('changes.problems', { count: problems.length }) : t('changes.clean'));
+  if (warnings.length) out.push(t('changes.warnings', { count: warnings.length }));
   if (inputs) out.push(t('changes.input', { path: inputs.commit }));
-  return { json: { head, changes, pendingReasons: reasons, withoutReason, problems, inputs: inputs ?? null }, text: text(out) };
+  return { json: { head, changes, pendingReasons: reasons, withoutReason, problems, warnings, inputs: inputs ?? null }, text: text(out) };
 });
 
 /** `changes commit`: reads the input, records the reasons and commits, then removes an input file it consumed. */

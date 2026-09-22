@@ -133,5 +133,10 @@
   "doc.DESIGN_OVERVIEW_REQUIRED": "설계가 있는 기능에는 design/overview.md가 필요합니다: {feature}",
   "doc.FILE_TOO_LARGE": "문서 파일이 1MB를 넘어 읽지 않았습니다: {path}",
   "doc.DOC_DRAFT": "docs new가 만든 초안 표시가 남아 있습니다. 본문을 다 쓴 뒤 draft: true 줄을 지우세요: {path}",
+  "warn.MISSING_LINK_TARGET": "링크 대상이 없습니다: {path}: {link}",
+  "warn.ASSET_SIZE": "에셋이 권장 크기(1MB)를 넘습니다: {path} ({bytes}바이트)",
+  "warn.ASSET_EXTENSION": "브라우저가 미리 보여 주지 않는 확장자라 내려받기로만 열립니다: {path}",
+  "warn.UNREFERENCED_ASSET": "어떤 문서도 가리키지 않는 에셋입니다: {path}",
+  "warn.ASSETS_TOTAL_SIZE": "에셋 전체가 권장 크기(50MB)를 넘습니다: {bytes}바이트",
   "config.migrationRequired": "이 프로젝트는 0.7 저장 규약(schemaVersion 2)입니다. 0.8.0 CLI는 옛 형식을 읽지 않습니다. gitifact guide show migrate의 절차로 문서를 새 구조로 옮기세요."
 }
