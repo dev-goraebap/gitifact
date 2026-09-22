@@ -1,8 +1,8 @@
 ---
 id: W-rq66son6s4
+title: 프론트엔드 코드 스타일
+description: 브라우저 React 코드의 파일·컴포넌트·상태 작성 규칙
 ---
-
-# 프론트엔드 코드 스타일
 
 apps/browser/src가 대상이다.
 

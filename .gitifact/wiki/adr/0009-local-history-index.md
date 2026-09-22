@@ -1,8 +1,8 @@
 ---
 id: W-onjctb4nxj
+title: 결정 0009. 이력은 .git 안의 SQLite 색인
+description: 브라우저 이력을 .git 안의 SQLite 색인으로 두는 결정
 ---
-
-# 결정 0009. 이력은 .git 안의 SQLite 색인
 
 상태: Accepted · 2026-09-19
 

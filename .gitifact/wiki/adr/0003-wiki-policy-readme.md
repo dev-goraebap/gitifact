@@ -1,8 +1,8 @@
 ---
 id: W-sd5galgc7q
+title: 결정 0003. 위키 운영 방침은 README
+description: 위키 운영 방침을 wiki/README.md 본문으로 두는 결정
 ---
-
-# 결정 0003. 위키 운영 방침은 README
 
 상태: Accepted · 2026-09-18
 

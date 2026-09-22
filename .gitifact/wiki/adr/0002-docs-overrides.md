@@ -1,8 +1,8 @@
 ---
 id: W-hzrkrmfs6y
+title: 결정 0002. 지침 재정의
+description: 위키·명세 운영 지침을 overrides로 재정의하게 한 결정, 0003으로 대체됨
 ---
-
-# 결정 0002. 지침 재정의
 
 상태: Superseded by 0003 · 2026-09-18
 

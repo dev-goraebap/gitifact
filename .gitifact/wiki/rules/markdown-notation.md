@@ -1,8 +1,8 @@
 ---
 id: W-f7gtcx7hav
+title: 문서 표기
+description: 문서에 쓸 수 있는 Markdown 표기와 브라우저가 그리는 범위
 ---
-
-# 문서 표기
 
 위키·명세·설계 본문에서 쓰는 표기를 정한다. 브라우저가 그리는 것과 에디터·GitHub가 그리는 것이 같아야 하므로, 양쪽이 모두 아는 표기만 쓴다.
 
@@ -70,4 +70,4 @@ sequenceDiagram
 
 ## 제한
 
-문법이 틀린 다이어그램은 그 자리에 원문과 이유가 보이고 나머지 문서는 그대로 열린다. 수식(KaTeX)과 각주는 그리지 않는다. 자세한 구현은 [브라우저 설계](../../spec/browser/design.md)와 [결정 0008](../adr/0008-bundled-diagram-rendering.md)에 있다.
+문법이 틀린 다이어그램은 그 자리에 원문과 이유가 보이고 나머지 문서는 그대로 열린다. 수식(KaTeX)과 각주는 그리지 않는다. 자세한 구현은 [브라우저 설계](../../spec/browser/design/overview.md)와 [결정 0008](../adr/0008-bundled-diagram-rendering.md)에 있다.

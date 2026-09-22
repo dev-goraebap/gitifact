@@ -1,6 +1,0 @@
-{"id":"H-5yntksvo3d","requirements":["R-ybmsjjgqtp"],"reason":"사용자가 합의한 새 MVP 방향에 따라 유효한 요구사항을 기능별 Markdown으로 정리하고 구형 JSON·승인·note 형식을 제거한다. 단기 초안 변경 대신 Git에 커밋된 최종 명세와 변경 이유를 추적한다."}
-{"id":"H-r2uju7ucac","requirements":[],"designs":["S-b4ubq7ghty"],"reason":"사용자가 기존 기능 전체의 설계 작성을 요청해 현재 구현 구조·처리 흐름·오류와 제한을 요구사항에 연결해 정리했다."}
-{"id":"H-tsly4dnc4s","requirements":["R-ybmsjjgqtp"],"designs":["S-b4ubq7ghty"],"reason":"기여자 화면은 사람을 보여주는 곳이라 표보다 아바타가 보이는 카드 격자가 맞고, 상세는 옆 패널 대신 큰 아바타·참여한 기능·불러온 활동을 갖춘 같은 폭의 페이지로 옮겨 내용에 집중하게 한다. 활동·제품 기능 등 어느 화면에서든 아바타나 이름을 누르면 그 기여자 페이지로 가도록 한다."}
-{"id":"H-6kl57mpj37","requirements":["R-ybmsjjgqtp"],"designs":["S-b4ubq7ghty"],"reason":"사용자 요청으로 화면 이름을 기여자에서 참여자로 바꾸고, 참여자 상세를 /contributors/<이메일> 경로로 옮겼다. 참여자 화면에서는 한 사람의 페이지에 맞지 않는 이력 개수·더 보기 안내를 뺐고, 참여한 기능 카드가 다음 절 구분선에 붙지 않게 여백을 두었다."}
-{"id":"H-nmcf7ntweb","requirements":["R-ybmsjjgqtp"],"reason":"사용자 요청에 따라 요구사항 본문에 역할·목표·이유를 담은 사용자 스토리를 도입한다. 배포 스킬의 규칙과 예시로 다른 사용자 프로젝트에도 전달하고, 자체 명세는 기존 ID·제약·조건 및 기대 동작 형식을 보존해 정리한다."}
-{"id":"H-csh4fxparv","requirements":[],"designs":["S-b4ubq7ghty"],"reason":"대칭 격자 패턴 아바타가 보기 좋지 않다는 사용자 의견으로 손으로 그린 얼굴 세 가지와 배경색 여섯 가지 중에서 이메일 해시로 고르는 방식으로 바꿨다."}

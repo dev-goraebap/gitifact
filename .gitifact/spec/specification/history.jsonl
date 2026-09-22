@@ -1,6 +1,0 @@
-{"id":"H-2ijj6mnkfh","requirements":["R-errzmn5edh","R-fypnjx6dju","R-obomewrs7e","R-uvehohexvw"],"reason":"사용자가 합의한 새 MVP 방향에 따라 유효한 요구사항을 기능별 Markdown으로 정리하고 구형 JSON·승인·note 형식을 제거한다. 단기 초안 변경 대신 Git에 커밋된 최종 명세와 변경 이유를 추적한다."}
-{"id":"H-jsgueruowo","requirements":["R-errzmn5edh","R-hbz77tj5kc"],"designs":["S-qk6cmgqgmt"],"reason":"요구사항과 설계를 함께 작성하고 설계만 바뀐 이력도 구분해 볼 수 있도록 합의한 범위를 반영했다. 사용자 요청에 따라 이 기능의 현재 구현 구조와 제한을 설계 문서로 정리했다."}
-{"id":"H-bghyieawxj","requirements":[],"designs":["S-qk6cmgqgmt"],"reason":"저장 경로가 .gitifact/spec/<기능>/이고 마커가 gitifact-spec·gitifact-req·gitifact-design·gitifact-ref다. 과거 커밋의 .tryce 경로와 tryce-* 마커는 읽기만 지원하며 gitifact migrate가 작업 폴더를 전환한다."}
-{"id":"H-lf7jh24vaw","requirements":["R-errzmn5edh","R-fypnjx6dju","R-hbz77tj5kc","R-obomewrs7e","R-uvehohexvw"],"designs":["S-qk6cmgqgmt"],"reason":"사용자 요청에 따라 요구사항 본문에 역할·목표·이유를 담은 사용자 스토리를 도입한다. 배포 스킬의 규칙과 예시로 다른 사용자 프로젝트에도 전달하고, 자체 명세는 기존 ID·제약·조건 및 기대 동작 형식을 보존해 정리한다."}
-{"id":"H-gk6b3vlni2","requirements":[],"designs":["S-qk6cmgqgmt"],"reason":"gitifact-workflow 스킬을 가리키던 설명을 AGENTS.md 블록과 gitifact docs 주제로 바꿨다."}
-{"id":"H-ce5cowdygp","requirements":["R-vaw2ychvkd"],"designs":["S-qk6cmgqgmt"],"reason":"설계가 참고한 위키·외부 자료를 본문 곳곳의 링크 대신 목록으로 관리하려고 frontmatter의 sources를 추가했다. 이를 위해 \"frontmatter를 쓰지 않는다\"는 이전 결정을 사용자 판단으로 뒤집고 파일 단위 ID를 frontmatter로 옮겼다. 절 단위 주석은 조사 결과 대안이 없어 유지한다."}

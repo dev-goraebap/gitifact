@@ -1,8 +1,8 @@
 ---
 id: W-hwwbtzdipa
+title: 결정 0004. 모노레포와 패키지 경계
+description: CLI·브라우저·core·contracts를 한 저장소의 패키지로 나누고 의존 방향을 정한 결정
 ---
-
-# 결정 0004. 모노레포와 패키지 경계
 
 상태: Accepted · 2026-09-18
 

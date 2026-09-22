@@ -1,8 +1,8 @@
 ---
 id: W-4oau6h3awn
+title: 프론트엔드 개발 환경
+description: 브라우저 앱의 개발 환경, 의존성, 빌드 규칙
 ---
-
-# 프론트엔드 개발 환경
 
 적용 대상은 apps/browser의 React·TypeScript·Vite CSR 앱이다.
 

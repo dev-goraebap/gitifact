@@ -1,8 +1,8 @@
 ---
 id: W-pc3bjgwqtc
+title: 검증
+description: 변경을 확인하는 검증 명령과 범위
 ---
-
-# 검증
 
 변경을 어떻게 확인하는지 정한다.
 
