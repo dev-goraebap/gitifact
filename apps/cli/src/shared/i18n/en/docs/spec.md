@@ -1,4 +1,7 @@
-# Markdown specification format
+---
+title: Markdown specification format
+description: User story and acceptance criteria format, ID rules
+---
 
 Each feature has a `.gitifact/spec/<feature>/requirements.md` containing its requirements. Its design is in `design.md` in the same folder (`gitifact docs design`); reasons for changes are in `history.jsonl`.
 

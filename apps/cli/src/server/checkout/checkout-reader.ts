@@ -1,4 +1,4 @@
-import { StoreError, parseManagedConfig, docProblem, WIKI_ROOT, type Doc, type DesignDoc, type RequirementDoc } from '@gitifact/core';
+import { StoreError, parseManagedConfig, docProblem, arrangeDocuments, WIKI_ROOT, type Doc, type DesignDoc } from '@gitifact/core';
 import { browserSpecsV5, type BrowserSpecsV5, type DesignSource } from '@gitifact/contracts';
 import { createGitRunner } from '../../adapters/git/run-git.js';
 import { storeReader } from '../../adapters/git/store-reader.js';
@@ -20,35 +20,23 @@ export async function settled<T extends readonly unknown[]>(reads: { [K in keyof
   if (failure) throw (failure as PromiseRejectedResult).reason;
   return results.map(r => (r as PromiseFulfilledResult<unknown>).value) as unknown as T;
 }
-const byOrder = <T extends { order: number; path: string }>(a: T, b: T) => a.order - b.order || (a.path < b.path ? -1 : a.path > b.path ? 1 : 0);
 const folderOf = (path: string) => path.split('/').slice(0, 3).join('/');
 
-/** The documents grouped the way the screens read them: features with their requirements and designs in order, and the wiki. */
-export function arrangeDocuments(documents: Doc[]) {
+/** The documents in the shape the screens read: features with their requirements and designs in order, and the wiki. */
+function checkoutDocuments(documents: Doc[]) {
   const byId = new Map(documents.map(d => [d.id, d]));
   const source = (s: DesignDoc['sources'][number]): DesignSource => {
     if (!('id' in s)) return { title: s.title, url: s.url, ...(s.note ? { note: s.note } : {}) };
     const target = byId.get(s.id);
     return { id: s.id, ...(target ? { title: target.title, path: target.path } : {}), ...(s.note ? { note: s.note } : {}) };
   };
-  const folders = new Map<string, { index?: Doc; requirements: RequirementDoc[]; designs: DesignDoc[] }>();
-  const folder = (path: string) => { const key = folderOf(path); let f = folders.get(key); if (!f) folders.set(key, f = { requirements: [], designs: [] }); return f; };
-  for (const doc of documents) {
-    if (doc.kind === 'feature') folder(doc.path).index = doc;
-    else if (doc.kind === 'requirement') folder(doc.path).requirements.push(doc);
-    else if (doc.kind === 'design') folder(doc.path).designs.push(doc);
-  }
-  const features = []; const orphans: string[] = [];
-  for (const [path, f] of [...folders].sort(([a], [b]) => (a < b ? -1 : 1))) {
-    // A folder without index.md has no feature ID to show its documents under; the check reports it.
-    if (!f.index) { orphans.push(path); continue; }
-    features.push({ id: f.index.id, path: f.index.path, title: f.index.title, description: f.index.description, body: f.index.body,
-      requirements: f.requirements.sort(byOrder).map(r => ({ id: r.id, path: r.path, title: r.title, description: r.description, order: r.order, body: r.body })),
-      designs: f.designs.sort(byOrder).map(d => ({ id: d.id, path: d.path, title: d.title, description: d.description, order: d.order, body: d.body,
-        requirements: d.requirements, sources: d.sources.map(source) })) });
-  }
-  const wiki = documents.filter(d => d.kind === 'wiki').map(d => ({ id: d.id, path: d.path, title: d.title, description: d.description, body: d.body }));
-  return { features, wiki, orphans };
+  const arranged = arrangeDocuments(documents);
+  const features = arranged.features.map(({ index, requirements, designs }) => ({ id: index.id, path: index.path, title: index.title, description: index.description, body: index.body,
+    requirements: requirements.map(r => ({ id: r.id, path: r.path, title: r.title, description: r.description, order: r.order, body: r.body })),
+    designs: designs.map(d => ({ id: d.id, path: d.path, title: d.title, description: d.description, order: d.order, body: d.body,
+      requirements: d.requirements, sources: d.sources.map(source) })) }));
+  const wiki = arranged.wiki.map(d => ({ id: d.id, path: d.path, title: d.title, description: d.description, body: d.body }));
+  return { features, wiki, orphans: arranged.orphans };
 }
 
 /**
@@ -115,14 +103,14 @@ export function createCheckoutReader(root: string, sessionId: string, cache: Cac
       const [name, email, latest] = line.split('\0'); if (!name || !email || !latest) throw new StoreError(t('specReader.authorUnreadable'));
       tally(people, name, email, latest);
     }
-    const arranged = arrangeDocuments(current.documents);
+    const arranged = checkoutDocuments(current.documents);
     const features = arranged.features.map(feature => {
       const entry = authors?.folders.get(folderOf(feature.path));
       return { ...feature, contributors: entry ? [...entry.people.values()].sort((a, b) => b.commits - a.commits) : [], updatedAt: entry?.latest ?? null };
     });
     // Wiki pages record their latest commit by current path; a moved page restarts at the move commit.
     const documents = arranged.wiki.map(doc => ({ ...doc, updatedAt: authors?.pages.get(doc.path) ?? null }));
-    const problems = [...current.problems, ...arranged.orphans.map(path => docProblem('FEATURE_INDEX_REQUIRED', path + '/index.md', { feature: path.split('/')[2] }))];
+    const problems = [...current.problems, ...arranged.orphans.map(feature => docProblem('FEATURE_INDEX_REQUIRED', `.gitifact/spec/${feature}/index.md`, { feature }))];
     if (await readHead() !== head) throw new StoreError(t('specReader.projectChanged'));
     const checkout = browserSpecsV5.parse({ contract: 'browser-specs', version: 5, sessionId, head, observedAt: new Date().toISOString(),
       working: head ? !!dirty.trim() : features.length > 0 || documents.length > 0, features, documents, problems,

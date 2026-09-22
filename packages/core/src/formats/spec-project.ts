@@ -4,7 +4,11 @@ export type Baseline = { kind: 'empty' } | { kind: 'commit'; objectFormat: 'sha1
 export class InitError extends Error {
   constructor(public readonly code: string, message: string) { super(message); }
 }
-export const SCHEMA_VERSION = 2 as const;
+// 3 is the 0.8.0 document format: one file per document with frontmatter. The number only announces the format; the
+// CLI never converts between them, and a project on 2 moves with the migration prompt.
+export const SCHEMA_VERSION = 3 as const;
+/** The 0.7 convention, the one format a migration starts from. */
+const PREVIOUS_SCHEMA_VERSION = 2;
 export interface SpecProjectConfig { schemaVersion: typeof SCHEMA_VERSION; baseline: Baseline }
 
 const object = (value: unknown): value is Record<string, unknown> =>
@@ -35,6 +39,7 @@ export function parseManagedConfig(text: string): SpecProjectConfig {
   if (value.schemaVersion !== SCHEMA_VERSION) {
     const found: unknown = value.schemaVersion;
     const newer = typeof found === 'number' && found > SCHEMA_VERSION;
+    if (found === PREVIOUS_SCHEMA_VERSION) throw new InitError('UNSUPPORTED_SCHEMA', t('config.migrationRequired'));
     throw new InitError('UNSUPPORTED_SCHEMA', newer ? t('config.newerSchema', { version: String(found) }) : t('config.unsupportedSchema', { version: String(found) }));
   }
   return { schemaVersion: SCHEMA_VERSION, baseline: parseBaseline(value.baseline) };

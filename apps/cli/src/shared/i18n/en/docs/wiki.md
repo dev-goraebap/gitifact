@@ -1,4 +1,7 @@
-# Project wiki format
+---
+title: Project wiki format
+description: Project wiki format, asset rules, and this project's wiki guidelines (wiki/README.md)
+---
 
 Content that does not belong to an individual feature lives in `.gitifact/wiki/`: what the product is, whom it serves, how it is built, and the rules to follow. Keep feature behavior in specifications rather than repeating it in the wiki. The first part of this output describes the format validated by the CLI. The “Wiki guidelines” section that follows contains the project's `.gitifact/wiki/README.md` body, or the built-in defaults if no README exists.
 

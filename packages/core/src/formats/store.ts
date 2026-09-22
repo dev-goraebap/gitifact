@@ -2,7 +2,7 @@ import { t } from '../shared/i18n/index.js';
 
 // The record store's file formats: specs, designs, wiki pages and their reasons, read and compared as bundles.
 export class StoreError extends Error {
-  readonly code = 'INVALID_SPEC_PREVIEW';
+  readonly code = 'INVALID_STORE';
 }
 export interface StoreRequirement { id: string; title: string; body: string }
 export interface StoreReason { id: string; requirements: string[]; designs?: string[]; documents?: string[]; reason: string }

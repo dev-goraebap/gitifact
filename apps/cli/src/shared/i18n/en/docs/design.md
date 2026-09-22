@@ -1,4 +1,7 @@
-# Feature design format
+---
+title: Feature design format
+description: Design outline, references and sources, revisions
+---
 
 A feature's `design.md` explains the shared structure and processing that implement its requirements.
 

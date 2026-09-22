@@ -21,7 +21,7 @@ test('rendered block is versioned, marker-delimited, Markdown-structured and sho
   assert.equal(lines[0], AGENT_START); assert.equal(lines.at(-1), AGENT_END);
   // A heading opens the block and a rule closes it, so it reads as its own section beside the user's text.
   assert.equal(lines[1], '## Gitifact Guide'); assert.equal(lines.at(-2), '---'); assert.equal(lines.at(-3), '');
-  assert.equal(lines[3], 'gitifact v1.2.3 · ko · 저장 규약 schemaVersion 2');
+  assert.equal(lines[3], 'gitifact v1.2.3 · ko · 저장 규약 schemaVersion 3');
   // Markdown joins consecutive plain lines, so every non-blank line must be a heading, list item, table row or its own paragraph.
   for (const [index, line] of lines.entries()) {
     if (!line || /^(#{2,3} |- |\| |---$|<!--)/.test(line)) continue;
@@ -29,9 +29,10 @@ test('rendered block is versioned, marker-delimited, Markdown-structured and sho
   }
   assert.ok(block.includes('npx --yes gitifact@1.2.3 <cmd>'), 'invocation pins the block version');
   assert.ok(lines.length >= 25 && lines.length <= 50, String(lines.length));
-  assert.deepEqual(parseAgentBlock(block), { version: '1.2.3', language: 'ko', schemaVersion: 2 });
+  assert.deepEqual(parseAgentBlock(block), { version: '1.2.3', language: 'ko', schemaVersion: 3 });
   assert.equal(parseAgentBlock('no block'), null);
-  for (const topic of ['docs spec', 'docs commit', 'docs <topic>', 'spec working', 'SELF-CHECK']) assert.ok(block.includes(topic), topic);
+  for (const topic of ['guide show spec', 'guide show commit', 'guide show <topic>', 'docs list', 'docs new', 'docs check', 'changes commit', 'SELF-CHECK']) assert.ok(block.includes(topic), topic);
+  for (const removed of ['spec working', 'spec save', 'spec commit', '`docs <topic>`']) assert.ok(!block.includes(removed), removed);
   assert.equal(boilerplateFor('.claude/CLAUDE.md'), '# CLAUDE\n\nProject-specific guidance for AI coding agents.\n');
   assert.equal(boilerplateFor('.cursorrules'), '# cursorrules\n\nProject-specific guidance for AI coding agents.\n');
 });

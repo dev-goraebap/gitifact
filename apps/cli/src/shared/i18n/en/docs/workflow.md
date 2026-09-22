@@ -1,4 +1,7 @@
-# Gitifact workflow
+---
+title: Gitifact workflow
+description: What to check at the start, which requests become requirements, and the final report
+---
 
 The user describes the product and keeps developing. The agent organizes product requirements and connects the final changes at commit time. Do not make users learn recording commands or a separate development methodology.
 

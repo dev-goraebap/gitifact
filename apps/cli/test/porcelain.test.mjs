@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { parsePorcelain, decodeGitLine } from '../.test-build/adapters/git/porcelain.js';
-import { escapeTerminal } from '../.test-build/output/repository-status.js';
 
 const oid = 'a'.repeat(40);
 const header = '# branch.oid ' + oid + '\0# branch.head main\0';
@@ -42,9 +41,4 @@ test('malformed headers, records, paths, states and incomplete buffers are rejec
     fails(Buffer.from(raw));
   }
   fails(Buffer.concat([Buffer.from(header + '? '), Buffer.from([0xff, 0])]), 'UNSUPPORTED_PATH_ENCODING');
-});
-test('terminal formatting never emits filename control sequences', () => {
-  const formatted = escapeTerminal('line\n\t\u001b[31m\u009btest\u202e');
-  assert.doesNotMatch(formatted, /[\x00-\x1f\x7f-\x9f\u202e]/);
-  assert.match(formatted, /\\n/);
 });

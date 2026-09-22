@@ -18,7 +18,8 @@ export const kindOfId = (id: string): DocKind | undefined =>
 /** A document the design refers to: another Gitifact document by ID, or an outside page by title and URL. */
 export type DocSource = { id: string; note?: string } | { title: string; url: string; note?: string };
 
-interface DocBase { id: string; path: string; title: string; description: string; body: string }
+// `draft: true` marks a file `docs new` made and the author has not finished; the check fails until the line is removed.
+interface DocBase { id: string; path: string; title: string; description: string; body: string; draft?: true }
 export interface FeatureDoc extends DocBase { kind: 'feature'; feature: string }
 export interface RequirementDoc extends DocBase { kind: 'requirement'; feature: string; order: number }
 export interface DesignDoc extends DocBase { kind: 'design'; feature: string; order: number; requirements: string[]; sources: DocSource[] }
@@ -34,7 +35,7 @@ export const docProblemCodes = [
   'FRONTMATTER_UNKNOWN_KEY', 'FRONTMATTER_MISSING_KEY', 'ID_FORMAT', 'SOURCE_INVALID', 'BODY_REQUIRED', 'BODY_HEADING',
   'BODY_MARKER', 'BODY_UNCLOSED_FENCE', 'INVALID_CHARACTERS', 'FILE_TOO_LARGE', 'REASON_INVALID',
   // Across files
-  'DUPLICATE_ID', 'DUPLICATE_REASON_ID', 'DUPLICATE_ORDER', 'MISSING_REFERENCE', 'FEATURE_INDEX_REQUIRED', 'DESIGN_OVERVIEW_REQUIRED',
+  'DOC_DRAFT', 'DUPLICATE_ID', 'DUPLICATE_REASON_ID', 'DUPLICATE_ORDER', 'MISSING_REFERENCE', 'FEATURE_INDEX_REQUIRED', 'DESIGN_OVERVIEW_REQUIRED',
 ] as const;
 export type DocProblemCode = typeof docProblemCodes[number];
 export interface DocProblem { code: DocProblemCode; path: string; message: string }

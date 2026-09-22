@@ -57,10 +57,10 @@ export function classifyDocPath(path: string): DocPath {
 }
 
 const KEYS: Record<DocKind, string[]> = {
-  feature: ['id', 'title', 'description'],
-  requirement: ['id', 'title', 'description', 'order'],
-  design: ['id', 'title', 'description', 'order', 'requirements', 'sources'],
-  wiki: ['id', 'title', 'description'],
+  feature: ['id', 'title', 'description', 'draft'],
+  requirement: ['id', 'title', 'description', 'order', 'draft'],
+  design: ['id', 'title', 'description', 'order', 'requirements', 'sources', 'draft'],
+  wiki: ['id', 'title', 'description', 'draft'],
 };
 const REQUIRED: Record<DocKind, string[]> = {
   feature: ['id', 'title', 'description'], requirement: ['id', 'title', 'description', 'order'],
@@ -119,7 +119,11 @@ export function parseDocumentFile(path: string, source: string): Doc {
   for (const key of REQUIRED[kind]) if (!fields.has(key)) throw new DocumentError('FRONTMATTER_MISSING_KEY', path, t('doc.FRONTMATTER_MISSING_KEY', { path, key }));
   const id = fields.get('id');
   if (id?.type !== 'scalar' || !idPatternOf(kind).test(id.value)) throw new DocumentError('ID_FORMAT', path, t('doc.ID_FORMAT', { path, kind }));
-  const common = { id: id.value, path, title: text(fields, 'title', path, 200), description: text(fields, 'description', path, 300), body: body(rawBody, path) };
+  // Only `true` is written: a draft is either marked or the line is gone.
+  const draft = fields.get('draft');
+  if (draft && (draft.type !== 'scalar' || draft.value !== 'true')) throw new DocumentError('FRONTMATTER_VALUE', path, t('doc.FRONTMATTER_VALUE', { path, value: 'draft' }));
+  const common = { id: id.value, path, title: text(fields, 'title', path, 200), description: text(fields, 'description', path, 300), body: body(rawBody, path),
+    ...(draft ? { draft: true as const } : {}) };
   const order = () => {
     const field = fields.get('order');
     if (field?.type !== 'scalar' || !/^(0|[1-9]\d{0,5})$/.test(field.value)) throw new DocumentError('FRONTMATTER_VALUE', path, t('doc.FRONTMATTER_VALUE', { path, value: 'order' }));
@@ -135,13 +139,14 @@ export function parseDocumentFile(path: string, source: string): Doc {
   return { kind: 'design', feature: where.feature, order: order(), requirements: refs?.type === 'list' ? refs.items : [], sources: sources(fields, path), ...common };
 }
 
-/** Canonical text of a document: frontmatter in a fixed key order, a blank line, the body and a final newline. */
+/** Canonical text of a document: frontmatter in a fixed key order (a draft mark last), a blank line, the body and a final newline. */
 export function renderDocumentFile(doc: Doc): string {
   const front = renderFrontmatterBlock([
     ['id', doc.id], ['title', doc.title], ['description', doc.description],
     ['order', doc.kind === 'requirement' || doc.kind === 'design' ? doc.order : undefined],
     ['requirements', doc.kind === 'design' ? doc.requirements : undefined],
     ['sources', doc.kind === 'design' ? doc.sources.map(s => ({ ...s })) as Record<string, string>[] : undefined],
+    ['draft', doc.draft ? true : undefined],
   ]);
   return `${front}\n\n${doc.body}\n`;
 }

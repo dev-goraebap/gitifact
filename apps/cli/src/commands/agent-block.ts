@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { InitError } from '@gitifact/core';
 import { getLanguage, t, type Language } from '../shared/i18n/index.js';
-import { docTopics } from './docs.js';
+import { guideTopics } from './guide.js';
 
 // Text logic for the managed GITIFACT block in agent instruction files. Only renderAgentBlock reads a file,
 // the bundled block body, and tests replace that reader.
@@ -28,7 +28,7 @@ export interface AgentBlockControls { readBlock?: (lang: Language) => Promise<st
 export async function renderAgentBlock(version: string, controls: AgentBlockControls = {}, lang: Language = getLanguage()) {
   const body = await (controls.readBlock ?? readBundledBlock)(lang);
   const filled = body.trimEnd().replace(/\{(version|language|topics)\}/g, (_whole, name: string) =>
-    name === 'version' ? version : name === 'language' ? lang : docTopics.join(', '));
+    name === 'version' ? version : name === 'language' ? lang : guideTopics.join(', '));
   return AGENT_START + '\n' + filled + '\n' + AGENT_END;
 }
 // The header carries an optional language token. Blocks written before it existed stay readable, and the

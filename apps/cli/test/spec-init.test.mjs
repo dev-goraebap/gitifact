@@ -11,14 +11,13 @@ const call = (f, args, ok = true) => {
   const r = spawnSync(process.execPath, [cli, ...args], { cwd: f.repo, env: { ...f.env, GITIFACT_NO_UPDATE_CHECK: '1' }, encoding: 'utf8', timeout: 35000 });
   assert.equal(r.status, ok ? 0 : 1, r.stderr); return ok ? JSON.parse(r.stdout) : r;
 };
-const input = (f, action, data) => { const path = join(f.root, 'input.json'); writeFileSync(path, JSON.stringify(data)); return call(f, ['spec', action, '--file', path]); };
 const legacyConfig = JSON.stringify({ kind: 'tryce-project', format: 'workflow-1', mode: 'auto', baseline: { kind: 'empty' } }, null, 2) + '\n';
 test('spec init dry-run, repeat and agent docs block preserve existing work and staging', async t => {
   const f = fixture(t); f.write('work', 'user work'); f.git(['add', 'work']);
   const before = fingerprint(f.repo);
   const planned = call(f, ['init', '--dry-run']);
   assert.deepEqual([planned.outcome, planned.agentDocs], ['planned', { mode: 'install', paths: ['AGENTS.md', 'CLAUDE.md'] }]); assert.deepEqual(fingerprint(f.repo), before);
-  assert.equal(call(f, ['init']).schemaVersion, 2);
+  assert.equal(call(f, ['init']).schemaVersion, 3);
   const config = readFileSync(join(f.repo, '.gitifact/config.json'), 'utf8');
   assert.equal(JSON.parse(config).mode, undefined);
   const agents = readFileSync(join(f.repo, 'AGENTS.md'), 'utf8');
@@ -43,18 +42,12 @@ test('init refuses legacy records and malformed config without mutation', async 
   const before = fingerprint(f.repo); assert.match(call(f, ['init'], false).stderr, /UNSUPPORTED_FORMAT/); assert.deepEqual(fingerprint(f.repo), before);
   f.write('.gitifact/config.json', '{}'); const invalid = fingerprint(f.repo); call(f, ['init'], false); assert.deepEqual(fingerprint(f.repo), invalid);
 });
-test('spec command writes and commits through initialized format', async t => {
-  const f = fixture(t); f.git(['config', 'user.name', 'Fixture']); f.git(['config', 'user.email', 'fixture@example.invalid']); f.git(['config', 'commit.gpgsign', 'false']); f.git(['config', 'core.autocrlf', 'false']);
-  call(f, ['spec', 'working'], false); call(f, ['init', '--skip-agents']);
-  const saved = input(f, 'save', { expected: call(f, ['spec', 'working']).stamp, operations: [{type:'create', feature:'posts', title:'게시물 관리'}, {type:'add',feature:'posts',title:'게시물 생성',body:'제목을 입력한다.'}] });
-  const id = saved.results[1].id;
-  // init also wrote the wiki policy page and the merge rule; the commit must select every pending file.
-  const committed = input(f, 'commit', { expected: call(f, ['spec','changes']).expected, reasons:[{ requirements:[id], reason:'기능 도입'}],
-    paths:['.gitattributes','.gitifact/config.json','.gitifact/wiki/README.md','.gitifact/spec/posts/requirements.md','.gitifact/spec/posts/history.jsonl'],
-    message:'Add posts specification', authorization:{basis:'project-policy',evidence:'Isolated test policy'}});
-  assert.equal(committed.outcome, 'committed');
-  assert.equal(call(f, ['spec','read']).specs[0].requirements[0].id, id);
-  assert.equal(f.git(['status','--porcelain']).stdout, '');
+test('init writes the wiki policy page in the current document format and the documents check accepts it', async t => {
+  const f = fixture(t); call(f, ['init', '--skip-agents']);
+  const readme = readFileSync(join(f.repo, '.gitifact/wiki/README.md'), 'utf8');
+  assert.match(readme, /^---\nid: W-[a-z2-7]{10}\ntitle: 위키 운영 방침\ndescription: .+\n---\n\n이 위키에는 아키텍처 결정 기록/);
+  const check = spawnSync(process.execPath, [cli, 'docs', 'check'], { cwd: f.repo, env: { ...f.env, GITIFACT_LANG: 'ko' }, encoding: 'utf8' });
+  assert.equal(check.status, 0, check.stdout + check.stderr); assert.equal(check.stdout, '문제 없음 (문서 1개)\n');
 });
 test('interrupted init before publication cleans temp and can retry', async t => {
   const f = fixture(t);

@@ -64,11 +64,11 @@ export function parseFrontmatterBlock(source: string, path: string): { fields: F
 }
 
 /** Writes fields in the given order. Empty lists are left out; the parser never produces them either. */
-export function renderFrontmatterBlock(fields: [string, string | number | string[] | Record<string, string>[] | undefined][]): string {
+export function renderFrontmatterBlock(fields: [string, string | number | boolean | string[] | Record<string, string>[] | undefined][]): string {
   const out = ['---'];
   for (const [key, value] of fields) {
     if (value === undefined || (Array.isArray(value) && !value.length)) continue;
-    if (typeof value === 'number') out.push(`${key}: ${value}`);
+    if (typeof value === 'number' || typeof value === 'boolean') out.push(`${key}: ${value}`);
     else if (typeof value === 'string') out.push(`${key}: ${quoteScalar(value)}`);
     else {
       out.push(`${key}:`);

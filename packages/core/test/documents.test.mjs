@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseDocumentFile, renderDocumentFile, parseReasonLines, renderReasonLine, classifyDocPath, checkDocuments } from '../dist/index.js';
+import { parseDocumentFile, renderDocumentFile, parseReasonLines, renderReasonLine, classifyDocPath, checkDocuments, arrangeDocuments, compareDocumentSets } from '../dist/index.js';
 
 const S = 'S-aaaaaaaaaa', R1 = 'R-bbbbbbbbbb', R2 = 'R-cccccccccc', D1 = 'D-dddddddddd', D2 = 'D-eeeeeeeeee', W = 'W-ffffffffff', H = 'H-gggggggggg';
 const feature = `---\nid: ${S}\ntitle: 결제\ndescription: 결제 승인·취소·환불 흐름\n---\n\n결제 기능의 범위.\n`;
@@ -77,6 +77,22 @@ test('malformed files fail with the code of their first problem', () => {
   assert.doesNotThrow(() => parseDocumentFile(paths.r1, requirement().replace('구매자로서', `\`\`\`md\n# 예시\n<!-- gitifact-req: ${R2} -->\n\`\`\`\n\n구매자로서`)));
 });
 
+test('a draft mark is read as true only, renders last, and fails the whole-set check until removed', () => {
+  const draft = requirement().replace('order: 10\n', 'order: 10\ndraft: true\n');
+  const doc = parseDocumentFile(paths.r1, draft);
+  assert.equal(doc.draft, true);
+  assert.equal(renderDocumentFile(doc), draft);
+  assert.equal(parseDocumentFile(paths.r1, requirement()).draft, undefined);
+  for (const value of ['false', '"yes"', 'True']) {
+    assert.throws(() => parseDocumentFile(paths.r1, draft.replace('draft: true', 'draft: ' + value)), { code: 'FRONTMATTER_VALUE' }, value);
+  }
+  const wikiDraft = parseDocumentFile(paths.wiki, wiki.replace('\n---\n\n## 계층', '\ndraft: true\n---\n\n## 계층'));
+  assert.match(renderDocumentFile(wikiDraft), /\ndescription: .*\ndraft: true\n---\n/);
+  const result = checkDocuments(new Map([[paths.feature, feature], [paths.r1, draft]]));
+  assert.deepEqual(result.problems.map(p => [p.code, p.path]), [['DOC_DRAFT', paths.r1]]);
+  assert.equal(result.documents.length, 2);
+});
+
 test('reason lines carry only id, docs and reason', () => {
   const line = { id: H, docs: [R1, D1], reason: '부분 환불 요청을 받아 취소 흐름을 나눴다.' };
   assert.equal(renderReasonLine(line), JSON.stringify(line));
@@ -119,4 +135,34 @@ test('the whole-set check reports every problem and keeps checking the readable 
   ].sort());
   assert.ok(result.problems.every(p => p.message.includes(p.path) || p.code.endsWith('_REQUIRED')));
   assert.equal(result.documents.length, 6);
+});
+
+test('arranged documents follow folder names, then order; a folder without index.md is an orphan', () => {
+  const docs = [
+    parseDocumentFile(paths.r2, requirement(R2, 5, '환불')), parseDocumentFile(paths.r1, requirement()),
+    parseDocumentFile(paths.overview, overview), parseDocumentFile(paths.feature, feature), parseDocumentFile(paths.wiki, wiki),
+    parseDocumentFile('.gitifact/spec/refund/requirements/request.md', requirement('R-zzzzzzzzzz', 10, '환불 요청')),
+  ];
+  const arranged = arrangeDocuments(docs);
+  assert.deepEqual(arranged.features.map(f => [f.index.id, f.requirements.map(r => r.id), f.designs.map(d => d.id)]), [[S, [R2, R1], [D1]]]);
+  assert.deepEqual(arranged.wiki.map(w => w.id), [W]);
+  assert.deepEqual(arranged.orphans, ['refund']);
+});
+
+test('comparing two sets names created, modified, moved and deleted documents, and the reasons only the newer set has', () => {
+  const old = renderReasonLine({ id: H, docs: [R1], reason: '처음 작성' });
+  const added = renderReasonLine({ id: 'H-hhhhhhhhhh', docs: [R1, W], reason: '다시 씀' });
+  const before = new Map([[paths.feature, feature], [paths.r1, requirement()], [paths.wiki, wiki], [paths.reasons, old + '\n']]);
+  const after = new Map([
+    // A CRLF checkout of the same text is no change; a broken file is not a change by ID.
+    [paths.feature, feature.replaceAll('\n', '\r\n')], [paths.api, '# broken\n'],
+    [paths.r2, requirement(R1, 10, '결제 취소 요청')], [paths.overview, overview], [paths.reasons, old + '\n' + added + '\n'],
+  ]);
+  const { changes, reasons } = compareDocumentSets(before, after);
+  assert.deepEqual(changes.map(c => [c.id, c.types, c.path, c.previousPath]), [
+    [D1, ['created'], paths.overview, undefined],
+    [R1, ['moved', 'modified'], paths.r2, paths.r1],
+    [W, ['deleted'], paths.wiki, undefined],
+  ]);
+  assert.deepEqual(reasons.map(r => r.id), ['H-hhhhhhhhhh']);
 });

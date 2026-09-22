@@ -1,6 +1,6 @@
 import { lstat, readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { DocumentError, classifyDocPath, docProblem, parseDocumentFile, SPEC_ROOT, WIKI_ROOT, type Doc, type DocProblem } from '@gitifact/core';
+import { DocumentError, classifyDocPath, docProblem, parseDocumentFile, HISTORY_PATH, SPEC_ROOT, WIKI_ROOT, type Doc, type DocProblem } from '@gitifact/core';
 import { transaction, type CacheDatabase } from './database.js';
 import { plain } from './search-text.js';
 
@@ -96,8 +96,31 @@ export function createDocumentCache(root: string, database: CacheDatabase) {
     return syncing;
   }
 
+  /** Whether a walked path is read as a document or reason source; unknown paths are kept so the check names them. */
+  const readable = (path: string) => { try { return classifyDocPath(path).type !== 'ignored'; } catch { return true; } };
+
   return {
     sync,
+    /**
+     * The text of every document and reason file in the working tree, for the whole-set check and for commits,
+     * which need the files themselves rather than what the cache parsed. A file that cannot be read as text is a
+     * problem instead of an entry.
+     */
+    async files(): Promise<{ files: Map<string, string>; problems: DocProblem[] }> {
+      const seen = await walk();
+      const history = await lstat(join(root, ...HISTORY_PATH.split('/'))).catch(error => { if (error.code === 'ENOENT') return undefined; throw error; });
+      if (history) seen.set(HISTORY_PATH, { mtime: history.mtimeMs, size: history.size, link: history.isSymbolicLink() || !history.isFile() });
+      const files = new Map<string, string>(); const problems: DocProblem[] = [];
+      for (const [path, s] of seen) {
+        if (!readable(path)) continue;
+        if (s.link) { problems.push(docProblem('PATH_UNSUPPORTED', path)); continue; }
+        // The reason file grows with every commit, so it alone may pass the one-document limit.
+        if (s.size > (path === HISTORY_PATH ? 64 * FILE_LIMIT : FILE_LIMIT)) { problems.push(docProblem('FILE_TOO_LARGE', path)); continue; }
+        try { files.set(path, decode(await readFile(join(root, ...path.split('/'))))); }
+        catch (error) { if (error instanceof TypeError) problems.push(docProblem('INVALID_CHARACTERS', path)); else throw error; }
+      }
+      return { files, problems };
+    },
     /** Every readable document of the working tree and the files that could not be read, after a sync. */
     async list(): Promise<{ documents: Doc[]; problems: DocProblem[] }> {
       await sync();

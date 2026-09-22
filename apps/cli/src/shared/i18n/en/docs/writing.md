@@ -1,4 +1,7 @@
-# Document style
+---
+title: Document style
+description: Shared style for wiki pages, requirements and designs, quotations and alerts, removing AI slop
+---
 
 Apply this to wiki pages, requirements, and designs. Use the project's language, independently of the CLI display language. Write direct, declarative prose and descriptive headings. Preserve UI text, quotations, and code.
 

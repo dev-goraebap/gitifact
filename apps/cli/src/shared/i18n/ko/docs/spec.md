@@ -1,4 +1,7 @@
-# Markdown 명세 형식
+---
+title: Markdown 명세 형식
+description: 사용자 스토리와 수용 조건 형식, ID 규칙
+---
 
 기능 명세는 `.gitifact/spec/<기능>/requirements.md` 하나에 그 기능의 요구사항을 담는다. 설계는 같은 폴더의 `design.md`(`gitifact docs design`), 변경 이유는 `history.jsonl`이다.
 

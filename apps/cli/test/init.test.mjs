@@ -17,7 +17,7 @@ test('dry-run is read-only; unborn init is complete, repeatable and preserves by
   assert.equal((await init(f, { dryRun: true })).outcome, 'planned');
   assert.deepEqual(fingerprint(f.repo), before);
   const created = await init(f);
-  assert.equal(created.outcome, 'created'); assert.equal(created.version, 6); assert.deepEqual(created.baseline, { kind: 'empty' });
+  assert.equal(created.outcome, 'created'); assert.equal(created.version, 7); assert.deepEqual(created.baseline, { kind: 'empty' });
   assert.deepEqual(created.agentDocs, { mode: 'skip', paths: [] });
   preserved(before, fingerprint(f.repo));
   assert.deepEqual(readdirSync(join(f.repo, '.gitifact')), ['config.json']);
@@ -75,7 +75,7 @@ test('SHA-1 and SHA-256 baselines survive new commits and detached subdirectory 
 
 test('ignore rules, tracked deletion, legacy and malformed files never overwrite data', async t => {
   const f = fixture(t);
-  assert.equal((await init(f, { dryRun: true })).schemaVersion, 2);
+  assert.equal((await init(f, { dryRun: true })).schemaVersion, 3);
   assert.equal(existsSync(join(f.repo, '.gitifact')), false);
   f.write('.gitignore', '.gitifact/\n');
   await assert.rejects(init(f), { code: 'CONFIG_IGNORED' });
@@ -115,7 +115,7 @@ test('parallel init publishes one config', async t => {
   const results = await Promise.all([init(f), init(f)]);
   assert.deepEqual(results.map(r => r.outcome).sort(), ['already-initialized', 'created']);
   assert.deepEqual(readdirSync(join(f.repo, '.gitifact')), ['config.json']);
-  assert.equal(JSON.parse(readFileSync(path(f), 'utf8')).schemaVersion, 2);
+  assert.equal(JSON.parse(readFileSync(path(f), 'utf8')).schemaVersion, 3);
   // Both runs wanted the reason file's merge rule; it is there once.
   assert.equal(readFileSync(join(f.repo, '.gitattributes'), 'utf8'), '/.gitifact/history.jsonl merge=union\n');
 });
@@ -130,10 +130,16 @@ test('an earlier or a newer convention is refused and left as it is', async t =>
   await assert.rejects(init(f), { code: 'UNSUPPORTED_SCHEMA' });
   assert.equal(readFileSync(path(f), 'utf8'), legacyConfig);
   const g = fixture(t); mkdirSync(join(g.repo, '.gitifact'));
-  const newer = '{"schemaVersion":3,"baseline":{"kind":"empty"}}';
+  const newer = '{"schemaVersion":4,"baseline":{"kind":"empty"}}';
   writeFileSync(path(g), newer);
   await assert.rejects(init(g), error => error.code === 'UNSUPPORTED_SCHEMA' && /더 새로운 저장 규약/.test(error.message));
   assert.equal(readFileSync(path(g), 'utf8'), newer);
+  // The 0.7 convention is the one a migration starts from: the refusal points at the migration prompt.
+  const h = fixture(t); mkdirSync(join(h.repo, '.gitifact'));
+  const previous = '{"schemaVersion":2,"baseline":{"kind":"empty"}}';
+  writeFileSync(path(h), previous);
+  await assert.rejects(init(h), error => error.code === 'UNSUPPORTED_SCHEMA' && /마이그레이션 프롬프트/.test(error.message));
+  assert.equal(readFileSync(path(h), 'utf8'), previous);
 });
 
 test('init reports the registry check it was given and how to install a newer release', async t => {
@@ -178,7 +184,7 @@ test('built command has versioned output and rejects removed options before writ
   // The registry check is switched off: tests never contact npm.
   const cli = args => spawnSync(process.execPath, [entry, 'init', ...args], { cwd: f.repo, env: { ...f.env, GITIFACT_NO_UPDATE_CHECK: '1' }, encoding: 'utf8', timeout: 35000 });
   const removed = cli(['--mode', 'prototype']); assert.equal(removed.status, 1); assert.equal(existsSync(join(f.repo, '.gitifact')), false);
-  const planned = cli(['--dry-run']); assert.equal(planned.status, 0); assert.equal(JSON.parse(planned.stdout).schemaVersion, 2);
+  const planned = cli(['--dry-run']); assert.equal(planned.status, 0); assert.equal(JSON.parse(planned.stdout).schemaVersion, 3);
   const good = cli([]); assert.equal(good.status, 0, good.stderr);
   const dto = JSON.parse(good.stdout); assert.equal(dto.contract, 'project-init'); assert.equal(dto.outcome, 'created');
 });

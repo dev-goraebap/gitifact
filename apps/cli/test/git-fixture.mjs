@@ -7,6 +7,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { repositoryStatusSuccessV1, repositoryStatusFailureV1 } from '@gitifact/contracts';
 
+const probe = fileURLToPath(new URL('./status-probe.mjs', import.meta.url));
 const executable = fileURLToPath(new URL('../dist/main.js', import.meta.url));
 export function fixture(t, format = 'sha1') {
   const base = realpathSync(tmpdir());
@@ -17,7 +18,7 @@ export function fixture(t, format = 'sha1') {
   });
   const repo = join(root, 'repo');
   mkdirSync(repo);
-  // CLI temporary folders (spec working inputs) stay inside the fixture instead of the user's system folder.
+  // CLI temporary folders (commit inputs) stay inside the fixture instead of the user's system folder.
   const temp = join(root, 'tmp');
   mkdirSync(temp);
   const config = join(root, 'empty-config');
@@ -40,8 +41,9 @@ export function fixture(t, format = 'sha1') {
   const commit = (message = 'fixture', cwd = repo) => {
     git(['add', '-A'], cwd); git(['commit', '-m', message], cwd);
   };
+  // The repository status the browser serves, read in a separate process with this fixture's environment.
   const cli = (args = [], cwd = repo, extraEnv = {}) => {
-    const result = spawnSync(process.execPath, [executable, 'status', ...args], {
+    const result = spawnSync(process.execPath, [probe, ...args], {
       cwd, env: { ...env, ...extraEnv }, encoding: 'utf8', timeout: 35000,
     });
     assert.ifError(result.error);
@@ -62,12 +64,29 @@ export function fixture(t, format = 'sha1') {
   };
   return { root, repo, env, git, write, commit, cli, status, failure };
 }
-// Adopts schemaVersion 2 without a baseline commit, as `gitifact init` does in an unborn repository.
+// Adopts schemaVersion 3 without a baseline commit, as `gitifact init` does in an unborn repository.
 export function specFixture(t, format = 'sha1') {
   const f = fixture(t, format);
   mkdirSync(join(f.repo, '.gitifact'));
-  writeFileSync(join(f.repo, '.gitifact', 'config.json'), JSON.stringify({ schemaVersion: 2, baseline: { kind: 'empty' } }, null, 2) + '\n');
+  writeFileSync(join(f.repo, '.gitifact', 'config.json'), JSON.stringify({ schemaVersion: 3, baseline: { kind: 'empty' } }, null, 2) + '\n');
   return f;
+}
+/**
+ * An initialized project with one commit and a committer, driven through the built CLI: `run` returns the process
+ * result, `ok` the parsed JSON of a successful `--format json` call.
+ */
+export function projectFixture(t, format = 'sha1') {
+  const f = fixture(t, format);
+  for (const [key, value] of [['user.name', 'Fixture'], ['user.email', 'fixture@example.invalid'], ['commit.gpgsign', 'false'], ['core.autocrlf', 'false']]) f.git(['config', key, value]);
+  mkdirSync(join(f.repo, '.git', 'hooks'), { recursive: true });
+  const run = (args, { env = {}, input, cwd = f.repo } = {}) => {
+    const result = spawnSync(process.execPath, [executable, ...args], { cwd, env: { ...f.env, GITIFACT_NO_UPDATE_CHECK: '1', GITIFACT_LANG: 'ko', ...env }, encoding: 'utf8', timeout: 45000, input });
+    assert.ifError(result.error); return result;
+  };
+  const ok = (args, options) => { const result = run([...args, '--format', 'json'], options); assert.equal(result.status, 0, result.stderr); return JSON.parse(result.stdout); };
+  const init = run(['init', '--skip-agents']); assert.equal(init.status, 0, init.stderr);
+  f.commit('Initialize gitifact');
+  return { ...f, run, ok };
 }
 export function fingerprint(root) {
   const result = {};

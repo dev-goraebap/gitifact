@@ -27,6 +27,7 @@ export function checkDocuments(files: ReadonlyMap<string, string>): DocumentSet 
   }
 
   const byId = new Map<string, Doc>();
+  for (const doc of documents) if (doc.draft) report('DOC_DRAFT', doc.path);
   for (const doc of documents) {
     const seen = byId.get(doc.id);
     if (seen) report('DUPLICATE_ID', doc.path, { id: doc.id, other: seen.path }); else byId.set(doc.id, doc);

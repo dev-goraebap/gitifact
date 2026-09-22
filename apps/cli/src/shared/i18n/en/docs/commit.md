@@ -1,4 +1,7 @@
-# Final changes at commit time
+---
+title: Final changes at commit time
+description: Commit input, recording reasons, recovery after failure
+---
 
 Automatic recording does not authorize a commit. Commit on user request or under an explicit project policy. The absence of a policy is not permission to auto-commit; do not ask again for permission already granted. Pushing requires separate authorization.
 

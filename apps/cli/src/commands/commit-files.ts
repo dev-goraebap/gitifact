@@ -1,14 +1,16 @@
 import { createHash } from 'node:crypto';
 import { lstat, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { StoreError, recordPathPattern, isAssetPath } from '@gitifact/core';
+import { classifyDocPath, isAssetPath } from '@gitifact/core';
+import { CommandError } from './output.js';
 import { t } from '../shared/i18n/index.js';
 
-export const fail = (message: string): never => { throw new StoreError(message); };
+export const fail = (message: string): never => { throw new CommandError('INVALID_COMMIT', message); };
 export const hash = (value: Buffer | string) => createHash('sha256').update(value).digest('hex');
 export const optional = (path: string) => readFile(path).catch(e => { if (e.code === 'ENOENT') return null; throw e; });
 export const info = (path: string) => lstat(path).catch(e => { if (e.code === 'ENOENT') return undefined; throw e; });
-export const record = (path: string) => recordPathPattern.test(path);
+/** A document or the reason file: what the commit reads, checks and binds to the staged bytes. */
+export const record = (path: string) => { try { return classifyDocPath(path).type !== 'ignored'; } catch { return false; } };
 export function validPath(path: string) {
   if (typeof path !== 'string' || path.length > 1000 || /[\\:\x00-\x1f\x7f]/.test(path)
     || path.split('/').some(p => !p || p === '.' || p === '..' || p.toLowerCase() === '.git')) fail(t('commitFiles.relativePath'));
@@ -44,7 +46,7 @@ export function policyPaths(files: string[]) {
   for (const file of files) { const parts = file.split('/'); for (let i = 1; i < parts.length; i++) for (const name of ['AGENTS.md', 'CLAUDE.md', '.gitignore', '.gitattributes']) all.add(parts.slice(0, i).join('/') + '/' + name); }
   return [...all].sort();
 }
-/** Inside `.gitifact` only records, the configuration and assets are committed; anything else there is not a Gitifact file. */
+/** Inside `.gitifact` only documents, the reason file, the configuration and assets are committed; the cache never is. */
 export function checkStoreSelection(selected: string[]) {
   for (const p of selected.filter(p => p.startsWith('.gitifact/') && !record(p) && p !== '.gitifact/config.json')) {
     // Assets travel with the documents; they are committed, not parsed.

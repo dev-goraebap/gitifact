@@ -28,7 +28,7 @@ async function writable(directory: string) {
 }
 
 /**
- * Returns where agents write save and commit input files, preferring a folder outside the repository.
+ * Returns where agents write the commit input file, preferring a folder outside the repository.
  * Sandboxes that block writes outside the working tree get `.gitifact/tmp/`, which ignores itself.
  * Files older than seven days in the chosen folder are removed on each call; failures never block the read.
  */
@@ -48,7 +48,7 @@ export async function prepareAgentInputs(root: string, controls: AgentInputContr
     const stat = await info(join(directory, name)).catch(() => undefined);
     if (stat?.isFile() && now - stat.mtimeMs > maxAge) await unlink(join(directory, name)).catch(() => undefined);
   }
-  return { save: join(directory, 'save.json'), commit: join(directory, 'commit.json') };
+  return { commit: join(directory, 'commit.json') };
 }
 
 /** Deletes a consumed input file only when it sits directly in one of this repository's managed folders. */

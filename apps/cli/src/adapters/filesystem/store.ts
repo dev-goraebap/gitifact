@@ -10,7 +10,8 @@ const fail = (message: string): never => { throw new StoreError(message); };
 const info = async (path: string) => lstat(path).catch(e => { if (e.code === 'ENOENT') return undefined; throw e; });
 const digest = (value: string) => createHash('sha256').update(value).digest('hex');
 const decode = (bytes: Buffer) => new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(bytes);
-export const generateId = (prefix: 'S' | 'R' | 'H' | 'W') => prefix + '-' + [...randomBytes(10)].map(n => 'abcdefghijklmnopqrstuvwxyz234567'[n & 31]).join('');
+export { generateId } from './document-file.js';
+import { generateId } from './document-file.js';
 /** Where the store lives. Commands resolve it through the Git adapter once and pass it in, so adapters stay independent. */
 export interface StoreLocation { root: string; gitDir: string }
 /** A failure after Git may have changed HEAD: keep written files and recovery data instead of rolling back. */
@@ -47,10 +48,10 @@ async function snapshot(root: string) {
 }
 
 export async function readWorkingState({ root, gitDir }: StoreLocation) {
-  if (await info(join(gitDir, 'gitifact-spec-preview.lock'))) fail(t('store.locked'));
+  if (await info(join(gitDir, 'gitifact-store.lock'))) fail(t('store.locked'));
   const first = await snapshot(root); const second = await snapshot(root);
   if (first.stamp !== second.stamp) fail(t('store.changedWhileReading'));
-  if (await info(join(gitDir, 'gitifact-spec-preview.lock'))) fail(t('store.lockedWhileReading'));
+  if (await info(join(gitDir, 'gitifact-store.lock'))) fail(t('store.lockedWhileReading'));
   return first;
 }
 
@@ -84,12 +85,12 @@ export async function saveWorking(location: StoreLocation, input: unknown, publi
 }
 
 export type WorkingSnapshot = Awaited<ReturnType<typeof snapshot>>;
-// Internal callers must already hold gitifact-spec-preview.lock.
+// Internal callers must already hold gitifact-store.lock.
 export const readLockedState = (root: string) => snapshot(root);
 export async function storeTransaction<T>({ root, gitDir }: StoreLocation, expected: string, build: (before: WorkingSnapshot) => Promise<{
   writes: Map<string, string | null>; data: T; recheck?: () => Promise<void>;
 }>, publish = rename, afterPublish?: (state: WorkingSnapshot) => Promise<void>) {
-  const lock = join(gitDir, 'gitifact-spec-preview.lock');
+  const lock = join(gitDir, 'gitifact-store.lock');
   try { await mkdir(lock); } catch (e) { if ((e as NodeJS.ErrnoException).code === 'EEXIST') fail(t('store.locked')); throw e; }
   const createdDirs: string[] = []; const temporary: string[] = [];
   const changed: { path: string; before: string | null; after: string | null }[] = [];

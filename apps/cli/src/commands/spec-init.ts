@@ -1,18 +1,18 @@
-import { InitError, parseManagedConfig, parseDocument, renderDocument, SCHEMA_VERSION, WIKI_DIR, WIKI_ENTRY_PATH, type SpecProjectConfig } from '@gitifact/core';
-import { projectInitV6, type UpdateStateV1 } from '@gitifact/contracts';
+import { InitError, parseManagedConfig, parseDocumentFile, renderDocumentFile, SCHEMA_VERSION, WIKI_DIR, WIKI_ENTRY_PATH, type SpecProjectConfig, type WikiDoc } from '@gitifact/core';
+import { projectInitV7, type UpdateStateV1 } from '@gitifact/contracts';
 import { mkdir, readdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { initRepository } from '../adapters/git/init-repository.js';
 import { fileInfo, publishConfig, readConfigFile } from '../adapters/filesystem/config-file.js';
 import { applyAgentDocs, planAgentDocs, skippedAgentDocs, type AgentDocsOptions } from './agent-docs.js';
 import { applyHistoryAttributes, planHistoryAttributes } from './history-attributes.js';
-import { readBundledDoc } from './docs.js';
-import { generateId } from '../adapters/filesystem/store.js';
+import { readBundledGuide } from './guide.js';
+import { generateId } from '../adapters/filesystem/document-file.js';
 import { disabledUpdate, npmGlobalInstall, npxUpdate } from '../shared/update-check.js';
 import { getLanguage, t } from '../shared/i18n/index.js';
 
 export async function initializeSpecProject(cwd: string, dryRun = false, env = process.env, beforePublish?: () => Promise<void>, agentDocs?: AgentDocsOptions,
-  readDoc: (name: string) => Promise<string> = name => readBundledDoc(name, getLanguage()), update: UpdateStateV1 | Promise<UpdateStateV1> = disabledUpdate) {
+  readDoc: (name: string) => Promise<string> = name => readBundledGuide(name, getLanguage()), update: UpdateStateV1 | Promise<UpdateStateV1> = disabledUpdate) {
   const repo = initRepository(cwd, env); const first = await repo.inspect(); const root = first.state.repository.rootPath;
   // Agent-doc targets are read and validated first so malformed markers refuse the run before any write.
   const docsPlan = agentDocs ? await planAgentDocs(root, agentDocs) : skippedAgentDocs;
@@ -20,7 +20,7 @@ export async function initializeSpecProject(cwd: string, dryRun = false, env = p
   const attributesPlan = await planHistoryAttributes(root);
   const result = async (config: SpecProjectConfig, outcome: 'planned' | 'created' | 'already-initialized') => {
     const checked = await update;
-    return projectInitV6.parse({ contract: 'project-init', version: 6, ok: true, outcome,
+    return projectInitV7.parse({ contract: 'project-init', version: 7, ok: true, outcome,
       rootPath: root, configPath: '.gitifact/config.json', schemaVersion: config.schemaVersion, baseline: config.baseline,
       agentDocs: { mode: docsPlan.mode, paths: docsPlan.paths }, update: checked,
       install: checked.status === 'available' ? { npx: npxUpdate(checked.latestVersion!), npmGlobal: npmGlobalInstall(checked.latestVersion!) } : null });
@@ -81,8 +81,8 @@ async function writeWikiPolicy(root: string, readDoc: (name: string) => Promise<
   // the built CLI and the package check assert that a real install writes the README.
   const template = await readDoc('wiki.default').catch(e => { if (e.code === 'ENOENT') return undefined; throw e; });
   if (template === undefined) return;
-  const doc = { id: generateId('W'), path: WIKI_ENTRY_PATH, title: t('init.wikiReadmeTitle'), body: template.trim() };
-  const text = renderDocument(doc); parseDocument(doc.path, text);
+  const doc: WikiDoc = { kind: 'wiki', id: generateId('W'), path: WIKI_ENTRY_PATH, title: t('init.wikiReadmeTitle'), description: t('init.wikiReadmeDescription'), body: template.trim() };
+  const text = renderDocumentFile(doc); parseDocumentFile(doc.path, text);
   await mkdir(join(root, ...WIKI_DIR.split('/')), { recursive: true });
   await writeFile(join(root, ...WIKI_ENTRY_PATH.split('/')), text, { flag: 'wx' });
 }

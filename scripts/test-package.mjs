@@ -47,12 +47,6 @@ try {
   assert.equal(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', '--version'], temporaryRoot).trim(), version);
   assert.match(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', '--help'], temporaryRoot), /Usage: gitifact/);
   execFileSync('git', ['init', '--template=', '-b', 'main'], { cwd: temporaryRoot, stdio: 'pipe' });
-  const status = JSON.parse(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', 'status'], temporaryRoot));
-  assert.equal(status.contract, 'repository-status');
-  assert.equal(status.version, 1);
-  assert.equal(status.ok, true);
-  assert.deepEqual(status.head, { state: 'unborn', branch: 'main', commit: null });
-  assert.deepEqual(status.checks, { state: 'not-run', reason: 'git-status-only' });
   // A fresh cache and offline mode ensure the pinned npx command uses this project's package, not a global or downloaded CLI.
   const npxEnv = { ...noRegistry, npm_config_cache: join(temporaryRoot, 'npm-cache') };
   const npx = (...args) => pnpm(['--dir', temporaryRoot, 'exec', 'npx', '--offline', '--yes', 'gitifact@' + version, ...args], temporaryRoot, npxEnv);
@@ -61,10 +55,10 @@ try {
   const initialized = JSON.parse(npx('init'));
   assert.deepEqual(await readFile(join(temporaryRoot, 'package.json')), packageBefore);
   assert.deepEqual(await readFile(join(temporaryRoot, 'pnpm-lock.yaml')), lockBefore);
-  assert.equal(JSON.parse(npx('spec', 'working')).warnings.length, 0);
+  assert.deepEqual(JSON.parse(npx('docs', 'check', '--format', 'json')).problems, []);
   assert.equal(initialized.outcome, 'created');
-  assert.equal(initialized.schemaVersion, 2);
-  assert.deepEqual([initialized.version, initialized.update, initialized.install], [6, { status: 'disabled', latestVersion: null }, null]);
+  assert.equal(initialized.schemaVersion, 3);
+  assert.deepEqual([initialized.version, initialized.update, initialized.install], [7, { status: 'disabled', latestVersion: null }, null]);
   assert.deepEqual(initialized.baseline, { kind: 'empty' });
   const configBefore = await readFile(join(temporaryRoot, '.gitifact', 'config.json'));
   assert.equal(JSON.parse(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', 'init'], temporaryRoot, noRegistry)).outcome, 'already-initialized');
@@ -72,47 +66,48 @@ try {
   for (const [key, value] of [['user.name', 'Package fixture'], ['user.email', 'package@example.invalid'], ['commit.gpgsign', 'false']]) {
     execFileSync('git', ['config', key, value], { cwd: temporaryRoot, stdio: 'pipe' });
   }
-  // Input files go to the folder working reports; the system temporary folder is redirected into this check's root.
+  // The commit input goes to the folder changes list reports; the system temporary folder is redirected into this check's root.
   const systemTemp = join(temporaryRoot, 'system-temp'); await mkdir(systemTemp);
   const specEnv = { ...process.env, TEMP: systemTemp, TMP: systemTemp, TMPDIR: systemTemp };
-  const { inputs } = JSON.parse(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', 'spec', 'working', '--stamp'], temporaryRoot, specEnv));
-  assert.ok(inputs.save.startsWith(systemTemp), 'Input files must default to the system temporary folder.');
-  const spec = async (args, input) => {
-    const specInput = args[0] === 'commit' ? inputs.commit : inputs.save;
-    if (input) await writeFile(specInput, JSON.stringify(input));
-    const result = JSON.parse(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', 'spec', ...args, ...(input ? ['--file', specInput] : [])], temporaryRoot, specEnv));
-    if (input) assert.equal(result.inputRemoved, true, 'A successful save or commit removes its input file.');
-    return result;
-  };
-  const saved = await spec(['save'], { expected: (await spec(['working'])).stamp, operations: [
-    { type: 'create', feature: 'package', title: '패키지 기능' },
-    { type: 'add', feature: 'package', title: '설치 확인', body: '설치한 CLI로 명세와 코드를 커밋합니다.' }] });
+  const gitifact = args => JSON.parse(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', ...args, '--format', 'json'], temporaryRoot, specEnv));
+  const { inputs } = gitifact(['changes', 'list']);
+  assert.ok(inputs.commit.startsWith(systemTemp), 'The commit input must default to the system temporary folder.');
+  const feature = gitifact(['docs', 'new', 'feature', 'package', '--title', '패키지 기능', '--description', '설치한 CLI로 쓰는 기능']);
+  const requirement = gitifact(['docs', 'new', 'requirement', 'package/install', '--title', '설치 확인', '--description', '설치한 CLI로 명세와 코드를 커밋한다']);
+  // docs new marks both files as drafts; the author finishes them by removing the mark.
+  for (const created of [feature, requirement]) {
+    const file = join(temporaryRoot, ...created.path.split('/'));
+    await writeFile(file, (await readFile(file, 'utf8')).replace('draft: true\n', ''));
+  }
   await writeFile(join(temporaryRoot, 'feature.txt'), 'packaged feature\n');
-  const committed = await spec(['commit'], { reasons: [{ requirements: [saved.results[1].id], reason: '패키지 검증' }],
-    // init also wrote the wiki policy page; a commit selects every pending record.
-    paths: ['.gitifact/config.json', '.gitifact/wiki/README.md', '.gitifact/spec/package/requirements.md', '.gitifact/spec/package/history.jsonl', 'feature.txt'],
-    message: 'Package fixture commit', authorization: { basis: 'user-request', evidence: 'Package verification fixture' } });
+  await writeFile(inputs.commit, JSON.stringify({ reasons: [{ docs: [requirement.id, feature.id], reason: '패키지 검증' }],
+    // init also wrote the wiki policy page; a commit selects every pending document.
+    paths: ['.gitifact/config.json', '.gitifact/wiki/README.md', feature.path, requirement.path, '.gitifact/history.jsonl', 'feature.txt'],
+    message: 'Package fixture commit', authorization: { basis: 'user-request', evidence: 'Package verification fixture' } }));
+  const committed = gitifact(['changes', 'commit', '--file', inputs.commit]);
   assert.equal(committed.outcome, 'committed');
-  assert.equal((await spec(['read'])).specs[0].requirements[0].id, saved.results[1].id);
-  assert.match(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', 'docs'], temporaryRoot), /^workflow /m);
-  assert.equal(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', 'docs', 'spec'], temporaryRoot),
-    await readFile(join(workspace, 'apps/cli/src/shared/i18n/ko/docs/spec.md'), 'utf8'), 'Bundled docs must match the asset source.');
-  assert.equal(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', '--lang', 'en', 'docs', 'spec'], temporaryRoot),
+  assert.equal(committed.inputRemoved, true, 'A successful commit removes its input file.');
+  assert.equal(gitifact(['docs', 'show', requirement.id, '--ref', 'HEAD']).documents[0].path, requirement.path);
+  assert.equal(gitifact(['docs', 'history', requirement.id]).events[0].reasons[0], '패키지 검증');
+  assert.match(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', 'guide', 'list'], temporaryRoot), /^workflow /m);
+  assert.equal(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', 'guide', 'show', 'spec'], temporaryRoot),
+    await readFile(join(workspace, 'apps/cli/src/shared/i18n/ko/docs/spec.md'), 'utf8'), 'Bundled guides must match the asset source.');
+  assert.equal(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', '--lang', 'en', 'guide', 'show', 'spec'], temporaryRoot),
     await readFile(join(workspace, 'apps/cli/src/shared/i18n/en/docs/spec.md'), 'utf8'), 'The offline package must include English guides.');
   const [englishNotes] = parseChangelog(await readFile(join(installedRoot, 'dist/i18n/en/changelog.md'), 'utf8'));
   assert.equal(englishNotes.version, version);
   // A real install writes the wiki policy on first adoption, and docs wiki carries it as the project's policy.
   const policy = await readFile(join(temporaryRoot, '.gitifact', 'wiki', 'README.md'), 'utf8');
-  assert.match(policy, /^---\nid: W-[a-z2-7]{10}\n---\n\n# 위키 운영 방침\n\n이 위키에는 아키텍처 결정 기록\(ADR\)을 쌓는다\./);
-  assert.match(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', 'docs', 'wiki'], temporaryRoot), /## 운영 방침 \(\.gitifact\/wiki\/README\.md\)\n\n이 위키에는 아키텍처 결정 기록/);
+  assert.match(policy, /^---\nid: W-[a-z2-7]{10}\ntitle: 위키 운영 방침\ndescription: .+\n---\n\n이 위키에는 아키텍처 결정 기록\(ADR\)을 쌓는다\./);
+  assert.match(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', 'guide', 'show', 'wiki'], temporaryRoot), /## 운영 방침 \(\.gitifact\/wiki\/README\.md\)\n\n이 위키에는 아키텍처 결정 기록/);
   const agentsPath = join(temporaryRoot, 'AGENTS.md');
   const agents = await readFile(agentsPath, 'utf8');
   assert.deepEqual(initialized.agentDocs, { mode: 'install', paths: ['AGENTS.md', 'CLAUDE.md'] });
   assert.equal(await readFile(join(temporaryRoot, 'CLAUDE.md'), 'utf8'), '@AGENTS.md\n', 'init must add a CLAUDE.md that imports AGENTS.md.');
   assert.match(agents, /^# AGENTS\.md\n\nProject-specific guidance for AI coding agents\.\n\n<!-- GITIFACT:START -->\n/);
-  assert.ok(agents.includes('gitifact v' + version + ' · ko · 저장 규약 schemaVersion 2'), 'Block must carry the installed version.');
+  assert.ok(agents.includes('gitifact v' + version + ' · ko · 저장 규약 schemaVersion 3'), 'Block must carry the installed version.');
   assert.ok(agents.includes('npx --yes gitifact@' + version + ' <cmd>'), 'The generated invocation must pin the installed version.');
-  assert.ok(agents.includes('gitifact docs spec'), 'Block must point at the bundled docs.');
+  assert.ok(agents.includes('gitifact guide show spec'), 'Block must point at the bundled guides.');
   assert.match(agents, /<!-- GITIFACT:END -->\n$/);
   await writeFile(agentsPath, agents + '\n## Project rules\n\nKeep me.\n');
   assert.equal(JSON.parse(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', 'init'], temporaryRoot, noRegistry)).outcome, 'already-initialized');
@@ -169,7 +164,7 @@ try {
     assert.equal(response.status, 200);
     assert.ok((await response.json()).changes.some(change => change.path === 'browser-created.txt'));
   } finally { child.kill(); await exited; }
-  console.log('PASS: packed CLI installs offline; init with the AGENTS.md block, docs, update, spec save/commit/read, status, release notes and browser run outside the workspace.');
+  console.log('PASS: packed CLI installs offline; init with the AGENTS.md block, guides, docs new/check/show/history, changes list/commit, update, release notes and browser run outside the workspace.');
 } finally {
   // Only removes the exact directory returned by mkdtemp for this check.
   await rm(temporaryRoot, { recursive: true, force: true });

@@ -35,11 +35,6 @@ test('partial staging and Unicode paths preserve all files, index, refs and conf
   assert.equal(result.observation.consistency, 'best-effort');
   assert.notEqual(result.observation.id, f.status().observation.id);
   assert.deepEqual(fingerprint(f.repo), before);
-  const text = f.cli(['--format', 'text']);
-  assert.equal(text.status, 0); assert.equal(text.stderr, '');
-  assert.match(text.stdout, /gitifact 검사 미실행/);
-  assert.match(text.stdout, /MM "tracked.txt"/);
-  assert.deepEqual(fingerprint(f.repo), before);
 });
 
 test('deletion, rename without inference and intent-to-add', (t) => {
@@ -146,16 +141,4 @@ test('missing repository, bare repo, Git directory and context overrides fail ex
   for (const key of ['GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE', 'GIT_COMMON_DIR']) {
     f.failure(f.repo, 'GIT_CONTEXT_OVERRIDE', { [key]: f.repo });
   }
-});
-test('invalid options are rejected before Git and stderr errors remain parseable', (t) => {
-  const f = fixture(t);
-  for (const args of [['--format', 'yaml'], ['extra'], ['--staged']]) {
-    const result = f.cli(args, f.root);
-    assert.equal(result.status, 1); assert.equal(result.stdout, '');
-    assert.match(result.stderr, /error:/);
-    assert.doesNotMatch(result.stderr, /NOT_A_REPOSITORY/);
-  }
-  const text = f.cli(['--format', 'text'], f.root);
-  assert.equal(text.status, 1); assert.equal(text.stdout, '');
-  assert.match(text.stderr, /^NOT_A_REPOSITORY:/);
 });

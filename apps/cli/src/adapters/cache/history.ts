@@ -104,6 +104,8 @@ export function createHistory(database: CacheDatabase, git: GitAccess) {
 
   return {
     ensure,
+    /** The document and reason files of one commit, read from Git and not kept. */
+    filesAt: (rev: string) => changes.tree(rev),
     /** One page of the changes that match, newest first, with how many match in all. */
     async page(head: string, filter: HistoryFilter, offset: number, limit: number) {
       await ensure(head);

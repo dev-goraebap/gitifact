@@ -199,6 +199,8 @@ export function createCommitChanges(git: GitAccess) {
   }
 
   return {
+    /** Every document and reason file of a commit (path → text): what `docs show --ref` and `changes` compare against. */
+    tree,
     /** All reachable record commits, children before parents even when author clocks differ. */
     async lineage(head: string): Promise<string[]> {
       return git.decode(await git.run(['rev-list', '--full-history', '--date-order', head, '--', ...HISTORY_PATHSPECS])).split('\n').filter(Boolean);

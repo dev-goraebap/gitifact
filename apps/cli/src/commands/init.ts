@@ -1,5 +1,5 @@
 import { InitError, RepositoryReadError } from '@gitifact/core';
-import { projectInitV6 } from '@gitifact/contracts';
+import { projectInitV7 } from '@gitifact/contracts';
 import { initializeSpecProject } from './spec-init.js';
 import type { AgentPreset } from './agent-block.js';
 import { fetchLatestVersion } from '../adapters/registry/latest-version.js';
@@ -28,7 +28,7 @@ export async function runInit(options: InitOptions, version: string) {
     const known = error instanceof InitError || error instanceof RepositoryReadError;
     const failure = { code: known ? error.code : 'INIT_FAILED', message: known ? error.message : t('init.failed') };
     process.stderr.write(options.format === 'text' ? failure.code + ': ' + failure.message + '\n'
-      : JSON.stringify(projectInitV6.parse({ contract: 'project-init', version: 6, ok: false, error: failure })) + '\n');
+      : JSON.stringify(projectInitV7.parse({ contract: 'project-init', version: 7, ok: false, error: failure })) + '\n');
     process.exitCode = 1;
   }
 }

@@ -131,5 +131,7 @@
   "doc.MISSING_REFERENCE": "가리키는 문서가 없습니다: {path}: {id}",
   "doc.FEATURE_INDEX_REQUIRED": "기능 폴더에 index.md가 필요합니다: {feature}",
   "doc.DESIGN_OVERVIEW_REQUIRED": "설계가 있는 기능에는 design/overview.md가 필요합니다: {feature}",
-  "doc.FILE_TOO_LARGE": "문서 파일이 1MB를 넘어 읽지 않았습니다: {path}"
+  "doc.FILE_TOO_LARGE": "문서 파일이 1MB를 넘어 읽지 않았습니다: {path}",
+  "doc.DOC_DRAFT": "docs new가 만든 초안 표시가 남아 있습니다. 본문을 다 쓴 뒤 draft: true 줄을 지우세요: {path}",
+  "config.migrationRequired": "이 프로젝트는 0.7 저장 규약(schemaVersion 2)입니다. 0.8.0 CLI는 옛 형식을 읽지 않습니다. README의 마이그레이션 프롬프트로 문서를 새 구조로 옮기세요."
 }

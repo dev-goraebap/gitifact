@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { browserSessionV3, updateCheckV1, browserHttpErrorV1, updateStateV1, updateV4, projectInitV6 } from '../dist/index.js';
+import { browserSessionV3, updateCheckV1, browserHttpErrorV1, updateStateV1, updateV4, projectInitV7 } from '../dist/index.js';
 
 const value = { contract: 'browser-session', version: 3,
   sessionId: '7cc37dc4-4ea7-4252-b9de-24944fbfb5a2',
@@ -54,9 +54,9 @@ test('install guidance requires the version-pinned npx command', () => {
   const install = { npx: 'npx --yes gitifact@0.7.1 update', npmGlobal: 'npm install -g gitifact@0.7.1' };
   const update = { contract: 'update', version: 4, ok: true, cliVersion: '0.7.0', update: { status: 'available', latestVersion: '0.7.1' }, install,
     agentDocs: { state: 'current', paths: [], missing: [] }, commit: { state: 'not-requested', commit: null, paths: [], message: null, reason: null, detail: null } };
-  const init = { contract: 'project-init', version: 6, ok: true, outcome: 'created', rootPath: '/fixture', configPath: '.gitifact/config.json', schemaVersion: 2,
+  const init = { contract: 'project-init', version: 7, ok: true, outcome: 'created', rootPath: '/fixture', configPath: '.gitifact/config.json', schemaVersion: 3,
     baseline: { kind: 'empty' }, agentDocs: { mode: 'install', paths: ['AGENTS.md'] }, update: update.update, install };
-  for (const [schema, value, version] of [[updateV4, update, 3], [projectInitV6, init, 5]]) {
+  for (const [schema, value, version] of [[updateV4, update, 3], [projectInitV7, init, 6]]) {
     assert.deepEqual(schema.parse(value), value);
     assert.equal(schema.safeParse({ ...value, install: { npmGlobal: install.npmGlobal } }).success, false);
     assert.equal(schema.safeParse({ ...value, version }).success, false);
