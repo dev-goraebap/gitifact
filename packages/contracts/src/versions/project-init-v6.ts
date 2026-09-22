@@ -1,10 +1,10 @@
-// v6 adds a version-pinned npx update command. The previous contract remains available unchanged.
 import { z } from 'zod';
-import { updateStateV1 } from './browser-session-v2.js';
+import { updateStateV1 } from './update-state-v1.js';
 
 // Output of `gitifact init`. v5 added the registry check (`update`, `install`) so an agent that initialises with an
-// older installed CLI learns a newer release exists, and the `replaced` outcome: a configuration of an earlier storage
-// convention with no records beside it was replaced by a new one. Earlier versions had no consumers outside the CLI.
+// older installed CLI learns a newer release exists; v6 added the version-pinned npx command. Earlier versions had no
+// consumers outside the CLI and were removed. `replaced` (a schemaVersion 1 config swapped for the current one) is no
+// longer produced since 0.8.0 stopped reading earlier conventions; it stays in v6 so the shape does not change.
 export const projectInitV6 = z.discriminatedUnion('ok', [
   z.strictObject({ contract: z.literal('project-init'), version: z.literal(6), ok: z.literal(true),
     outcome: z.enum(['planned', 'created', 'replaced', 'already-initialized']), rootPath: z.string(), configPath: z.literal('.gitifact/config.json'),

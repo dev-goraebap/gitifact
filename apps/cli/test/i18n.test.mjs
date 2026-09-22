@@ -45,7 +45,7 @@ test('placeholders are filled like concatenation and unknown ones stay visible',
   assert.equal(t('commit.busy', { path: undefined }), '이전 커밋 작업 또는 복구 자료가 있습니다: undefined');
   assert.equal(t('commit.busy'), '이전 커밋 작업 또는 복구 자료가 있습니다: {path}');
   // A value that looks like a placeholder is inserted as text, not expanded again.
-  assert.equal(t('migrate.unsupportedFile', { feature: '{name}', name: 'x' }), '지원하지 않는 명세 파일입니다: .tryce/spec/{name}/x');
+  assert.equal(t('docs.unknownTopic', { topic: '{topics}', topics: 'x' }), '알 수 없는 주제입니다: {topics}. 사용 가능: x');
 });
 
 test('read error codes stay the set the repository-status contract accepts', async () => {

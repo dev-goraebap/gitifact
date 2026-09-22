@@ -153,7 +153,6 @@
   "history.contributorsLimited": "참여자는 최근 10,000개 Git 커밋 기준입니다.",
   "history.emptyDescription": "에이전트와 요구사항을 정리하고 커밋하면 이곳에서 변경 활동을 볼 수 있습니다.",
   "history.emptyTitle": "표시할 활동이 없습니다.",
-  "history.legacyBoundary": "새 명세 도입 이전의 구형 기록은 표시하지 않습니다.",
   "history.loadMore": "이전 이력 더 보기",
   "history.loadingMore": "이전 이력 불러오는 중…",
   "history.reachedEnd": "마지막 이력까지 확인했습니다.",

@@ -32,14 +32,10 @@ export const RECOMMENDED_ASSET_EXTENSIONS = ['png', 'jpg', 'jpeg', 'gif', 'webp'
 export const ASSET_SIZE_LIMIT = 1024 * 1024;
 export const ASSETS_TOTAL_LIMIT = 50 * 1024 * 1024;
 const token = '[a-z2-7]{10}';
-/** Current store directory; `.tryce` is read from history and legacy checkouts but never written. */
 export const STORE_DIR = '.gitifact';
-export const LEGACY_STORE_DIR = '.tryce';
-export const STORE_DIRS = [STORE_DIR, LEGACY_STORE_DIR] as const;
-/** Marker prefixes accepted on read: `gitifact-*` (current) and `tryce-*` (legacy). */
-const marker = '(?:gitifact|tryce)';
-/** Path of a spec record inside either store directory. */
-export const recordPathPattern = /^(?:\.(?:gitifact|tryce)\/spec\/[^/]+\/(?:requirements\.md|design\.md|history\.jsonl)|\.gitifact\/wiki\/(?:(?:[^/]+\/)*[^/]+\.md|history\.jsonl))$/;
+const marker = 'gitifact';
+/** Path of a spec record or wiki page inside the store directory. */
+export const recordPathPattern = /^(?:\.gitifact\/spec\/[^/]+\/(?:requirements\.md|design\.md|history\.jsonl)|\.gitifact\/wiki\/(?:(?:[^/]+\/)*[^/]+\.md|history\.jsonl))$/;
 export const documentPathPattern = /^\.gitifact\/wiki\/((?:[^/]+\/)*[^/]+\.md)$/;
 export const documentHistoryPattern = /^\.gitifact\/wiki\/history\.jsonl$/;
 const nameToken = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -61,8 +57,6 @@ export function validateDocumentRelativePath(relative: string): void {
   if (!(parts.length === 0 && rootUpperName.test(file)) && (!file.endsWith('.md') || !nameToken.test(file.slice(0, -3)))) fail(t('document.fileName', { path: relative }));
   for (const part of parts) if (!nameToken.test(part) || part.length > 80) fail(t('document.folderName', { path: relative }));
 }
-/** Strips the store directory so the same feature folder compares equal across the rename. */
-export const storeRelative = (path: string) => path.replace(/^\.(?:gitifact|tryce)\//, '');
 const reqId = new RegExp(`^R-${token}$`);
 const fail = (message: string): never => { throw new SpecPreviewError(message); };
 const normalized = (value: string) => value.replace(/\r\n/g, '\n').trim();
@@ -158,17 +152,15 @@ export function parseDesignPreview(source: string, specId: string): PreviewDesig
   const title = heading!.slice(2).trim(); const raw = normalized(lines.join('\n'));
   if (!raw) fail(t('design.bodyRequired'));
   const references = new Set<string>(); let fence: {char: string; size: number} | undefined;
-  // The parsed body carries current marker names, so a legacy `tryce-ref` read from history compares equal to its migrated form.
   const body = raw.split('\n').map(line => {
     if (fence) { if (new RegExp(`^ {0,3}${fence.char}{${fence.size},}\\s*$`).test(line)) fence = undefined; return line; }
     const open = /^ {0,3}(`{3,}|~{3,})(.*)$/.exec(line);
     if (open) { fence = {char: open[1]![0]!, size: open[1]!.length}; return line; }
     if (/^#\s/.test(line)) fail(t('design.singleTopHeading'));
-    if (/<!-- (?:gitifact|tryce)-/.test(line)) {
-      const ref = /^<!-- (?:gitifact|tryce)-ref: (R-[a-z2-7]{10}(?:, R-[a-z2-7]{10})*) -->$/.exec(line);
+    if (/<!-- gitifact-/.test(line)) {
+      const ref = /^<!-- gitifact-ref: (R-[a-z2-7]{10}(?:, R-[a-z2-7]{10})*) -->$/.exec(line);
       if (!ref) fail(t('design.referenceFormat'));
       for (const id of ref![1]!.split(', ')) references.add(id);
-      return `<!-- gitifact-ref: ${ref![1]} -->`;
     }
     return line;
   }).join('\n');
@@ -200,7 +192,7 @@ export function parseDocument(path: string, source: string): PreviewDocument {
     const open = /^ {0,3}(`{3,}|~{3,})(.*)$/.exec(line);
     if (open) { fence = {char: open[1]![0]!, size: open[1]!.length}; continue; }
     if (/^#\s/.test(line)) fail(t('document.singleTopHeading', { path }));
-    if (/<!-- (?:gitifact|tryce)-/.test(line)) fail(t('document.noMarkerInBody', { path }));
+    if (/<!-- gitifact-/.test(line)) fail(t('document.noMarkerInBody', { path }));
   }
   if (fence) fail(t('document.unclosedFence', { path }));
   return { id, path, title, body };
@@ -224,8 +216,6 @@ export function validateWiki(wiki: PreviewWiki): void {
 
 export const emptyWiki = (): PreviewWiki => ({ documents: [], history: [] });
 export const emptyBundle = (): PreviewBundle => ({ specs: [], wiki: emptyWiki() });
-/** Accepts the older spec-only shape so callers and fixtures that only know specs keep working. */
-export const asBundle = (value: PreviewSpec[] | PreviewBundle): PreviewBundle => Array.isArray(value) ? { specs: value, wiki: emptyWiki() } : value;
 
 export function parsePreviewBundle(files: ReadonlyMap<string, string>): PreviewBundle {
   const bundle = { specs: parsePreviewFiles(files), wiki: parseWikiFiles(files) };
@@ -300,7 +290,7 @@ export function parsePreviewFiles(files: ReadonlyMap<string, string>): PreviewSp
 }
 
 export function parseSpecPreview(path: string, source: string, history = '', designSource?: string): PreviewSpec {
-  if (!/^\.(?:gitifact|tryce)\/spec\/[^/]+\/requirements\.md$/.test(path)) fail(t('spec.unsupportedPath', { path }));
+  if (!/^\.gitifact\/spec\/[^/]+\/requirements\.md$/.test(path)) fail(t('spec.unsupportedPath', { path }));
   if (source.includes('\0') || source.includes('\r') && /\r(?!\n)/.test(source)) fail(t('spec.invalidCharacters', { path }));
   const lines = normalized(source).split('\n');
   const specId = parseFrontmatter(lines, 'spec', 'S').id;
@@ -406,7 +396,7 @@ export function compareSpecPreviews(before: PreviewSpec[], after: PreviewSpec[])
     const types: ('created' | 'deleted' | 'moved' | 'modified')[] = [];
     if (!from) types.push('created'); else if (!to) types.push('deleted');
     else {
-      if (from.specId !== to.specId || (id.startsWith('S-') && storeRelative(from.path) !== storeRelative(to.path))) types.push('moved');
+      if (from.specId !== to.specId || (id.startsWith('S-') && from.path !== to.path)) types.push('moved');
       if (!sameEntry(from, to)) types.push('modified');
     }
     return types.length ? [{ id, types, before: from, after: to, kind: id.startsWith('S-') ? 'design' as const : 'requirement' as const, reasons: reasons.filter(h => [...h.requirements, ...(h.designs ?? [])].includes(id)) } satisfies PreviewChange] : [];
@@ -418,9 +408,7 @@ export function compareSpecPreviews(before: PreviewSpec[], after: PreviewSpec[])
     const from = prevSpecs.get(id); const to = nextSpecs.get(id);
     const summary = (s: PreviewSpec | undefined) => s ? { path: s.path, title: s.title, description: s.description } : null;
     const a = summary(from); const b = summary(to);
-    // The store rename (.tryce → .gitifact) keeps the feature folder, so it is not a spec change.
-    const key = (s: ReturnType<typeof summary>) => s ? { ...s, path: storeRelative(s.path) } : null;
-    return JSON.stringify(key(a)) !== JSON.stringify(key(b)) ? [{ id, before: a, after: b }] : [];
+    return JSON.stringify(a) !== JSON.stringify(b) ? [{ id, before: a, after: b }] : [];
   });
   return { specChanges, changes };
 }
@@ -448,8 +436,7 @@ export function compareWikis(before: PreviewWiki, after: PreviewWiki): PreviewCh
   return changes;
 }
 
-export function comparePreviewBundles(before: PreviewSpec[] | PreviewBundle, after: PreviewSpec[] | PreviewBundle) {
-  const a = asBundle(before); const b = asBundle(after);
+export function comparePreviewBundles(a: PreviewBundle, b: PreviewBundle) {
   validateBundle(a); validateBundle(b);
   const specs = compareSpecPreviews(a.specs, b.specs);
   return { specChanges: specs.specChanges, changes: [...specs.changes, ...compareWikis(a.wiki, b.wiki)] as PreviewChange[] };

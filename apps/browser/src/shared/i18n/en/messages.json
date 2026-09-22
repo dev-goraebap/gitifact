@@ -153,7 +153,6 @@
   "history.contributorsLimited": "Contributors are based on the latest 10,000 Git commits.",
   "history.emptyDescription": "Ask your agent to write and commit requirements to see activity here.",
   "history.emptyTitle": "No activity to show.",
-  "history.legacyBoundary": "Legacy records from before Markdown specifications were adopted are not shown.",
   "history.loadMore": "Load older history",
   "history.loadingMore": "Loading older history…",
   "history.reachedEnd": "You have reached the end of the history.",

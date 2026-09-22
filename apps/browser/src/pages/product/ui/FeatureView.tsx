@@ -169,7 +169,7 @@ function FeatureDetail({ feature: selected, features, search, change }: { featur
             <Heading level={3}>{isCurrent ? <mark className={styles.currentMark}>{r.title}</mark> : r.title}</Heading>
             <Text type="supporting" color="secondary">{r.id}</Text>
           </VStack>
-          <DocumentBody headingLevelStart={4} path={selected.path}>{r.body.replace(/\r?\n([ \t]+)(기대 동작:|Expected behavior:)/g, '  \n$1$2')}</DocumentBody>
+          <DocumentBody headingLevelStart={4} path={selected.path}>{r.body}</DocumentBody>
           <HStack gap={4} wrap="wrap" className={styles.entryLine}>
             {/* The design names the requirements a section explains; this is that link read the other way round. */}
             {section && <Link to="/features/$featureId" params={{ featureId: selected.id }} search={{ ...search, tab: 'design', selected: r.id }} hash={section}>{t('features.requirementDesign')}</Link>}

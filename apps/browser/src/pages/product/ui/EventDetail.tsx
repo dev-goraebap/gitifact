@@ -16,7 +16,7 @@ import { DocumentBody } from '../../../shared/ui/document';
 export function EventDetail({event:e,change,features}: {event:SpecEvent;change:UseQueryResult<BrowserChangeV1>;features:SpecFeature[]}) {
   useLanguage();
   // Snapshot bodies resolve their links from the path they were committed at.
-  const body=(spec:SpecSnapshot)=>e.kind==='design'?<DesignDocument design={spec} path={spec.path} features={features}/>:<DocumentBody headingLevelStart={2} path={spec.path}>{spec.body.replace(/\r?\n([ \t]+)(기대 동작:|Expected behavior:)/g,'  \n$1$2')}</DocumentBody>;
+  const body=(spec:SpecSnapshot)=>e.kind==='design'?<DesignDocument design={spec} path={spec.path} features={features}/>:<DocumentBody headingLevelStart={2} path={spec.path}>{spec.body}</DocumentBody>;
   return <VStack gap={5} className={styles.readingPane}>
       <HStack gap={4} wrap="wrap" className={styles.readingAuthor}><Person name={e.author} email={e.email}/><Text type="supporting" color="secondary">{new Date(e.date).toLocaleString(getLanguage())}</Text></HStack>
       <VStack gap={4} className={styles.readingSection}>

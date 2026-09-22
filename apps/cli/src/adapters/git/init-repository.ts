@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { lstat, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { InitError } from '@gitifact/core';
-import type { ProjectConfig, RepositoryState } from '@gitifact/core';
+import type { SpecProjectConfig, RepositoryState } from '@gitifact/core';
 import { createRepositoryReader } from './repository-reader.js';
 import { createGitRunner } from './run-git.js';
 import { decodeGitLine } from './porcelain.js';
@@ -42,7 +42,7 @@ export function initRepository(cwd: string, inherited: NodeJS.ProcessEnv = proce
       const fields = output.split('\0');
       if (output && fields[2] && !fields[2].startsWith('!')) throw new InitError('CONFIG_IGNORED', t('initRepo.configIgnored', { rule: fields[0] + ':' + fields[1] + ' ' + fields[2] }));
     },
-    async validateBaseline(config: Pick<ProjectConfig, 'baseline'>, root: string, commit: string | null, format: string) {
+    async validateBaseline(config: Pick<SpecProjectConfig, 'baseline'>, root: string, commit: string | null, format: string) {
       if (config.baseline.kind === 'empty') return;
       const baseline = config.baseline;
       if (!commit || baseline.objectFormat !== format) throw new InitError('BASELINE_UNAVAILABLE', t('initRepo.baselineMismatch'));

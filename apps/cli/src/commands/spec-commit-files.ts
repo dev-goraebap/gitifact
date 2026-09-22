@@ -40,20 +40,14 @@ export function paths(value: unknown, limit = 128): string[] {
   const list = [...new Set(value as string[])].sort(); list.forEach(validPath); return list;
 }
 export function policyPaths(files: string[]) {
-  const all = new Set(['AGENTS.md', 'CLAUDE.md', '.gitignore', '.gitattributes', '.gitifact/config.json', '.tryce/config.json']);
+  const all = new Set(['AGENTS.md', 'CLAUDE.md', '.gitignore', '.gitattributes', '.gitifact/config.json']);
   for (const file of files) { const parts = file.split('/'); for (let i = 1; i < parts.length; i++) for (const name of ['AGENTS.md', 'CLAUDE.md', '.gitignore', '.gitattributes']) all.add(parts.slice(0, i).join('/') + '/' + name); }
   return [...all].sort();
 }
-export async function checkLegacySelection(root: string, selected: string[]) {
-  // Old JSON records (in either store) may only be selected for deletion; after `gitifact migrate` the whole `.tryce` store leaves the same way.
-  // The 0.4.x product and guide folders and the removed docs overrides are not records; their files may only leave the same way.
-  const legacyJson = /^\.(?:gitifact|tryce)\/(?:spec\/[^/]+\/tryce\.json|notes\/N-[a-f0-9-]+\.json|mode-[a-f0-9-]+\.json|config\.(?:init-1|prototype-1)\.[a-f0-9]+\.json)$|^\.gitifact\/(?:product|guides|overrides)\/.+$/;
+/** Inside `.gitifact` only records, the configuration and assets are committed; anything else there is not a Gitifact file. */
+export function checkStoreSelection(selected: string[]) {
   for (const p of selected.filter(p => p.startsWith('.gitifact/') && !record(p) && p !== '.gitifact/config.json')) {
     // Assets travel with the documents; they are committed, not parsed.
-    if (isAssetPath(p)) continue;
-    if (!legacyJson.test(p) || await fingerprint(root, p) !== null) fail(t('commitFiles.legacyDeleteOnly', { path: p }));
-  }
-  for (const p of selected.filter(p => p.startsWith('.tryce/'))) {
-    if (!(record(p) || p === '.tryce/config.json' || legacyJson.test(p)) || await fingerprint(root, p) !== null) fail(t('commitFiles.tryceDeleteOnly', { path: p }));
+    if (!isAssetPath(p)) fail(t('commitFiles.notRecord', { path: p }));
   }
 }

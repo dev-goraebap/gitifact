@@ -1,5 +1,5 @@
 import type { PreviewBundle } from '@gitifact/core';
-import { browserChangeQueryV1, browserChangeV1, browserHistoryQueryV1, browserHistorySummaryQueryV1, browserHistorySummaryV1, browserHistoryV1, browserSearchQueryV1, browserSearchV1 } from '@gitifact/contracts';
+import { browserChangeQueryV1, browserChangeV1, browserHistoryQueryV1, browserHistorySummaryQueryV1, browserHistorySummaryV1, browserHistoryV2, browserSearchQueryV1, browserSearchV1 } from '@gitifact/contracts';
 import { specPreviewReader } from '../../adapters/git/spec-preview-reader.js';
 import { createCheckoutReader } from '../checkout/checkout-reader.js';
 import { createHistoryIndex } from '../history/history-index.js';
@@ -46,7 +46,7 @@ export function recordRoutes(root: string, sessionId: string, env?: NodeJS.Proce
     route({ method: 'GET', path: '/api/v1/history', session: true, query: browserHistoryQueryV1, unreadable, handle: async ({ query }) => {
       const offset = query.offset ?? 0;
       const page = await history.page(query.head, { kind: query.kind, document: query.document, feature: query.feature, author: query.author, q: query.q }, offset, query.limit ?? PAGE);
-      return ok(browserHistoryV1.parse({ contract: 'browser-history', version: 1, sessionId, head: query.head, offset, ...page }));
+      return ok(browserHistoryV2.parse({ contract: 'browser-history', version: 2, sessionId, head: query.head, offset, ...page }));
     } }),
     route({ method: 'GET', path: '/api/v1/history/summary', session: true, query: browserHistorySummaryQueryV1, unreadable, handle: async ({ query }) =>
       ok(browserHistorySummaryV1.parse({ contract: 'browser-history-summary', version: 1, sessionId, head: query.head, ...await history.summary(query.head) })) }),

@@ -7,7 +7,6 @@ import { runUpdate } from './commands/update.js';
 import { runUpdateCheck } from './commands/update-check.js';
 import { agentPresetNames } from './commands/agent-block.js';
 import { runSpecPreview } from './commands/spec-preview.js';
-import { runMigrate } from './commands/migrate.js';
 import { t, configureLanguage, environmentLanguage, type Language } from './shared/i18n/index.js';
 
 declare const __CLI_VERSION__: string;
@@ -66,12 +65,6 @@ program.command('update')
   .option('--commit', t('help.updateCommit'))
   .addOption(new Option('--check', t('help.updateCheck')).conflicts('commit'))
   .action(options => options.check ? runUpdateCheck(options.format, __CLI_VERSION__) : runUpdate(options, __CLI_VERSION__));
-
-program.command('migrate')
-  .description(t('help.migrate'))
-  .allowExcessArguments(false)
-  .option('--dry-run', t('help.migrateDryRun'))
-  .action(runMigrate);
 
 const spec = program.command('spec').description(t('help.spec'));
 spec.command('commit').description(t('help.specCommit')).allowExcessArguments(false)

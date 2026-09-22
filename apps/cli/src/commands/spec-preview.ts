@@ -29,7 +29,6 @@ async function execute(action: Action, options: Options, controls: SpecPreviewCo
     const raw = await readConfigFile(root);
     if (raw === undefined) throw new SpecPreviewError(t('preview.notInitialized'));
     const config = parseManagedConfig(raw);
-    if (!('schemaVersion' in config)) throw new SpecPreviewError(t('preview.legacyProject'));
     await initRepository(root).validateBaseline(config, root, 'HEAD', objectFormat);
     if (['working', 'save', 'changes', 'commit'].includes(action)) {
       let result;

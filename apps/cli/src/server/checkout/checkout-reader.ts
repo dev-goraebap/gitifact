@@ -45,7 +45,7 @@ export function createCheckoutReader(root: string, sessionId: string, inherited 
    * and 63 pages, about 80 ms each on Windows. A feature still counts at most 2000 commits.
    */
   async function storeAuthors(head: string) {
-    const text = await git(['log', '--format=%x1e%aN%x00%aE%x00%aI', '-z', '--name-only', '--no-renames', '--max-count=20000', head, '--', '.gitifact', '.tryce']);
+    const text = await git(['log', '--format=%x1e%aN%x00%aE%x00%aI', '-z', '--name-only', '--no-renames', '--max-count=20000', head, '--', '.gitifact']);
     const folders = new Map<string, { people: Map<string, Contributor>; count: number; latest: string }>();
     const pages = new Map<string, string>();
     for (const chunk of text.split('\x1e')) {
@@ -55,7 +55,7 @@ export function createCheckoutReader(root: string, sessionId: string, inherited 
       const seen = new Set<string>();
       for (const raw of paths) {
         const path = raw.replace(/^\n/, ''); if (!path) continue;
-        const folder = /^\.(?:gitifact|tryce)\/(spec\/[^/]+)\//.exec(path)?.[1];
+        const folder = /^\.gitifact\/(spec\/[^/]+)\//.exec(path)?.[1];
         if (folder && !seen.has(folder)) {
           seen.add(folder);
           let entry = folders.get(folder); if (!entry) folders.set(folder, entry = { people: new Map(), count: 0, latest: date });
@@ -69,7 +69,8 @@ export function createCheckoutReader(root: string, sessionId: string, inherited 
 
   async function read() {
     const raw = await readConfigFile(root);
-    if (!raw || !('schemaVersion' in parseManagedConfig(raw))) throw new SpecPreviewError(t('specReader.schemaRequired'));
+    if (!raw) throw new SpecPreviewError(t('specReader.schemaRequired'));
+    parseManagedConfig(raw);
     const head = await readHead();
     const [current, dirty, authors, everyone] = await settled([
       specPreviewReader(root).location().then(readWorkingPreviewState),
@@ -84,9 +85,8 @@ export function createCheckoutReader(root: string, sessionId: string, inherited 
       const [name, email, latest] = line.split('\0'); if (!name || !email || !latest) throw new SpecPreviewError(t('specReader.authorUnreadable'));
       tally(people, name, email, latest);
     }
-    // Authors per feature follow the folder through the store rename (.tryce → .gitifact keeps the folder name).
     const features = current.specs.map(({ history: _history, ...feature }) => {
-      const entry = authors?.folders.get(feature.path.replace(/^\.(?:gitifact|tryce)\/(spec\/[^/]+)\/requirements\.md$/, '$1'));
+      const entry = authors?.folders.get(feature.path.replace(/^\.gitifact\/(spec\/[^/]+)\/requirements\.md$/, '$1'));
       return { ...feature, contributors: entry ? [...entry.people.values()].sort((a, b) => b.commits - a.commits) : [], updatedAt: entry?.latest ?? null };
     });
     // Wiki pages record their latest commit by current path; a moved page restarts at the move commit.

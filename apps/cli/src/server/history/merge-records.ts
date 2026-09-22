@@ -25,7 +25,7 @@ export function remergeRecords(patch: string): Set<string> {
       }
       if (!path.endsWith('/requirements.md')) {
         const source = content.map(l => l.text).join('\n');
-        const id = /^(?:id: "?|<!-- (?:gitifact|tryce)-(?:design|product|guide): )([SWPG]-[a-z2-7]{10})(?:"?$| -->$)/m.exec(source)?.[1];
+        const id = /^(?:id: "?|<!-- gitifact-(?:design|product|guide): )([SWPG]-[a-z2-7]{10})(?:"?$| -->$)/m.exec(source)?.[1];
         if (id && content.some(l => l.changed)) touched.add(id);
         continue;
       }
@@ -33,7 +33,7 @@ export function remergeRecords(patch: string): Set<string> {
       let section: typeof content = []; let fence: { char: string; size: number } | undefined;
       const finish = () => {
         if (!section[0]?.text.startsWith('## ')) return;
-        const id = section.map(l => /^<!-- (?:gitifact|tryce)-req: (R-[a-z2-7]{10}) -->$/.exec(l.text)?.[1]).find(Boolean);
+        const id = section.map(l => /^<!-- gitifact-req: (R-[a-z2-7]{10}) -->$/.exec(l.text)?.[1]).find(Boolean);
         if (id && section.some(l => l.changed)) touched.add(id);
       };
       for (const line of content) {

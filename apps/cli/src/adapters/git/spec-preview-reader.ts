@@ -1,13 +1,10 @@
-import { parsePreviewFiles, parsePreviewBundle, SpecPreviewError, parseProjectConfig, recordPathPattern, STORE_DIRS, WIKI_DIR, type PreviewSpec, type PreviewBundle } from '@gitifact/core';
+import { parsePreviewBundle, SpecPreviewError, recordPathPattern, STORE_DIR, WIKI_DIR, type PreviewBundle } from '@gitifact/core';
 
-/** Every path prefix Git reads for the record set: spec folders in both store names plus the wiki. */
-export const RECORD_PATHSPECS = [...STORE_DIRS.map(d => d + '/spec/'), WIKI_DIR + '/'];
+/** Every path prefix Git reads for the record set: the spec folders plus the wiki. */
+export const RECORD_PATHSPECS = [STORE_DIR + '/spec/', WIKI_DIR + '/'];
 import { createGitRunner } from './run-git.js';
 import { commandScoped } from './command-scope.js';
 import { t } from '../../shared/i18n/index.js';
-
-// A commit that still holds legacy JSON records. Callers detect it by type because the message is localized.
-export class LegacyBaselineError extends SpecPreviewError {}
 
 export function specPreviewReader(cwd: string) {
   // Avoid repository/index overrides and replacements when reading immutable commits.
@@ -75,27 +72,16 @@ export function specPreviewReader(cwd: string) {
       if (!/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/.test(oid)) throw new SpecPreviewError(t('reader.commitUnknown'));
       return oid;
     },
-    async files(oid: string, allowLegacyBaseline = false): Promise<Map<string, string>> {
+    async files(oid: string): Promise<Map<string, string>> {
       const entries = decode(await git(['ls-tree', '--full-tree', '-r', '-z', oid, '--', ...RECORD_PATHSPECS]));
       const files = new Map<string, string>();
-      let legacy: string | undefined;
       for (const row of entries.split('\0').filter(Boolean)) {
         const match = /^(\d+) (\w+) ([a-f0-9]+)\t([\s\S]+)$/.exec(row);
         if (!match) throw new SpecPreviewError(t('reader.invalidTree'));
         const [, mode, type, object, path] = match;
         if (!['100644', '100755'].includes(mode!) || type !== 'blob') throw new SpecPreviewError(t('reader.linkOrSubmodule', { path }));
-        if (!recordPathPattern.test(path!) && !path!.endsWith('/tryce.json')) continue;
-        if (path!.endsWith('/tryce.json')) {
-          if (!allowLegacyBaseline) throw new LegacyBaselineError(t('reader.legacyJson'));
-          legacy = path!.split('/')[0]; continue;
-        }
-        if (!recordPathPattern.test(path!) || !['100644', '100755'].includes(mode!) || type !== 'blob') throw new SpecPreviewError(t('reader.unsupportedEntry', { path }));
+        if (!recordPathPattern.test(path!)) continue;
         files.set(path!, object!);
-      }
-      if (new Set([...files.keys()].map(p => p.split('/')[0])).size > 1) throw new SpecPreviewError(t('reader.mixedStores'));
-      if (legacy) {
-        if (files.size) throw new SpecPreviewError(t('reader.mixedFormats'));
-        parseProjectConfig(decode(await git(['show', `${oid}:${legacy}/config.json`])));
       }
       if (files.size > 2000) throw new SpecPreviewError(t('reader.fileLimit'));
       const blobs = new Map<string, string>(); const ids = [...new Set(files.values())]; let totalBytes = 0;
@@ -112,10 +98,6 @@ export function specPreviewReader(cwd: string) {
         if (offset !== output.length) throw new SpecPreviewError(t('reader.blobBoundary'));
       }
       return new Map([...files].map(([path, id]) => [path, blobs.get(id)!]));
-    },
-    async read(oid: string): Promise<PreviewSpec[]> {
-      const files = await this.files(oid);
-      return parsePreviewFiles(files);
     },
     async readBundle(oid: string): Promise<PreviewBundle> {
       return parsePreviewBundle(await this.files(oid));

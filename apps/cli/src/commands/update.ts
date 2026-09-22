@@ -26,7 +26,7 @@ async function refreshBlocks(cwd: string, version: string, env: NodeJS.ProcessEn
   let config: string | undefined;
   try { first = await repo.inspect(); config = await readConfigFile(first.state.repository.rootPath); }
   catch (error) {
-    if ((error instanceof RepositoryReadError && error.code === 'NOT_A_REPOSITORY') || (error instanceof InitError && error.code === 'MIGRATION_REQUIRED')) return { state: 'not-initialized', paths: [], missing: [] };
+    if (error instanceof RepositoryReadError && error.code === 'NOT_A_REPOSITORY') return { state: 'not-initialized', paths: [], missing: [] };
     throw error;
   }
   if (config === undefined) return { state: 'not-initialized', paths: [], missing: [] };

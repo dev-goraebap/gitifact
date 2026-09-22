@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { updateStateV1 } from './browser-session-v2.js';
+import { updateStateV1 } from './update-state-v1.js';
 
 // Read-only result of `update --check`; it does not inspect or refresh project files.
 export const updateCheckV1 = z.strictObject({

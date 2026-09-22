@@ -1,5 +1,5 @@
-import { comparePreviewBundles, emptyBundle, parsePreviewBundle, recordPathPattern, SpecPreviewError, STORE_DIRS, WIKI_DIR, WIKI_HISTORY_PATH, type PreviewBundle, type PreviewChange } from '@gitifact/core';
-import { LegacyBaselineError, specPreviewReader } from '../../adapters/git/spec-preview-reader.js';
+import { comparePreviewBundles, emptyBundle, parsePreviewBundle, recordPathPattern, SpecPreviewError, STORE_DIR, WIKI_DIR, WIKI_HISTORY_PATH, type PreviewBundle, type PreviewChange } from '@gitifact/core';
+import { specPreviewReader } from '../../adapters/git/spec-preview-reader.js';
 import { t } from '../../shared/i18n/index.js';
 import { remergeRecords } from './merge-records.js';
 
@@ -9,16 +9,13 @@ export interface HistoryEvent {
   id: string; kind: PreviewChange['kind']; types: PreviewChange['types'];
   before: PreviewChange['before']; after: PreviewChange['after']; reasons: string[];
 }
-export interface CommitChanges { commit: string; events: HistoryEvent[]; boundary: boolean }
+export interface CommitChanges { commit: string; events: HistoryEvent[] }
 interface RawEntry { oldBlob: string; newBlob: string; path: string }
 interface RawCommit { commit: string; parent: string | undefined; parents: string[]; author: string; email: string; date: string; committer: string; message: string; entries: RawEntry[] }
 
 /** The record files a commit must touch to appear in the history: specs, designs, reasons and wiki pages. */
-export const HISTORY_PATHSPECS = [...STORE_DIRS.flatMap(d => [`:(glob)${d}/spec/*/requirements.md`, `:(glob)${d}/spec/*/design.md`, `:(glob)${d}/spec/*/history.jsonl`]),
+export const HISTORY_PATHSPECS = [`:(glob)${STORE_DIR}/spec/*/requirements.md`, `:(glob)${STORE_DIR}/spec/*/design.md`, `:(glob)${STORE_DIR}/spec/*/history.jsonl`,
   `:(glob)${WIKI_DIR}/**/*.md`, `:(glob)${WIKI_HISTORY_PATH}`];
-const RECORD_ROOTS = [...STORE_DIRS.map(d => d + '/spec/'), WIKI_DIR + '/'];
-const isLegacy = (path: string) => RECORD_ROOTS.some(root => path.startsWith(root)) && path.endsWith('/tryce.json');
-const isZero = (oid: string) => /^0+$/.test(oid);
 const FORMAT = '%x1e%H%x00%P%x00%aN%x00%aE%x00%aI%x00%cN%x00%s';
 // Commits read per git call; a long history is read in several calls rather than one unbounded answer.
 const BATCH = 100;
@@ -48,7 +45,7 @@ export function createCommitChanges(root: string, snapshot: (oid: string) => Pro
         if (!meta.startsWith(':')) continue;
         const [, , oldBlob, newBlob] = meta.split(' '); const path = parts[++i];
         if (!oldBlob || !newBlob || path === undefined) throw new SpecPreviewError(t('specReader.historyUnreadable'));
-        if (recordPathPattern.test(path) || isLegacy(path)) entries.push({ oldBlob, newBlob, path });
+        if (recordPathPattern.test(path)) entries.push({ oldBlob, newBlob, path });
       }
       return { commit, parent: parents.split(' ')[0] || undefined, parents: parents.split(' ').filter(Boolean), author, email, date, committer, message, entries };
     });
@@ -60,7 +57,6 @@ export function createCommitChanges(root: string, snapshot: (oid: string) => Pro
   function wanted(entries: RawEntry[]) {
     const folders = new Set<string>(); const pages = new Set<string>();
     for (const { path } of entries) {
-      if (isLegacy(path)) continue;
       if (path.startsWith(WIKI_DIR + '/')) { pages.add(path); pages.add(WIKI_HISTORY_PATH); continue; }
       folders.add(path.replace(/\/[^/]+$/, ''));
     }
@@ -93,12 +89,9 @@ export function createCommitChanges(root: string, snapshot: (oid: string) => Pro
 
   // The whole-store comparison, kept for the commits the partial read declines.
   async function wholeStore(c: RawCommit): Promise<CommitChanges> {
-    const after = await snapshot(c.commit); let before = emptyBundle(); let boundary = false;
-    if (c.parent) {
-      try { before = await snapshot(c.parent); }
-      catch (error) { if (error instanceof LegacyBaselineError) boundary = true; else throw error; }
-    }
-    return { commit: c.commit, events: eventsOf(c, comparePreviewBundles(before, after).changes), boundary };
+    const after = await snapshot(c.commit);
+    const before = c.parent ? await snapshot(c.parent) : emptyBundle();
+    return { commit: c.commit, events: eventsOf(c, comparePreviewBundles(before, after).changes) };
   }
 
   async function merge(c: RawCommit): Promise<CommitChanges> {
@@ -109,14 +102,11 @@ export function createCommitChanges(root: string, snapshot: (oid: string) => Pro
       const patch = reader.decode(await reader.run(['-c', 'merge.conflictStyle=merge', 'show', '--remerge-diff', '--format=',
         '--no-color', '--no-ext-diff', '--no-textconv', '--no-renames', '--src-prefix=a/', '--dst-prefix=b/', '--unified=1048576', c.commit, '--', ...HISTORY_PATHSPECS]));
       touched = remergeRecords(patch);
-      if (!touched.size) return { commit: c.commit, events: [], boundary: false };
+      if (!touched.size) return { commit: c.commit, events: [] };
     }
-    const after = await snapshot(c.commit); let boundary = false;
+    const after = await snapshot(c.commit);
     const parents: PreviewBundle[] = [];
-    for (const parent of c.parents) {
-      try { parents.push(await snapshot(parent)); }
-      catch (error) { if (error instanceof LegacyBaselineError) { parents.push(emptyBundle()); boundary = true; } else throw error; }
-    }
+    for (const parent of c.parents) parents.push(await snapshot(parent));
     // Reasons imported from branches belong to their original commits, and may refer to changes later undone.
     // Compare content independently, then attach only reasons first recorded by the merge itself.
     const withoutReasons = (b: PreviewBundle): PreviewBundle => ({ specs: b.specs.map(s => ({ ...s, history: [] })), wiki: { ...b.wiki, history: [] } });
@@ -129,16 +119,14 @@ export function createCommitChanges(root: string, snapshot: (oid: string) => Pro
     const selected = differences[0]!.filter(change => touched ? touched.has(change.id) : differences.every(d => d.some(v => v.id === change.id)));
     return { commit: c.commit, events: eventsOf(c, selected.map(change => ({ ...change,
       reasons: added.filter(r => [...r.requirements, ...(r.designs ?? []), ...(r.documents ?? [])].includes(change.id)),
-    }))), boundary };
+    }))) };
   }
 
   async function batch(commits: RawCommit[]): Promise<CommitChanges[]> {
-    // A commit whose own records are still legacy JSON goes the old way, which reads or refuses it as before.
-    const names = new Map<RawCommit, { before: string[]; after: string[]; boundary: boolean }>();
-    for (const c of commits.filter(c => c.parents.length < 2 && !c.entries.some(e => isLegacy(e.path) && !isZero(e.newBlob)))) {
+    const names = new Map<RawCommit, { before: string[]; after: string[] }>();
+    for (const c of commits.filter(c => c.parents.length < 2)) {
       const files = wanted(c.entries);
-      const boundary = c.entries.some(e => isLegacy(e.path) && !isZero(e.oldBlob));
-      names.set(c, { after: files.map(f => c.commit + ':' + f), before: c.parent && !boundary ? files.map(f => c.parent + ':' + f) : [], boundary });
+      names.set(c, { after: files.map(f => c.commit + ':' + f), before: c.parent ? files.map(f => c.parent + ':' + f) : [] });
     }
     let blobs: Map<string, string> | undefined;
     try { blobs = await readBlobs([...names.values()].flatMap(n => [...n.before, ...n.after])); }
@@ -153,7 +141,7 @@ export function createCommitChanges(root: string, snapshot: (oid: string) => Pro
           const side = (list: string[], rev: string) => new Map(list.filter(name => blobs!.has(name)).map(name => [name.slice(rev.length + 1), blobs!.get(name)!]));
           const after = parsePreviewBundle(side(want.after, c.commit));
           const before = want.before.length ? parsePreviewBundle(side(want.before, c.parent!)) : emptyBundle();
-          value = { commit: c.commit, events: eventsOf(c, comparePreviewBundles(before, after).changes), boundary: want.boundary };
+          value = { commit: c.commit, events: eventsOf(c, comparePreviewBundles(before, after).changes) };
         } catch { value = undefined; }
       }
       result.push(value ?? await wholeStore(c));

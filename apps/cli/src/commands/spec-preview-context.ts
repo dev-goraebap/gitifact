@@ -21,7 +21,7 @@ export async function readPreviewContext(cwd: string) {
   await checkOperation();
   const base = await reader.baseline();
   const working = await readWorkingPreviewState(location);
-  const files = base.head ? await reader.files(base.head, working.config !== undefined) : new Map<string, string>();
+  const files = base.head ? await reader.files(base.head) : new Map<string, string>();
   const bundle = parsePreviewBundle(files); const specs = bundle.specs;
   const recheck = async () => { await checkOperation(); if (!same(base, await reader.baseline())) fail(t('prepare.headChanged')); };
   return { reader, location, base, files, specs, bundle, recheck, working };

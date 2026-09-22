@@ -1,4 +1,4 @@
-import { comparePreviewBundles, SpecPreviewError, validateBundle, asBundle, WIKI_HISTORY_PATH, type PreviewSpec, type PreviewReason, type PreviewBundle } from '../formats/spec-preview.js';
+import { comparePreviewBundles, SpecPreviewError, validateBundle, WIKI_HISTORY_PATH, type PreviewSpec, type PreviewReason, type PreviewBundle } from '../formats/spec-preview.js';
 import { t } from '../shared/i18n/index.js';
 
 const fail = (message: string): never => { throw new SpecPreviewError(message); };
@@ -6,8 +6,7 @@ const equal = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b
 const historyPath = (s: PreviewSpec) => s.path.replace(/requirements\.md$/, 'history.jsonl');
 
 /** Reasons written since the base commit: per feature for specs, one file for the wiki. */
-export function pendingPreviewReasons(before: PreviewSpec[] | PreviewBundle, current: PreviewSpec[] | PreviewBundle) {
-  const a = asBundle(before); const b = asBundle(current);
+export function pendingPreviewReasons(a: PreviewBundle, b: PreviewBundle) {
   return [
     ...b.specs.flatMap(s => s.history.slice(a.specs.find(p => p.id === s.id)?.history.length ?? 0).map(h => ({ specId: s.id, path: historyPath(s), ...h }))),
     ...b.wiki.history.slice(a.wiki.history.length).map(h => ({ kind: 'wiki' as const, path: WIKI_HISTORY_PATH, ...h })),
@@ -15,8 +14,7 @@ export function pendingPreviewReasons(before: PreviewSpec[] | PreviewBundle, cur
 }
 
 /** Strip only uncommitted reasons when computing the final requirement and wiki delta. */
-export function finalSpecPreviewChanges(beforeValue: PreviewSpec[] | PreviewBundle, currentValue: PreviewSpec[] | PreviewBundle) {
-  const before = asBundle(beforeValue); const current = asBundle(currentValue);
+export function finalSpecPreviewChanges(before: PreviewBundle, current: PreviewBundle) {
   validateBundle(before); validateBundle(current);
   for (const previous of before.specs) {
     const next = current.specs.find(s => s.id === previous.id);
@@ -31,8 +29,7 @@ export function finalSpecPreviewChanges(beforeValue: PreviewSpec[] | PreviewBund
   return comparePreviewBundles(before, clean);
 }
 
-export function prepareSpecPreview(beforeValue: PreviewSpec[] | PreviewBundle, currentValue: PreviewSpec[] | PreviewBundle, baseFiles: ReadonlyMap<string, string>, currentFiles: ReadonlyMap<string, string>, input: unknown, generate: () => string) {
-  const beforeBundle = asBundle(beforeValue); const currentBundle = asBundle(currentValue);
+export function prepareSpecPreview(beforeBundle: PreviewBundle, currentBundle: PreviewBundle, baseFiles: ReadonlyMap<string, string>, currentFiles: ReadonlyMap<string, string>, input: unknown, generate: () => string) {
   const before = beforeBundle.specs; const current = currentBundle.specs;
   const delta = finalSpecPreviewChanges(beforeBundle, currentBundle);
   if (!Array.isArray(input) || input.length > 100) fail(t('reason.count'));

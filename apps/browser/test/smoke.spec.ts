@@ -46,13 +46,6 @@ test('built app loads Astryx and supports navigation, reload, and history', asyn
   expect(errors).toEqual([]);
 });
 
-test('activity links from before 0.5.0 carry their filters to the activity page', async ({ page }) => {
-  await page.goto('/?document=design&q=검색');
-  await expect(page).toHaveURL(/\/activity\?document=design&q=/);
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText('활동');
-  await expect(page.getByRole('textbox', { name: '검색', exact: true })).toHaveValue('검색');
-});
-
 test('the search field keeps Korean text composed through an input method', async ({ page, browserName }) => {
   test.skip(browserName !== 'chromium', 'Input method events are driven through the Chrome DevTools Protocol.');
   await page.goto('/activity');

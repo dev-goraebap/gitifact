@@ -91,11 +91,11 @@ test('invalid wiki files, foreign markers, old folders and edited committed reas
  assert.equal(cli(f,['spec','working']).status,1);
  f.write('.gitifact/wiki/README.md','---\nid: W-abcdefghij\n---\n\n# 제품\n\n본문\n');f.write('.gitifact/wiki/notes.txt','ignored');
  assert.equal(working(f).wiki.documents.length,1);
- // 0.4.x product and guide folders are not records any more: neither read nor accepted as a commit selection.
+ // 0.4.x product and guide folders are not records any more: neither read nor accepted as a commit selection, even as a deletion.
  mkdirSync(join(f.repo,'.gitifact/product'),{recursive:true});f.write('.gitifact/product/PRODUCT.md','<!-- gitifact-product: P-abcdefghij -->\n\n# 제품\n\n본문\n');
  assert.equal(working(f).wiki.documents.length,1);
  const legacy=cli(f,['spec','commit','--file',file(f,{reasons:[],paths:['.gitifact/wiki/README.md','.gitifact/product/PRODUCT.md'],message:'x',authorization})]);
- assert.equal(legacy.status,1);assert.match(legacy.stderr,/삭제만 선택할 수 있습니다/);
+ assert.equal(legacy.status,1);assert.match(legacy.stderr,/기록·설정·에셋만 커밋할 수 있습니다/);
  unlinkSync(join(f.repo,'.gitifact/product/PRODUCT.md'));
  ok(cli(f,['spec','commit','--file',file(f,{reasons:[{requirements:[],documents:['W-abcdefghij'],reason:'첫 문서'}],paths:['.gitifact/wiki/README.md','.gitifact/wiki/history.jsonl'],message:'Add entry page',authorization})]));
  f.write('.gitifact/wiki/history.jsonl','');
@@ -129,7 +129,7 @@ test('assets commit with the documents that reference them and working warns abo
  const records=['.gitifact/wiki/README.md','.gitifact/wiki/history.jsonl'];
  f.write('.gitifact/scratch.txt','not a record');
  const refused=cli(f,['spec','commit','--file',file(f,{...base,paths:[...records,'.gitifact/scratch.txt']})]);
- assert.equal(refused.status,1);assert.match(refused.stderr,/삭제만 선택할 수 있습니다/);
+ assert.equal(refused.status,1);assert.match(refused.stderr,/기록·설정·에셋만 커밋할 수 있습니다/);
  assert.equal(existsSync(join(f.repo,'.gitifact/wiki/history.jsonl')),false);
  ok(cli(f,['spec','commit','--file',file(f,{...base,paths:[...records,'.gitifact/assets/logo.svg']})]));
  const tracked=f.git(['ls-tree','--name-only','-r','HEAD','--','.gitifact']).stdout;

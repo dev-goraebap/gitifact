@@ -86,7 +86,7 @@ test('ignore rules, tracked deletion, legacy and malformed files never overwrite
   await assert.rejects(init(f), { code: 'CONFIG_DELETED' });
   assert.deepEqual(fingerprint(f.repo), before);
   for (const [text, code] of [['{', 'INVALID_CONFIG'], [JSON.stringify({ kind: 'tryce-project', format: 'init-99' }), 'UNSUPPORTED_FORMAT'],
-    [JSON.stringify({ kind: 'tryce-project', format: 'init-1', mode: 'normal', baseline: { kind: 'empty' } }), 'MIGRATION_REQUIRED']]) {
+    [JSON.stringify({ kind: 'tryce-project', format: 'init-1', mode: 'normal', baseline: { kind: 'empty' } }), 'UNSUPPORTED_FORMAT']]) {
     writeFileSync(path(f), text);
     await assert.rejects(init(f), { code }); assert.equal(readFileSync(path(f), 'utf8'), text);
   }
@@ -118,30 +118,14 @@ test('parallel init publishes one config', async t => {
   assert.equal(JSON.parse(readFileSync(path(f), 'utf8')).schemaVersion, 2);
 });
 
-// What `gitifact init` of 0.4.x wrote. 0.5.0 refused it and its own init refused too, so a project adopted with an
-// older install had no way forward.
+// What `gitifact init` of 0.4.x wrote. Earlier conventions are no longer converted, even when nothing is beside the config.
 const legacyConfig = '{\n  "schemaVersion": 1,\n  "baseline": {\n    "kind": "empty"\n  }\n}\n';
 
-test('init replaces an earlier convention config that has nothing beside it, tracked or not', async t => {
+test('an earlier or a newer convention is refused and left as it is', async t => {
   const f = fixture(t); mkdirSync(join(f.repo, '.gitifact'));
   writeFileSync(path(f), legacyConfig);
-  const planned = await init(f, { dryRun: true });
-  assert.equal(planned.outcome, 'planned'); assert.equal(readFileSync(path(f), 'utf8'), legacyConfig);
-  // Committed legacy config: replacing it is an ordinary change for the user to commit.
-  f.write('a', 'a'); f.commit('adopted with 0.4.4');
-  const head = f.git(['rev-parse', 'HEAD']).stdout.trim();
-  const replaced = await init(f);
-  assert.equal(replaced.outcome, 'replaced'); assert.equal(replaced.version, 6);
-  assert.deepEqual(JSON.parse(readFileSync(path(f), 'utf8')), { schemaVersion: 2, baseline: { kind: 'commit', objectFormat: 'sha1', commit: head } });
-  assert.deepEqual(readdirSync(join(f.repo, '.gitifact')), ['config.json']);
-  assert.equal((await init(f)).outcome, 'already-initialized');
-});
-
-test('an earlier convention with records beside it, or a newer convention, is refused and left as it is', async t => {
-  const f = fixture(t); mkdirSync(join(f.repo, '.gitifact', 'spec', 'posts'), { recursive: true });
-  writeFileSync(path(f), legacyConfig);
-  writeFileSync(join(f.repo, '.gitifact', 'spec', 'posts', 'requirements.md'), '# 게시물\n');
-  await assert.rejects(init(f), error => error.code === 'UNSUPPORTED_SCHEMA' && /명세나 기록이 있어/.test(error.message));
+  await assert.rejects(init(f, { dryRun: true }), error => error.code === 'UNSUPPORTED_SCHEMA' && /schemaVersion 1/.test(error.message));
+  await assert.rejects(init(f), { code: 'UNSUPPORTED_SCHEMA' });
   assert.equal(readFileSync(path(f), 'utf8'), legacyConfig);
   const g = fixture(t); mkdirSync(join(g.repo, '.gitifact'));
   const newer = '{"schemaVersion":3,"baseline":{"kind":"empty"}}';

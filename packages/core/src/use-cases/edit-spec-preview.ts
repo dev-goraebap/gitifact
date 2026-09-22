@@ -1,4 +1,4 @@
-import { parseSpecPreview, renderDesignPreview, parseDesignPreview, SpecPreviewError, asBundle, validateBundle, parseDocument, renderDocument, renderFrontmatter, validateDocumentRelativePath, validateSource, WIKI_DIR, type PreviewSpec, type PreviewBundle, type PreviewDocument, type DesignSource } from '../formats/spec-preview.js';
+import { parseSpecPreview, renderDesignPreview, parseDesignPreview, SpecPreviewError, validateBundle, parseDocument, renderDocument, renderFrontmatter, validateDocumentRelativePath, validateSource, WIKI_DIR, type PreviewSpec, type PreviewBundle, type PreviewDocument, type DesignSource } from '../formats/spec-preview.js';
 import { t } from '../shared/i18n/index.js';
 
 const fail = (message: string): never => { throw new SpecPreviewError(message); };
@@ -16,9 +16,8 @@ export function renderSpecPreview(spec: PreviewSpec): string {
 
 export type IdPrefix = 'S' | 'R' | 'W';
 /** Draft edits only. History and Git state are not part of this operation. */
-export function editSpecPreview(original: PreviewSpec[] | PreviewBundle, input: unknown, generate: (prefix: IdPrefix) => string) {
+export function editSpecPreview(source: PreviewBundle, input: unknown, generate: (prefix: IdPrefix) => string) {
   if (!Array.isArray(input) || !input.length || input.length > 100) fail(t('edit.operationCount'));
-  const source = asBundle(original);
   const specs: PreviewSpec[] = source.specs.map(s => ({ ...s, requirements: s.requirements.map(r => ({ ...r })), history: s.history.map(h => ({ ...h, requirements: [...h.requirements] })) }));
   const wiki = { documents: source.wiki.documents.map(d => ({ ...d })), history: source.wiki.history.map(h => ({ ...h })) };
   validateBundle({ specs, wiki });

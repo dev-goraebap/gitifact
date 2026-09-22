@@ -16,10 +16,7 @@ export async function readConfigFile(root: string): Promise<string | undefined> 
   await configDirectory(root);
   const path = join(root, '.gitifact', 'config.json');
   const info = await fileInfo(path);
-  if (!info) {
-    if (await fileInfo(join(root, '.tryce', 'config.json'))) throw new InitError('MIGRATION_REQUIRED', t('config.migrateFirst'));
-    return undefined;
-  }
+  if (!info) return undefined;
   if (!info.isFile() || info.isSymbolicLink() || info.size > 65536) throw new InitError('PATH_CONFLICT', t('config.fileShape'));
   const bytes = await readFile(path);
   const after = await fileInfo(path);

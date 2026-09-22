@@ -41,9 +41,9 @@ export async function mockApi(page: Page, data: Fixture = specs) {
 }
 
 /** A checkout with the history the mock serves beside it. */
-export type Fixture = BrowserSpecsV4 & { events: SpecEvent[]; boundary: boolean };
+export type Fixture = BrowserSpecsV4 & { events: SpecEvent[] };
 /** The checkout part of a fixture, as /api/v1/specs answers it. */
-export const checkoutOf = ({ events: _events, boundary: _boundary, ...checkout }: Fixture) => checkout;
+export const checkoutOf = ({ events: _events, ...checkout }: Fixture) => checkout;
 const lower = (text: string) => text.toLowerCase();
 const plainText = (text: string) => text.replace(/[*_`#>]/g, '').replace(/\s+/g, ' ').trim();
 const line = (text: string, query: string) => { const at = lower(text).indexOf(query); return at < 0 ? text.slice(0, 90) : text.slice(Math.max(0, at - 30), at + query.length + 70); };
@@ -62,7 +62,7 @@ export async function serve(page: Page, data: Fixture) {
       && (!q.get('feature') || e.before?.specId === q.get('feature') || e.after?.specId === q.get('feature')) && (!q.get('author') || e.email === q.get('author'))
       && (!q.get('q') || lower([e.id, e.before?.title, e.after?.title].join(' ')).includes(lower(q.get('q')!))));
     const offset = Number(q.get('offset') ?? 0); const limit = Number(q.get('limit') ?? 50);
-    return route.fulfill({ json: { contract: 'browser-history', version: 1, sessionId: session.sessionId, head: data.head, total: matching.length, offset, events: matching.slice(offset, offset + limit), boundary: data.boundary } });
+    return route.fulfill({ json: { contract: 'browser-history', version: 2, sessionId: session.sessionId, head: data.head, total: matching.length, offset, events: matching.slice(offset, offset + limit) } });
   });
   await page.route('**/api/v1/history/summary*', route => {
     const commits = [...new Set(events.map(e => e.commit))];
@@ -101,7 +101,7 @@ export const specs: Fixture = {
  features:[{id:'S-abcdefghij',path:'.gitifact/spec/search/requirements.md',title:'검색 기능',description:'',contributors:[{name:'Fixture',email:'fixture@example.test',commits:2,latest:'2026-09-14T00:00:00Z'},{name:'Second',email:'second@example.test',commits:1,latest:'2026-09-13T00:00:00Z'}],updatedAt:'2026-09-14T00:00:00Z',requirements:[{id:'R-abcdefghij',title:'검색어 입력',body:'**검색어**를 입력합니다.\n\n조건: 검색어를 입력합니다.\n기대 동작: 결과를 보여줍니다.'}]}],
  events:[{key:'c'.repeat(40)+':R-abcdefghij',commit:'c'.repeat(40),id:'R-abcdefghij',date:'2026-09-14T00:00:00Z',author:'Fixture',email:'fixture@example.test',committer:'Fixture',message:'검색 도입',types:['created'],before:null,after:{id:'R-abcdefghij',title:'검색어 입력',specId:'S-abcdefghij',path:'.gitifact/spec/search/requirements.md'},kind:'requirement',reasons:['사용자가 검색을 요청했습니다.']}],
  documents:[{id:'W-abcdefghij',path:'.gitifact/wiki/README.md',title:'Gitifact',body:readmeBody,updatedAt:'2026-09-14T00:00:00Z'},{id:'W-bbbbbbbbbb',path:'.gitifact/wiki/frontend/layout.md',title:'레이아웃 지침',body:'중앙 컬럼은 64rem입니다.',updatedAt:'2026-09-14T00:00:00Z'},{id:'W-cccccccccc',path:'.gitifact/wiki/naming.md',title:'이름 규칙',body:'소문자와 하이픈을 씁니다.',updatedAt:null}],
- contributors:[{name:'Fixture',email:'fixture@example.test',commits:3,latest:'2026-09-14T00:00:00Z'},{name:'Second',email:'second@example.test',commits:1,latest:'2026-09-13T00:00:00Z'}],contributorsLimited:false,boundary:false,
+ contributors:[{name:'Fixture',email:'fixture@example.test',commits:3,latest:'2026-09-14T00:00:00Z'},{name:'Second',email:'second@example.test',commits:1,latest:'2026-09-13T00:00:00Z'}],contributorsLimited:false,
 };
 
 type Side = { id: string; title: string; body: string; specId: string; path: string } | null;

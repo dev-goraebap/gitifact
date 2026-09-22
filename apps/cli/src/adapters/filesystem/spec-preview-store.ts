@@ -9,11 +9,6 @@ import { t } from '../../shared/i18n/index.js';
 const fail = (message: string): never => { throw new SpecPreviewError(message); };
 const info = async (path: string) => lstat(path).catch(e => { if (e.code === 'ENOENT') return undefined; throw e; });
 const digest = (value: string) => createHash('sha256').update(value).digest('hex');
-/** Lock names written by earlier Tryce builds; their presence still means an unfinished or unrecovered run. */
-export const LEGACY_LOCKS = ['tryce-spec-preview.lock', 'tryce-spec-commit.lock'] as const;
-export async function failOnLegacyLock(gitDir: string) {
-  for (const name of LEGACY_LOCKS) if (await info(join(gitDir, name))) fail(t('store.legacyLock', { path: join(gitDir, name) }));
-}
 const decode = (bytes: Buffer) => new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(bytes);
 export const generatePreviewId = (prefix: 'S' | 'R' | 'H' | 'W') => prefix + '-' + [...randomBytes(10)].map(n => 'abcdefghijklmnopqrstuvwxyz234567'[n & 31]).join('');
 /** Where the store lives. Commands resolve it through the Git adapter once and pass it in, so adapters stay independent. */
@@ -25,9 +20,8 @@ async function snapshot(root: string) {
   const files = new Map<string, string>(); let count = 0; let bytes = 0;
   const parent = await info(join(root, '.gitifact'));
   if (parent && (!parent.isDirectory() || parent.isSymbolicLink())) fail(t('store.storeNotDirectory'));
-  if (!parent && await info(join(root, '.tryce'))) fail(t('store.migrateFirst'));
   const config = await readConfigFile(root);
-  if ((config !== undefined && !('schemaVersion' in parseManagedConfig(config))) || await info(join(root, 'specs'))) fail(t('store.legacyProject'));
+  if (config !== undefined) parseManagedConfig(config);
   // Spec folders are one level deep; the wiki may nest, and only Markdown plus the root reason file are read there.
   async function visit(path: string, depth: number, documents: boolean) {
     const stat = await info(join(root, path)); if (!stat) return;
@@ -37,9 +31,8 @@ async function snapshot(root: string) {
       if (depth > (documents ? 8 : 1)) fail(t('store.tooDeep', { path }));
       for (const name of (await readdir(join(root, path))).sort()) await visit(path + '/' + name, depth + 1, documents);
     } else {
-      if (path.endsWith('/tryce.json')) fail(t('store.legacyJson'));
       if (documents ? !(path.endsWith('.md') || (depth === 1 && path.endsWith('/history.jsonl'))) : !/\/(requirements\.md|design\.md|history\.jsonl)$/.test(path)) return;
-      if (!recordPathPattern.test(path) || path.startsWith('.tryce/')) fail(t('store.unsupportedPath', { path }));
+      if (!recordPathPattern.test(path)) fail(t('store.unsupportedPath', { path }));
       if (stat.nlink !== 1 || stat.size > 1024 * 1024) fail(t('store.hardLinkOrSize'));
       const raw = await readFile(join(root, path)); bytes += raw.length;
       if (raw.length > 1024 * 1024 || bytes > 16 * 1024 * 1024) fail(t('store.sizeLimit'));
@@ -54,7 +47,6 @@ async function snapshot(root: string) {
 }
 
 export async function readWorkingPreviewState({ root, gitDir }: StoreLocation) {
-  await failOnLegacyLock(gitDir);
   if (await info(join(gitDir, 'gitifact-spec-preview.lock'))) fail(t('store.locked'));
   const first = await snapshot(root); const second = await snapshot(root);
   if (first.stamp !== second.stamp) fail(t('store.changedWhileReading'));
@@ -97,7 +89,6 @@ export const readLockedPreviewState = (root: string) => snapshot(root);
 export async function previewTransaction<T>({ root, gitDir }: StoreLocation, expected: string, build: (before: WorkingPreviewSnapshot) => Promise<{
   writes: Map<string, string | null>; data: T; recheck?: () => Promise<void>;
 }>, publish = rename, afterPublish?: (state: WorkingPreviewSnapshot) => Promise<void>) {
-  await failOnLegacyLock(gitDir);
   const lock = join(gitDir, 'gitifact-spec-preview.lock');
   try { await mkdir(lock); } catch (e) { if ((e as NodeJS.ErrnoException).code === 'EEXIST') fail(t('store.locked')); throw e; }
   const createdDirs: string[] = []; const temporary: string[] = [];
@@ -113,7 +104,7 @@ export async function previewTransaction<T>({ root, gitDir }: StoreLocation, exp
     if (before.stamp !== expected) fail(t('store.staleExpected'));
     const result = await build(before);
     for (const [path, after] of result.writes) {
-      if (!recordPathPattern.test(path) || path.startsWith('.tryce/') || path.split('/').some(p => p === '..' || p === '.' || /[\\:\0]/.test(p))) fail(t('store.unsupportedSavePath'));
+      if (!recordPathPattern.test(path) || path.split('/').some(p => p === '..' || p === '.' || /[\\:\0]/.test(p))) fail(t('store.unsupportedSavePath'));
       if (after !== null && Buffer.byteLength(after) > 1024 * 1024) fail(t('store.fileSizeLimit'));
       changed.push({ path, before: before.files.get(path) ?? null, after });
     }

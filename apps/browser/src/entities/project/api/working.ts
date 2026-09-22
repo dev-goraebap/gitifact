@@ -4,8 +4,8 @@ import { sessionOptions, statusOptions } from './repository';
 import { specsOptions } from './specs';
 
 const noSession: BrowserSessionV3 = { contract: 'browser-session', version: 3, sessionId: '', repository: { key: '', worktreeKey: '' }, cliVersion: '0.0.0' };
-/** Paths whose uncommitted changes count as spec work: the current store and the legacy one the CLI still reads. */
-const storePath = /^\.(?:gitifact|tryce)\//;
+/** Paths whose uncommitted changes count as spec work. */
+const storePath = /^\.gitifact\//;
 
 /**
  * Whether the working tree holds uncommitted spec or document changes; undefined until either source has answered.

@@ -62,12 +62,12 @@ stdout에는 선택한 출력 형식만 내보내고 로그·진행 상황은 st
 기록 집합은 다음 파일이다. 모두 UTF-8이며 1 MiB, 전체 16 MiB 한도가 있다.
 
 - `.gitifact/spec/<기능>/requirements.md`, 선택적인 `design.md`, 변경 이유가 생겼을 때 `history.jsonl`
-- `.gitifact/product/PRODUCT.md` 하나와 `.gitifact/product/history.jsonl`. 같은 폴더의 이미지는 파싱하는 기록은 아니지만 제품 설명과 함께 커밋한다. 커밋 선택과 서버 제공 모두 제품 폴더 바로 아래의 이미지 파일(png·jpg·gif·svg·webp)만 허용하며 규칙은 core가 한 곳에서 정의한다. 그 밖의 `.gitifact` 파일은 여전히 삭제만 선택할 수 있다.
+- `.gitifact/product/PRODUCT.md` 하나와 `.gitifact/product/history.jsonl`. 같은 폴더의 이미지는 파싱하는 기록은 아니지만 제품 설명과 함께 커밋한다. 커밋 선택과 서버 제공 모두 제품 폴더 바로 아래의 이미지 파일(png·jpg·gif·svg·webp)만 허용하며 규칙은 core가 한 곳에서 정의한다. 그 밖의 `.gitifact` 파일은 커밋에 선택할 수 없다.
 - `.gitifact/guides/**/*.md`(깊이 8, 소문자·숫자·하이픈 이름)와 `.gitifact/guides/history.jsonl`
 
 ID는 CLI가 발급하는 소문자 base32 10자다. 명세 S-, 요구사항 R-, 제품 P-, 지침 G-, 이유 H-. 파일 첫 줄의 HTML 주석 마커로 식별하며 경로·제목과 독립적이다. 이유 기록은 `{id, requirements, designs?, documents?, reason}`이고 커밋된 기록은 수정·삭제하지 않는다. 원문·작성자·시각은 JSONL에 복제하지 않고 Git에서 읽는다.
 
-과거 커밋의 `.tryce` 경로와 `tryce-*` 마커는 읽기만 지원한다. 구형 JSON 형식은 `gitifact migrate`로 전환하며 자동 전환하지 않는다. 신구 명세가 혼합된 커밋은 거부한다.
+옛 형식은 읽지 않는다. `.tryce` 경로, `tryce-*` 마커, 구형 JSON 기록, Tryce 설정, schemaVersion 1은 지원하지 않고 `migrate` 명령도 없다(2026-09-22). 과거 커밋의 옛 기록은 이력에 기록으로 나타나지 않고 Git에만 남는다.
 
 ## 저장과 커밋 흐름
 

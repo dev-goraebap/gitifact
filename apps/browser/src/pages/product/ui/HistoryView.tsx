@@ -37,7 +37,6 @@ export function HistoryView({features,search,change,session,head}: {features:Spe
   {!events.length&&<PageState kind={filtering?'search':'empty'} title={t('history.emptyTitle')} description={filtering?t('history.changeFilters'):t('history.emptyDescription')}/>}
   {first&&!!first.total&&<VStack gap={3} padding={5} className={styles.historyPagination}>
    <Text type="supporting" color="secondary">{t('history.shown', { shown: events.length, total: first.total })} {query.hasNextPage?'':t('history.reachedEnd')}</Text>
-   {first.boundary&&!query.hasNextPage&&<Text type="supporting" color="secondary">{t('history.legacyBoundary')}</Text>}
    {query.hasNextPage&&<Button label={query.isFetchingNextPage?t('history.loadingMore'):query.isFetchNextPageError?t('history.retryMore'):t('history.loadMore')} isDisabled={query.isFetching} onClick={()=>{void query.fetchNextPage();}}/>}
   </VStack>}
   {drawer}

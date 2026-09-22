@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {parseDesignPreview,parseSpecPreview,parsePreviewFiles,compareSpecPreviews,editSpecPreview,renderDesignPreview,documentLinks} from '../dist/index.js';
+import {parseDesignPreview,parseSpecPreview,parsePreviewFiles,compareSpecPreviews,editSpecPreview,renderDesignPreview,documentLinks,emptyWiki} from '../dist/index.js';
+const bundle=(...specs)=>({specs,wiki:emptyWiki()});
 const sid='S-abcdefghij',rid='R-abcdefghij',path='.gitifact/spec/posts/requirements.md';
 const req=`---\nid: ${sid}\n---\n# Posts\n## Save\n<!-- gitifact-req: ${rid} -->\nSave`;
 const doc=body=>`---\nid: ${sid}\n---\n# Design\n${body}`;
@@ -23,15 +24,15 @@ test('sources live in the frontmatter, round-trip with quoting, and count as a d
  const before=parseSpecPreview(path,req,'',doc('Body'));const after=parseSpecPreview(path,req,'',text.replace('Design','Design').replace('Body','Body'));
  assert.deepEqual(compareSpecPreviews([before],[after]).changes.map(c=>[c.id,c.kind,c.types]),[[sid,'design',['modified']]]);
  assert.deepEqual(compareSpecPreviews([before],[after]).changes[0].after.sources,sources);
- const saved=editSpecPreview([before],[{type:'set-design',feature:'posts',title:'Design',body:'Body',sources}],()=>{throw Error('No new identity needed');});
+ const saved=editSpecPreview(bundle(before),[{type:'set-design',feature:'posts',title:'Design',body:'Body',sources}],()=>{throw Error('No new identity needed');});
  assert.deepEqual(saved.specs[0].design.sources,sources);
- assert.throws(()=>editSpecPreview([before],[{type:'set-design',feature:'posts',title:'Design',body:'Body',sources:[{title:'x'}]}],()=>''));
+ assert.throws(()=>editSpecPreview(bundle(before),[{type:'set-design',feature:'posts',title:'Design',body:'Body',sources:[{title:'x'}]}],()=>''));
  assert.deepEqual(documentLinks({specs:saved.specs,wiki:{documents:[],history:[]}}).map(l=>l.target),['.gitifact/wiki/architecture.md']);
 });
 test('design revisions never become requirement changes; revert and atomic draft preserve input',()=>{
  const before=parseSpecPreview(path,req,'',doc('First'));const after=parseSpecPreview(path,req,'',doc('Second'));
  assert.deepEqual(compareSpecPreviews([before],[after]).changes.map(c=>[c.id,c.kind,c.types]),[[sid,'design',['modified']]]);
  assert.equal(compareSpecPreviews([before],[before]).changes.length,0);
- const original=JSON.stringify(before);const saved=editSpecPreview([before],[{type:'set-design',feature:'posts',title:'Design',body:'Second'},{type:'delete-design',feature:'posts'}],()=>{throw Error('No new identity needed');});
+ const original=JSON.stringify(before);const saved=editSpecPreview(bundle(before),[{type:'set-design',feature:'posts',title:'Design',body:'Second'},{type:'delete-design',feature:'posts'}],()=>{throw Error('No new identity needed');});
  assert.equal(saved.specs[0].design,undefined);assert.equal(JSON.stringify(before),original);
 });

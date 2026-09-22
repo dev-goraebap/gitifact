@@ -4,8 +4,8 @@ import { join } from 'node:path';
 import { prepareSpecPreview, pendingPreviewReasons } from '@gitifact/core';
 import { createGitRunner } from '../adapters/git/run-git.js';
 import { previewExpected, readPreviewContext } from './spec-preview-context.js';
-import { failOnLegacyLock, generatePreviewId, PreservedPreviewError, previewTransaction, readLockedPreviewState } from '../adapters/filesystem/spec-preview-store.js';
-import { checkLegacySelection, fail, fingerprint, hash, info, object, optional, paths, policyPaths, record, text } from './spec-commit-files.js';
+import { generatePreviewId, PreservedPreviewError, previewTransaction, readLockedPreviewState } from '../adapters/filesystem/spec-preview-store.js';
+import { checkStoreSelection, fail, fingerprint, hash, info, object, optional, paths, policyPaths, record, text } from './spec-commit-files.js';
 import { t } from '../shared/i18n/index.js';
 
 const fields = ['reasons', 'paths', 'message', 'authorization', 'requirements', 'policyFiles', 'expected'];
@@ -38,7 +38,6 @@ export async function specCommit(cwd: string, input: unknown, dryRun: boolean) {
     timeoutMs: 120000, maxBytes: 32 * 1024 * 1024, ...(stdin ? { input: stdin } : {}) });
   const staged = async (index?: string) => (await git(['diff', '--cached', '--ita-visible-in-index', '--name-only', '--no-renames', '-z'], index)).toString('utf8').split('\0').filter(Boolean).sort();
   const busy = join(gitDir, 'gitifact-spec-commit.lock');
-  await failOnLegacyLock(gitDir);
   if (await info(busy)) fail(t('commit.busy', { path: busy }));
   if ((await staged()).length) fail(t('commit.existingStaging'));
   const indexHash = hash(await optional(indexPath) ?? Buffer.alloc(0));
@@ -63,7 +62,7 @@ export async function specCommit(cwd: string, input: unknown, dryRun: boolean) {
   if (pending.some(p => !selected.includes(p))) fail(t('commit.selectPending'));
   const finalFiles = new Map(current.files);
   for (const [path, next] of writes) { if (next === null) finalFiles.delete(path); else finalFiles.set(path, next); }
-  await checkLegacySelection(root, selected);
+  checkStoreSelection(selected);
   // A selected reason file with nothing to record is skipped instead of failing `git add`.
   const stageable = selected.filter(p => !record(p) || finalFiles.has(p) || c.files.has(p));
   const known = new Set([...current.specs.flatMap(s => s.requirements.map(r => r.id)), ...prepared.changes.filter(x => x.kind === 'requirement').map(x => x.id)]);

@@ -5,7 +5,7 @@ const contributor = z.strictObject({ email: z.string(), name: z.string(), commit
 const source = z.strictObject({ title: z.string(), path: z.string().optional(), url: z.string().optional(), note: z.string().optional() });
 const feature = z.strictObject({ id: z.string(), path: z.string(), title: z.string(), description: z.string(), requirements: z.array(requirement),
   design: z.strictObject({title: z.string(), body: z.string(), requirements: z.array(z.string()), sources: z.array(source)}).optional(),
-  // Authors of commits touching the feature folder (current or legacy store) and the latest such commit; empty until first committed.
+  // Authors of commits touching the feature folder and the latest such commit; empty until first committed.
   contributors: z.array(contributor), updatedAt: z.string().nullable() });
 // Wiki pages from the working tree; updatedAt is the latest commit touching the path, null until committed.
 const document = z.strictObject({ id: z.string(), path: z.string(), title: z.string(), body: z.string(), updatedAt: z.string().nullable() });
@@ -36,12 +36,11 @@ const event = z.strictObject({ key: z.string(), commit: oid, date: z.string(), a
   before: reference, after: reference, reasons: z.array(z.string()) });
 
 /** Changes matching the query over the whole first-parent history of `head`, newest first, one page of them. */
-export const browserHistoryV1 = z.strictObject({
-  contract: z.literal('browser-history'), version: z.literal(1), sessionId: z.string(), head: oid,
+/** v2 dropped `boundary`: history no longer reads the legacy JSON records it used to stop at. */
+export const browserHistoryV2 = z.strictObject({
+  contract: z.literal('browser-history'), version: z.literal(2), sessionId: z.string(), head: oid,
   // Matching changes in all of history, not in this page; `offset` is where this page starts among them.
   total: z.number().int().nonnegative(), offset: z.number().int().nonnegative(), events: z.array(event),
-  // History reaches back to records in the legacy JSON format, which it does not read.
-  boundary: z.boolean(),
 });
 /** What the product overview draws from history: counts over all of it and its newest commits. */
 export const browserHistorySummaryV1 = z.strictObject({
@@ -68,7 +67,7 @@ export const browserSearchV1 = z.strictObject({
   })),
 });
 export type BrowserSpecsV4 = z.infer<typeof browserSpecsV4>;
-export type BrowserHistoryV1 = z.infer<typeof browserHistoryV1>;
+export type BrowserHistoryV2 = z.infer<typeof browserHistoryV2>;
 export type BrowserHistorySummaryV1 = z.infer<typeof browserHistorySummaryV1>;
 export type BrowserChangeV1 = z.infer<typeof browserChangeV1>;
 export type BrowserSearchV1 = z.infer<typeof browserSearchV1>;

@@ -7,11 +7,11 @@ import { specPreviewReader } from '../../adapters/git/spec-preview-reader.js';
  * Bumped whenever what is stored changes meaning — a column, or how a commit's changes are computed. A file written
  * under another number is dropped and rebuilt; everything in it can be read again from Git.
  */
-export const INDEX_FORMAT = 2;
+export const INDEX_FORMAT = 3;
 
 const SCHEMA = `
-  -- Commits already read, and whether the commit's parent was legacy JSON the history does not read past.
-  CREATE TABLE commits (oid TEXT PRIMARY KEY, boundary INTEGER NOT NULL);
+  -- Commits already read.
+  CREATE TABLE commits (oid TEXT PRIMARY KEY);
   -- One row per change. 'row' is the list shape as JSON; 'detail' the text on both sides.
   CREATE TABLE changes (
     key TEXT PRIMARY KEY, oid TEXT NOT NULL, ord INTEGER NOT NULL,

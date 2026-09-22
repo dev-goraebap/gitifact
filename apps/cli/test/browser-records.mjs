@@ -12,9 +12,9 @@ export function openRecords(root, env, limit = 100) {
   const history = createHistoryIndex(root, oid => reader.readBundle(oid));
   async function read() {
     const { checkout: current } = await checkout();
-    if (!current.head) return { ...current, events: [], total: 0, boundary: false };
+    if (!current.head) return { ...current, events: [], total: 0 };
     const page = await history.page(current.head, {}, 0, limit);
-    return { ...current, events: page.events, total: page.total, boundary: page.boundary };
+    return { ...current, events: page.events, total: page.total };
   }
   read.change = key => history.change(key);
   read.history = history;

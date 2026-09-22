@@ -152,14 +152,14 @@ test('the search finds the checkout by title, place and text, and past changes b
   await history.syncCheckout(scope,'stamp-2',[]);assert.equal((await find('캐시')).filter(h=>h.kind!=='history').length,0);
 });
 
-test('history stops at the legacy JSON boundary instead of failing', async t => {
+test('legacy JSON files in history are not records and do not stop it', async t => {
   const f=fixture(t);await initializeSpecProject(f.repo,false,f.env);mkdirSync(join(f.repo,'.gitifact/spec/posts'),{recursive:true});
   f.write('.gitifact/spec/posts/tryce.json','{}');f.commit('Legacy');
   f.git(['rm','-q','.gitifact/spec/posts/tryce.json']);mkdirSync(join(f.repo,'.gitifact/spec/posts'),{recursive:true});
   f.write('.gitifact/spec/posts/requirements.md','<!-- gitifact-spec: S-abcdefghij -->\n# Posts\n\n## Save\n<!-- gitifact-req: R-abcdefghij -->\n\nBody\n');f.commit('Convert');
   const result=await openRecords(f.repo,f.env)();
-  // The conversion commit is shown against an empty history rather than the unreadable legacy parent.
-  assert.equal(result.boundary,true);assert.deepEqual(result.events.map(e=>[e.message,e.types]),[['Convert',['created']]]);
+  // The legacy commit changed no record, so the conversion commit is the first change.
+  assert.deepEqual(result.events.map(e=>[e.message,e.types]),[['Convert',['created']]]);
 });
 
 // The index reads only the files each commit changed. Every change it reports must equal what comparing the whole

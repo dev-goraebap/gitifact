@@ -1,6 +1,6 @@
 import { parseOutlineFromMarkdown } from '@astryxdesign/core/Outline';
 
-const REFERENCE = /^<!-- (?:gitifact|tryce)-ref: (R-[a-z2-7]{10}(?:, R-[a-z2-7]{10})*) -->$/;
+const REFERENCE = /^<!-- gitifact-ref: (R-[a-z2-7]{10}(?:, R-[a-z2-7]{10})*) -->$/;
 const plain = (value: string) => value.replace(/[*_`]/g, '').trim();
 
 /**

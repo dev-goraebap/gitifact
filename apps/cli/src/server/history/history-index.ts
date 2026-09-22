@@ -38,13 +38,13 @@ export function createHistoryIndex(root: string, snapshot: (oid: string) => Prom
   const built = new Set<string>();
 
   function insert(db: DatabaseSync, commits: CommitChanges[]) {
-    const commit = db.prepare('INSERT OR IGNORE INTO commits (oid, boundary) VALUES (?, ?)');
+    const commit = db.prepare('INSERT OR IGNORE INTO commits (oid) VALUES (?)');
     const change = db.prepare('INSERT OR IGNORE INTO changes (key, oid, ord, id, kind, types, email, date, before_spec, after_spec, needle, row, detail) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)');
     const search = db.prepare('INSERT INTO search (scope, kind, ref, oid, payload, title, place, body) VALUES (?,?,?,?,?,?,?,?)');
     transaction(db, () => {
       for (const c of commits) {
         // Another server may have written this commit meanwhile; its rows are the same, so they are not written twice.
-        if (!Number(commit.run(c.commit, c.boundary ? 1 : 0).changes)) continue;
+        if (!Number(commit.run(c.commit).changes)) continue;
         c.events.forEach((e, ord) => {
           change.run(e.key, e.commit, ord, e.id, e.kind, e.types.join(','), e.email, e.date, e.before?.specId ?? null, e.after?.specId ?? null,
             [e.id, e.before?.title ?? '', e.after?.title ?? ''].join(' ').toLowerCase(), JSON.stringify(listed(e)), JSON.stringify({ before: e.before, after: e.after }));
@@ -110,8 +110,7 @@ export function createHistoryIndex(root: string, snapshot: (oid: string) => Prom
         const from = 'FROM lineage l JOIN changes c ON c.oid = l.oid WHERE l.head = ?' + sql;
         const total = Number((db.prepare('SELECT count(*) AS n ' + from).get(head, ...params) as { n: number }).n);
         const rows = db.prepare(`SELECT c.row ${from} ORDER BY l.pos, c.ord LIMIT ? OFFSET ?`).all(head, ...params, limit, offset) as { row: string }[];
-        const boundary = !!db.prepare('SELECT 1 FROM lineage l JOIN commits m ON m.oid = l.oid WHERE l.head = ? AND m.boundary = 1 LIMIT 1').get(head);
-        return { total, events: rows.map(r => JSON.parse(r.row) as ListedEvent), boundary };
+        return { total, events: rows.map(r => JSON.parse(r.row) as ListedEvent) };
       });
     },
     /** Counts over all of history and its newest commits, for the overview. */

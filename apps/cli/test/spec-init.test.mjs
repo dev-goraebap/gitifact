@@ -40,7 +40,7 @@ test('spec init dry-run, repeat and agent docs block preserve existing work and 
 });
 test('init refuses legacy records and malformed config without mutation', async t => {
   const f = fixture(t); mkdirSync(join(f.repo, '.gitifact')); f.write('.gitifact/config.json', legacyConfig);
-  const before = fingerprint(f.repo); assert.match(call(f, ['init'], false).stderr, /MIGRATION_REQUIRED/); assert.deepEqual(fingerprint(f.repo), before);
+  const before = fingerprint(f.repo); assert.match(call(f, ['init'], false).stderr, /UNSUPPORTED_FORMAT/); assert.deepEqual(fingerprint(f.repo), before);
   f.write('.gitifact/config.json', '{}'); const invalid = fingerprint(f.repo); call(f, ['init'], false); assert.deepEqual(fingerprint(f.repo), invalid);
 });
 test('spec command writes and commits through initialized format', async t => {
@@ -68,17 +68,3 @@ test('new init rejects orphan data and ignored settings', t => {
   const other = fixture(t); other.write('.gitignore','.gitifact/\n'); call(other,['init'],false); assert.equal(existsSync(join(other.repo,'.gitifact')),false);
 });
 
-test('explicit legacy replacement can prepare and commit deletion without retaining backup files', async t => {
-  const f = fixture(t); f.git(['config','user.name','Fixture']); f.git(['config','user.email','fixture@example.invalid']); f.git(['config','commit.gpgsign','false']); f.git(['config','core.autocrlf','false']);
-  mkdirSync(join(f.repo,'.gitifact/spec/old'),{recursive:true}); f.write('.gitifact/config.json',legacyConfig);
-  const oldPath='.gitifact/spec/old/tryce.json'; f.write(oldPath,'{"kind":"tryce-requirements","format":"requirements-1","spec":"old","requirements":[],"reviews":[],"decisions":[]}\n'); f.commit('Legacy baseline');
-  const config=JSON.parse(readFileSync(join(f.repo,'.gitifact/config.json'),'utf8'));
-  f.write('.gitifact/config.json',JSON.stringify({schemaVersion:2,baseline:config.baseline})+'\n');
-  const {unlinkSync}=await import('node:fs'); unlinkSync(join(f.repo,oldPath));
-  const saved=input(f,'save',{expected:call(f,['spec','working']).stamp,operations:[{type:'create',feature:'product',title:'제품 요구사항'},{type:'add',feature:'product',title:'사용자 의도 기록',body:'최종 요구사항을 기록한다.'}]});
-  const committed=input(f,'commit',{expected:call(f,['spec','changes']).expected,reasons:[{requirements:[saved.results[1].id],reason:'사용자가 요청한 새 형식 전환'}],
-    paths:['.gitifact/config.json',oldPath,'.gitifact/spec/product/requirements.md','.gitifact/spec/product/history.jsonl'],message:'Adopt Markdown records',authorization:{basis:'project-policy',evidence:'Fixture transition'}});
-  assert.equal(committed.outcome,'committed');
-  assert.equal(call(f,['spec','read']).specs.length,1); assert.equal(f.git(['status','--porcelain']).stdout,'');
-  assert.equal(existsSync(join(f.repo,oldPath)),false);
-});

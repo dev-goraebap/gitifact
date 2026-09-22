@@ -3,14 +3,25 @@ import assert from 'node:assert/strict';
 import { parseManagedConfig } from '../dist/index.js';
 test('current schema has only schemaVersion and baseline; unknown schemas and legacy spec labels fail', () => {
   assert.deepEqual(parseManagedConfig('{"schemaVersion":2,"baseline":{"kind":"empty"}}'), {schemaVersion:2,baseline:{kind:'empty'}});
-  // The 0.4.x convention (schemaVersion 1) is named in the refusal instead of being read as if it were current.
-  // It points at init, which replaces a store holding only that config; a newer convention points at updating the CLI.
-  assert.throws(()=>parseManagedConfig('{"schemaVersion":1,"baseline":{"kind":"empty"}}'),{code:'UNSUPPORTED_SCHEMA',message:/schemaVersion 1.*gitifact init이 새 규약으로/});
+  // An earlier convention is named in the refusal instead of being read as if it were current; a newer one points at updating the CLI.
+  assert.throws(()=>parseManagedConfig('{"schemaVersion":1,"baseline":{"kind":"empty"}}'),{code:'UNSUPPORTED_SCHEMA',message:/schemaVersion 1/});
   assert.throws(()=>parseManagedConfig('{"schemaVersion":3,"baseline":{"kind":"empty"}}'),{code:'UNSUPPORTED_SCHEMA',message:/더 새로운 저장 규약\(schemaVersion 3\).*gitifact@latest/});
+  // Tryce configurations had no schemaVersion and are no longer read.
+  assert.throws(()=>parseManagedConfig(JSON.stringify({kind:'tryce-project',format:'init-1',mode:'normal',baseline:{kind:'empty'}})),{code:'UNSUPPORTED_FORMAT'});
   for (const value of [
     {schemaVersion:3,baseline:{kind:'empty'}},
     {schemaVersion:2,kind:'tryce-project',baseline:{kind:'empty'}},
     {kind:'tryce-project',format:'spec-1',baseline:{kind:'empty'}},
     {schemaVersion:2,baseline:{kind:'commit',objectFormat:'sha1',commit:'bad'}},
   ]) assert.throws(()=>parseManagedConfig(JSON.stringify(value)));
+  assert.throws(()=>parseManagedConfig('{'),{code:'INVALID_CONFIG'});
+});
+test('commit baselines keep the object format and reject malformed or zero hashes', () => {
+  for (const [format, length] of [['sha1', 40], ['sha256', 64]]) {
+    const baseline = {kind:'commit',objectFormat:format,commit:'a'.repeat(length)};
+    assert.deepEqual(parseManagedConfig(JSON.stringify({schemaVersion:2,baseline})), {schemaVersion:2,baseline});
+    for (const bad of [{...baseline,commit:'0'.repeat(length)},{...baseline,commit:'a'.repeat(length+1)},{...baseline,extra:true},{kind:'empty',extra:true},{kind:'other'}]) {
+      assert.throws(()=>parseManagedConfig(JSON.stringify({schemaVersion:2,baseline:bad})),{code:'INVALID_CONFIG'});
+    }
+  }
 });

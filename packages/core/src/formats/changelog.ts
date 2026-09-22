@@ -1,5 +1,5 @@
 import { t, type MessageKey } from '../shared/i18n/index.js';
-import { InitError } from './project-config.js';
+import { InitError } from './spec-project.js';
 
 export const changelogSections = ['added', 'changed', 'removed', 'fixed'] as const;
 export type ChangelogSection = typeof changelogSections[number];

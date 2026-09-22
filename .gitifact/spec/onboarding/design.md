@@ -11,11 +11,11 @@ id: S-eordsbir6z
 ## 구조와 데이터
 <!-- gitifact-ref: R-lpwtvv6ldp -->
 
-.gitifact/config.json은 schemaVersion(현재 2. frontmatter·위키·에셋·재정의를 쓰는 규약)과 baseline을 저장한다. schemaVersion 1(0.4.x)은 이유를 밝히며 거부하고 전환하지 않는다. 현재보다 높은 schemaVersion은 CLI를 최신으로 올리라고 안내한다(`config.newerSchema`). HEAD가 있으면 기준 커밋과 Git 객체 형식을, 첫 커밋 전이면 empty 기준선을 기록한다. 모드·승인 묶음은 저장하지 않는다.
+.gitifact/config.json은 schemaVersion(현재 2. frontmatter·위키·에셋·재정의를 쓰는 규약)과 baseline을 저장한다. schemaVersion 1(0.4.x)과 schemaVersion이 없는 Tryce 설정은 이유를 밝히며 거부하고 전환하지 않는다. 현재보다 높은 schemaVersion은 CLI를 최신으로 올리라고 안내한다(`config.newerSchema`). HEAD가 있으면 기준 커밋과 Git 객체 형식을, 첫 커밋 전이면 empty 기준선을 기록한다. 모드·승인 묶음은 저장하지 않는다.
 
 CLI의 init-repository 어댑터가 저장소·현재 checkout·HEAD·index를 관측하고 initializeSpecProject가 도입 조건을 확인한다. 설정 파일 어댑터는 임시 파일로 준비하고 기존 파일을 덮어쓰지 않는 방식으로 게시한다.
 
-이전 규약 설정의 교체: 설정의 schemaVersion이 현재보다 낮고, `.gitifact`에 config.json 밖의 파일(초기화 임시 파일 제외)이 없고, 루트에 구형 `specs/`도 없을 때만 init이 설정을 바꾼다. 결과의 outcome은 `replaced`이고 기준선은 지금 HEAD로 새로 잡는다. 삭제한 뒤 다시 init한 것과 같다. 임시 파일을 rename으로 덮어쓰며, 직전에 설정 바이트·저장소 내용·HEAD/index가 처음 관측과 같은지 다시 확인한다. 추적 중인 설정이면 수정으로 남고 커밋은 사용자가 한다. 조건에 맞지 않는 이전 규약은 설정과 기록을 두고 `init.legacyRecords`로 할 일을 안내한다. 0.5.0은 거부 안내가 새로 init하라고 했지만 init도 같은 이유로 거부해 빠져나갈 길이 없었다(2026-09-18). 명세가 있는 schemaVersion 1 프로젝트의 자동 전환은 정식 버전 전 규약을 전환하지 않는다는 결정에 따라 하지 않는다.
+이전 규약 설정은 교체하지 않는다. 0.7.x까지는 `.gitifact`에 config.json만 있는 schemaVersion 1 설정을 init이 새 설정으로 바꿨으나(outcome `replaced`), 0.8.0 준비에서 옛 형식 호환 코드를 모두 지우며 없앴다(2026-09-22). project-init v6의 `replaced` 값은 계약 형태를 바꾸지 않으려고 남겼으며 더는 나오지 않는다. 옛 프로젝트는 에이전트가 마이그레이션 프롬프트로 옮기는 방식을 계획하고 있다.
 
 새 버전 확인: init은 update·update --check와 같은 레지스트리 확인(`resolveUpdate`, 3초 제한, 실패는 unavailable)을 초기화와 나란히 실행해 결과의 `update`·`install`에 담는다(project-init v6). 초기화가 실패하면 확인을 취소한다. `GITIFACT_NO_UPDATE_CHECK`로 끄며 테스트와 패키지 검사는 이 값으로 레지스트리에 접속하지 않는다. "없으면 설치"라는 도입 프롬프트 때문에 이미 설치된 0.4.4로 init해 schemaVersion 1 설정이 생긴 사례가 계기다. 도입 프롬프트는 `npx gitifact@latest init`으로 최신 CLI를 실행한다. 지침 파일은 managed-file 어댑터가 같은 방식(임시 파일, 조회 중 변경 감지, 링크 또는 교체)으로 쓴다.
 
@@ -57,7 +57,7 @@ init은 작은 명시적 작업으로 유지한다. 기존 프로젝트를 추�
 
 전역 설치 승인 때문에 에이전트가 Gitifact 작업을 건너뛰는 사례에 따라 기본 안내를 npx 실행으로 바꾼다. 한국어·영어 소개, 시작하기, 블록, workflow에 같은 절차를 적용한다. Node.js 프로젝트에서는 개발 의존성으로 버전을 고정하는 선택지도 안내한다. 기존 전역 명령과 프로젝트별 실행 지침은 계속 지원한다.
 
-npx 사용자는 새 버전의 `update`를 실행해 블록의 버전을 갱신한다. 프로젝트 설치 사용자는 기존 패키지 관리자로 버전을 갱신하고 그 설치본으로 `update`를 실행한다. init·update 응답은 `install.npx`와 `install.npmGlobal`을 제공한다. 기본 출력은 npx 명령이며 전역 설치 명령은 선택지로 유지한다. 계약은 project-init v6·update v4이고 기존 v5·v3 스키마는 유지한다. `--yes`가 생략하는 것은 npm 설치 확인뿐이다. 네트워크·실행 권한이 막히면 승인 요청과 원인 안내를 하고, 명세 기록을 수동으로 대체하거나 성공으로 보고하지 않는다.
+npx 사용자는 새 버전의 `update`를 실행해 블록의 버전을 갱신한다. 프로젝트 설치 사용자는 기존 패키지 관리자로 버전을 갱신하고 그 설치본으로 `update`를 실행한다. init·update 응답은 `install.npx`와 `install.npmGlobal`을 제공한다. 기본 출력은 npx 명령이며 전역 설치 명령은 선택지로 유지한다. 계약은 project-init v6·update v4다. v5·v3 스키마는 0.8.0 준비에서 지웠다. `--yes`가 생략하는 것은 npm 설치 확인뿐이다. 네트워크·실행 권한이 막히면 승인 요청과 원인 안내를 하고, 명세 기록을 수동으로 대체하거나 성공으로 보고하지 않는다.
 
 패키지 검사는 별도 임시 프로젝트에서 같은 버전의 로컬 패키지를 npx로 오프라인 실행해 초기화·조회와 생성 블록의 버전 고정을 확인한다. 실제 에이전트의 승인 요청 행동은 자연어 지침만으로 보장하지 않는다.
 

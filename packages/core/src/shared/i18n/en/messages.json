@@ -1,6 +1,5 @@
 {
-  "config.jsonUnreadable": "Could not read configuration JSON. Preserve the original file.",
-  "config.unsupportedFormat": "Unsupported project format. Use a compatible CLI.",
+  "config.unsupportedFormat": "Configurations in the earlier format without schemaVersion (Tryce) are not read.",
   "config.invalidFields": "Invalid project configuration fields or values.",
   "config.jsonUnreadableShort": "Could not read configuration JSON.",
   "config.schemaFields": "Check the schemaVersion and baseline fields.",
@@ -109,6 +108,6 @@
   "source.path": "Source path must be relative and end in .md: {path}",
   "edit.documentIdNotFound": "Wiki page ID not found: {id}",
   "edit.invalidSources": "sources must be an array with at most 50 entries.",
-  "config.unsupportedSchema": "This project uses an older storage convention (schemaVersion {version}) that this CLI does not read. Pre-release conventions are not migrated. If .gitifact contains only config.json, gitifact init can replace it with the current convention.",
+  "config.unsupportedSchema": "This project uses an older storage convention (schemaVersion {version}) that this CLI does not read.",
   "config.newerSchema": "This project uses a newer storage convention (schemaVersion {version}). Run npm install -g gitifact@latest and try again."
 }

@@ -1,6 +1,5 @@
-// v4 adds a version-pinned npx update command. The previous contract remains available unchanged.
 import { z } from 'zod';
-import { updateStateV1 } from './browser-session-v2.js';
+import { updateStateV1 } from './update-state-v1.js';
 
 // Commit of refreshed agent-doc blocks, requested with `gitifact update --commit`.
 //   not-requested  --commit was not given
@@ -16,7 +15,7 @@ const agentDocsCommit = z.strictObject({
   'commit is set exactly when committed, reason exactly when skipped.');
 
 // Output of `gitifact update`: the registry check, how to install, which agent-doc blocks were refreshed and whether they were committed.
-// v2 added `commit`; v3 added `agentDocs.missing`. Earlier versions had no consumers outside the CLI and were removed.
+// v2 added `commit`, v3 `agentDocs.missing`, v4 the version-pinned npx command. Earlier versions had no consumers outside the CLI and were removed.
 export const updateV4 = z.discriminatedUnion('ok', [
   z.strictObject({ contract: z.literal('update'), version: z.literal(4), ok: z.literal(true),
     cliVersion: z.string().min(1), update: updateStateV1,

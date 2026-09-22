@@ -21,11 +21,9 @@ for(const hash of ['sha1','sha256']) test(`preview committed move, reason and un
   assert.deepEqual(fingerprint(f.repo),original);
   const nested=run(f,['read','--experimental'],join(f.repo,'.gitifact/spec/profile'));assert.equal(nested.status,0,nested.stderr);assert.equal(JSON.parse(nested.stdout).specs.length,2);
 });
-test('malformed source, legacy input and invalid refs never become empty success',t=>{
+test('malformed source and invalid refs never become empty success',t=>{
   const f=fixture(t);mkdirSync(join(f.repo,'.gitifact/spec/employees'),{recursive:true});
   f.write(a,'# no identity');f.commit();assert.equal(run(f,['read','--experimental']).status,1);
-  rmSync(join(f.repo,a));f.write('.gitifact/spec/employees/tryce.json','{}');f.commit();
-  const legacy=run(f,['read','--experimental']);assert.equal(legacy.status,1);assert.match(legacy.stderr,/기존 JSON/);
   const bad=run(f,['read','--experimental','--ref','--help']);assert.equal(bad.status,1);assert.equal(bad.stdout,'');
 });
 test('committed invalid UTF-8 and symlink tree entries fail without following targets',t=>{

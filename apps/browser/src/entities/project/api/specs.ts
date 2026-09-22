@@ -1,5 +1,5 @@
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
-import { browserSpecsV4, browserHistoryV1, browserHistorySummaryV1, browserChangeV1, browserSearchV1, type BrowserSessionV3 } from '@gitifact/contracts';
+import { browserSpecsV4, browserHistoryV2, browserHistorySummaryV1, browserChangeV1, browserSearchV1, type BrowserSessionV3 } from '@gitifact/contracts';
 import { requestJson, ApiError } from '../../../shared/api/client';
 import { httpFailure } from './repository';
 import { t } from '../../../shared/i18n';
@@ -34,12 +34,12 @@ export const specsOptions = (session: BrowserSessionV3) => queryOptions({
  * so its pages are kept for the session.
  */
 export const historyOptions = (session: BrowserSessionV3, head: string, filter: HistoryFilter, limit = 50) => infiniteQueryOptions({
-  queryKey: ['browser-history', 1, ...scope(session), head, filter, limit],
+  queryKey: ['browser-history', 2, ...scope(session), head, filter, limit],
   initialPageParam: 0, staleTime: Infinity, retry: false,
   queryFn: ({ signal, pageParam }) => {
     const query = new URLSearchParams({ head, offset: String(pageParam), limit: String(limit) });
     for (const [key, value] of Object.entries(filter)) if (value) query.set(key, value);
-    return read(session, '/api/v1/history?' + query, browserHistoryV1, signal);
+    return read(session, '/api/v1/history?' + query, browserHistoryV2, signal);
   },
   getNextPageParam: last => last.offset + last.events.length < last.total ? last.offset + last.events.length : undefined,
 });

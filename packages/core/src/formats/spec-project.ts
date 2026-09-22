@@ -1,21 +1,41 @@
-import { InitError, parseProjectConfig, type Baseline, type ProjectConfig } from './project-config.js';
 import { t } from '../shared/i18n/index.js';
 
+export type Baseline = { kind: 'empty' } | { kind: 'commit'; objectFormat: 'sha1' | 'sha256'; commit: string };
+export class InitError extends Error {
+  constructor(public readonly code: string, message: string) { super(message); }
+}
 export const SCHEMA_VERSION = 2 as const;
 export interface SpecProjectConfig { schemaVersion: typeof SCHEMA_VERSION; baseline: Baseline }
-export function parseManagedConfig(text: string): ProjectConfig | SpecProjectConfig {
+
+const object = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+const keys = (value: Record<string, unknown>, expected: string[]) =>
+  Object.keys(value).sort().join(',') === expected.sort().join(',');
+
+function parseBaseline(value: unknown): Baseline {
+  const invalid = () => new InitError('INVALID_CONFIG', t('config.invalidFields'));
+  if (!object(value)) throw invalid();
+  if (value.kind === 'empty') { if (!keys(value, ['kind'])) throw invalid(); }
+  else if (value.kind === 'commit') {
+    if (!keys(value, ['kind', 'objectFormat', 'commit']) || typeof value.objectFormat !== 'string' || !['sha1', 'sha256'].includes(value.objectFormat)
+      || typeof value.commit !== 'string' || !(value.objectFormat === 'sha1' ? /^[a-f0-9]{40}$/ : /^[a-f0-9]{64}$/).test(value.commit)
+      || /^0+$/.test(value.commit)) throw invalid();
+  } else throw invalid();
+  return value as unknown as Baseline;
+}
+
+export function parseManagedConfig(text: string): SpecProjectConfig {
   let value: unknown;
   try { value = JSON.parse(text); } catch { throw new InitError('INVALID_CONFIG', t('config.jsonUnreadableShort')); }
-  if (!value || typeof value !== 'object' || Array.isArray(value) || !('schemaVersion' in value)) return parseProjectConfig(text);
-  const config = value as SpecProjectConfig;
-  if (Object.keys(config).sort().join(',') !== 'baseline,schemaVersion') throw new InitError('INVALID_CONFIG', t('config.schemaFields'));
-  // Earlier pre-release conventions are not converted; the message names the version so the reader knows why.
+  // Configurations from before schemaVersion (Tryce's `kind: tryce-project`) are not read.
+  if (!object(value) || !('schemaVersion' in value)) throw new InitError('UNSUPPORTED_FORMAT', t('config.unsupportedFormat'));
+  if (!keys(value, ['baseline', 'schemaVersion'])) throw new InitError('INVALID_CONFIG', t('config.schemaFields'));
+  // Earlier conventions are not converted; the message names the version so the reader knows why.
   // A newer convention means this CLI is the old one, and the way out is to update it.
-  if (config.schemaVersion !== SCHEMA_VERSION) {
-    const found: unknown = config.schemaVersion;
+  if (value.schemaVersion !== SCHEMA_VERSION) {
+    const found: unknown = value.schemaVersion;
     const newer = typeof found === 'number' && found > SCHEMA_VERSION;
     throw new InitError('UNSUPPORTED_SCHEMA', newer ? t('config.newerSchema', { version: String(found) }) : t('config.unsupportedSchema', { version: String(found) }));
   }
-  const checked = parseProjectConfig(JSON.stringify({ kind: 'tryce-project', format: 'workflow-1', mode: 'auto', baseline: config.baseline }));
-  return { schemaVersion: SCHEMA_VERSION, baseline: checked.baseline };
+  return { schemaVersion: SCHEMA_VERSION, baseline: parseBaseline(value.baseline) };
 }
