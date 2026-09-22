@@ -167,7 +167,7 @@ test('the document cache reparses a file only when its time or size changed, and
 test('the search finds documents by title, place and text, and past changes by their reasons', async t => {
   const { f, d } = await adopted(t);
   d.feature('posts', S, { title: 'Posts' }); d.requirement('posts', 'save', R, { title: 'Save', body: '게시물 본문에 캐시를 쓴다.' }); f.commit('posts');
-  d.reasons('posts', { id: 'H-aaaaaaaaaa', docs: [R], reason: '느린 조회를 줄이려고 바꿨다.' });
+  d.reasons({ id: 'H-aaaaaaaaaa', docs: [R], reason: '느린 조회를 줄이려고 바꿨다.' });
   d.requirement('posts', 'save', R, { title: 'Save', body: '게시물 본문에 캐시를 둔다.' }); f.commit('cache');
   const read = openRecords(f.repo, f.env); const current = await read();
   const find = q => read.cache.search(current.head, q);
@@ -201,7 +201,7 @@ test('reading only changed files reports the same changes, texts and reasons as 
   const { f, d } = await adopted(t); f.commit('Adopt gitifact');
   d.feature('posts', S, { title: '게시물' }); d.requirement('posts', 'save', R, { title: '저장' }); d.requirement('posts', 'remove', R2, { title: '삭제', order: 20 });
   d.design('posts', 'overview', D, { requirements: [R] }); d.wiki('guide.md', W, { title: '안내' });
-  d.reasons('posts', { id: 'H-aaaaaaaaaa', docs: [R, R2, D], reason: '게시물 기능을 시작한다.' }); d.reasons(null, { id: 'H-bbbbbbbbbb', docs: [W], reason: '안내를 둔다.' });
+  d.reasons({ id: 'H-aaaaaaaaaa', docs: [R, R2, D], reason: '게시물 기능을 시작한다.' }, { id: 'H-bbbbbbbbbb', docs: [W], reason: '안내를 둔다.' });
   f.commit('Add posts');
   f.write('app.js', 'code'); f.commit('Code only');
   // Update one, move one to another feature, and create that feature.
@@ -209,11 +209,11 @@ test('reading only changed files reports the same changes, texts and reasons as 
   d.feature('profile', 'S-bbbbbbbbbb', { title: '프로필' });
   mkdirSync(join(f.repo, '.gitifact/spec/profile/requirements'));
   f.git(['mv', '.gitifact/spec/posts/requirements/remove.md', '.gitifact/spec/profile/requirements/remove.md']);
-  d.reasons('posts', { id: 'H-cccccccccc', docs: [R], reason: '본문도 저장한다.' }); d.reasons('profile', { id: 'H-dddddddddd', docs: [R2], reason: '삭제는 프로필 기능이다.' });
+  d.reasons({ id: 'H-cccccccccc', docs: [R], reason: '본문도 저장한다.' }, { id: 'H-dddddddddd', docs: [R2], reason: '삭제는 프로필 기능이다.' });
   f.commit('Move removal');
   f.git(['mv', '.gitifact/wiki/guide.md', '.gitifact/wiki/rules.md']); d.wiki('rules.md', W, { title: '안내', body: '옮긴 뒤 고친 글.' });
-  d.reasons(null, { id: 'H-eeeeeeeeee', docs: [W], reason: '규칙으로 옮긴다.' }); f.commit('Move guide');
-  f.git(['rm', '-q', '.gitifact/spec/posts/design/overview.md']); d.reasons('posts', { id: 'H-ffffffffff', docs: [D], reason: '설계를 다시 쓴다.' }); f.commit('Drop design');
+  d.reasons({ id: 'H-eeeeeeeeee', docs: [W], reason: '규칙으로 옮긴다.' }); f.commit('Move guide');
+  f.git(['rm', '-q', '.gitifact/spec/posts/design/overview.md']); d.reasons({ id: 'H-ffffffffff', docs: [D], reason: '설계를 다시 쓴다.' }); f.commit('Drop design');
 
   const tree = rev => {
     const files = new Map();

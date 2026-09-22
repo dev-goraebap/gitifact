@@ -48,9 +48,9 @@ test('spec command writes and commits through initialized format', async t => {
   call(f, ['spec', 'working'], false); call(f, ['init', '--skip-agents']);
   const saved = input(f, 'save', { expected: call(f, ['spec', 'working']).stamp, operations: [{type:'create', feature:'posts', title:'게시물 관리'}, {type:'add',feature:'posts',title:'게시물 생성',body:'제목을 입력한다.'}] });
   const id = saved.results[1].id;
-  // init also wrote the wiki policy page; the commit must select every pending record.
+  // init also wrote the wiki policy page and the merge rule; the commit must select every pending file.
   const committed = input(f, 'commit', { expected: call(f, ['spec','changes']).expected, reasons:[{ requirements:[id], reason:'기능 도입'}],
-    paths:['.gitifact/config.json','.gitifact/wiki/README.md','.gitifact/spec/posts/requirements.md','.gitifact/spec/posts/history.jsonl'],
+    paths:['.gitattributes','.gitifact/config.json','.gitifact/wiki/README.md','.gitifact/spec/posts/requirements.md','.gitifact/spec/posts/history.jsonl'],
     message:'Add posts specification', authorization:{basis:'project-policy',evidence:'Isolated test policy'}});
   assert.equal(committed.outcome, 'committed');
   assert.equal(call(f, ['spec','read']).specs[0].requirements[0].id, id);

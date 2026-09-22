@@ -10,6 +10,7 @@ const save = '.gitifact/spec/posts/requirements/save.md';
 const read = '.gitifact/spec/posts/requirements/read.md';
 const wiki = '.gitifact/wiki/guide.md';
 const design = '.gitifact/spec/posts/design/overview.md';
+const history = '.gitifact/history.jsonl';
 const rid = 'R-aaaaaaaaaa'; const other = 'R-bbbbbbbbbb'; const wid = 'W-aaaaaaaaaa'; const sid = 'S-aaaaaaaaaa'; const did = 'D-aaaaaaaaaa';
 const requirement = (path, id, title, body) => renderDocumentFile({ kind: 'requirement', path, id, title, description: title, body, feature: 'posts', order: id === rid ? 10 : 20 });
 const saveText = (body = 'Original') => requirement(save, rid, 'Save', body);
@@ -38,8 +39,7 @@ for (const format of ['sha1', 'sha256']) test(`merged wiki, design and requireme
   const f = setup(t, format);
   f.git(['switch', '-c', 'work']);
   f.put(save, saveText('Sujeong change')); f.put(wiki, page('Sujeong guide')); f.put(design, plan('Sujeong design'));
-  f.put('.gitifact/spec/posts/history.jsonl', reasons({ id: 'H-aaaaaaaaaa', docs: [rid, did], reason: 'Original reason' }));
-  f.put('.gitifact/wiki/history.jsonl', reasons({ id: 'H-bbbbbbbbbb', docs: [wid], reason: 'Guide reason' }));
+  f.put(history, reasons({ id: 'H-aaaaaaaaaa', docs: [rid, did], reason: 'Original reason' }, { id: 'H-bbbbbbbbbb', docs: [wid], reason: 'Guide reason' }));
   const original = f.commit('Sujeong', 'Original work');
   f.git(['switch', 'main']); f.write('code.txt', 'unrelated'); f.commit('Maintainer', 'Main code');
   // A contributor updates her branch from main before the maintainer merges it back.
@@ -86,7 +86,7 @@ test('merge conflict resolutions keep the merger but do not steal clean changes 
   f.git(['switch', 'main']); f.put(save, saveText('Main value')); f.commit('Bob', 'Main work');
   assert.equal(f.git(['merge', '--no-ff', 'work'], f.repo, true).status, 1);
   f.put(save, saveText('Resolved value'));
-  f.put('.gitifact/spec/posts/history.jsonl', reasons({ id: 'H-cccccccccc', docs: [rid], reason: 'Resolve different policies' }));
+  f.put(history, reasons({ id: 'H-cccccccccc', docs: [rid], reason: 'Resolve different policies' }));
   const merge = f.commit('Maintainer', 'Resolve conflict'); const before = project(f);
   const records = openRecords(f.repo, f.env); const result = await records();
   const resolutions = result.events.filter(e => e.commit === merge);
@@ -130,9 +130,9 @@ test('a merged branch that undoes its own change retains both original commits a
   const f = setup(t); f.git(['switch', '-c', 'work']);
   const firstReason = { id: 'H-aaaaaaaaaa', docs: [rid], reason: 'Try a policy' };
   f.put(save, saveText('Temporary'));
-  f.put('.gitifact/spec/posts/history.jsonl', reasons(firstReason)); const first = f.commit('Ann', 'Try');
+  f.put(history, reasons(firstReason)); const first = f.commit('Ann', 'Try');
   f.put(save, saveText());
-  f.put('.gitifact/spec/posts/history.jsonl', reasons(firstReason, { id: 'H-bbbbbbbbbb', docs: [rid], reason: 'Restore the policy' }));
+  f.put(history, reasons(firstReason, { id: 'H-bbbbbbbbbb', docs: [rid], reason: 'Restore the policy' }));
   const second = f.commit('Bob', 'Restore');
   f.git(['switch', 'main']); const merge = f.merge('work');
   const result = await openRecords(f.repo, f.env)();
@@ -166,4 +166,22 @@ test('merge edits in CRLF files and quoted frontmatter keep their document ident
   const merge = f.commit('Maintainer', 'Merge edits');
   const result = await openRecords(f.repo, f.env)();
   assert.deepEqual(result.events.filter(e => e.commit === merge).map(e => e.id).sort(), [rid, wid]);
+});
+
+test('reasons added on two branches merge without conflict under the union rule and stay with their commits', async t => {
+  const f = setup(t);
+  f.put('.gitattributes', '/.gitifact/history.jsonl merge=union\n'); f.put(history, reasons({ id: 'H-aaaaaaaaaa', docs: [rid], reason: 'Base reason' })); f.commit('Base', 'Rule');
+  f.git(['switch', '-c', 'work']); f.put(wiki, page('Branch guide'));
+  f.put(history, reasons({ id: 'H-aaaaaaaaaa', docs: [rid], reason: 'Base reason' }, { id: 'H-bbbbbbbbbb', docs: [wid], reason: 'Guide on the branch' }));
+  const work = f.commit('Ann', 'Branch');
+  f.git(['switch', 'main']); f.put(save, saveText('Main value'));
+  f.put(history, reasons({ id: 'H-aaaaaaaaaa', docs: [rid], reason: 'Base reason' }, { id: 'H-cccccccccc', docs: [rid], reason: 'Save on main' }));
+  const main = f.commit('Bob', 'Main');
+  const merge = f.merge('work');
+  // Both appended lines are kept by Git, and the merge itself changed no document.
+  assert.equal(f.git(['show', 'HEAD:' + history]).stdout.trim().split('\n').length, 3);
+  const result = await openRecords(f.repo, f.env)();
+  assert.equal(result.events.some(e => e.commit === merge), false);
+  assert.deepEqual(result.events.find(e => e.commit === work && e.id === wid).reasons, ['Guide on the branch']);
+  assert.deepEqual(result.events.find(e => e.commit === main && e.id === rid).reasons, ['Save on main']);
 });

@@ -10,7 +10,7 @@ const wiki = `---\nid: ${W}\ntitle: 결제 모듈 아키텍처\ndescription: 결
 const paths = {
   feature: '.gitifact/spec/payment/index.md', r1: '.gitifact/spec/payment/requirements/cancel.md', r2: '.gitifact/spec/payment/requirements/refund.md',
   overview: '.gitifact/spec/payment/design/overview.md', api: '.gitifact/spec/payment/design/api.md', wiki: '.gitifact/wiki/payment/architecture.md',
-  reasons: '.gitifact/spec/payment/history.jsonl',
+  reasons: '.gitifact/history.jsonl',
 };
 
 test('each kind parses from its folder and renders back to the same bytes', () => {
@@ -41,8 +41,10 @@ test('CRLF reads the same as LF, and values YAML would misread are quoted on ren
 
 test('paths decide the kind; other files in spec folders are refused and non-Markdown wiki files ignored', () => {
   assert.deepEqual(classifyDocPath(paths.r1), { type: 'doc', kind: 'requirement', feature: 'payment', slug: 'cancel' });
-  assert.deepEqual(classifyDocPath(paths.reasons), { type: 'reasons', feature: 'payment' });
-  assert.deepEqual(classifyDocPath('.gitifact/wiki/history.jsonl'), { type: 'reasons', feature: null });
+  assert.deepEqual(classifyDocPath(paths.reasons), { type: 'reasons' });
+  // Per-folder reason files are the 0.7 layout: refused in a feature folder, and not a page in the wiki.
+  assert.throws(() => classifyDocPath('.gitifact/spec/payment/history.jsonl'), { code: 'PATH_UNSUPPORTED' });
+  assert.deepEqual(classifyDocPath('.gitifact/wiki/history.jsonl'), { type: 'ignored' });
   assert.deepEqual(classifyDocPath('.gitifact/wiki/README.md'), { type: 'doc', kind: 'wiki' });
   assert.deepEqual(classifyDocPath('.gitifact/wiki/diagrams/flow.png'), { type: 'ignored' });
   assert.deepEqual(classifyDocPath('.gitifact/assets/flow.png'), { type: 'ignored' });
@@ -100,8 +102,7 @@ test('the whole-set check reports every problem and keeps checking the readable 
     // The payment feature: a duplicate ID, a duplicate order, a broken file and a source pointing at a deleted page.
     [paths.feature, feature], [paths.r1, requirement()], [paths.r2, requirement(R1, 10, '환불')],
     [paths.overview, overview], [paths.api, '# no frontmatter\n'],
-    ['.gitifact/wiki/history.jsonl', renderReasonLine({ id: H, docs: [W], reason: 'a' }) + '\n'],
-    [paths.reasons, renderReasonLine({ id: H, docs: [R1], reason: 'b' }) + '\n'],
+    [paths.reasons, renderReasonLine({ id: H, docs: [W], reason: 'a' }) + '\n' + renderReasonLine({ id: H, docs: [R1], reason: 'b' }) + '\n'],
   ]);
   const result = checkDocuments(broken);
   const found = result.problems.map(p => [p.code, p.path]).sort();
@@ -109,7 +110,7 @@ test('the whole-set check reports every problem and keeps checking the readable 
     ['DESIGN_OVERVIEW_REQUIRED', '.gitifact/spec/refund/design/overview.md'],
     ['DUPLICATE_ID', paths.r2],
     ['DUPLICATE_ORDER', paths.r2],
-    ['DUPLICATE_REASON_ID', '.gitifact/wiki/history.jsonl'],
+    ['DUPLICATE_REASON_ID', paths.reasons],
     ['FEATURE_INDEX_REQUIRED', '.gitifact/spec/refund/index.md'],
     ['FRONTMATTER_REQUIRED', paths.api],
     ['MISSING_REFERENCE', '.gitifact/spec/refund/design/api.md'],

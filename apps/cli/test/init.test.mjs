@@ -116,6 +116,8 @@ test('parallel init publishes one config', async t => {
   assert.deepEqual(results.map(r => r.outcome).sort(), ['already-initialized', 'created']);
   assert.deepEqual(readdirSync(join(f.repo, '.gitifact')), ['config.json']);
   assert.equal(JSON.parse(readFileSync(path(f), 'utf8')).schemaVersion, 2);
+  // Both runs wanted the reason file's merge rule; it is there once.
+  assert.equal(readFileSync(join(f.repo, '.gitattributes'), 'utf8'), '/.gitifact/history.jsonl merge=union\n');
 });
 
 // What `gitifact init` of 0.4.x wrote. Earlier conventions are no longer converted, even when nothing is beside the config.
@@ -218,4 +220,23 @@ test('partial staging of existing config is preserved without rewriting either v
   const before = fingerprint(f.repo);
   assert.equal((await init(f)).outcome, 'already-initialized');
   assert.deepEqual(fingerprint(f.repo), before);
+});
+
+test('init adds the union merge rule for the reason file once, in the file\'s own line endings', async t => {
+  const rule = '/.gitifact/history.jsonl merge=union';
+  const attributes = f => readFileSync(join(f.repo, '.gitattributes'), 'utf8');
+  // No .gitattributes yet: dry-run writes nothing, init creates the file with the one rule, and a second run leaves it.
+  const f = fixture(t);
+  await init(f, { dryRun: true }); assert.equal(existsSync(join(f.repo, '.gitattributes')), false);
+  await init(f); assert.equal(attributes(f), rule + '\n');
+  await init(f); assert.equal(attributes(f), rule + '\n');
+  // An existing CRLF file without a final newline gets the rule on a line of its own, in CRLF.
+  const g = fixture(t); g.write('.gitattributes', '* text=auto\r\n*.png binary');
+  await init(g); assert.equal(attributes(g), '* text=auto\r\n*.png binary\r\n' + rule + '\r\n');
+  // A rule already there, written another way, is left as it is.
+  const h = fixture(t); const own = '.gitifact/history.jsonl  -diff merge=union\n'; h.write('.gitattributes', own);
+  await init(h); assert.equal(attributes(h), own);
+  // A project adopted before the rule existed gets it from a re-run.
+  const k = fixture(t); await init(k); unlinkSync(join(k.repo, '.gitattributes'));
+  assert.equal((await init(k)).outcome, 'already-initialized'); assert.equal(attributes(k), rule + '\n');
 });

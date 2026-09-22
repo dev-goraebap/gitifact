@@ -1,5 +1,5 @@
 import type { DatabaseSync } from 'node:sqlite';
-import { createCommitChanges, type ChangeType, type CommitChanges, type GitAccess, type HistoryEvent } from './commit-changes.js';
+import { createCommitChanges, type ChangeType, type CommitChanges, type CommitReader, type GitAccess, type HistoryEvent } from './commit-changes.js';
 import { transaction, type CacheDatabase } from './database.js';
 import { containing, snippet } from './search-text.js';
 
@@ -31,14 +31,14 @@ export function createHistory(database: CacheDatabase, git: GitAccess) {
   const building = new Map<string, Promise<void>>();
   const built = new Set<string>();
 
-  function insert(db: DatabaseSync, commits: CommitChanges[]) {
-    const commit = db.prepare('INSERT OR IGNORE INTO commits (oid) VALUES (?)');
+  function insert(db: DatabaseSync, commits: CommitChanges[], readers: Map<string, CommitReader>) {
+    const commit = db.prepare('INSERT OR IGNORE INTO commits (oid, reader) VALUES (?, ?)');
     const change = db.prepare('INSERT OR IGNORE INTO changes (key, oid, ord, id, kind, types, email, date, before_spec, after_spec, needle, row, detail) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)');
     const search = db.prepare('INSERT INTO search (scope, kind, ref, oid, payload, title, place, body) VALUES (?,?,?,?,?,?,?,?)');
     transaction(db, () => {
       for (const c of commits) {
         // Another process may have written this commit meanwhile; its rows are the same, so they are not written twice.
-        if (!Number(commit.run(c.commit).changes)) continue;
+        if (!Number(commit.run(c.commit, readers.get(c.commit) ?? 'current').changes)) continue;
         c.events.forEach((e, ord) => {
           change.run(e.key, e.commit, ord, e.id, e.kind, e.types.join(','), e.email, e.date, e.before?.specId ?? null, e.after?.specId ?? null,
             [e.id, e.before?.title ?? '', e.after?.title ?? ''].join(' ').toLowerCase(), JSON.stringify(listed(e)), JSON.stringify({ before: e.before, after: e.after }));
@@ -54,12 +54,21 @@ export function createHistory(database: CacheDatabase, git: GitAccess) {
 
   async function build(head: string) {
     const lineage = await changes.lineage(head);
-    const known = await database.with(db => new Set((db.prepare('SELECT oid FROM commits').all() as { oid: string }[]).map(r => r.oid)));
-    const missing = lineage.filter(oid => !known.has(oid));
+    const readers = await changes.readers(head, lineage);
+    const known = await database.with(db => new Map((db.prepare('SELECT oid, reader FROM commits').all() as { oid: string; reader: string }[]).map(r => [r.oid, r.reader])));
+    // A commit read before a migration existed was read as the current format; once one exists above it, it is read again.
+    const stale = lineage.filter(oid => known.has(oid) && known.get(oid) !== readers.get(oid));
+    if (stale.length) await database.with(db => transaction(db, () => {
+      for (const oid of stale) {
+        db.prepare('DELETE FROM commits WHERE oid = ?').run(oid); db.prepare('DELETE FROM changes WHERE oid = ?').run(oid);
+        db.prepare("DELETE FROM search WHERE scope = 'history' AND oid = ?").run(oid);
+      }
+    }));
+    const missing = lineage.filter(oid => !known.has(oid) || stale.includes(oid));
     // Written a hundred commits at a time, so a long first read that is interrupted keeps what it had read.
     for (let i = 0; i < missing.length; i += 100) {
-      const read = await changes.of(missing.slice(i, i + 100));
-      await database.with(db => insert(db, read));
+      const read = await changes.of(missing.slice(i, i + 100), readers);
+      await database.with(db => insert(db, read, readers));
     }
     await database.with(db => transaction(db, () => {
       db.prepare('DELETE FROM lineage WHERE head = ?').run(head);
@@ -136,9 +145,10 @@ export function createHistory(database: CacheDatabase, git: GitAccess) {
         const commit = key.slice(0, key.indexOf(':'));
         const known = await database.with(db => !!db.prepare('SELECT 1 FROM commits WHERE oid = ?').get(commit));
         if (known) return undefined;
+        // A commit outside every lineage read so far: read it as the current format. Its HEAD's lineage, when built, decides again.
         const read = await changes.of([commit]).catch(() => undefined);
         if (!read) return undefined;
-        await database.with(db => insert(db, read));
+        await database.with(db => insert(db, read, new Map()));
         found = await lookup();
       }
       if (!found) return undefined;

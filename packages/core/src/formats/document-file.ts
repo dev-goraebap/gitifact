@@ -6,11 +6,13 @@ import { t } from '../shared/i18n/index.js';
 //   .gitifact/spec/<feature>/index.md                 feature overview (S-)
 //   .gitifact/spec/<feature>/requirements/<slug>.md   one requirement (R-)
 //   .gitifact/spec/<feature>/design/<slug>.md         one design axis (D-); design/overview.md is required once a design exists
-//   .gitifact/spec/<feature>/history.jsonl            reasons for the feature's documents
-//   .gitifact/wiki/**/*.md, .gitifact/wiki/history.jsonl
+//   .gitifact/wiki/**/*.md                            wiki pages (W-)
+//   .gitifact/history.jsonl                           reasons for every document, one file for the whole store
 
 export const SPEC_ROOT = '.gitifact/spec';
 export const WIKI_ROOT = '.gitifact/wiki';
+/** The one reason file. Git merges it with `merge=union`, so lines added on two branches are both kept. */
+export const HISTORY_PATH = '.gitifact/history.jsonl';
 const name = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 /** Root wiki pages may carry the conventional upper-case names (README.md, ARCHITECTURE.md, ...). */
 const rootUpperName = /^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*\.md$/;
@@ -19,18 +21,21 @@ export type DocPath =
   | { type: 'doc'; kind: 'feature'; feature: string }
   | { type: 'doc'; kind: 'requirement' | 'design'; feature: string; slug: string }
   | { type: 'doc'; kind: 'wiki' }
-  | { type: 'reasons'; feature: string | null }
+  | { type: 'reasons' }
   | { type: 'ignored' };
 
-/** What a repository path under `.gitifact/spec` or `.gitifact/wiki` is. Files elsewhere are ignored; unknown files in spec folders are refused. */
+/**
+ * What a repository path is: a document under `.gitifact/spec` or `.gitifact/wiki`, the reason file, or nothing to read.
+ * Unknown files in spec folders are refused — a per-folder history.jsonl left from 0.7 among them.
+ */
 export function classifyDocPath(path: string): DocPath {
   const unsupported = () => new DocumentError('PATH_UNSUPPORTED', path, t('doc.PATH_UNSUPPORTED', { path }));
+  if (path === HISTORY_PATH) return { type: 'reasons' };
   if (path.startsWith(SPEC_ROOT + '/')) {
     const parts = path.slice(SPEC_ROOT.length + 1).split('/');
     const feature = parts[0]!;
     if (!name.test(feature) || feature.length > 80) throw unsupported();
     if (parts.length === 2 && parts[1] === 'index.md') return { type: 'doc', kind: 'feature', feature };
-    if (parts.length === 2 && parts[1] === 'history.jsonl') return { type: 'reasons', feature };
     if (parts.length === 3 && (parts[1] === 'requirements' || parts[1] === 'design') && parts[2]!.endsWith('.md')) {
       const slug = parts[2]!.slice(0, -3);
       if (!name.test(slug) || slug.length > 80) throw unsupported();
@@ -40,7 +45,6 @@ export function classifyDocPath(path: string): DocPath {
   }
   if (path.startsWith(WIKI_ROOT + '/')) {
     const relative = path.slice(WIKI_ROOT.length + 1);
-    if (relative === 'history.jsonl') return { type: 'reasons', feature: null };
     // Images and other files beside the pages are not documents.
     if (!relative.endsWith('.md')) return { type: 'ignored' };
     const parts = relative.split('/'); const file = parts.pop()!;

@@ -6,7 +6,7 @@ import { join } from 'node:path';
  * Bumped whenever what is stored changes meaning — a column, or how a commit's changes are computed. A file written
  * under another number is dropped and rebuilt; everything in it can be read again from the files and from Git.
  */
-export const CACHE_FORMAT = 1;
+export const CACHE_FORMAT = 2;
 export const CACHE_DIR = '.gitifact/cache';
 
 const SCHEMA = `
@@ -20,8 +20,8 @@ const SCHEMA = `
   -- ID references from frontmatter: a design's requirements and sources. The reverse lookup reads the same rows.
   CREATE TABLE doc_references (from_id TEXT NOT NULL, to_id TEXT NOT NULL, type TEXT NOT NULL);
   CREATE INDEX doc_references_to ON doc_references (to_id);
-  -- Commits already read.
-  CREATE TABLE commits (oid TEXT PRIMARY KEY);
+  -- Commits already read, and with which parser: 'current', 'legacy' (0.7, before a migration) or 'migration' (hidden).
+  CREATE TABLE commits (oid TEXT PRIMARY KEY, reader TEXT NOT NULL);
   -- One row per change. 'row' is the list shape as JSON; 'detail' the text on both sides.
   CREATE TABLE changes (
     key TEXT PRIMARY KEY, oid TEXT NOT NULL, ord INTEGER NOT NULL,

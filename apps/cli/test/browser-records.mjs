@@ -12,7 +12,7 @@ import { createCheckoutReader } from '../.test-build/server/checkout/checkout-re
  */
 export function openRecords(root, env, limit = 100) {
   const git = storeReader(root);
-  const cache = openCache(root, { run: (args, input) => git.run(args, input), decode: git.decode });
+  const cache = openCache(root, { run: (args, input) => git.run(args, input), decode: git.decode, legacyBundle: oid => git.readBundle(oid) });
   const checkout = createCheckoutReader(root, 'fixture', cache, env);
   async function read() {
     const { checkout: current } = await checkout();
@@ -38,9 +38,9 @@ export function docs(f) {
     requirement: (folder, slug, id, fields) => doc('requirement', `.gitifact/spec/${folder}/requirements/${slug}.md`, id, fields),
     design: (folder, slug, id, fields) => doc('design', `.gitifact/spec/${folder}/design/${slug}.md`, id, fields),
     wiki: (path, id, fields) => doc('wiki', `.gitifact/wiki/${path}`, id, fields),
-    /** Appends reason lines to a feature folder's history.jsonl, or the wiki's when `folder` is null. */
-    reasons: (folder, ...lines) => {
-      const path = folder ? `.gitifact/spec/${folder}/history.jsonl` : '.gitifact/wiki/history.jsonl';
+    /** Appends reason lines to the one reason file, `.gitifact/history.jsonl`. */
+    reasons: (...lines) => {
+      const path = '.gitifact/history.jsonl';
       let text = ''; try { text = readFileSync(join(f.repo, path), 'utf8'); } catch { /* new file */ }
       return put(path, text + lines.map(l => renderReasonLine(l) + '\n').join(''));
     },

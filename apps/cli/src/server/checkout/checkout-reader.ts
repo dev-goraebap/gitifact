@@ -3,7 +3,7 @@ import { browserSpecsV5, type BrowserSpecsV5, type DesignSource } from '@gitifac
 import { createGitRunner } from '../../adapters/git/run-git.js';
 import { storeReader } from '../../adapters/git/store-reader.js';
 import { readConfigFile } from '../../adapters/filesystem/config-file.js';
-import type { Cache } from '../../adapters/cache/index.js';
+import { MIGRATION_TRAILER, type Cache } from '../../adapters/cache/index.js';
 import { t, getLanguage } from '../../shared/i18n/index.js';
 
 type Contributor = BrowserSpecsV5['contributors'][number];
@@ -66,6 +66,8 @@ export function createCheckoutReader(root: string, sessionId: string, cache: Cac
     return head || null;
   };
   const pending = new Map<string, Promise<{ checkout: BrowserSpecsV5; head: string | null }>>();
+  // A format migration rewrites every document but is nobody's work on them: it counts toward no author or date.
+  const notMigration = ['-E', '--invert-grep', `--grep=^${MIGRATION_TRAILER}: `];
 
   /**
    * Authors per feature folder and the latest commit per wiki page, from one walk over the commits that touched the
@@ -73,7 +75,7 @@ export function createCheckoutReader(root: string, sessionId: string, cache: Cac
    * and 63 pages, about 80 ms each on Windows. A feature still counts at most 2000 commits.
    */
   async function storeAuthors(head: string) {
-    const text = await git(['log', '--format=%x1e%aN%x00%aE%x00%aI', '-z', '--name-only', '--no-renames', '--max-count=20000', head, '--', '.gitifact/spec', WIKI_ROOT]);
+    const text = await git(['log', ...notMigration, '--format=%x1e%aN%x00%aE%x00%aI', '-z', '--name-only', '--no-renames', '--max-count=20000', head, '--', '.gitifact/spec', WIKI_ROOT]);
     const folders = new Map<string, { people: Map<string, Contributor>; count: number; latest: string }>();
     const pages = new Map<string, string>();
     for (const chunk of text.split('\x1e')) {
@@ -105,7 +107,7 @@ export function createCheckoutReader(root: string, sessionId: string, cache: Cac
       head ? git(['status', '--porcelain=v1', '--', '.gitifact/spec', WIKI_ROOT]) : Promise.resolve(''),
       head ? storeAuthors(head) : Promise.resolve(undefined),
       // Git mailmap may change without a new HEAD; refresh names with every observation that carries them.
-      head ? git(['log', '--format=%aN%x00%aE%x00%aI', '--max-count=10001', head]) : Promise.resolve(''),
+      head ? git(['log', ...notMigration, '--format=%aN%x00%aE%x00%aI', '--max-count=10001', head]) : Promise.resolve(''),
     ] as const);
     const people = new Map<string, Contributor>();
     const lines = everyone.trim().split('\n').filter(Boolean);

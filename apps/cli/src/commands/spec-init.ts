@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { initRepository } from '../adapters/git/init-repository.js';
 import { fileInfo, publishConfig, readConfigFile } from '../adapters/filesystem/config-file.js';
 import { applyAgentDocs, planAgentDocs, skippedAgentDocs, type AgentDocsOptions } from './agent-docs.js';
+import { applyHistoryAttributes, planHistoryAttributes } from './history-attributes.js';
 import { readBundledDoc } from './docs.js';
 import { generateId } from '../adapters/filesystem/store.js';
 import { disabledUpdate, npmGlobalInstall, npxUpdate } from '../shared/update-check.js';
@@ -15,6 +16,8 @@ export async function initializeSpecProject(cwd: string, dryRun = false, env = p
   const repo = initRepository(cwd, env); const first = await repo.inspect(); const root = first.state.repository.rootPath;
   // Agent-doc targets are read and validated first so malformed markers refuse the run before any write.
   const docsPlan = agentDocs ? await planAgentDocs(root, agentDocs) : skippedAgentDocs;
+  // The reason file's merge rule is read the same way; re-running init adds it to a project adopted without it.
+  const attributesPlan = await planHistoryAttributes(root);
   const result = async (config: SpecProjectConfig, outcome: 'planned' | 'created' | 'already-initialized') => {
     const checked = await update;
     return projectInitV6.parse({ contract: 'project-init', version: 6, ok: true, outcome,
@@ -29,7 +32,7 @@ export async function initializeSpecProject(cwd: string, dryRun = false, env = p
       if ((await repo.inspect()).stamp !== first.stamp || await readConfigFile(root) !== text) throw new InitError('INPUT_CHANGED', t('init.inputChanged'));
     };
     await unchanged();
-    if (!dryRun) await applyAgentDocs(root, docsPlan, unchanged);
+    if (!dryRun) { await applyAgentDocs(root, docsPlan, unchanged); await applyHistoryAttributes(root, attributesPlan, unchanged); }
     return result(config, 'already-initialized');
   };
   const config: SpecProjectConfig = { schemaVersion: SCHEMA_VERSION, baseline: first.state.head.commit
@@ -41,6 +44,7 @@ export async function initializeSpecProject(cwd: string, dryRun = false, env = p
     };
     await published();
     await applyAgentDocs(root, docsPlan, published);
+    await applyHistoryAttributes(root, attributesPlan, published);
     await writeWikiPolicy(root, readDoc);
     return result(config, outcome);
   };

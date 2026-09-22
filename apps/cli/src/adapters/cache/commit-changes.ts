@@ -1,29 +1,29 @@
 import { t } from '../../shared/i18n/index.js';
-import { classifyDocPath, parseDocumentFile, parseReasonLines, SPEC_ROOT, WIKI_ROOT, type Doc, type DocKind, type DocReason, type DocSource } from '@gitifact/core';
+import { classifyDocPath, parseDocumentFile, parseReasonLines, HISTORY_PATH, SPEC_ROOT, WIKI_ROOT, type Doc, type DocKind, type DocReason, type StoreBundle } from '@gitifact/core';
+import { legacyChanges } from './legacy-changes.js';
+import type { ChangeType, CommitChanges, DocSnapshot, HistoryEvent } from './events.js';
 
-/** Git run under the project's guarded environment, supplied by the caller so this adapter does not import another. */
-export interface GitAccess { run(args: string[], input?: Buffer): Promise<Buffer>; decode(bytes: Buffer): string }
+/**
+ * Git run under the project's guarded environment, supplied by the caller so this adapter does not import another.
+ * `legacyBundle` reads a commit with the 0.7 parser, for history before a migration; without it that history is empty.
+ */
+export interface GitAccess { run(args: string[], input?: Buffer): Promise<Buffer>; decode(bytes: Buffer): string; legacyBundle?(oid: string): Promise<StoreBundle> }
 
-/** One document at one side of a change: everything the detail shows. */
-export interface DocSnapshot {
-  id: string; kind: DocKind; title: string; description: string; body: string; specId: string; path: string;
-  order?: number; requirements?: string[]; sources?: DocSource[];
-}
-export type ChangeType = 'created' | 'modified' | 'moved' | 'deleted';
-/** One change of one commit, with the full text on both sides. Lists send it without the text. */
-export interface HistoryEvent {
-  key: string; commit: string; date: string; author: string; email: string; committer: string; message: string;
-  id: string; kind: DocKind; types: ChangeType[]; before: DocSnapshot | null; after: DocSnapshot | null; reasons: string[];
-}
-export interface CommitChanges { commit: string; events: HistoryEvent[] }
+export type { DocSnapshot, SnapshotSource, ChangeType, HistoryEvent, CommitChanges } from './events.js';
 interface RawCommit { commit: string; parent: string | undefined; parents: string[]; author: string; email: string; date: string; committer: string; message: string; paths: string[] }
+/** How a commit is read: with the current parser, with the 0.7 parser (before a migration), or not at all (the migration itself). */
+export type CommitReader = 'current' | 'legacy' | 'migration';
+/** The trailer `changes commit` puts on a format migration. Its commit is where the current format's history starts. */
+export const MIGRATION_TRAILER = 'Gitifact-Migration';
 /** The documents and reasons of one side, read from some or all of its files. */
 interface Side { docs: Map<string, DocSnapshot>; reasons: Map<string, DocReason> }
 
 /** The files a commit must touch to appear in the history: features, requirements, designs, wiki pages and reasons. */
 export const HISTORY_PATHSPECS = [
   `:(glob)${SPEC_ROOT}/*/index.md`, `:(glob)${SPEC_ROOT}/*/requirements/*.md`, `:(glob)${SPEC_ROOT}/*/design/*.md`,
-  `:(glob)${SPEC_ROOT}/*/history.jsonl`, `:(glob)${WIKI_ROOT}/**/*.md`, `:(glob)${WIKI_ROOT}/history.jsonl`,
+  `:(glob)${WIKI_ROOT}/**/*.md`, `:(literal)${HISTORY_PATH}`,
+  // The 0.7 files, so the commits before a migration are in the lineage too. Removed with the 0.7 parser at 1.0.0.
+  `:(glob)${SPEC_ROOT}/*/requirements.md`, `:(glob)${SPEC_ROOT}/*/design.md`, `:(glob)${SPEC_ROOT}/*/history.jsonl`, `:(literal)${WIKI_ROOT}/history.jsonl`,
 ];
 const FORMAT = '%x1e%H%x00%P%x00%aN%x00%aE%x00%aI%x00%cN%x00%s';
 const BATCH = 100;
@@ -69,8 +69,9 @@ function compare(before: Side, after: Side) {
 /**
  * The changes each commit made to the documents, read from what the commit changed. Documents are one file each, so
  * a commit's changes are the documents in its changed files: one `git log --raw` names those files for a batch of
- * commits and one `git cat-file --batch` reads them at both sides, with the feature's index.md for its ID and the
- * reason files for the reasons first written in the commit.
+ * commits and one `git cat-file --batch` reads them at both sides, with the feature's index.md for its ID. Reasons
+ * are the lines a commit added to the one reason file, read for the whole batch by one `git log -p`, so the cost does
+ * not grow with the file.
  */
 export function createCommitChanges(git: GitAccess) {
   async function readBlobs(names: string[]): Promise<Map<string, string>> {
@@ -97,19 +98,35 @@ export function createCommitChanges(git: GitAccess) {
     new Map(paths.filter(p => blobs.has(rev + ':' + p)).map(p => [p, blobs.get(rev + ':' + p)!]));
   /** Every document and reason file of a commit, for merges, which compare whole trees. */
   async function tree(rev: string): Promise<Map<string, string>> {
-    const listing = git.decode(await git.run(['ls-tree', '--full-tree', '-r', '-z', rev, '--', SPEC_ROOT, WIKI_ROOT]));
+    const listing = git.decode(await git.run(['ls-tree', '--full-tree', '-r', '-z', rev, '--', SPEC_ROOT, WIKI_ROOT, HISTORY_PATH]));
     const paths = listing.split('\0').filter(Boolean).map(row => /^\d+ blob [a-f0-9]+\t([\s\S]+)$/.exec(row)?.[1]).filter((p): p is string => !!p && recordKind(p) !== 'ignored');
     const blobs = await readBlobs(paths.map(p => rev + ':' + p));
     return at(blobs, rev, paths);
   }
-  /** The files one side of an ordinary commit needs: its changed records, and the index.md and reasons of their folders. */
+  /** The files one side of an ordinary commit needs: its changed documents and the index.md of their folders. */
   function wanted(paths: string[]) {
-    const names = new Set(paths);
-    for (const path of paths) {
-      const folder = folderOf(path);
-      if (folder) { names.add(folder + '/index.md'); names.add(folder + '/history.jsonl'); } else names.add(WIKI_ROOT + '/history.jsonl');
-    }
+    const names = new Set(paths.filter(p => p !== HISTORY_PATH));
+    for (const path of names) { const folder = folderOf(path); if (folder) names.add(folder + '/index.md'); }
     return [...names];
+  }
+
+  /**
+   * The reason lines each ordinary commit added, from one patch of the reason file for all of them. A line that
+   * replaces an existing line keeps its ID and is an edit of an old reason, not a new one.
+   */
+  async function addedReasons(commits: RawCommit[]): Promise<Map<string, DocReason[]>> {
+    const found = new Map<string, DocReason[]>();
+    const touching = commits.filter(c => c.parents.length < 2 && c.paths.includes(HISTORY_PATH));
+    if (!touching.length) return found;
+    const patch = git.decode(await git.run(['log', '--stdin', '--no-walk=unsorted', '--format=%x1e%H', '-p', '-U0', '--no-color', '--no-ext-diff', '--no-textconv', '--no-renames', '--', HISTORY_PATH],
+      Buffer.from(touching.map(c => c.commit).join('\n') + '\n')));
+    const read = (line: string) => { try { return parseReasonLines(HISTORY_PATH, line); } catch { return []; } };
+    for (const chunk of patch.split('\x1e').filter(Boolean)) {
+      const lines = chunk.split('\n'); const commit = lines[0]!.trim();
+      const removed = new Set(lines.filter(l => l.startsWith('-') && !l.startsWith('---')).flatMap(l => read(l.slice(1))).map(r => r.id));
+      found.set(commit, lines.filter(l => l.startsWith('+') && !l.startsWith('+++')).flatMap(l => read(l.slice(1))).filter(r => !removed.has(r.id)));
+    }
+    return found;
   }
 
   function parseLog(text: string): RawCommit[] {
@@ -157,12 +174,18 @@ export function createCommitChanges(git: GitAccess) {
     return { commit: c.commit, events: eventsOf(c, selected, newReasons(parents, after)) };
   }
 
-  async function batch(commits: RawCommit[]): Promise<CommitChanges[]> {
-    const plain = commits.filter(c => c.parents.length < 2);
+  async function batch(commits: RawCommit[], readers: Map<string, CommitReader>): Promise<CommitChanges[]> {
+    const plain = commits.filter(c => c.parents.length < 2 && (readers.get(c.commit) ?? 'current') === 'current');
     const names = plain.flatMap(c => { const files = wanted(c.paths); return [...files.map(f => c.commit + ':' + f), ...(c.parent ? files.map(f => c.parent + ':' + f) : [])]; });
-    const blobs = await readBlobs(names);
+    const [blobs, reasons] = await Promise.all([readBlobs(names), addedReasons(plain)]);
     const result: CommitChanges[] = [];
     for (const c of commits) {
+      const reader = readers.get(c.commit) ?? 'current';
+      if (reader === 'migration') { result.push({ commit: c.commit, events: [] }); continue; }
+      if (reader === 'legacy') {
+        const events = git.legacyBundle ? await legacyChanges(c, git.legacyBundle).catch(() => []) : [];
+        result.push({ commit: c.commit, events }); continue;
+      }
       if (c.parents.length > 1) { result.push(await merge(c)); continue; }
       const files = wanted(c.paths);
       const after = sideOf(at(blobs, c.commit, files));
@@ -170,7 +193,7 @@ export function createCommitChanges(git: GitAccess) {
       // Only the documents in changed files belong to this commit; an index.md read for its ID is not a change.
       const changed = new Set(c.paths);
       const restrict = (s: Side): Side => ({ docs: new Map([...s.docs].filter(([, d]) => changed.has(d.path))), reasons: s.reasons });
-      result.push({ commit: c.commit, events: eventsOf(c, compare(restrict(before), restrict(after)), newReasons([before], after)) });
+      result.push({ commit: c.commit, events: eventsOf(c, compare(restrict(before), restrict(after)), reasons.get(c.commit) ?? []) });
     }
     return result;
   }
@@ -180,8 +203,21 @@ export function createCommitChanges(git: GitAccess) {
     async lineage(head: string): Promise<string[]> {
       return git.decode(await git.run(['rev-list', '--full-history', '--date-order', head, '--', ...HISTORY_PATHSPECS])).split('\n').filter(Boolean);
     },
+    /**
+     * How each commit of `head`'s lineage is read. The newest migration commit reachable from `head` splits it: its
+     * ancestors are 0.7 history, it is itself hidden, and everything after it is the current format.
+     */
+    async readers(head: string, lineage: string[]): Promise<Map<string, CommitReader>> {
+      const readers = new Map<string, CommitReader>(lineage.map(oid => [oid, 'current']));
+      const migrations = git.decode(await git.run(['log', '--format=%H', '-E', `--grep=^${MIGRATION_TRAILER}: `, head, '--', ...HISTORY_PATHSPECS])).split('\n').filter(Boolean);
+      if (!migrations.length) return readers;
+      const before = git.decode(await git.run(['rev-list', ...migrations, '--', ...HISTORY_PATHSPECS])).split('\n').filter(Boolean);
+      for (const oid of before) if (readers.has(oid)) readers.set(oid, 'legacy');
+      for (const oid of migrations) readers.set(oid, 'migration');
+      return readers;
+    },
     /** Changes in the given order; ordinary commits are batched, merges compare whole trees. */
-    async of(commits: string[]): Promise<CommitChanges[]> {
+    async of(commits: string[], readers: Map<string, CommitReader> = new Map()): Promise<CommitChanges[]> {
       const out: CommitChanges[] = [];
       for (let i = 0; i < commits.length; i += BATCH) {
         const slice = commits.slice(i, i + BATCH);
@@ -190,7 +226,7 @@ export function createCommitChanges(git: GitAccess) {
           Buffer.from(slice.join('\n') + '\n'))));
         const byCommit = new Map(raw.map(c => [c.commit, c]));
         if (slice.some(oid => !byCommit.has(oid))) throw unreadable();
-        out.push(...await batch(slice.map(oid => byCommit.get(oid)!)));
+        out.push(...await batch(slice.map(oid => byCommit.get(oid)!), readers));
       }
       return out;
     },
