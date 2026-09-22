@@ -51,4 +51,4 @@ requirements:
 
 ## 자체 적용
 
-이 저장소는 PRODUCT.md를 `wiki/README.md`로, guides 7건을 같은 상대 경로의 위키 페이지로 옮기고 새 `W-` ID를 받았다. 로고는 `assets/gitifact-logo.svg`로 옮겼다. 옛 폴더와 history.jsonl은 삭제했고 그 이력은 Git에 남아 있다.
+이 저장소는 PRODUCT.md를 `wiki/README.md`로, guides 7건을 같은 상대 경로의 위키 페이지로 옮기고 새 `W-` ID를 받았다. 옛 `.gitifact/product/gitifact-logo.svg`는 옮기지 않고 지웠으며, 로고는 `packages/intro/assets`와 `apps/browser/public`에 둔다. 옛 폴더와 history.jsonl은 삭제했고 그 이력은 Git에 남아 있다.
