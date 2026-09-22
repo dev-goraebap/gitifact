@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { browserSessionV3, updateCheckV1, browserHttpErrorV1, updateStateV1, updateV4, projectInitV7 } from '../dist/index.js';
+import { browserSessionV3, updateCheckV1, browserHttpErrorV1, updateStateV1, updateV5, projectInitV7 } from '../dist/index.js';
 
 const value = { contract: 'browser-session', version: 3,
   sessionId: '7cc37dc4-4ea7-4252-b9de-24944fbfb5a2',
@@ -30,33 +30,36 @@ test('update state carries a version exactly when the check produced a result', 
 
 test('update command output is versioned, reports the block commit and keeps failures separate', () => {
   const none = { state: 'not-requested', commit: null, paths: [], message: null, reason: null, detail: null };
-  const ok = { contract: 'update', version: 4, ok: true, cliVersion: '0.4.0', update: { status: 'available', latestVersion: '0.4.1' },
-    install: { npx: 'npx --yes gitifact@0.4.1 update', npmGlobal: 'npm install -g gitifact@0.4.1' }, agentDocs: { state: 'refreshed', paths: ['AGENTS.md'], missing: [] }, commit: none };
-  assert.deepEqual(updateV4.parse(ok), ok);
-  assert.equal(updateV4.safeParse({ ...ok, install: null, agentDocs: { state: 'not-initialized', paths: [], missing: ['CLAUDE.md'] } }).success, true);
-  assert.equal(updateV4.safeParse({ ...ok, agentDocs: { state: 'current', paths: [] } }).success, false);
-  assert.equal(updateV4.safeParse({ ...ok, agentDocs: { state: 'unknown', paths: [], missing: [] } }).success, false);
-  assert.equal(updateV4.safeParse({ ...ok, extra: true }).success, false);
+  const ok = { contract: 'update', version: 5, ok: true, cliVersion: '0.4.0', update: { status: 'available', latestVersion: '0.4.1' },
+    install: { npx: 'npx --yes gitifact@0.4.1 update', npmGlobal: 'npm install -g gitifact@0.4.1' }, agentDocs: { state: 'refreshed', paths: ['AGENTS.md'], missing: [] }, commit: none, migrationRequired: false };
+  assert.deepEqual(updateV5.parse(ok), ok);
+  assert.equal(updateV5.safeParse({ ...ok, install: null, agentDocs: { state: 'not-initialized', paths: [], missing: ['CLAUDE.md'] } }).success, true);
+  assert.equal(updateV5.safeParse({ ...ok, agentDocs: { state: 'current', paths: [] } }).success, false);
+  assert.equal(updateV5.safeParse({ ...ok, agentDocs: { state: 'unknown', paths: [], missing: [] } }).success, false);
+  assert.equal(updateV5.safeParse({ ...ok, extra: true }).success, false);
   const { commit: _omitted, ...withoutCommit } = ok;
-  assert.equal(updateV4.safeParse(withoutCommit).success, false);
-  assert.equal(updateV4.safeParse({ ...ok, version: 3 }).success, false);
+  assert.equal(updateV5.safeParse(withoutCommit).success, false);
+  assert.equal(updateV5.safeParse({ ...ok, version: 4 }).success, false);
+  const { migrationRequired: _flag, ...withoutFlag } = ok;
+  assert.equal(updateV5.safeParse(withoutFlag).success, false);
+  assert.equal(updateV5.safeParse({ ...ok, migrationRequired: true }).success, true);
   const committed = { state: 'committed', commit: 'a'.repeat(40), paths: ['AGENTS.md'], message: 'chore(gitifact): refresh GITIFACT block to v0.4.0', reason: null, detail: null };
-  assert.equal(updateV4.safeParse({ ...ok, commit: committed }).success, true);
-  assert.equal(updateV4.safeParse({ ...ok, commit: { ...committed, commit: null } }).success, false);
-  assert.equal(updateV4.safeParse({ ...ok, commit: { ...none, state: 'skipped', paths: ['AGENTS.md'], reason: 'other-changes' } }).success, true);
-  assert.equal(updateV4.safeParse({ ...ok, commit: { ...none, state: 'skipped' } }).success, false);
-  const failure = { contract: 'update', version: 4, ok: false, error: { code: 'UPDATE_FAILED', message: 'x' } };
-  assert.deepEqual(updateV4.parse(failure), failure);
+  assert.equal(updateV5.safeParse({ ...ok, commit: committed }).success, true);
+  assert.equal(updateV5.safeParse({ ...ok, commit: { ...committed, commit: null } }).success, false);
+  assert.equal(updateV5.safeParse({ ...ok, commit: { ...none, state: 'skipped', paths: ['AGENTS.md'], reason: 'other-changes' } }).success, true);
+  assert.equal(updateV5.safeParse({ ...ok, commit: { ...none, state: 'skipped' } }).success, false);
+  const failure = { contract: 'update', version: 5, ok: false, error: { code: 'UPDATE_FAILED', message: 'x' } };
+  assert.deepEqual(updateV5.parse(failure), failure);
 });
 
 
 test('install guidance requires the version-pinned npx command', () => {
   const install = { npx: 'npx --yes gitifact@0.7.1 update', npmGlobal: 'npm install -g gitifact@0.7.1' };
-  const update = { contract: 'update', version: 4, ok: true, cliVersion: '0.7.0', update: { status: 'available', latestVersion: '0.7.1' }, install,
-    agentDocs: { state: 'current', paths: [], missing: [] }, commit: { state: 'not-requested', commit: null, paths: [], message: null, reason: null, detail: null } };
+  const update = { contract: 'update', version: 5, ok: true, cliVersion: '0.7.0', update: { status: 'available', latestVersion: '0.7.1' }, install,
+    agentDocs: { state: 'current', paths: [], missing: [] }, commit: { state: 'not-requested', commit: null, paths: [], message: null, reason: null, detail: null }, migrationRequired: false };
   const init = { contract: 'project-init', version: 7, ok: true, outcome: 'created', rootPath: '/fixture', configPath: '.gitifact/config.json', schemaVersion: 3,
     baseline: { kind: 'empty' }, agentDocs: { mode: 'install', paths: ['AGENTS.md'] }, update: update.update, install };
-  for (const [schema, value, version] of [[updateV4, update, 3], [projectInitV7, init, 6]]) {
+  for (const [schema, value, version] of [[updateV5, update, 4], [projectInitV7, init, 6]]) {
     assert.deepEqual(schema.parse(value), value);
     assert.equal(schema.safeParse({ ...value, install: { npmGlobal: install.npmGlobal } }).success, false);
     assert.equal(schema.safeParse({ ...value, version }).success, false);

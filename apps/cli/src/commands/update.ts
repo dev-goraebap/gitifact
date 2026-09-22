@@ -1,5 +1,5 @@
-import { InitError, RepositoryReadError } from '@gitifact/core';
-import { updateV4, type UpdateV4 } from '@gitifact/contracts';
+import { InitError, RepositoryReadError, needsMigration } from '@gitifact/core';
+import { updateV5, type UpdateV5 } from '@gitifact/contracts';
 import { initRepository } from '../adapters/git/init-repository.js';
 import { agentDocsGit } from '../adapters/git/agent-docs-commit.js';
 import { readConfigFile } from '../adapters/filesystem/config-file.js';
@@ -12,7 +12,7 @@ import { t } from '../shared/i18n/index.js';
 
 export interface UpdateControls extends AgentBlockControls { fetchLatest?: FetchLatestVersion; timeoutMs?: number; commit?: boolean }
 type AgentDocsState = { state: 'refreshed' | 'current' | 'not-initialized' | 'no-block'; paths: string[]; missing: string[]; root?: string; candidates?: string[] };
-type Commit = Extract<UpdateV4, { ok: true }>['commit'];
+type Commit = Extract<UpdateV5, { ok: true }>['commit'];
 
 // The message is fixed so every contributor's refresh reads the same in history; it carries no Gitifact trailer.
 export const blockCommitMessage = (version: string) => 'chore(gitifact): refresh GITIFACT block to v' + version;
@@ -87,9 +87,11 @@ export async function updateCommand(cwd: string, version: string, env: NodeJS.Pr
     refreshBlocks(cwd, version, env, controls),
   ]);
   const commit = controls.commit ? await commitBlocks(agentDocs, version, env) : commitState('not-requested');
-  return updateV4.parse({ contract: 'update', version: 4, ok: true, cliVersion: version, update,
+  const config = await readConfigFile(agentDocs.root ?? cwd).catch(() => undefined);
+  return updateV5.parse({ contract: 'update', version: 5, ok: true, cliVersion: version, update,
     install: update.status === 'available' ? { npx: npxUpdate(update.latestVersion!), npmGlobal: npmGlobalInstall(update.latestVersion!) } : null,
-    agentDocs: { state: agentDocs.state, paths: agentDocs.paths, missing: agentDocs.missing }, commit });
+    agentDocs: { state: agentDocs.state, paths: agentDocs.paths, missing: agentDocs.missing }, commit,
+    migrationRequired: config !== undefined && needsMigration(config) });
 }
 export async function runUpdate(options: { format?: 'json' | 'text'; commit?: boolean }, version: string) {
   try {
@@ -105,6 +107,7 @@ export async function runUpdate(options: { format?: 'json' | 'text'; commit?: bo
       : dto.agentDocs.state === 'current' ? t('update.text.blockCurrent', { paths: dto.agentDocs.paths.join(', ') })
       : dto.agentDocs.state === 'no-block' ? t('update.text.noBlock', { version: dto.cliVersion }) : t('update.text.notInitialized'));
     if (dto.agentDocs.missing.length) lines.push(t('update.text.missing', { paths: dto.agentDocs.missing.join(', '), version: dto.cliVersion }));
+    if (dto.migrationRequired) lines.push(t('update.text.migrationRequired', { version: dto.cliVersion }));
     const { commit } = dto;
     if (commit.state === 'committed') lines.push(t('update.text.committed', { commit: commit.commit!.slice(0, 12), paths: commit.paths.join(', ') }));
     else if (commit.state === 'nothing') lines.push(t('update.text.commitNothing'));
@@ -119,7 +122,7 @@ export async function runUpdate(options: { format?: 'json' | 'text'; commit?: bo
     const known = error instanceof InitError || error instanceof RepositoryReadError;
     const failure = { code: known ? error.code : 'UPDATE_FAILED', message: known ? error.message : t('update.failed') };
     process.stderr.write(options.format === 'text' ? failure.code + ': ' + failure.message + '\n'
-      : JSON.stringify(updateV4.parse({ contract: 'update', version: 4, ok: false, error: failure })) + '\n');
+      : JSON.stringify(updateV5.parse({ contract: 'update', version: 5, ok: false, error: failure })) + '\n');
     process.exitCode = 1;
   }
 }

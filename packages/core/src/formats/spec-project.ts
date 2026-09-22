@@ -28,6 +28,11 @@ function parseBaseline(value: unknown): Baseline {
   return value as unknown as Baseline;
 }
 
+/** True when the config is the 0.7 storage convention, which the documents must be migrated from. Unreadable text is false. */
+export function needsMigration(text: string): boolean {
+  try { return (JSON.parse(text) as { schemaVersion?: unknown })?.schemaVersion === PREVIOUS_SCHEMA_VERSION; } catch { return false; }
+}
+
 export function parseManagedConfig(text: string): SpecProjectConfig {
   let value: unknown;
   try { value = JSON.parse(text); } catch { throw new InitError('INVALID_CONFIG', t('config.jsonUnreadableShort')); }
