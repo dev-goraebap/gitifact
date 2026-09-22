@@ -20,14 +20,31 @@
 .documentHeading h1 { font-size:1.75rem; line-height:1.4; letter-spacing:-.025em; }
 .featureDetail { padding-top:var(--spacing-6); }
 .designPanel { padding-block:var(--spacing-6); }
+.featureIntro { padding-block:var(--spacing-5); }
 .documentIndex { padding-block:var(--spacing-5); border-block:1px solid var(--color-border); }
 .documentIndex a { padding-block:var(--spacing-1); text-decoration:none; }
+/* Wide screens: the requirements on the left, the index as a narrow column on the right that follows the scroll. The
+   class is doubled to outweigh the stack's own flex layout. */
+@media (min-width: 1200px) {
+  .requirementLayout.requirementLayout { display:grid; grid-template-columns:minmax(0, 1fr) 14rem; column-gap:var(--spacing-7); align-items:start; }
+  .requirementLayout .requirementList { grid-column:1; grid-row:1; }
+  .requirementLayout .documentIndex { grid-column:2; grid-row:1; position:sticky; top:calc(var(--gitifact-topbar-height) + var(--spacing-4));
+    max-height:calc(100vh - var(--gitifact-topbar-height) - var(--spacing-8)); overflow-y:auto; border-block:none; border-left:1px solid var(--color-border);
+    padding:var(--spacing-2) 0 var(--spacing-2) var(--spacing-4); }
+  .requirementLayout .documentIndex a { font-size:.8125rem; line-height:1.5; }
+  .requirementLayout .documentIndex a[aria-current] { color:var(--color-text-primary); font-weight:600; box-shadow:inset 2px 0 0 var(--color-text-primary); margin-left:calc(-1 * var(--spacing-4)); padding-left:var(--spacing-4); }
+}
 .featureDetail a:hover { text-decoration:underline; }
 .requirementSection { padding-block:var(--spacing-7); border-bottom:1px solid var(--color-border); scroll-margin-top:calc(var(--gitifact-topbar-height) + var(--spacing-4)); }
 .requirementSection h3 { font-size:1.25rem; line-height:1.5; }
-/* Drawn across the words like a highlighter; the same stroke the design's current section gets. */
-.currentMark { background:none; color:inherit; background-image:linear-gradient(transparent 55%, var(--color-background-yellow) 55%, var(--color-background-yellow) 94%, transparent 94%); padding-inline:.15em; box-decoration-break:clone; -webkit-box-decoration-break:clone; }
+/* Every requirement and design title is drawn across with a highlighter, so each section stands apart at a glance. */
+.titleMark { background:none; color:inherit; background-image:linear-gradient(transparent 55%, var(--color-background-yellow) 55%, var(--color-background-yellow) 94%, transparent 94%); padding-inline:.15em; box-decoration-break:clone; -webkit-box-decoration-break:clone; }
 .requirementSection[aria-current] { scroll-margin-top:calc(var(--gitifact-topbar-height) + var(--spacing-5)); }
+/* The section a link brought the reader to lies on the same hatching as the feature rows of the list. The padding is
+   taken back by a negative margin so the text stays in line with the sections around it. */
+.requirementSection[aria-current], .designSection[aria-current] { background-image:repeating-linear-gradient(-45deg, var(--color-background-muted) 0 1px, transparent 1px 7px);
+  margin-inline:calc(-1 * var(--spacing-4)); padding-inline:var(--spacing-4); }
+.designSection[aria-current] { padding-block:var(--spacing-4); }
 .requirementSection p,.requirementSection li { line-height:1.9; }
 .requirementSection a,.documentHeading a { font-size:.8125rem; }
 @media(width<64rem){.documentHeading h1{font-size:1.5rem}}

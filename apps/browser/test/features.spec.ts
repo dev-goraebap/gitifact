@@ -114,12 +114,15 @@ test('a requirement is a row under its feature and opens on its own section', as
   await expect(page).toHaveURL(/#R-bbbbbbbbbc$/);
   const section = page.locator('#R-bbbbbbbbbc');
   await expect(section).toHaveAttribute('aria-current', 'location');
-  // The mark is on the words of its title, not a rule beside the block.
+  // Every title carries the highlighter; the section the link named is the one on hatching.
   await expect(section.locator('mark')).toHaveText('알림 끄기');
-  await expect(page.locator('[aria-current=location] mark')).toHaveCount(1);
+  await expect(page.locator('[aria-current=location]')).toHaveCount(1);
+  await expect(page.locator('#R-bbbbbbbbbb mark')).toHaveText('알림 표시');
+  await expect(section).toHaveCSS('background-image', /repeating-linear-gradient/);
+  await expect(page.locator('#R-bbbbbbbbbb')).toHaveCSS('background-image', 'none');
 });
 
-test('a fragment typed from outside lands on its section, and only that one is marked', async ({ page }) => {
+test('a fragment typed from outside lands on its section, and only that one lies on hatching', async ({ page }) => {
   const long = structuredClone(many);
   long.features[1]!.requirements = long.features[1]!.requirements.map(r => ({ ...r, body: (r.body + ' 본문이 한 화면을 넘도록 길게 이어집니다.').repeat(40) }));
   await mockApi(page);
@@ -129,7 +132,7 @@ test('a fragment typed from outside lands on its section, and only that one is m
   await expect(section.locator('mark')).toHaveText('알림 모아보기');
   // Landing means the section is at the top of the reading area, not that the page merely drew it.
   await expect.poll(async () => Math.round((await section.boundingBox())!.y)).toBeLessThan(160);
-  await expect(page.locator('mark')).toHaveCount(1);
+  await expect(page.locator('[aria-current=location]')).toHaveCount(1);
 });
 
 test('a design document names its requirements, and each requirement links back to that document', async ({ page }) => {
@@ -147,8 +150,8 @@ test('a design document names its requirements, and each requirement links back 
   await page.locator('#R-bbbbbbbbbc').getByRole('link', { name: '이 요구사항의 설계 →' }).click();
   await expect(page).toHaveURL(/tab=design/);
   // The design opens on the document that explains it, marked the same way the requirement was.
-  await expect(page.getByRole('tabpanel', { name: '설계' }).locator('mark')).toHaveText('끄기');
-  await expect(page.locator('mark')).toHaveCount(1);
+  await expect(page.locator('[aria-current=location] mark')).toHaveText('끄기');
+  await expect(page.locator('[aria-current=location]')).toHaveCount(1);
   // The same link read the other way round is already there.
   await expect(page.getByRole('tabpanel', { name: '설계' }).getByRole('link', { name: '알림 끄기' })).toHaveCount(1);
 });
@@ -248,3 +251,40 @@ for (const width of [1440, 760]) for (const colorScheme of ['light', 'dark'] as 
     }
   });
 }
+
+test('the requirements tab opens with the feature introduction, and a requirement body resolves its links from its own file', async ({ page }) => {
+  const linked = structuredClone(many);
+  linked.features[1]!.body = '알림 기능의 **범위**를 적은 소개 문단이다.';
+  // Written in requirements/<id>.md: one folder up is the feature folder, where design/overview.md is.
+  linked.features[1]!.requirements[0]!.body = '표시 방식은 [알림 설계](../design/overview.md)를 따른다.';
+  await mockApi(page);
+  await serve(page, linked);
+  await page.goto('/features/S-bbbbbbbbbb');
+  await expect(page.getByRole('tab')).toHaveCount(2);
+  const panel = page.getByRole('tabpanel', { name: '요구사항' });
+  await expect(panel).toContainText('알림 기능의 범위를 적은 소개 문단이다.');
+  await panel.locator('#R-bbbbbbbbbb').getByRole('link', { name: '알림 설계' }).click();
+  await expect(page).toHaveURL(/tab=design/);
+  await expect(page.getByRole('tabpanel', { name: '설계' })).toContainText('알림은 서버가 밀지 않고 조회로 읽는다.');
+});
+
+test('on a wide screen the index stands to the right and marks the requirement being read; on a narrow one it heads them', async ({ page }) => {
+  const long = structuredClone(many);
+  long.features[1]!.requirements = long.features[1]!.requirements.map(r => ({ ...r, body: (r.body + ' 본문이 한 화면을 넘도록 길게 이어집니다.').repeat(40) }));
+  await mockApi(page);
+  await serve(page, long);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/features/S-bbbbbbbbbb');
+  const index = page.getByRole('navigation', { name: '명세 목차' });
+  const first = page.locator('#R-bbbbbbbbbb');
+  // Beside the requirements, not above them.
+  await expect.poll(async () => (await index.boundingBox())!.x).toBeGreaterThan((await first.boundingBox())!.x + (await first.boundingBox())!.width - 1);
+  await expect(index.locator('a[aria-current]')).toHaveText(/알림 표시/);
+  await page.locator('#R-bbbbbbbbbd').scrollIntoViewIfNeeded();
+  await page.mouse.wheel(0, 200);
+  await expect(index.locator('a[aria-current]')).toHaveText(/알림 모아보기/);
+  // Still in view after scrolling.
+  await expect.poll(async () => (await index.boundingBox())!.y).toBeLessThan(200);
+  await page.setViewportSize({ width: 800, height: 900 });
+  await expect.poll(async () => (await index.boundingBox())!.y).toBeLessThan((await page.locator('#R-bbbbbbbbbb').boundingBox())!.y);
+});

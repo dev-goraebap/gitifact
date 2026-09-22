@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import type { SpecFeature } from '@gitifact/contracts';
 import { VStack } from '@astryxdesign/core/VStack';
 import { HStack } from '@astryxdesign/core/HStack';
@@ -135,6 +135,8 @@ function FeatureDetail({ feature: selected, features, search, change }: { featur
   // The fragment of an address typed or shared from outside is read before this page has drawn the section it
   // names, so the browser has nothing to scroll to. Router navigation inside the app already lands on it.
   useEffect(() => { if (target) document.getElementById(target)?.scrollIntoView({ block: 'start' }); }, [target, tab]);
+  const reading = useReadingSection(tab === 'requirements' ? selected.requirements.map(r => r.id) : []);
+
   return <VStack as="article" aria-label={t('features.detail')} gap={0} className={styles.featureDetail}>
     <Link to="/features" search={{ q: search.q, design: search.design, author: search.author, sort: search.sort }} className={styles.featureBack}>{t('features.back')}</Link>
     <VStack gap={4} className={styles.documentHeading}>
@@ -153,25 +155,31 @@ function FeatureDetail({ feature: selected, features, search, change }: { featur
       <Tab value="design" label={t('features.tab.design')} panelId="feature-design"/>
     </TabList>
     {tab === 'design' ? <VStack id="feature-design" role="tabpanel" aria-label={t('features.tab.design')} gap={6} className={styles.designPanel}>
-      {selected.designs.length ? selected.designs.map(design => <VStack key={design.id} id={design.id} gap={0} {...(design.id === target ? { 'aria-current': 'location' as const } : {})}>
-        <DesignDocument design={design} path={design.path} features={features} isCurrent={design.id === target}/>
+      {selected.designs.length ? selected.designs.map(design => <VStack key={design.id} id={design.id} gap={0} className={styles.designSection} {...(design.id === target ? { 'aria-current': 'location' as const } : {})}>
+        <DesignDocument design={design} path={design.path} features={features}/>
       </VStack>) : <PageState isCompact title={t('features.noDesignTitle')} description={t('features.noDesignDescription')}/>}
     </VStack> : <VStack id="feature-requirements" role="tabpanel" aria-label={t('features.tab.requirements')} gap={0}>
+      {/* The feature's own introduction (index.md) is short; it heads the requirements once instead of a tab of its own. */}
+      <VStack gap={0} className={styles.featureIntro}><DocumentBody headingLevelStart={3} path={selected.path}>{selected.body}</DocumentBody></VStack>
+      {/* On a wide screen the index stands to the right of the requirements and stays in view; on a narrow one it heads them. */}
+      <VStack gap={0} className={styles.requirementLayout}>
       <VStack as="nav" aria-label={t('features.index')} gap={2} className={styles.documentIndex}>
         <Text type="supporting" color="secondary">{t('features.indexTitle')}</Text>
-        {selected.requirements.map((r, index) => <a key={r.id} href={`#${r.id}`}>{String(index + 1).padStart(2, '0')}　{r.title}</a>)}
+        {selected.requirements.map((r, index) => <a key={r.id} href={`#${r.id}`} {...(r.id === reading ? { 'aria-current': 'true' as const } : {})}>{String(index + 1).padStart(2, '0')}　{r.title}</a>)}
       </VStack>
+      <VStack gap={0} className={styles.requirementList}>
       {selected.requirements.map((r, index) => {
         const isCurrent = r.id === search.selected;
         const section = designSections.get(r.id);
         return <VStack key={r.id} id={r.id} gap={4} className={styles.requirementSection} {...(isCurrent ? { 'aria-current': 'location' as const } : {})}>
           <VStack gap={2}>
             <Text type="supporting" color="secondary">{t('features.requirementNumber', { number: String(index + 1).padStart(2, '0') })}</Text>
-            {/* The one the reader was sent to is struck through with a highlighter, as the design's section is. */}
-            <Heading level={3}>{isCurrent ? <mark className={styles.currentMark}>{r.title}</mark> : r.title}</Heading>
+            {/* Every title carries the highlighter; the one the reader was sent to lies on hatching instead (the section above). */}
+            <Heading level={3}><mark className={styles.titleMark}>{r.title}</mark></Heading>
             <Text type="supporting" color="secondary">{r.id}</Text>
           </VStack>
-          <DocumentBody headingLevelStart={4} path={selected.path}>{r.body}</DocumentBody>
+          {/* Each requirement is its own file one folder below index.md; its links start from there. */}
+          <DocumentBody headingLevelStart={4} path={r.path}>{r.body}</DocumentBody>
           <HStack gap={4} wrap="wrap" className={styles.entryLine}>
             {/* The design names the requirements a section explains; this is that link read the other way round. */}
             {section && <Link to="/features/$featureId" params={{ featureId: selected.id }} search={{ ...search, tab: 'design', selected: r.id }} hash={section}>{t('features.requirementDesign')}</Link>}
@@ -180,6 +188,33 @@ function FeatureDetail({ feature: selected, features, search, change }: { featur
         </VStack>;
       })}
       {!selected.requirements.length && <Text>{t('features.noRequirements')}</Text>}
+      </VStack>
+      </VStack>
     </VStack>}
   </VStack>;
+}
+
+/**
+ * The requirement being read: the first section in the reading band below the top bar, or the first requirement
+ * before any has reached it. The index marks it so a reader of a long feature always sees where they are.
+ */
+function useReadingSection(ids: string[]): string | undefined {
+  const [reading, setReading] = useState<string>();
+  const key = ids.join(',');
+  useEffect(() => {
+    const sections = ids.map(id => document.getElementById(id)).filter((s): s is HTMLElement => !!s);
+    // Until a section reaches the band (the introduction may still fill the top), the first one is where reading starts.
+    setReading(sections[0]?.id);
+    if (!sections.length) return;
+    const inBand = new Set<string>();
+    const observer = new IntersectionObserver(entries => {
+      for (const entry of entries) { if (entry.isIntersecting) inBand.add(entry.target.id); else inBand.delete(entry.target.id); }
+      const first = sections.find(section => inBand.has(section.id));
+      if (first) setReading(first.id);
+    }, { rootMargin: '-96px 0px -55% 0px' });
+    sections.forEach(section => observer.observe(section));
+    return () => observer.disconnect();
+    // The ids are compared by value; a new array with the same requirements keeps the observer.
+  }, [key]);
+  return reading;
 }

@@ -46,7 +46,7 @@ export function resolveDocumentLink(href: string, from: string | undefined, inde
     const page = index.documents.find(d => d.path === path);
     return page ? { kind: 'wiki', documentId: page.id, path, hash } : { kind: 'missing', path };
   }
-  // A feature's index.md opens the feature; one of its requirement or design files opens that document on its tab.
+  // A feature's index.md opens the feature, whose introduction heads the requirements; a requirement or design file opens that document on its tab.
   const spec = /^(\.gitifact\/spec\/[^/]+\/)(?:index\.md|(requirements|design)\/[^/]+\.md)$/.exec(path);
   if (spec) {
     const feature = index.features.find(f => f.path === spec[1] + 'index.md');

@@ -35,14 +35,14 @@ function relativeTo(from: string, to: string) {
 
 /**
  * One design document. `path` is its repository path; relative links and sources start from that folder. The
- * requirements it explains come from its frontmatter and link to the requirements tab. `isCurrent` marks the design
- * the reader arrived for, the way the requirements tab marks the requirement itself.
+ * requirements it explains come from its frontmatter and link to the requirements tab. The design the reader arrived
+ * for is marked by its section on the design tab, the way the requirements tab marks the requirement itself.
  */
-export function DesignDocument({design, path, features, isCurrent}: {design: {title: string; description?: string | undefined; body: string; sources?: DesignSource[] | undefined; requirements?: string[] | undefined}; path: string; features: SpecFeature[]; isCurrent?: boolean | undefined}) {
+export function DesignDocument({design, path, features}: {design: {title: string; description?: string | undefined; body: string; sources?: DesignSource[] | undefined; requirements?: string[] | undefined}; path: string; features: SpecFeature[]}) {
   useLanguage();
   const requirements = design.requirements ?? [];
   return <VStack gap={4}>
-    <Heading level={3}>{isCurrent ? <mark className={styles.currentMark}>{design.title}</mark> : design.title}</Heading>
+    <Heading level={3}><mark className={styles.titleMark}>{design.title}</mark></Heading>
     {design.description && <Text type="supporting" color="secondary">{design.description}</Text>}
     {!!requirements.length && <HStack gap={2} wrap="wrap">
       <Text type="supporting" color="secondary">{t('design.relatedRequirements')}:</Text>
