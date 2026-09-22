@@ -1,13 +1,15 @@
 import { createHash } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
+import { lstat, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { InitError } from '@gitifact/core';
 import type { ProjectConfig, RepositoryState } from '@gitifact/core';
 import { createRepositoryReader } from './repository-reader.js';
 import { createGitRunner } from './run-git.js';
 import { decodeGitLine } from './porcelain.js';
-import { fileInfo } from '../filesystem/config-file.js';
 import { t } from '../../shared/i18n/index.js';
+
+// Adapters do not import each other, so this keeps its own copy of the filesystem adapter's missing-file check.
+const markerPresent = (path: string) => lstat(path).then(() => true, error => { if (error.code === 'ENOENT') return false; throw error; });
 
 export function initRepository(cwd: string, inherited: NodeJS.ProcessEnv = process.env) {
   const env = { ...inherited, GIT_OPTIONAL_LOCKS: '0', GIT_NO_LAZY_FETCH: '1', GIT_TERMINAL_PROMPT: '0', GIT_LITERAL_PATHSPECS: '1', LC_ALL: 'C' };
@@ -24,7 +26,7 @@ export function initRepository(cwd: string, inherited: NodeJS.ProcessEnv = proce
       const gitDir = locations.length === 2 ? locations[0]! : decodeGitLine(await git(['rev-parse', '--absolute-git-dir'], root));
       const indexPath = locations.length === 2 ? locations[1]! : decodeGitLine(await git(['rev-parse', '--path-format=absolute', '--git-path', 'index'], root));
       for (const marker of ['MERGE_HEAD', 'CHERRY_PICK_HEAD', 'REVERT_HEAD', 'rebase-merge', 'rebase-apply', 'sequencer', 'BISECT_START', 'index.lock']) {
-        if (await fileInfo(join(gitDir, marker))) throw new InitError('GIT_OPERATION_IN_PROGRESS', t('git.operationInProgress', { marker }));
+        if (await markerPresent(join(gitDir, marker))) throw new InitError('GIT_OPERATION_IN_PROGRESS', t('git.operationInProgress', { marker }));
       }
       if (state.changes.some(change => change.kind === 'unmerged')) throw new InitError('GIT_OPERATION_IN_PROGRESS', t('git.resolveConflicts'));
       const index = await readFile(indexPath).catch(error => { if (error.code === 'ENOENT') return Buffer.alloc(0); throw error; });

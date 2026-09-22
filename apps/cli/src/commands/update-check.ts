@@ -1,6 +1,6 @@
 import { updateCheckV1 } from '@gitifact/contracts';
-import { fetchLatestVersion, type FetchLatestVersion } from '../adapters/registry/latest-version.js';
-import { disabledUpdate, npxUpdate, resolveUpdate, updateCheckDisabled } from '../shared/update-check.js';
+import { fetchLatestVersion } from '../adapters/registry/latest-version.js';
+import { type FetchLatestVersion, disabledUpdate, npxUpdate, resolveUpdate, updateCheckDisabled } from '../shared/update-check.js';
 import { t } from '../shared/i18n/index.js';
 
 export async function checkUpdateCommand(version: string, env: NodeJS.ProcessEnv = process.env,

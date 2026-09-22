@@ -4,7 +4,7 @@ import { comparePreviewBundles, SpecPreviewError, RepositoryReadError, InitError
 import { specPreviewReader } from '../adapters/git/spec-preview-reader.js';
 import { withCommandScope } from '../adapters/git/command-scope.js';
 import { readWorkingPreview, saveWorkingPreview } from '../adapters/filesystem/spec-preview-store.js';
-import { readFinalPreviewChanges } from '../adapters/filesystem/spec-preview-context.js';
+import { readFinalPreviewChanges } from './spec-preview-context.js';
 import { fileInfo, readConfigFile } from '../adapters/filesystem/config-file.js';
 import { initRepository } from '../adapters/git/init-repository.js';
 import { discardAgentInput, prepareAgentInputs, type AgentInputControls } from '../adapters/filesystem/agent-inputs.js';
@@ -35,7 +35,7 @@ async function execute(action: Action, options: Options, controls: SpecPreviewCo
       let result;
       // The input paths ride on the reads an agent already runs before save and commit; a failure only omits them.
       const inputs = () => prepareAgentInputs(root, controls).catch(() => undefined);
-      if (action === 'working') result = narrowWorking(await readWorkingPreview(process.cwd()), options, await inputs());
+      if (action === 'working') result = narrowWorking(await readWorkingPreview({ root, gitDir }), options, await inputs());
       else if (action === 'changes') result = { ...await readFinalPreviewChanges(process.cwd()), inputs: await inputs() };
       else {
         const bytes = options.file === '-' ? await readStdin(controls.stdin ?? process.stdin) : await readInputFile(options.file!);
@@ -44,7 +44,7 @@ async function execute(action: Action, options: Options, controls: SpecPreviewCo
         try { input = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes)); }
         catch { throw new SpecPreviewError(t('preview.inputJson')); }
         result = action === 'commit' ? await specCommit(process.cwd(), input, !!options.dryRun)
-          : await saveWorkingPreview(process.cwd(), input);
+          : await saveWorkingPreview({ root, gitDir }, input);
         // Only a certain success consumes the input; failures, dry runs and uncertain commits keep it for the retry.
         const consumed = action === 'save' || (action === 'commit' && (result as { outcome?: string }).outcome === 'committed');
         if (consumed && options.file !== '-') result = { ...result, inputRemoved: await discardAgentInput(root, options.file!, controls) };

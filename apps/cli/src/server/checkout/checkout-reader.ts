@@ -72,7 +72,7 @@ export function createCheckoutReader(root: string, sessionId: string, inherited 
     if (!raw || !('schemaVersion' in parseManagedConfig(raw))) throw new SpecPreviewError(t('specReader.schemaRequired'));
     const head = await readHead();
     const [current, dirty, authors, everyone] = await settled([
-      readWorkingPreviewState(root),
+      specPreviewReader(root).location().then(readWorkingPreviewState),
       head ? git(['status', '--porcelain=v1', '--', '.gitifact/spec', WIKI_DIR]) : Promise.resolve(''),
       head ? storeAuthors(head) : Promise.resolve(undefined),
       // Git mailmap may change without a new HEAD; refresh names with every observation that carries them.

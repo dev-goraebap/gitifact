@@ -7,6 +7,8 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { specFixture as fixture, fingerprint } from './git-fixture.mjs';
 import { readWorkingPreview, saveWorkingPreview } from '../.test-build/adapters/filesystem/spec-preview-store.js';
+import { specPreviewReader } from '../.test-build/adapters/git/spec-preview-reader.js';
+const at=repo=>specPreviewReader(repo).location();
 const exe=fileURLToPath(new URL('../dist/main.js',import.meta.url));
 const run=(f,args,cwd=f.repo)=>spawnSync(process.execPath,[exe,'spec',...args.filter(x=>x!=='--experimental')],{cwd,env:f.env,encoding:'utf8',timeout:35000});
 function ok(result){assert.equal(result.status,0,result.stderr);return JSON.parse(result.stdout);}
@@ -45,14 +47,14 @@ test('stale input, malformed bodies and duplicates preserve files',t=>{
 });
 test('second publication failure restores both files and original CRLF bytes',async t=>{
   const f=fixture(t);ok(save(f,create));const path=join(f.repo,'.gitifact/spec/employees/requirements.md');writeFileSync(path,readFileSync(path,'utf8').replace(/\n/g,'\r\n'));
-  const state=await readWorkingPreview(f.repo);const before=fingerprint(f.repo);let calls=0;
-  await assert.rejects(saveWorkingPreview(f.repo,{expected:state.stamp,operations:[{type:'move',id:state.specs[0].requirements[0].id,feature:'profile'}]},async(a,b)=>{if(++calls===2)throw Error('simulated IO failure');await rename(a,b);}));
+  const state=await readWorkingPreview(await at(f.repo));const before=fingerprint(f.repo);let calls=0;
+  await assert.rejects(saveWorkingPreview(await at(f.repo),{expected:state.stamp,operations:[{type:'move',id:state.specs[0].requirements[0].id,feature:'profile'}]},async(a,b)=>{if(++calls===2)throw Error('simulated IO failure');await rename(a,b);}));
   assert.equal(calls,2);assert.deepEqual(fingerprint(f.repo),before);
 });
 test('intervening external edit is preserved and recovery journal blocks further writes',async t=>{
-  const f=fixture(t);ok(save(f,create));const state=await readWorkingPreview(f.repo);let calls=0;
+  const f=fixture(t);ok(save(f,create));const state=await readWorkingPreview(await at(f.repo));let calls=0;
   const path=join(f.repo,'.gitifact/spec/employees/requirements.md');
-  await assert.rejects(saveWorkingPreview(f.repo,{expected:state.stamp,operations:[{type:'move',id:state.specs[0].requirements[0].id,feature:'profile'}]},async(a,b)=>{
+  await assert.rejects(saveWorkingPreview(await at(f.repo),{expected:state.stamp,operations:[{type:'move',id:state.specs[0].requirements[0].id,feature:'profile'}]},async(a,b)=>{
     if(++calls===2){writeFileSync(path,'external editor content');throw Error('simulated failure');}await rename(a,b);
   }),/복구 자료/);
   assert.equal(readFileSync(path,'utf8'),'external editor content');assert.ok(existsSync(join(f.repo,'.git/gitifact-spec-preview.lock/recovery.json')));

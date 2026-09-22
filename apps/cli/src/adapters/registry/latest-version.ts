@@ -1,7 +1,8 @@
+import type { FetchLatestVersion } from '../../shared/update-check.js';
+
 // The only outbound request the CLI makes: the public npm manifest of this package. Nothing about the
 // project is sent. The abridged manifest keeps the answer small as releases accumulate.
 const manifestUrl = 'https://registry.npmjs.org/gitifact';
-export type FetchLatestVersion = (signal: AbortSignal) => Promise<string>;
 
 export const fetchLatestVersion: FetchLatestVersion = async signal => {
   const response = await fetch(manifestUrl, { signal, redirect: 'error', headers: { Accept: 'application/vnd.npm.install-v1+json' } });

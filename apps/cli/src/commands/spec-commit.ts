@@ -3,7 +3,7 @@ import { mkdir, open, readFile, rename, rmdir, unlink, writeFile } from 'node:fs
 import { join } from 'node:path';
 import { prepareSpecPreview, pendingPreviewReasons } from '@gitifact/core';
 import { createGitRunner } from '../adapters/git/run-git.js';
-import { previewExpected, readPreviewContext } from '../adapters/filesystem/spec-preview-context.js';
+import { previewExpected, readPreviewContext } from './spec-preview-context.js';
 import { failOnLegacyLock, generatePreviewId, PreservedPreviewError, previewTransaction, readLockedPreviewState } from '../adapters/filesystem/spec-preview-store.js';
 import { checkLegacySelection, fail, fingerprint, hash, info, object, optional, paths, policyPaths, record, text } from './spec-commit-files.js';
 import { t } from '../shared/i18n/index.js';
@@ -85,7 +85,7 @@ export async function specCommit(cwd: string, input: unknown, dryRun: boolean) {
   try {
     try { await mkdir(busy); owned = true; } catch (e) { if ((e as NodeJS.ErrnoException).code === 'EEXIST') fail(t('commit.busy', { path: busy })); throw e; }
     // The transaction verifies the stamp, so the reasons prepared above apply to exactly this state.
-    await previewTransaction(cwd, current.stamp, async () => ({ writes, data: {}, recheck: c.recheck }), rename, async published => {
+    await previewTransaction({ root, gitDir }, current.stamp, async () => ({ writes, data: {}, recheck: c.recheck }), rename, async published => {
       let commitStarted = false;
       try {
         const lock = indexLock = await open(indexPath + '.lock', 'wx', 0o600);

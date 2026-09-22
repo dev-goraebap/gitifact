@@ -9,7 +9,7 @@ import { IconButton } from '@astryxdesign/core/IconButton';
 import { HgiRefresh } from '../../../shared/ui/icons/HgiRefresh';
 import { specsOptions } from '../../../entities/project';
 import { ApiError } from '../../../shared/api/client';
-import type { ProductProps } from './ProductPage';
+import type { ProductProps } from '../model/search';
 import { HistoryView } from './HistoryView';
 import { FeatureView } from './FeatureView';
 import { ContributorsView } from './ContributorsView';

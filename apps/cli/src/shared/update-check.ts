@@ -1,7 +1,8 @@
 import type { UpdateStateV1 } from '@gitifact/contracts';
-import type { FetchLatestVersion } from '../adapters/registry/latest-version.js';
 
 // Shared by init, update and the read-only update check.
+// The registry adapter implements this; tests inject their own. It lives here so adapters depend on shared, not the reverse.
+export type FetchLatestVersion = (signal: AbortSignal) => Promise<string>;
 export const updateCheckTimeoutMs = 3000;
 const release = /^(\d+)\.(\d+)\.(\d+)$/;
 const running = /^(\d+)\.(\d+)\.(\d+)(-[0-9A-Za-z.-]+)?$/;

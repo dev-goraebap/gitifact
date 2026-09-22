@@ -3,7 +3,6 @@ import { join, dirname } from 'node:path';
 import { createHash, randomBytes } from 'node:crypto';
 import { editSpecPreview, parsePreviewBundle, renderDesignPreview, renderSpecPreview, renderDocument, recordPathPattern, WIKI_DIR, SpecPreviewError, parseManagedConfig } from '@gitifact/core';
 import { workingWarnings } from './working-warnings.js';
-import { specPreviewReader } from '../git/spec-preview-reader.js';
 import { readConfigFile } from './config-file.js';
 import { t } from '../../shared/i18n/index.js';
 
@@ -17,6 +16,8 @@ export async function failOnLegacyLock(gitDir: string) {
 }
 const decode = (bytes: Buffer) => new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(bytes);
 export const generatePreviewId = (prefix: 'S' | 'R' | 'H' | 'W') => prefix + '-' + [...randomBytes(10)].map(n => 'abcdefghijklmnopqrstuvwxyz234567'[n & 31]).join('');
+/** Where the store lives. Commands resolve it through the Git adapter once and pass it in, so adapters stay independent. */
+export interface StoreLocation { root: string; gitDir: string }
 /** A failure after Git may have changed HEAD: keep written files and recovery data instead of rolling back. */
 export class PreservedPreviewError extends SpecPreviewError {}
 
@@ -52,8 +53,7 @@ async function snapshot(root: string) {
   return { root, files, specs: bundle.specs, wiki: bundle.wiki, bundle, config, stamp: digest(JSON.stringify([...files].sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)) + (config ?? '')) };
 }
 
-export async function readWorkingPreviewState(cwd: string) {
-  const { root, gitDir } = await specPreviewReader(cwd).location();
+export async function readWorkingPreviewState({ root, gitDir }: StoreLocation) {
   await failOnLegacyLock(gitDir);
   if (await info(join(gitDir, 'gitifact-spec-preview.lock'))) fail(t('store.locked'));
   const first = await snapshot(root); const second = await snapshot(root);
@@ -62,16 +62,16 @@ export async function readWorkingPreviewState(cwd: string) {
   return first;
 }
 
-export async function readWorkingPreview(cwd: string) {
-  const { root, stamp, specs, wiki, bundle } = await readWorkingPreviewState(cwd);
+export async function readWorkingPreview(location: StoreLocation) {
+  const { root, stamp, specs, wiki, bundle } = await readWorkingPreviewState(location);
   return { stamp, specs, wiki, warnings: await workingWarnings(root, bundle) };
 }
 
-export async function saveWorkingPreview(cwd: string, input: unknown, publish = rename) {
+export async function saveWorkingPreview(location: StoreLocation, input: unknown, publish = rename) {
   if (!input || typeof input !== 'object' || Array.isArray(input)) fail(t('store.invalidInput'));
   const request = input as Record<string, unknown>;
   if (Object.keys(request).sort().join(',') !== 'expected,operations' || typeof request.expected !== 'string') fail(t('store.expectedOperations'));
-  return previewTransaction(cwd, request.expected as string, async before => {
+  return previewTransaction(location, request.expected as string, async before => {
     const result = editSpecPreview(before.bundle, request.operations, generatePreviewId);
     const writes = new Map<string, string | null>();
     for (const spec of result.specs) {
@@ -94,10 +94,9 @@ export async function saveWorkingPreview(cwd: string, input: unknown, publish = 
 export type WorkingPreviewSnapshot = Awaited<ReturnType<typeof snapshot>>;
 // Internal callers must already hold gitifact-spec-preview.lock.
 export const readLockedPreviewState = (root: string) => snapshot(root);
-export async function previewTransaction<T>(cwd: string, expected: string, build: (before: WorkingPreviewSnapshot) => Promise<{
+export async function previewTransaction<T>({ root, gitDir }: StoreLocation, expected: string, build: (before: WorkingPreviewSnapshot) => Promise<{
   writes: Map<string, string | null>; data: T; recheck?: () => Promise<void>;
 }>, publish = rename, afterPublish?: (state: WorkingPreviewSnapshot) => Promise<void>) {
-  const { root, gitDir } = await specPreviewReader(cwd).location();
   await failOnLegacyLock(gitDir);
   const lock = join(gitDir, 'gitifact-spec-preview.lock');
   try { await mkdir(lock); } catch (e) { if ((e as NodeJS.ErrnoException).code === 'EEXIST') fail(t('store.locked')); throw e; }
