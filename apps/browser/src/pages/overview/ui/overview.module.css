@@ -1,0 +1,34 @@
+@keyframes reveal { from { opacity:0; transform:translateY(4px); } }
+.content {padding:var(--spacing-4);min-width:0;animation:reveal .22s ease-out both}
+.skeleton { min-height:24rem; animation:reveal .2s ease-out both; }
+@media (prefers-reduced-motion: reduce) {
+  .content { animation:none; }
+}
+/* Product dashboard: the project and its state, then what changed and why, then what still needs a look.
+   Counts orient and stay on one line; the records and their reasons carry the page. */
+.dashboard { min-width:0; padding:0 var(--spacing-1) var(--spacing-6); }
+/* The project sits the same distance under the top bar as the page title on every other screen. */
+.hero { align-items:flex-end; justify-content:space-between; padding-block:var(--spacing-2) var(--spacing-4); border-bottom:1px solid var(--color-border); }
+.heroText { flex:1 1 20rem; min-width:0; }
+.hero h1 { font-size:2.5rem; line-height:1.15; letter-spacing:-.03em; }
+.facts, .legend { list-style:none; margin:0; padding:0; }
+.stackedBar { display:block; border-radius:var(--radius-element); overflow:hidden; }
+.stackedSegment { stroke:var(--color-background-surface); stroke-width:2px; paint-order:stroke; }
+.legendItem { align-items:center; }
+/* Each count sits next to its own name, so the row reads as facts rather than as a legend. No rules between them:
+   the row wraps at narrow widths and a leading rule would hang at the start of the wrapped line. */
+.fact { align-items:baseline; }
+.heroState { align-items:center; }
+/* One column per day over the loaded range; a day with nothing keeps a faint baseline so the gap stays visible. */
+.pulse { flex:0 1 18rem; min-width:12rem; }
+.pulse svg { display:block; }
+.pulseBar { fill:var(--color-data-categorical-blue, #0171E3); }
+.pulseEmpty { fill:var(--color-border); }
+.lead h2 { font-size:1.25rem; line-height:1.4; letter-spacing:-.01em; }
+.dashboard h3 { font-size:1rem; line-height:1.5; }
+.barRowHead { justify-content:space-between; align-items:baseline; min-width:0; }
+.barRowHead a { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+@media(width<64rem) {
+  .hero h1 {font-size:2rem}
+  .hero {align-items:flex-start}
+}

@@ -1,0 +1,39 @@
+@keyframes reveal { from { opacity:0; transform:translateY(4px); } }
+.skeleton { min-height:24rem; animation:reveal .2s ease-out both; }
+/* Wiki placeholder rows, sized to the tree items and list items they stand in for. */
+.skeletonTreeRow { align-items:center; min-height:2.375rem; padding-inline-end:var(--spacing-2); }
+.skeletonListRow { align-items:center; padding:var(--spacing-2); }
+.skeletonListRow + .skeletonListRow { border-top:1px solid var(--color-border); }
+.documentHeading { padding-block:var(--spacing-4) var(--spacing-6); }
+.documentHeading h1 { font-size:1.75rem; line-height:1.4; letter-spacing:-.025em; }
+.requirementSection a,.documentHeading a { font-size:.8125rem; }
+@media(width<64rem) {
+  .documentHeading h1 {font-size:1.5rem}
+}
+/* Row pieces the contributor's activity, the feature list and the wiki skeleton share. */
+.entryBody { min-width:0; flex:1; }
+.explorer { flex:1; align-items:flex-start; min-width:0; --explorer-visible:calc(100dvh - var(--gitifact-topbar-height) - var(--spacing-2) * 2 - 2px); }
+/* The card is the only scroller: the tree and the path bar stick under the page header while the page scrolls past them. */
+.explorerTree { flex:0 0 17rem; min-width:0; position:sticky; top:var(--gitifact-topbar-height); align-self:flex-start; height:var(--explorer-visible); box-sizing:border-box; padding:var(--spacing-3) var(--spacing-2); overflow-y:auto; scrollbar-width:thin; border-inline-end:1px solid var(--color-border); }
+/* Folders carry the one hue of the explorer (the first categorical data colour); files stay quiet. */
+.explorerFolder, .explorerFile { display:inline-flex; }
+.explorerFolder svg { color:var(--color-data-categorical-blue, #0171E3); }
+.explorerFile svg { color:var(--color-text-secondary); }
+.explorerPane { flex:1 1 0; min-width:0; min-height:var(--explorer-visible); overflow-wrap:anywhere; scroll-margin-top:var(--gitifact-topbar-height); }
+.explorerCrumbs { position:sticky; top:var(--gitifact-topbar-height); z-index:1; display:flex; align-items:center; box-sizing:border-box; height:2.75rem; padding-inline:var(--spacing-6); background:var(--color-background-surface); border-bottom:1px solid var(--color-border); }
+.explorerBody { padding:var(--spacing-5) var(--spacing-6) var(--spacing-8); max-width:56rem; width:100%; box-sizing:border-box; margin-inline:auto; }
+.explorerList li { padding-block:var(--spacing-1); border-radius:0; }
+.explorerList li + li { border-top:1px solid var(--color-border); }
+.explorerList { border:1px solid var(--color-border); border-radius:var(--radius-md, .5rem); overflow:hidden; }
+.explorerReadme { border:1px solid var(--color-border); border-radius:var(--radius-md, .5rem); padding:var(--spacing-5); }
+@media(width<64rem) {
+  .explorerTree { flex-basis:13rem; }
+}
+.documentBody { padding-block:var(--spacing-2) var(--spacing-8); overflow-wrap:anywhere; }
+.documentBody p, .documentBody li { line-height:1.9; }
+/* Narrow screens: the observed time yields to the breadcrumb, and the wiki tree is hidden because the folder list already navigates. */
+@media(width<48rem) {
+  .explorerTree { display:none; }
+  .explorerCrumbs, .explorerBody { padding-inline:var(--spacing-4); }
+  .explorerCrumbs { top:var(--gitifact-topbar-height); }
+}

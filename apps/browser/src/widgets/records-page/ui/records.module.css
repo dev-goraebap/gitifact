@@ -1,0 +1,33 @@
+@keyframes reveal { from { opacity:0; transform:translateY(4px); } }
+.page { min-width:0; }
+.content {padding:var(--spacing-4);min-width:0;animation:reveal .22s ease-out both}
+.skeleton { min-height:24rem; animation:reveal .2s ease-out both; }
+.skeletonRow { align-items:center; padding-block:var(--spacing-3); border-bottom:1px solid var(--color-border); }
+@media (prefers-reduced-motion: reduce) {
+  .content { animation:none; }
+}
+/* Activity page: a centered column; the title scrolls away while the filter row sticks under the top bar. */
+.column { width:100%; max-width:64rem; margin-inline:auto; min-width:0; }
+.pageTitle { padding-inline:var(--spacing-5); padding-block:var(--spacing-6) var(--spacing-2); }
+.filters { padding:var(--spacing-3) var(--spacing-5); }
+.filtersSticky { position:sticky; top:var(--gitifact-topbar-height); z-index:2; background:var(--color-background-surface); border-bottom:1px solid var(--color-border); }
+/* Row pieces the contributor's activity, the feature list and the wiki skeleton share. */
+.entryBody { min-width:0; flex:1; }
+/* Header: the observed time sits left of the refresh button. */
+.headerActions { align-items:center; flex-shrink:0; white-space:nowrap; }
+/* Wiki: a repository-style explorer. The page fills the card so the tree and the pane scroll on their own. */
+.pageFill { min-width:0; min-height:100%; flex:0 0 auto; }
+/* These grow with the explorer instead of clipping it, so the sticky page header keeps a containing block as tall as the page. */
+.fill { flex:1 0 auto; min-width:0; }
+.fillContent { flex:1 0 auto; min-width:0; animation:reveal .22s ease-out both; }
+/* Narrow screens: the observed time yields to the breadcrumb, and the wiki tree is hidden because the folder list already navigates. */
+@media(width<48rem) {
+  .headerTime { display:none; }
+}
+/* A screen whose footer must rest on the floor of the card (the feature list's pager) marks it with
+   data-page-footer, and the frame's stacks stretch to the card. Sticky alone holds only while there is something to
+   scroll, so a short page left the footer in the middle of the screen. An attribute, not a class: CSS modules rename
+   classes per file, so this module could not name the screen's own. The stacks also keep the sticky header's
+   containing block as tall as the rows; shrunk to the card they let the rows overflow and push the header away. */
+.page:has([data-page-footer]) { min-height:100%; flex:0 0 auto; }
+.page:has([data-page-footer]) .column, .page:has([data-page-footer]) .content { flex:1 0 auto; }

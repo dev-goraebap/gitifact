@@ -24,11 +24,11 @@ description: 브라우저 화면 구성, 라우트, 레이아웃, 데이터 흐�
 
 모든 화면 머리에 문서 검색 입구가 있다. `mod+K`와 그 버튼이 같은 검색창을 열며, 별도 주소는 두지 않는다.
 
-목록을 대체하는 상세는 경로 매개변수로 구분한다. 같은 화면 안의 상태(활동 드로어의 `selected`, 기능 상세의 `tab`, 위키의 `folder`, 검색어 `q`)는 검증된 search params에 둔다. 검색 입력은 URL replace, 상세 이동은 뒤로가기로 복원한다. 검색창은 입력값을 URL에 직접 묶지 않는다. 라우터의 비동기 갱신이 한글 조합 중인 값을 되돌려 쓰므로 필드가 입력값을 들고 URL에 따라 반영한다(`pages/product/ui/SearchFilter.tsx`).
+목록을 대체하는 상세는 경로 매개변수로 구분한다. 같은 화면 안의 상태(활동 드로어의 `selected`, 기능 상세의 `tab`, 위키의 `folder`, 검색어 `q`)는 검증된 search params에 둔다. 검색 입력은 URL replace, 상세 이동은 뒤로가기로 복원한다. 검색창은 입력값을 URL에 직접 묶지 않는다. 라우터의 비동기 갱신이 한글 조합 중인 값을 되돌려 쓰므로 필드가 입력값을 들고 URL에 따라 반영한다(`widgets/records-page/ui/SearchFilter.tsx`).
 
 ## 코드 구성 (FSD)
 
-`app`(라우트·provider) → `pages` → `widgets` → `features` → `entities` → `shared` 방향으로만 의존한다. 단일 화면의 api/model/ui는 해당 page에 둔다. 여러 화면이 공유하는 조회·도메인 표현만 entities, 공통 화면 블록은 widgets에 둔다. 같은 계층의 다른 슬라이스를 참조하지 않고 외부에서는 index.ts 공개 API만 쓴다. 명세·문서 화면은 `pages/product` 슬라이스가 조합하고 세션·명세 Query와 미커밋 여부 훅(`useWorkingChanges`)은 `entities/project`가 소유한다. 화면 문구는 `shared/i18n`의 `t()`·`tNodes()`로 가져오고 소개 본문은 `packages/intro/<lang>/intro.md`를 `shared/i18n`이 가져오고, 맨 앞 로고 블록은 같은 패키지의 로고 파일을 번들한 이미지로 보여 준다. 규칙은 CLI 지침의 문구 절을 따른다.
+`app`(라우트·provider) → `pages` → `widgets` → `features` → `entities` → `shared` 방향으로만 의존한다. 단일 화면의 api/model/ui는 해당 page에 둔다. 여러 화면이 공유하는 조회·도메인 표현만 entities, 공통 화면 블록은 widgets에 둔다. 같은 계층의 다른 슬라이스를 참조하지 않고 외부에서는 index.ts 공개 API만 쓴다. 명세·문서 화면은 화면마다 슬라이스(`pages/overview`·`features`·`wiki`·`activity`·`contributors`)이고, 세션·명세 조회와 머리 막대·골격·오류·검색 인자는 공통 틀 `widgets/records-page`가 맡는다. 틀은 다른 위젯을 직접 부르지 않도록 머리 막대 부품(`PageHeader`)을 화면에서 받는다. 활동 화면과 제품 개요가 함께 쓰는 타임라인은 `widgets/activity-timeline`, 줄 단위 diff는 `widgets/diff-view`, 작성자 표시는 `entities/contributor`, 설계 문서 표시는 `entities/document`다. CSS 모듈은 파일마다 클래스 이름을 바꾸므로 한 선택자에 다른 슬라이스의 클래스를 섞지 않는다. 틀이 화면의 요소를 알아봐야 하면 속성(`data-page-footer`)으로 표시한다. 세션·명세 Query와 미커밋 여부 훅(`useWorkingChanges`)은 `entities/project`가 소유한다. 화면 문구는 `shared/i18n`의 `t()`·`tNodes()`로 가져오고 소개 본문은 `packages/intro/<lang>/intro.md`를 `shared/i18n`이 가져오고, 맨 앞 로고 블록은 같은 패키지의 로고 파일을 번들한 이미지로 보여 준다. 규칙은 CLI 지침의 문구 절을 따른다.
 
 ## 데이터 흐름
 

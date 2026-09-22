@@ -133,3 +133,5 @@
 {"id":"H-4nfbivylls","docs":["W-xt2mfa2odx","W-risprbk4wt"],"reason":"브라우저 규칙의 활동 드로어 설명과 디자인 시스템의 직접 구현 예시를 겹침 슬라이더에서 줄 단위 diff 표로 바꿨다."}
 {"id":"H-b7ukl4tbwr","docs":["R-tkl3lrrlpu","D-3nu5nrwhee","D-4kgfn4hrs6"],"reason":"01 7장의 뷰어 계획에 따라 활동 상세에서 같은 커밋이 문서 밖에서 바꾼 소스 파일 목록을 보이고, 파일을 열면 그 파일의 diff를 문서와 같은 방식(LineDiff)으로 보인다. 서버는 Git에서 바로 읽고 커밋 목록을 메모리에 둔다. 캐시(SQLite)에 넣는 계획은 서랍을 열 때 커밋 하나만 읽으면 되고, 캐시 표를 늘리면 형식 번호가 바뀌어 전체 재생성(이 저장소에서 8.6초)이 일어나 기각했다. 사용자가 화면을 확인하고 커밋하도록 했다."}
 {"id":"H-2tve7spamv","docs":["W-xt2mfa2odx"],"reason":"브라우저 규칙의 서버 계약 목록에 같은 커밋 소스 변경 API 두 개를 더했다."}
+{"id":"H-7vttnp4rry","docs":["D-4kgfn4hrs6"],"reason":"02 3.2의 계획대로 pages/product 하나가 그리던 명세 화면을 화면별 슬라이스(overview·features·wiki·activity·contributors)로 나누고, 공통 틀을 widgets/records-page로 옮겼다. 설계의 FSD 설명을 새 구조에 맞췄다. 동작은 바꾸지 않았다."}
+{"id":"H-vfdlaimdfu","docs":["W-xt2mfa2odx"],"reason":"브라우저 규칙의 코드 구성 설명을 화면별 슬라이스와 공통 틀·위젯·엔티티 배치로 바꿨다. 틀은 위젯끼리 참조하지 않도록 PageHeader를 화면에서 받고, CSS 모듈은 파일마다 클래스 이름을 바꾸므로 한 선택자에 다른 슬라이스의 클래스를 섞지 않고 속성(data-page-footer)으로 표시한다는 규칙을 더했다."}

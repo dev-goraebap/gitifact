@@ -1,0 +1,19 @@
+.featureDetail { min-width:0; overflow-wrap:anywhere; padding-inline:var(--spacing-5); }
+.featureBack { align-self:flex-start; font-size:.8125rem; text-decoration:none; color:var(--color-text-secondary); }
+.featureBack:hover { text-decoration:underline; }
+.featureDetail { padding-top:var(--spacing-6); }
+.featureDetail a:hover { text-decoration:underline; }
+/* Row pieces the contributor's activity, the feature list and the wiki skeleton share. */
+.entryBody { min-width:0; flex:1; }
+.entryTitle { color:var(--color-text-primary); font-weight:500; text-decoration:none; }
+.entryTitle:hover { text-decoration:underline; }
+.personCard { align-items:flex-start; min-width:0; }
+.personCardBody { min-width:0; align-self:stretch; }
+.personStats { align-items:center; }
+.personHero { align-items:center; padding-block:var(--spacing-4) var(--spacing-6); }
+.personActivityRow { align-items:center; padding-block:var(--spacing-3); border-bottom:1px solid var(--color-border); min-width:0; }
+.personActivityRow > :nth-child(3) { flex:1; min-width:0; }
+.personSection { border-top:1px solid var(--color-border); padding-block:var(--spacing-5) var(--spacing-7); }
+/* Text cut by the browser alone. Astryx Text's maxLines measures each element to decide on a tooltip and forces a
+   layout per element, which a long list pays once per row (see ActivityTimeline). */
+.oneLine { display:block; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }

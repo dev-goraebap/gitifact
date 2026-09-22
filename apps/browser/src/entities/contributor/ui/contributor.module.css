@@ -1,0 +1,4 @@
+/* Contributors: a card grid; the detail page opens at the same width with a hero row. */
+.person { align-items:center; }
+.personName { color:var(--color-text-primary); text-decoration:none; font-size:.8125rem; }
+.personName:hover { text-decoration:underline; }

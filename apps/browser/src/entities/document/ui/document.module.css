@@ -1,0 +1,2 @@
+/* Every requirement and design title is drawn across with a highlighter, so each section stands apart at a glance. */
+.titleMark { background:none; color:inherit; background-image:linear-gradient(transparent 55%, var(--color-background-yellow) 55%, var(--color-background-yellow) 94%, transparent 94%); padding-inline:.15em; box-decoration-break:clone; -webkit-box-decoration-break:clone; }

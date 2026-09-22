@@ -1,0 +1,45 @@
+.timeline { position:relative; padding:0; margin:0; list-style:none; }
+.timeline::before { content:""; position:absolute; top:var(--spacing-3); bottom:var(--spacing-3); inset-inline-start:calc(var(--spacing-3) - 1px); width:2px; background:var(--color-border); }
+/* One commit is one entry. The rail runs behind the column; the avatar and the day marker paint over it. */
+.commit { position:relative; padding-block:var(--spacing-6); min-width:0; }
+.commit + .commit { padding-top:0; }
+/* Pulled over the gap above it so the rail breaks where the date turns over. */
+.day { position:relative; z-index:1; align-items:baseline; background:var(--color-background-surface); margin-top:calc(var(--spacing-6) * -1); padding-block:var(--spacing-4); }
+.commitRow { align-items:flex-start; min-width:0; }
+.commitNode { position:relative; z-index:1; flex-shrink:0; padding-block:var(--spacing-1); background:var(--color-background-surface); }
+.commitBody { min-width:0; flex:1; }
+.commitHead { min-width:0; }
+.commitWho { justify-content:space-between; align-items:baseline; min-width:0; }
+.commitWhen { align-items:baseline; flex-shrink:0; }
+.commitAuthor { color:var(--color-text-primary); font-weight:600; text-decoration:none; }
+.commitAuthor:hover { text-decoration:underline; }
+.commitMeta { align-items:baseline; min-width:0; }
+/* Where a shortened list stops: the overview shows a few of a large commit and this carries on to the activity. */
+.commitMore { align-self:flex-start; color:var(--color-text-secondary); font-size:.8125rem; text-decoration:none; }
+.commitMore:hover { text-decoration:underline; }
+/* The reason, written once, and the records it explains. Spacing groups them; the timeline's own rail is the only line. */
+.reasonGroup { min-width:0; }
+/* Held to a readable measure: the column is wider than prose wants, and the reason is what is read here. */
+.reasonText { max-width:46rem; line-height:1.8; overflow-wrap:anywhere; }
+.records { list-style:none; margin:0; padding:0; min-width:0; }
+/* Columns hold a width so the rows under one reason line up; the title takes what is left and is cut. */
+.record { align-items:center; min-width:0; padding-block:var(--spacing-1); padding-inline:var(--spacing-2); margin-inline-start:calc(var(--spacing-2) * -1); border-radius:var(--radius-inner); }
+.record[aria-current=true] { background:var(--color-background-muted); }
+/* Each column reserves what its widest label needs and no more: the change token 40px, the kind 58px for "위키 페이지".
+   The kind is a label beside the title, not a peer of it, so it is smaller than the title as well as quieter. */
+.recordType { flex:0 0 auto; min-width:3rem; }
+.recordKind { flex:0 0 auto; min-width:3.75rem; white-space:nowrap; font-size:.6875rem; }
+.recordDot { flex:0 0 auto; }
+.recordTitle { flex:0 1 auto; min-width:0; color:var(--color-text-primary); font-weight:500; text-decoration:none; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.recordTarget { flex:0 1 auto; min-width:0; color:var(--color-text-accent); text-decoration:none; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.recordTitle:hover, .recordTarget:hover { text-decoration:underline; }
+.record[aria-current=true] .recordTitle { text-decoration:underline; }
+/* Narrow: the change and the title keep one line and the place moves under the title, indented past both columns. */
+@media(width<48rem) {
+  .record { flex-wrap:wrap; }
+  .recordTarget { flex:1 0 100%; padding-inline-start:calc(3rem + 3.75rem + var(--spacing-2) * 2); }
+  .recordDot { display:none; }
+}
+/* Text cut by the browser alone. Astryx Text's maxLines measures each element to decide on a tooltip and forces a
+   layout per element, which a long list pays once per row (see ActivityTimeline). */
+.oneLine { display:block; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
