@@ -4,7 +4,8 @@ import { parseFrontmatterBlock, WIKI_ENTRY_PATH } from '@gitifact/core';
 import { getLanguage, t, type Language } from '../shared/i18n/index.js';
 import { CommandError, runCommand, text, type Format } from './output.js';
 
-export const guideTopics = ['workflow', 'spec', 'design', 'wiki', 'writing', 'commit'] as const;
+// `migrate` moves a 0.7 project to the 0.8.0 documents; it goes with the 0.7 history reader at 1.0.0.
+export const guideTopics = ['workflow', 'spec', 'design', 'wiki', 'writing', 'commit', 'migrate'] as const;
 export type GuideTopic = typeof guideTopics[number];
 // Every topic ships as `<topic>.md` with a `title` and `description` in its frontmatter; the file name is the topic.
 // The wiki topic is followed by the project's own operating policy, which is the body of `.gitifact/wiki/README.md`;

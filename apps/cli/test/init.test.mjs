@@ -134,11 +134,11 @@ test('an earlier or a newer convention is refused and left as it is', async t =>
   writeFileSync(path(g), newer);
   await assert.rejects(init(g), error => error.code === 'UNSUPPORTED_SCHEMA' && /더 새로운 저장 규약/.test(error.message));
   assert.equal(readFileSync(path(g), 'utf8'), newer);
-  // The 0.7 convention is the one a migration starts from: the refusal points at the migration prompt.
+  // The 0.7 convention is the one a migration starts from: the refusal points at the migration guide.
   const h = fixture(t); mkdirSync(join(h.repo, '.gitifact'));
   const previous = '{"schemaVersion":2,"baseline":{"kind":"empty"}}';
   writeFileSync(path(h), previous);
-  await assert.rejects(init(h), error => error.code === 'UNSUPPORTED_SCHEMA' && /마이그레이션 프롬프트/.test(error.message));
+  await assert.rejects(init(h), error => error.code === 'UNSUPPORTED_SCHEMA' && /guide show migrate/.test(error.message));
   assert.equal(readFileSync(path(h), 'utf8'), previous);
 });
 

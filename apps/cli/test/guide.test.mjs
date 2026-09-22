@@ -58,7 +58,7 @@ test('unknown topics and removed forms fail on stderr without output', async t =
   assert.equal(failure.status, 1); assert.equal(failure.stdout, '');
   const dto = JSON.parse(failure.stderr);
   assert.deepEqual([dto.contract, dto.version, dto.ok, dto.error.code], ['guide', 1, false, 'UNKNOWN_TOPIC']);
-  assert.match(dto.error.message, /workflow, spec, design, wiki, writing, commit/);
+  assert.match(dto.error.message, /workflow, spec, design, wiki, writing, commit, migrate/);
   const text = run(cwd, 'show', 'nope');
   assert.equal(text.status, 1); assert.match(text.stderr, /^UNKNOWN_TOPIC: /);
   assert.notEqual(run(cwd, 'show', 'spec', 'design').status, 0);

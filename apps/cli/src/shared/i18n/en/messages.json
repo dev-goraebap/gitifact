@@ -187,7 +187,7 @@
   "help.guide": "Writing guides for agents",
   "help.guideList": "List guides (title and description)",
   "help.guideShow": "Print one guide",
-  "help.guideTopic": "One of workflow, spec, design, wiki, writing, commit",
+  "help.guideTopic": "One of workflow, spec, design, wiki, writing, commit, migrate",
   "command.failed": "The command failed.",
   "project.notInitialized": "Initialize the project with gitifact init first.",
   "input.file": "The input must be a JSON file of 1 MiB or less.",

@@ -5,7 +5,7 @@ export class InitError extends Error {
   constructor(public readonly code: string, message: string) { super(message); }
 }
 // 3 is the 0.8.0 document format: one file per document with frontmatter. The number only announces the format; the
-// CLI never converts between them, and a project on 2 moves with the migration prompt.
+// CLI never converts between them, and a project on 2 moves by following `guide show migrate`.
 export const SCHEMA_VERSION = 3 as const;
 /** The 0.7 convention, the one format a migration starts from. */
 const PREVIOUS_SCHEMA_VERSION = 2;

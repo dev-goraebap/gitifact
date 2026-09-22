@@ -151,11 +151,11 @@ test('docs history lists why and when a document changed, newest first', t => {
   assert.equal(f.run(['docs', 'history', 'R-zzzzzzzzzz']).status, 1);
 });
 
-test('docs commands refuse an uninitialized project and the 0.7 format with the migration prompt', t => {
+test('docs commands refuse an uninitialized project and the 0.7 format with the migration guide', t => {
   const f = projectFixture(t);
   writeFileSync(join(f.repo, '.gitifact/config.json'), JSON.stringify({ schemaVersion: 2, baseline: { kind: 'empty' } }));
   const old = f.run(['docs', 'list']);
-  assert.equal(old.status, 1); assert.match(old.stderr, /^UNSUPPORTED_SCHEMA: .*schemaVersion 2.*마이그레이션 프롬프트/);
+  assert.equal(old.status, 1); assert.match(old.stderr, /^UNSUPPORTED_SCHEMA: .*schemaVersion 2.*guide show migrate/);
   rmSync(join(f.repo, '.gitifact/config.json'));
   assert.equal(JSON.parse(f.run(['docs', 'check', '--format', 'json']).stderr).error.code, 'NOT_INITIALIZED');
 });

@@ -187,7 +187,7 @@
   "help.guide": "에이전트용 작성 지침",
   "help.guideList": "지침 목록 (제목과 설명)",
   "help.guideShow": "지침 하나를 출력",
-  "help.guideTopic": "workflow, spec, design, wiki, writing, commit 중 하나",
+  "help.guideTopic": "workflow, spec, design, wiki, writing, commit, migrate 중 하나",
   "command.failed": "명령을 실행하지 못했습니다.",
   "project.notInitialized": "먼저 gitifact init으로 초기화하세요.",
   "input.file": "입력은 1 MiB 이하의 JSON 파일이어야 합니다.",

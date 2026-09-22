@@ -40,7 +40,7 @@ CLI: 기본 실행은 `npx --yes gitifact@0.7.1 <cmd>`다. 아래 `gitifact`는 
 - 사용자가 요구사항·프로젝트 현황·변경 이력을 보여 달라고 하면 `gitifact browser`를 백그라운드로 실행하고 출력된 URL을 알려 준다. 채팅 요약으로 대신하지 않는다.
 ### 명령
 
-- `guide list`, `guide show <topic>`: 작성 지침 (workflow, spec, design, wiki, writing, commit)
+- `guide list`, `guide show <topic>`: 작성 지침 (workflow, spec, design, wiki, writing, commit, migrate)
 - `docs list`·`search`·`show <ID…>`·`new <종류> <경로>`·`check`·`history <ID>`: 본문 없는 목록, 검색, 원문과 참조, ID 발급과 뼈대 생성(`draft: true`), 전체 검사, 변경 이유 (옵션은 `--help`)
 - `changes list`: HEAD 대비 바뀐 문서, 이유 없는 문서, 커밋 입력 파일 경로
 - `changes commit --file <json|-> [--dry-run]`: 문서 검사 뒤 변경 이유 기록과 커밋을 한 번에
