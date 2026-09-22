@@ -10,7 +10,7 @@ const req='## 본인 이미지\n<!-- gitifact-req: R-b6fq2ry4ns -->\n\n조건: �
 const doc=(id,body='')=>`<!-- gitifact-spec: ${id} -->\n# 기능\n\n${body}`;
 const a='.gitifact/spec/employees/requirements.md',b='.gitifact/spec/profile/requirements.md';
 function run(f,args,cwd=f.repo){return spawnSync(process.execPath,[exe,'spec',...args.filter(x=>x!=='--experimental')],{cwd,env:f.env,encoding:'utf8',timeout:35000});}
-for(const hash of ['sha1','sha256']) test(`preview committed move, reason and unchanged worktree/index (${hash})`,t=>{
+for(const hash of ['sha1','sha256']) test(`read and diff show a committed move and reason without changing worktree/index (${hash})`,t=>{
   const f=fixture(t,hash);for(const dir of ['employees','profile'])mkdirSync(join(f.repo,'.gitifact/spec',dir),{recursive:true});
   f.write(a,doc('S-k7m2xqab3d',req));f.write(b,doc('S-u2gk5wd7ra'));f.commit();const before=f.git(['rev-parse','HEAD']).stdout.trim();
   f.write(a,doc('S-k7m2xqab3d'));f.write(b,doc('S-u2gk5wd7ra',req));

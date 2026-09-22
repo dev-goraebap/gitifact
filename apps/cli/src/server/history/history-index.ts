@@ -1,6 +1,6 @@
 import { getLanguage } from '../../shared/i18n/index.js';
 import type { DatabaseSync } from 'node:sqlite';
-import type { PreviewBundle } from '@gitifact/core';
+import type { StoreBundle } from '@gitifact/core';
 import { createCommitChanges, type CommitChanges, type HistoryEvent } from './commit-changes.js';
 import { createIndexDatabase, transaction } from './index-database.js';
 import { containing, plain, snippet } from './search-text.js';
@@ -31,7 +31,7 @@ const RECENT_COMMITS = 3; const RECENT_CHANGES = 12;
  * HEAD only adds the order of its commits. A new HEAD reads the commits the index does not have yet — after a pull,
  * the new ones; after a branch switch, usually none. Queries are then plain SQL over rows and ask Git nothing.
  */
-export function createHistoryIndex(root: string, snapshot: (oid: string) => Promise<PreviewBundle>) {
+export function createHistoryIndex(root: string, snapshot: (oid: string) => Promise<StoreBundle>) {
   const changes = createCommitChanges(root, snapshot);
   const database = createIndexDatabase(root);
   const building = new Map<string, Promise<void>>();

@@ -1,25 +1,25 @@
 import { t } from '../shared/i18n/index.js';
 
-// Experimental reader grammar; this is not a new project storage version.
-export class SpecPreviewError extends Error {
+// The record store's file formats: specs, designs, wiki pages and their reasons, read and compared as bundles.
+export class StoreError extends Error {
   readonly code = 'INVALID_SPEC_PREVIEW';
 }
-export interface PreviewRequirement { id: string; title: string; body: string }
-export interface PreviewReason { id: string; requirements: string[]; designs?: string[]; documents?: string[]; reason: string }
+export interface StoreRequirement { id: string; title: string; body: string }
+export interface StoreReason { id: string; requirements: string[]; designs?: string[]; documents?: string[]; reason: string }
 /** A document the design drew on: one wiki page (repo-relative link) or one external URL, with an optional note. */
 export interface DesignSource { title: string; path?: string; url?: string; note?: string }
-export interface PreviewDesign { title: string; body: string; requirements: string[]; sources: DesignSource[] }
-export interface PreviewSpec {
+export interface StoreDesign { title: string; body: string; requirements: string[]; sources: DesignSource[] }
+export interface StoreSpec {
   id: string; path: string; title: string; description: string;
-  requirements: PreviewRequirement[]; history: PreviewReason[]; design?: PreviewDesign;
+  requirements: StoreRequirement[]; history: StoreReason[]; design?: StoreDesign;
 }
 /** Wiki pages: a free folder tree under `.gitifact/wiki`, each page identified by the `id` in its frontmatter. */
-export interface PreviewDocument { id: string; path: string; title: string; body: string }
-export interface PreviewWiki { documents: PreviewDocument[]; history: PreviewReason[] }
-export interface PreviewBundle { specs: PreviewSpec[]; wiki: PreviewWiki }
-export type PreviewChangeKind = 'requirement' | 'design' | 'wiki';
-export interface PreviewSnapshotEntry { id: string; title: string; body: string; specId: string; path: string; sources?: DesignSource[] }
-export interface PreviewChange { id: string; types: ('created' | 'deleted' | 'moved' | 'modified')[]; before: PreviewSnapshotEntry | null; after: PreviewSnapshotEntry | null; kind: PreviewChangeKind; reasons: PreviewReason[] }
+export interface StoreDocument { id: string; path: string; title: string; body: string }
+export interface StoreWiki { documents: StoreDocument[]; history: StoreReason[] }
+export interface StoreBundle { specs: StoreSpec[]; wiki: StoreWiki }
+export type StoreChangeKind = 'requirement' | 'design' | 'wiki';
+export interface StoreSnapshotEntry { id: string; title: string; body: string; specId: string; path: string; sources?: DesignSource[] }
+export interface StoreChange { id: string; types: ('created' | 'deleted' | 'moved' | 'modified')[]; before: StoreSnapshotEntry | null; after: StoreSnapshotEntry | null; kind: StoreChangeKind; reasons: StoreReason[] }
 export const WIKI_DIR = '.gitifact/wiki';
 export const WIKI_HISTORY_PATH = WIKI_DIR + '/history.jsonl';
 /** The wiki entry page: the browser opens it first and GitHub shows it when the folder is browsed. */
@@ -58,7 +58,7 @@ export function validateDocumentRelativePath(relative: string): void {
   for (const part of parts) if (!nameToken.test(part) || part.length > 80) fail(t('document.folderName', { path: relative }));
 }
 const reqId = new RegExp(`^R-${token}$`);
-const fail = (message: string): never => { throw new SpecPreviewError(message); };
+const fail = (message: string): never => { throw new StoreError(message); };
 const normalized = (value: string) => value.replace(/\r\n/g, '\n').trim();
 
 // ---- Frontmatter -------------------------------------------------------------------------------------------
@@ -136,12 +136,12 @@ export function renderFrontmatter(front: Frontmatter): string {
 }
 
 // ---- Design --------------------------------------------------------------------------------------------------
-export function renderDesignPreview(id: string, design: {title: string; body: string; sources?: DesignSource[]}): string {
+export function renderDesign(id: string, design: {title: string; body: string; sources?: DesignSource[]}): string {
   return renderFrontmatter({ id, ...(design.sources?.length ? { sources: design.sources } : {}) }) + `\n# ${design.title}\n\n${design.body}\n`;
 }
 
 /** References are explicit annotations outside fenced code; prose and examples are not identifiers. */
-export function parseDesignPreview(source: string, specId: string): PreviewDesign {
+export function parseDesign(source: string, specId: string): StoreDesign {
   if (source.includes('\0') || /\r(?!\n)/.test(source)) fail(t('design.invalidCharacters'));
   const lines = normalized(source).split('\n');
   const front = parseFrontmatter(lines, 'design', 'S');
@@ -174,7 +174,7 @@ export function renderDocument(doc: {id: string; title: string; body: string}): 
 }
 
 /** A wiki page is one Markdown file: frontmatter with its ID, title, body. Other gitifact annotations outside fenced code are rejected. */
-export function parseDocument(path: string, source: string): PreviewDocument {
+export function parseDocument(path: string, source: string): StoreDocument {
   const match = documentPathPattern.exec(path);
   if (!match) fail(t('document.unsupportedPath', { path }));
   validateDocumentRelativePath(match![1]!);
@@ -198,14 +198,14 @@ export function parseDocument(path: string, source: string): PreviewDocument {
   return { id, path, title, body };
 }
 
-export function parseWikiFiles(files: ReadonlyMap<string, string>): PreviewWiki {
-  const wiki: PreviewWiki = { documents: [], history: parsePreviewHistory(files.get(WIKI_HISTORY_PATH) ?? '', 'documents') };
+export function parseWikiFiles(files: ReadonlyMap<string, string>): StoreWiki {
+  const wiki: StoreWiki = { documents: [], history: parseHistory(files.get(WIKI_HISTORY_PATH) ?? '', 'documents') };
   for (const [path, source] of files) if (documentPathPattern.test(path)) wiki.documents.push(parseDocument(path, source));
   wiki.documents.sort((a, b) => a.path < b.path ? -1 : a.path > b.path ? 1 : 0);
   validateWiki(wiki); return wiki;
 }
 
-export function validateWiki(wiki: PreviewWiki): void {
+export function validateWiki(wiki: StoreWiki): void {
   const ids = new Set<string>(); const paths = new Set<string>(); const historyIds = new Set<string>();
   for (const d of wiki.documents) {
     if (ids.has(d.id)) fail(t('document.duplicateId', { id: d.id })); ids.add(d.id);
@@ -214,26 +214,26 @@ export function validateWiki(wiki: PreviewWiki): void {
   for (const h of wiki.history) { if (historyIds.has(h.id)) fail(t('history.duplicateId', { id: h.id })); historyIds.add(h.id); }
 }
 
-export const emptyWiki = (): PreviewWiki => ({ documents: [], history: [] });
-export const emptyBundle = (): PreviewBundle => ({ specs: [], wiki: emptyWiki() });
+export const emptyWiki = (): StoreWiki => ({ documents: [], history: [] });
+export const emptyBundle = (): StoreBundle => ({ specs: [], wiki: emptyWiki() });
 
-export function parsePreviewBundle(files: ReadonlyMap<string, string>): PreviewBundle {
-  const bundle = { specs: parsePreviewFiles(files), wiki: parseWikiFiles(files) };
+export function parseStoreBundle(files: ReadonlyMap<string, string>): StoreBundle {
+  const bundle = { specs: parseSpecFiles(files), wiki: parseWikiFiles(files) };
   validateBundle(bundle); return bundle;
 }
 
-export function validateBundle(bundle: PreviewBundle): void {
-  validatePreviewSnapshot(bundle.specs); validateWiki(bundle.wiki);
+export function validateBundle(bundle: StoreBundle): void {
+  validateSpecs(bundle.specs); validateWiki(bundle.wiki);
   const ids = new Set<string>();
   for (const h of [...bundle.specs.flatMap(s => s.history), ...bundle.wiki.history]) { if (ids.has(h.id)) fail(t('history.duplicateId', { id: h.id })); ids.add(h.id); }
 }
 
-export type PreviewWarning =
+export type StoreWarning =
   | { code: 'MISSING_DESIGN_REFERENCE'; specId: string; requirement: string }
   | { code: 'MISSING_LINK_TARGET'; path: string; target: string; link: string }
   | { code: 'ASSET_SIZE' | 'ASSET_EXTENSION' | 'UNREFERENCED_ASSET'; path: string; bytes?: number }
   | { code: 'ASSETS_TOTAL_SIZE'; bytes: number };
-export function designReferenceWarnings(specs: PreviewSpec[]): PreviewWarning[] {
+export function designReferenceWarnings(specs: StoreSpec[]): StoreWarning[] {
   const known = new Set(specs.flatMap(s => s.requirements.map(r => r.id)));
   return specs.flatMap(s => (s.design?.requirements ?? []).filter(id => !known.has(id)).map(id => ({specId: s.id, requirement: id, code: 'MISSING_DESIGN_REFERENCE' as const})));
 }
@@ -266,7 +266,7 @@ export function extractLinks(body: string): string[] {
   return links;
 }
 /** Every relative link of every record, resolved to a repo-relative path; design sources by path are included. */
-export function documentLinks(bundle: PreviewBundle): DocumentLink[] {
+export function documentLinks(bundle: StoreBundle): DocumentLink[] {
   const out: DocumentLink[] = [];
   const collect = (from: string, links: string[]) => { for (const link of links) { const target = resolveLink(from, link); if (target !== null) out.push({ from, link, target }); } };
   for (const s of bundle.specs) {
@@ -278,24 +278,24 @@ export function documentLinks(bundle: PreviewBundle): DocumentLink[] {
 }
 
 // ---- Specs ---------------------------------------------------------------------------------------------------
-export function parsePreviewFiles(files: ReadonlyMap<string, string>): PreviewSpec[] {
-  const specs: PreviewSpec[] = [];
+export function parseSpecFiles(files: ReadonlyMap<string, string>): StoreSpec[] {
+  const specs: StoreSpec[] = [];
   for (const [path, source] of files) {
     if (documentPathPattern.test(path) || documentHistoryPattern.test(path)) continue;
     if (path.endsWith('/requirements.md')) {
-      specs.push(parseSpecPreview(path, source, files.get(path.replace(/requirements\.md$/, 'history.jsonl')) ?? '', files.get(path.replace(/requirements\.md$/, 'design.md'))));
+      specs.push(parseSpec(path, source, files.get(path.replace(/requirements\.md$/, 'history.jsonl')) ?? '', files.get(path.replace(/requirements\.md$/, 'design.md'))));
     } else if (!files.has(path.replace(/(?:history\.jsonl|design\.md)$/, 'requirements.md'))) fail(t('spec.orphanFile', { path }));
   }
-  validatePreviewSnapshot(specs); return specs;
+  validateSpecs(specs); return specs;
 }
 
-export function parseSpecPreview(path: string, source: string, history = '', designSource?: string): PreviewSpec {
+export function parseSpec(path: string, source: string, history = '', designSource?: string): StoreSpec {
   if (!/^\.gitifact\/spec\/[^/]+\/requirements\.md$/.test(path)) fail(t('spec.unsupportedPath', { path }));
   if (source.includes('\0') || source.includes('\r') && /\r(?!\n)/.test(source)) fail(t('spec.invalidCharacters', { path }));
   const lines = normalized(source).split('\n');
   const specId = parseFrontmatter(lines, 'spec', 'S').id;
-  let title = ''; let description = ''; let current: PreviewRequirement | undefined;
-  const requirements: PreviewRequirement[] = [];
+  let title = ''; let description = ''; let current: StoreRequirement | undefined;
+  const requirements: StoreRequirement[] = [];
   let fence: { char: string; size: number } | undefined;
   let waitingId = false;
   const append = (line: string) => {
@@ -340,11 +340,11 @@ export function parseSpecPreview(path: string, source: string, history = '', des
     if (!r.body || ids.has(r.id)) fail(t('spec.emptyOrDuplicateRequirement', { id: r.id }));
     ids.add(r.id);
   }
-  return { id: specId, path, title, description: normalized(description), requirements, history: parsePreviewHistory(history), ...(designSource === undefined ? {} : { design: parseDesignPreview(designSource, specId) }) };
+  return { id: specId, path, title, description: normalized(description), requirements, history: parseHistory(history), ...(designSource === undefined ? {} : { design: parseDesign(designSource, specId) }) };
 }
 
-export function parsePreviewHistory(source: string, scope: 'spec' | 'documents' = 'spec'): PreviewReason[] {
-  const records: PreviewReason[] = []; const ids = new Set<string>();
+export function parseHistory(source: string, scope: 'spec' | 'documents' = 'spec'): StoreReason[] {
+  const records: StoreReason[] = []; const ids = new Set<string>();
   const shapes = scope === 'spec' ? ['id,reason,requirements', 'designs,id,reason,requirements'] : ['documents,id,reason,requirements'];
   for (const line of source.replace(/\r\n/g, '\n').split('\n')) {
     if (!line.trim()) continue;
@@ -365,7 +365,7 @@ export function parsePreviewHistory(source: string, scope: 'spec' | 'documents' 
   return records;
 }
 
-export function validatePreviewSnapshot(specs: PreviewSpec[]): void {
+export function validateSpecs(specs: StoreSpec[]): void {
   const specIds = new Set<string>(); const reqIds = new Set<string>(); const historyIds = new Set<string>();
   for (const s of specs) {
     if (specIds.has(s.id)) fail(t('spec.duplicateId', { id: s.id })); specIds.add(s.id);
@@ -379,10 +379,10 @@ export function validatePreviewSnapshot(specs: PreviewSpec[]): void {
   // Old reasons may refer to requirements since deleted or moved; validate new links when comparing.
 }
 
-const sameEntry = (a: PreviewSnapshotEntry, b: PreviewSnapshotEntry) => a.title === b.title && a.body === b.body && JSON.stringify(a.sources ?? []) === JSON.stringify(b.sources ?? []);
-export function compareSpecPreviews(before: PreviewSpec[], after: PreviewSpec[]) {
-  validatePreviewSnapshot(before); validatePreviewSnapshot(after);
-  const index = (specs: PreviewSpec[]) => new Map<string, PreviewSnapshotEntry>(specs.flatMap(s => s.requirements.map(r => [r.id, { ...r, specId: s.id, path: s.path }] as const)));
+const sameEntry = (a: StoreSnapshotEntry, b: StoreSnapshotEntry) => a.title === b.title && a.body === b.body && JSON.stringify(a.sources ?? []) === JSON.stringify(b.sources ?? []);
+export function compareSpecs(before: StoreSpec[], after: StoreSpec[]) {
+  validateSpecs(before); validateSpecs(after);
+  const index = (specs: StoreSpec[]) => new Map<string, StoreSnapshotEntry>(specs.flatMap(s => s.requirements.map(r => [r.id, { ...r, specId: s.id, path: s.path }] as const)));
   const prev = index(before); const next = index(after);
   for (const [specs, map] of [[before, prev], [after, next]] as const) for (const s of specs) if (s.design) map.set(s.id, { id: s.id, title: s.design.title, body: s.design.body, specId: s.id, path: s.path.replace(/requirements\.md$/, 'design.md'), sources: s.design.sources });
   const previousHistory = new Map(before.flatMap(s => s.history.map(h => [h.id, h] as const)));
@@ -399,14 +399,14 @@ export function compareSpecPreviews(before: PreviewSpec[], after: PreviewSpec[])
       if (from.specId !== to.specId || (id.startsWith('S-') && from.path !== to.path)) types.push('moved');
       if (!sameEntry(from, to)) types.push('modified');
     }
-    return types.length ? [{ id, types, before: from, after: to, kind: id.startsWith('S-') ? 'design' as const : 'requirement' as const, reasons: reasons.filter(h => [...h.requirements, ...(h.designs ?? [])].includes(id)) } satisfies PreviewChange] : [];
+    return types.length ? [{ id, types, before: from, after: to, kind: id.startsWith('S-') ? 'design' as const : 'requirement' as const, reasons: reasons.filter(h => [...h.requirements, ...(h.designs ?? [])].includes(id)) } satisfies StoreChange] : [];
   });
   const changed = new Set(changes.map(c => c.id));
   for (const h of reasons) if ([...h.requirements, ...(h.designs ?? [])].some(id => !changed.has(id))) fail(t('history.unlinkedRequirement', { id: h.id }));
   const prevSpecs = new Map(before.map(s => [s.id, s])); const nextSpecs = new Map(after.map(s => [s.id, s]));
   const specChanges = [...new Set([...prevSpecs.keys(), ...nextSpecs.keys()])].sort().flatMap(id => {
     const from = prevSpecs.get(id); const to = nextSpecs.get(id);
-    const summary = (s: PreviewSpec | undefined) => s ? { path: s.path, title: s.title, description: s.description } : null;
+    const summary = (s: StoreSpec | undefined) => s ? { path: s.path, title: s.title, description: s.description } : null;
     const a = summary(from); const b = summary(to);
     return JSON.stringify(a) !== JSON.stringify(b) ? [{ id, before: a, after: b }] : [];
   });
@@ -414,9 +414,9 @@ export function compareSpecPreviews(before: PreviewSpec[], after: PreviewSpec[])
 }
 
 /** Wiki pages compare by ID: a new path is a move, a new title or body a modification. New reasons must name changed pages. */
-export function compareWikis(before: PreviewWiki, after: PreviewWiki): PreviewChange[] {
+export function compareWikis(before: StoreWiki, after: StoreWiki): StoreChange[] {
   validateWiki(before); validateWiki(after);
-  const index = (wiki: PreviewWiki) => new Map(wiki.documents.map(d => [d.id, { id: d.id, title: d.title, body: d.body, specId: 'wiki', path: d.path }] as const));
+  const index = (wiki: StoreWiki) => new Map(wiki.documents.map(d => [d.id, { id: d.id, title: d.title, body: d.body, specId: 'wiki', path: d.path }] as const));
   const prev = index(before); const next = index(after);
   const previousHistory = new Map(before.history.map(h => [h.id, h] as const));
   const reasons = after.history.filter(h => {
@@ -426,7 +426,7 @@ export function compareWikis(before: PreviewWiki, after: PreviewWiki): PreviewCh
   });
   const changes = [...new Set([...prev.keys(), ...next.keys()])].sort().flatMap(id => {
     const from = prev.get(id) ?? null; const to = next.get(id) ?? null;
-    const types: PreviewChange['types'] = [];
+    const types: StoreChange['types'] = [];
     if (!from) types.push('created'); else if (!to) types.push('deleted');
     else { if (from.path !== to.path) types.push('moved'); if (from.title !== to.title || from.body !== to.body) types.push('modified'); }
     return types.length ? [{ id, types, before: from, after: to, kind: 'wiki' as const, reasons: reasons.filter(h => (h.documents ?? []).includes(id)) }] : [];
@@ -436,8 +436,8 @@ export function compareWikis(before: PreviewWiki, after: PreviewWiki): PreviewCh
   return changes;
 }
 
-export function comparePreviewBundles(a: PreviewBundle, b: PreviewBundle) {
+export function compareStoreBundles(a: StoreBundle, b: StoreBundle) {
   validateBundle(a); validateBundle(b);
-  const specs = compareSpecPreviews(a.specs, b.specs);
-  return { specChanges: specs.specChanges, changes: [...specs.changes, ...compareWikis(a.wiki, b.wiki)] as PreviewChange[] };
+  const specs = compareSpecs(a.specs, b.specs);
+  return { specChanges: specs.specChanges, changes: [...specs.changes, ...compareWikis(a.wiki, b.wiki)] as StoreChange[] };
 }

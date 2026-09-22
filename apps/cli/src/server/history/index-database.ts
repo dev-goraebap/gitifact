@@ -1,7 +1,7 @@
 import { DatabaseSync } from 'node:sqlite';
 import { mkdir, rm } from 'node:fs/promises';
 import { join } from 'node:path';
-import { specPreviewReader } from '../../adapters/git/spec-preview-reader.js';
+import { storeReader } from '../../adapters/git/store-reader.js';
 
 /**
  * Bumped whenever what is stored changes meaning — a column, or how a commit's changes are computed. A file written
@@ -62,7 +62,7 @@ export function createIndexDatabase(root: string) {
   };
   const locate = () => path ??= (async () => {
     try {
-      const git = specPreviewReader(root);
+      const git = storeReader(root);
       const common = git.decode(await git.run(['rev-parse', '--path-format=absolute', '--git-common-dir'])).trim();
       const folder = join(common, 'gitifact'); await mkdir(folder, { recursive: true });
       const file = join(folder, 'index.sqlite');

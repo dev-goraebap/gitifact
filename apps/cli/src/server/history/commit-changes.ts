@@ -1,13 +1,13 @@
-import { comparePreviewBundles, emptyBundle, parsePreviewBundle, recordPathPattern, SpecPreviewError, STORE_DIR, WIKI_DIR, WIKI_HISTORY_PATH, type PreviewBundle, type PreviewChange } from '@gitifact/core';
-import { specPreviewReader } from '../../adapters/git/spec-preview-reader.js';
+import { compareStoreBundles, emptyBundle, parseStoreBundle, recordPathPattern, StoreError, STORE_DIR, WIKI_DIR, WIKI_HISTORY_PATH, type StoreBundle, type StoreChange } from '@gitifact/core';
+import { storeReader } from '../../adapters/git/store-reader.js';
 import { t } from '../../shared/i18n/index.js';
 import { remergeRecords } from './merge-records.js';
 
 /** One change of one commit, with the full text on both sides. Lists send it without the text. */
 export interface HistoryEvent {
   key: string; commit: string; date: string; author: string; email: string; committer: string; message: string;
-  id: string; kind: PreviewChange['kind']; types: PreviewChange['types'];
-  before: PreviewChange['before']; after: PreviewChange['after']; reasons: string[];
+  id: string; kind: StoreChange['kind']; types: StoreChange['types'];
+  before: StoreChange['before']; after: StoreChange['after']; reasons: string[];
 }
 export interface CommitChanges { commit: string; events: HistoryEvent[] }
 interface RawEntry { oldBlob: string; newBlob: string; path: string }
@@ -31,20 +31,20 @@ const BATCH = 100;
  * commit that cannot be read this way is compared whole, so an unusual history is still read the way it was — or
  * fails the way it did.
  */
-export function createCommitChanges(root: string, snapshot: (oid: string) => Promise<PreviewBundle>) {
-  const reader = specPreviewReader(root);
+export function createCommitChanges(root: string, snapshot: (oid: string) => Promise<StoreBundle>) {
+  const reader = storeReader(root);
 
   function parseLog(text: string): RawCommit[] {
     return text.split('\x1e').filter(chunk => chunk.length).map(chunk => {
       const parts = chunk.split('\0');
       const [commit, parents, author, email, date, committer, message] = parts;
-      if (!commit || parents === undefined || author === undefined || email === undefined || !date || committer === undefined || message === undefined) throw new SpecPreviewError(t('specReader.historyUnreadable'));
+      if (!commit || parents === undefined || author === undefined || email === undefined || !date || committer === undefined || message === undefined) throw new StoreError(t('specReader.historyUnreadable'));
       const entries: RawEntry[] = [];
       for (let i = 7; i < parts.length; i++) {
         const meta = parts[i]!.replace(/^\n/, '');
         if (!meta.startsWith(':')) continue;
         const [, , oldBlob, newBlob] = meta.split(' '); const path = parts[++i];
-        if (!oldBlob || !newBlob || path === undefined) throw new SpecPreviewError(t('specReader.historyUnreadable'));
+        if (!oldBlob || !newBlob || path === undefined) throw new StoreError(t('specReader.historyUnreadable'));
         if (recordPathPattern.test(path)) entries.push({ oldBlob, newBlob, path });
       }
       return { commit, parent: parents.split(' ')[0] || undefined, parents: parents.split(' ').filter(Boolean), author, email, date, committer, message, entries };
@@ -70,19 +70,19 @@ export function createCommitChanges(root: string, snapshot: (oid: string) => Pro
     let offset = 0; let total = 0;
     for (const name of names) {
       const end = output.indexOf(10, offset);
-      if (end < 0) throw new SpecPreviewError(t('reader.blobBoundary'));
+      if (end < 0) throw new StoreError(t('reader.blobBoundary'));
       const header = output.subarray(offset, end).toString('utf8');
       if (header.endsWith(' missing')) { offset = end + 1; continue; }
       const [, type, sizeText] = header.split(' '); const size = Number(sizeText);
-      if (type !== 'blob' || !Number.isSafeInteger(size) || size < 0 || size > 1024 * 1024 || output[end + size + 1] !== 10) throw new SpecPreviewError(t('reader.blobShape'));
-      total += size; if (total > 64 * 1024 * 1024) throw new SpecPreviewError(t('reader.totalLimit'));
+      if (type !== 'blob' || !Number.isSafeInteger(size) || size < 0 || size > 1024 * 1024 || output[end + size + 1] !== 10) throw new StoreError(t('reader.blobShape'));
+      total += size; if (total > 64 * 1024 * 1024) throw new StoreError(t('reader.totalLimit'));
       found.set(name, reader.decode(output.subarray(end + 1, end + 1 + size))); offset = end + size + 2;
     }
-    if (offset !== output.length) throw new SpecPreviewError(t('reader.blobBoundary'));
+    if (offset !== output.length) throw new StoreError(t('reader.blobBoundary'));
     return found;
   }
 
-  const eventsOf = (c: RawCommit, changes: PreviewChange[]): HistoryEvent[] => changes.map(change => ({
+  const eventsOf = (c: RawCommit, changes: StoreChange[]): HistoryEvent[] => changes.map(change => ({
     key: c.commit + ':' + change.id, commit: c.commit, author: c.author, email: c.email, date: c.date, committer: c.committer, message: c.message,
     id: change.id, kind: change.kind, types: change.types, before: change.before, after: change.after, reasons: change.reasons.map(r => r.reason),
   }));
@@ -91,7 +91,7 @@ export function createCommitChanges(root: string, snapshot: (oid: string) => Pro
   async function wholeStore(c: RawCommit): Promise<CommitChanges> {
     const after = await snapshot(c.commit);
     const before = c.parent ? await snapshot(c.parent) : emptyBundle();
-    return { commit: c.commit, events: eventsOf(c, comparePreviewBundles(before, after).changes) };
+    return { commit: c.commit, events: eventsOf(c, compareStoreBundles(before, after).changes) };
   }
 
   async function merge(c: RawCommit): Promise<CommitChanges> {
@@ -105,13 +105,13 @@ export function createCommitChanges(root: string, snapshot: (oid: string) => Pro
       if (!touched.size) return { commit: c.commit, events: [] };
     }
     const after = await snapshot(c.commit);
-    const parents: PreviewBundle[] = [];
+    const parents: StoreBundle[] = [];
     for (const parent of c.parents) parents.push(await snapshot(parent));
     // Reasons imported from branches belong to their original commits, and may refer to changes later undone.
     // Compare content independently, then attach only reasons first recorded by the merge itself.
-    const withoutReasons = (b: PreviewBundle): PreviewBundle => ({ specs: b.specs.map(s => ({ ...s, history: [] })), wiki: { ...b.wiki, history: [] } });
-    const differences = parents.map(p => comparePreviewBundles(withoutReasons(p), withoutReasons(after)).changes);
-    const reasons = (b: PreviewBundle) => [...b.specs.flatMap(s => s.history), ...b.wiki.history];
+    const withoutReasons = (b: StoreBundle): StoreBundle => ({ specs: b.specs.map(s => ({ ...s, history: [] })), wiki: { ...b.wiki, history: [] } });
+    const differences = parents.map(p => compareStoreBundles(withoutReasons(p), withoutReasons(after)).changes);
+    const reasons = (b: StoreBundle) => [...b.specs.flatMap(s => s.history), ...b.wiki.history];
     const inherited = new Set(parents.flatMap(p => reasons(p).map(r => r.id)));
     const added = reasons(after).filter(r => !inherited.has(r.id));
     // Git cannot remerge octopus commits. Retain records that differ from every parent in that case, rather than
@@ -139,9 +139,9 @@ export function createCommitChanges(root: string, snapshot: (oid: string) => Pro
       if (want && blobs) {
         try {
           const side = (list: string[], rev: string) => new Map(list.filter(name => blobs!.has(name)).map(name => [name.slice(rev.length + 1), blobs!.get(name)!]));
-          const after = parsePreviewBundle(side(want.after, c.commit));
-          const before = want.before.length ? parsePreviewBundle(side(want.before, c.parent!)) : emptyBundle();
-          value = { commit: c.commit, events: eventsOf(c, comparePreviewBundles(before, after).changes) };
+          const after = parseStoreBundle(side(want.after, c.commit));
+          const before = want.before.length ? parseStoreBundle(side(want.before, c.parent!)) : emptyBundle();
+          value = { commit: c.commit, events: eventsOf(c, compareStoreBundles(before, after).changes) };
         } catch { value = undefined; }
       }
       result.push(value ?? await wholeStore(c));
@@ -165,7 +165,7 @@ export function createCommitChanges(root: string, snapshot: (oid: string) => Pro
           Buffer.from(slice.join('\n') + '\n'))));
         const byCommit = new Map(raw.map(c => [c.commit, c]));
         const missing = slice.find(oid => !byCommit.has(oid));
-        if (missing) throw new SpecPreviewError(t('specReader.historyUnreadable'));
+        if (missing) throw new StoreError(t('specReader.historyUnreadable'));
         out.push(...await batch(slice.map(oid => byCommit.get(oid)!)));
       }
       return out;

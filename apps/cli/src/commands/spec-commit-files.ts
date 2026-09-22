@@ -1,10 +1,10 @@
 import { createHash } from 'node:crypto';
 import { lstat, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { SpecPreviewError, recordPathPattern, isAssetPath } from '@gitifact/core';
+import { StoreError, recordPathPattern, isAssetPath } from '@gitifact/core';
 import { t } from '../shared/i18n/index.js';
 
-export const fail = (message: string): never => { throw new SpecPreviewError(message); };
+export const fail = (message: string): never => { throw new StoreError(message); };
 export const hash = (value: Buffer | string) => createHash('sha256').update(value).digest('hex');
 export const optional = (path: string) => readFile(path).catch(e => { if (e.code === 'ENOENT') return null; throw e; });
 export const info = (path: string) => lstat(path).catch(e => { if (e.code === 'ENOENT') return undefined; throw e; });

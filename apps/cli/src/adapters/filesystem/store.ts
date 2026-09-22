@@ -1,20 +1,20 @@
 import { lstat, readdir, readFile, mkdir, writeFile, rename, unlink, rmdir } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import { createHash, randomBytes } from 'node:crypto';
-import { editSpecPreview, parsePreviewBundle, renderDesignPreview, renderSpecPreview, renderDocument, recordPathPattern, WIKI_DIR, SpecPreviewError, parseManagedConfig } from '@gitifact/core';
+import { editStore, parseStoreBundle, renderDesign, renderSpec, renderDocument, recordPathPattern, WIKI_DIR, StoreError, parseManagedConfig } from '@gitifact/core';
 import { workingWarnings } from './working-warnings.js';
 import { readConfigFile } from './config-file.js';
 import { t } from '../../shared/i18n/index.js';
 
-const fail = (message: string): never => { throw new SpecPreviewError(message); };
+const fail = (message: string): never => { throw new StoreError(message); };
 const info = async (path: string) => lstat(path).catch(e => { if (e.code === 'ENOENT') return undefined; throw e; });
 const digest = (value: string) => createHash('sha256').update(value).digest('hex');
 const decode = (bytes: Buffer) => new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(bytes);
-export const generatePreviewId = (prefix: 'S' | 'R' | 'H' | 'W') => prefix + '-' + [...randomBytes(10)].map(n => 'abcdefghijklmnopqrstuvwxyz234567'[n & 31]).join('');
+export const generateId = (prefix: 'S' | 'R' | 'H' | 'W') => prefix + '-' + [...randomBytes(10)].map(n => 'abcdefghijklmnopqrstuvwxyz234567'[n & 31]).join('');
 /** Where the store lives. Commands resolve it through the Git adapter once and pass it in, so adapters stay independent. */
 export interface StoreLocation { root: string; gitDir: string }
 /** A failure after Git may have changed HEAD: keep written files and recovery data instead of rolling back. */
-export class PreservedPreviewError extends SpecPreviewError {}
+export class PreservedStoreError extends StoreError {}
 
 async function snapshot(root: string) {
   const files = new Map<string, string>(); let count = 0; let bytes = 0;
@@ -41,12 +41,12 @@ async function snapshot(root: string) {
   }
   await visit('.gitifact/spec', 0, false);
   await visit(WIKI_DIR, 0, true);
-  const bundle = parsePreviewBundle(files);
+  const bundle = parseStoreBundle(files);
   // Entries are sorted so the stamp does not depend on the order the store folders were visited.
   return { root, files, specs: bundle.specs, wiki: bundle.wiki, bundle, config, stamp: digest(JSON.stringify([...files].sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)) + (config ?? '')) };
 }
 
-export async function readWorkingPreviewState({ root, gitDir }: StoreLocation) {
+export async function readWorkingState({ root, gitDir }: StoreLocation) {
   if (await info(join(gitDir, 'gitifact-spec-preview.lock'))) fail(t('store.locked'));
   const first = await snapshot(root); const second = await snapshot(root);
   if (first.stamp !== second.stamp) fail(t('store.changedWhileReading'));
@@ -54,22 +54,22 @@ export async function readWorkingPreviewState({ root, gitDir }: StoreLocation) {
   return first;
 }
 
-export async function readWorkingPreview(location: StoreLocation) {
-  const { root, stamp, specs, wiki, bundle } = await readWorkingPreviewState(location);
+export async function readWorking(location: StoreLocation) {
+  const { root, stamp, specs, wiki, bundle } = await readWorkingState(location);
   return { stamp, specs, wiki, warnings: await workingWarnings(root, bundle) };
 }
 
-export async function saveWorkingPreview(location: StoreLocation, input: unknown, publish = rename) {
+export async function saveWorking(location: StoreLocation, input: unknown, publish = rename) {
   if (!input || typeof input !== 'object' || Array.isArray(input)) fail(t('store.invalidInput'));
   const request = input as Record<string, unknown>;
   if (Object.keys(request).sort().join(',') !== 'expected,operations' || typeof request.expected !== 'string') fail(t('store.expectedOperations'));
-  return previewTransaction(location, request.expected as string, async before => {
-    const result = editSpecPreview(before.bundle, request.operations, generatePreviewId);
+  return storeTransaction(location, request.expected as string, async before => {
+    const result = editStore(before.bundle, request.operations, generateId);
     const writes = new Map<string, string | null>();
     for (const spec of result.specs) {
       const old = before.specs.find(s => s.id === spec.id);
-      if (!old || renderSpecPreview(old) !== renderSpecPreview(spec)) writes.set(spec.path, renderSpecPreview(spec));
-      if (JSON.stringify(old?.design) !== JSON.stringify(spec.design)) writes.set(spec.path.replace(/requirements\.md$/, 'design.md'), spec.design ? renderDesignPreview(spec.id, spec.design) : null);
+      if (!old || renderSpec(old) !== renderSpec(spec)) writes.set(spec.path, renderSpec(spec));
+      if (JSON.stringify(old?.design) !== JSON.stringify(spec.design)) writes.set(spec.path.replace(/requirements\.md$/, 'design.md'), spec.design ? renderDesign(spec.id, spec.design) : null);
     }
     // A moved page leaves its old path and appears at the new one; a deleted one only leaves.
     const previousDocs = before.wiki.documents; const nextDocs = result.wiki.documents;
@@ -83,12 +83,12 @@ export async function saveWorkingPreview(location: StoreLocation, input: unknown
   }, publish);
 }
 
-export type WorkingPreviewSnapshot = Awaited<ReturnType<typeof snapshot>>;
+export type WorkingSnapshot = Awaited<ReturnType<typeof snapshot>>;
 // Internal callers must already hold gitifact-spec-preview.lock.
-export const readLockedPreviewState = (root: string) => snapshot(root);
-export async function previewTransaction<T>({ root, gitDir }: StoreLocation, expected: string, build: (before: WorkingPreviewSnapshot) => Promise<{
+export const readLockedState = (root: string) => snapshot(root);
+export async function storeTransaction<T>({ root, gitDir }: StoreLocation, expected: string, build: (before: WorkingSnapshot) => Promise<{
   writes: Map<string, string | null>; data: T; recheck?: () => Promise<void>;
-}>, publish = rename, afterPublish?: (state: WorkingPreviewSnapshot) => Promise<void>) {
+}>, publish = rename, afterPublish?: (state: WorkingSnapshot) => Promise<void>) {
   const lock = join(gitDir, 'gitifact-spec-preview.lock');
   try { await mkdir(lock); } catch (e) { if ((e as NodeJS.ErrnoException).code === 'EEXIST') fail(t('store.locked')); throw e; }
   const createdDirs: string[] = []; const temporary: string[] = [];
@@ -133,7 +133,7 @@ export async function previewTransaction<T>({ root, gitDir }: StoreLocation, exp
     await afterPublish?.(after);
     return { ...result.data, stamp: after.stamp, paths: changed.map(c => c.path), specs: after.specs, wiki: after.wiki, warnings: await workingWarnings(root, after.bundle) };
   } catch (error) {
-    if (error instanceof PreservedPreviewError) { keepRecovery = true; throw error; }
+    if (error instanceof PreservedStoreError) { keepRecovery = true; throw error; }
     for (const c of [...published].reverse()) {
       try {
         const path = join(root, c.path); const stat = await info(path);

@@ -1,14 +1,14 @@
-import { parseSpecPreview, renderDesignPreview, parseDesignPreview, SpecPreviewError, validateBundle, parseDocument, renderDocument, renderFrontmatter, validateDocumentRelativePath, validateSource, WIKI_DIR, type PreviewSpec, type PreviewBundle, type PreviewDocument, type DesignSource } from '../formats/spec-preview.js';
+import { parseSpec, renderDesign, parseDesign, StoreError, validateBundle, parseDocument, renderDocument, renderFrontmatter, validateDocumentRelativePath, validateSource, WIKI_DIR, type StoreSpec, type StoreBundle, type StoreDocument, type DesignSource } from '../formats/store.js';
 import { t } from '../shared/i18n/index.js';
 
-const fail = (message: string): never => { throw new SpecPreviewError(message); };
+const fail = (message: string): never => { throw new StoreError(message); };
 const featurePattern = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
 const reserved = /^(con|prn|aux|nul|com[0-9]|lpt[0-9])$/;
-export function previewPath(feature: string): string {
+export function specPath(feature: string): string {
   if (!featurePattern.test(feature) || feature.length > 80 || reserved.test(feature)) fail(t('edit.invalidFeatureName'));
   return `.gitifact/spec/${feature}/requirements.md`;
 }
-export function renderSpecPreview(spec: PreviewSpec): string {
+export function renderSpec(spec: StoreSpec): string {
   return renderFrontmatter({ id: spec.id }) + `\n# ${spec.title}\n\n`
     + (spec.description ? spec.description + '\n\n' : '')
     + spec.requirements.map(r => `## ${r.title}\n<!-- gitifact-req: ${r.id} -->\n\n${r.body}\n`).join('\n');
@@ -16,9 +16,9 @@ export function renderSpecPreview(spec: PreviewSpec): string {
 
 export type IdPrefix = 'S' | 'R' | 'W';
 /** Draft edits only. History and Git state are not part of this operation. */
-export function editSpecPreview(source: PreviewBundle, input: unknown, generate: (prefix: IdPrefix) => string) {
+export function editStore(source: StoreBundle, input: unknown, generate: (prefix: IdPrefix) => string) {
   if (!Array.isArray(input) || !input.length || input.length > 100) fail(t('edit.operationCount'));
-  const specs: PreviewSpec[] = source.specs.map(s => ({ ...s, requirements: s.requirements.map(r => ({ ...r })), history: s.history.map(h => ({ ...h, requirements: [...h.requirements] })) }));
+  const specs: StoreSpec[] = source.specs.map(s => ({ ...s, requirements: s.requirements.map(r => ({ ...r })), history: s.history.map(h => ({ ...h, requirements: [...h.requirements] })) }));
   const wiki = { documents: source.wiki.documents.map(d => ({ ...d })), history: source.wiki.history.map(h => ({ ...h })) };
   validateBundle({ specs, wiki });
   const used = new Set([...specs.flatMap(s => [s.id, ...s.requirements.map(r => r.id)]), ...wiki.documents.map(x => x.id)]);
@@ -52,11 +52,11 @@ export function editSpecPreview(source: PreviewBundle, input: unknown, generate:
       return value;
     };
     const target = () => {
-      const path = previewPath(str('feature'));
+      const path = specPath(str('feature'));
       return specs.find(s => s.path === path) ?? fail(t('edit.specNotFound', { path }));
     };
     if (type.endsWith('-doc')) {
-      const documentPath = (self?: PreviewDocument) => {
+      const documentPath = (self?: StoreDocument) => {
         const relative = str('path'); validateDocumentRelativePath(relative); const path = `${WIKI_DIR}/${relative}`;
         if (self && self.path === path) fail(t('edit.samePath'));
         if (wiki.documents.some(d => d !== self && d.path.toLowerCase() === path.toLowerCase())) fail(t('edit.documentPathExists', { path }));
@@ -64,7 +64,7 @@ export function editSpecPreview(source: PreviewBundle, input: unknown, generate:
       };
       const find = () => { const id = str('id'); return wiki.documents.find(d => d.id === id) ?? fail(t('edit.documentIdNotFound', { id })); };
       if (type === 'create-doc') {
-        const doc: PreviewDocument = { id: allocate('W'), path: documentPath(), title: str('title'), body: str('body') };
+        const doc: StoreDocument = { id: allocate('W'), path: documentPath(), title: str('title'), body: str('body') };
         wiki.documents.push(doc); results.push({ type, id: doc.id });
       } else if (type === 'update-doc') {
         const doc = find(); doc.title = str('title'); doc.body = str('body'); results.push({ type, id: doc.id });
@@ -76,7 +76,7 @@ export function editSpecPreview(source: PreviewBundle, input: unknown, generate:
       continue;
     }
     if (type === 'create') {
-      const path = previewPath(str('feature'));
+      const path = specPath(str('feature'));
       if (specs.some(s => s.path.toLowerCase() === path.toLowerCase())) fail(t('edit.featureExists'));
       const spec = { id: allocate('S'), path, title: str('title'), description: str('description', true), requirements: [], history: [] };
       specs.push(spec); results.push({ type, id: spec.id });
@@ -93,7 +93,7 @@ export function editSpecPreview(source: PreviewBundle, input: unknown, generate:
           if (!Array.isArray(list) || list.length > 50) return fail(t('edit.invalidSources'));
           sources = list.map(validateSource);
         }
-        spec.design = parseDesignPreview(renderDesignPreview(spec.id, {title: str('title'), body: str('body'), sources}), spec.id);
+        spec.design = parseDesign(renderDesign(spec.id, {title: str('title'), body: str('body'), sources}), spec.id);
       }
       results.push({type, id: spec.id});
     } else if (type === 'rename-spec') {
@@ -112,7 +112,7 @@ export function editSpecPreview(source: PreviewBundle, input: unknown, generate:
   }
   // Round-trip checks prevent a supplied body from injecting headings or identities.
   for (const spec of specs) {
-    const parsed = parseSpecPreview(spec.path, renderSpecPreview(spec), '', spec.design ? renderDesignPreview(spec.id, spec.design) : undefined);
+    const parsed = parseSpec(spec.path, renderSpec(spec), '', spec.design ? renderDesign(spec.id, spec.design) : undefined);
     if (JSON.stringify({ ...parsed, history: spec.history }) !== JSON.stringify(spec)) fail(t('edit.bodyChangesSpecStructure'));
   }
   wiki.documents.sort((a, b) => a.path < b.path ? -1 : a.path > b.path ? 1 : 0);

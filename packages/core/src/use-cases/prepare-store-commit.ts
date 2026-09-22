@@ -1,12 +1,12 @@
-import { comparePreviewBundles, SpecPreviewError, validateBundle, WIKI_HISTORY_PATH, type PreviewSpec, type PreviewReason, type PreviewBundle } from '../formats/spec-preview.js';
+import { compareStoreBundles, StoreError, validateBundle, WIKI_HISTORY_PATH, type StoreSpec, type StoreReason, type StoreBundle } from '../formats/store.js';
 import { t } from '../shared/i18n/index.js';
 
-const fail = (message: string): never => { throw new SpecPreviewError(message); };
+const fail = (message: string): never => { throw new StoreError(message); };
 const equal = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
-const historyPath = (s: PreviewSpec) => s.path.replace(/requirements\.md$/, 'history.jsonl');
+const historyPath = (s: StoreSpec) => s.path.replace(/requirements\.md$/, 'history.jsonl');
 
 /** Reasons written since the base commit: per feature for specs, one file for the wiki. */
-export function pendingPreviewReasons(a: PreviewBundle, b: PreviewBundle) {
+export function listPendingReasons(a: StoreBundle, b: StoreBundle) {
   return [
     ...b.specs.flatMap(s => s.history.slice(a.specs.find(p => p.id === s.id)?.history.length ?? 0).map(h => ({ specId: s.id, path: historyPath(s), ...h }))),
     ...b.wiki.history.slice(a.wiki.history.length).map(h => ({ kind: 'wiki' as const, path: WIKI_HISTORY_PATH, ...h })),
@@ -14,7 +14,7 @@ export function pendingPreviewReasons(a: PreviewBundle, b: PreviewBundle) {
 }
 
 /** Strip only uncommitted reasons when computing the final requirement and wiki delta. */
-export function finalSpecPreviewChanges(before: PreviewBundle, current: PreviewBundle) {
+export function finalStoreChanges(before: StoreBundle, current: StoreBundle) {
   validateBundle(before); validateBundle(current);
   for (const previous of before.specs) {
     const next = current.specs.find(s => s.id === previous.id);
@@ -22,21 +22,21 @@ export function finalSpecPreviewChanges(before: PreviewBundle, current: PreviewB
     if (next && !equal(next.history.slice(0, previous.history.length), previous.history)) fail(t('reason.committedImmutable', { id: previous.id }));
   }
   if (!equal(current.wiki.history.slice(0, before.wiki.history.length), before.wiki.history)) fail(t('reason.committedDocumentImmutable'));
-  const clean: PreviewBundle = {
+  const clean: StoreBundle = {
     specs: current.specs.map(s => ({ ...s, history: before.specs.find(p => p.id === s.id)?.history ?? [] })),
     wiki: { documents: current.wiki.documents, history: before.wiki.history },
   };
-  return comparePreviewBundles(before, clean);
+  return compareStoreBundles(before, clean);
 }
 
-export function prepareSpecPreview(beforeBundle: PreviewBundle, currentBundle: PreviewBundle, baseFiles: ReadonlyMap<string, string>, currentFiles: ReadonlyMap<string, string>, input: unknown, generate: () => string) {
+export function prepareStoreCommit(beforeBundle: StoreBundle, currentBundle: StoreBundle, baseFiles: ReadonlyMap<string, string>, currentFiles: ReadonlyMap<string, string>, input: unknown, generate: () => string) {
   const before = beforeBundle.specs; const current = currentBundle.specs;
-  const delta = finalSpecPreviewChanges(beforeBundle, currentBundle);
+  const delta = finalStoreChanges(beforeBundle, currentBundle);
   if (!Array.isArray(input) || input.length > 100) fail(t('reason.count'));
   const writes = new Map<string, string | null>();
-  const pending = new Map<string, PreviewReason[]>(); const covered = new Set<string>();
+  const pending = new Map<string, StoreReason[]>(); const covered = new Set<string>();
   const used = new Set([...before.flatMap(s => s.history), ...current.flatMap(s => s.history), ...beforeBundle.wiki.history, ...currentBundle.wiki.history].map(h => h.id));
-  const wikiPending: PreviewReason[] = [];
+  const wikiPending: StoreReason[] = [];
   const allocate = () => {
     for (let attempt = 0; attempt < 100; attempt++) {
       const id = generate(); if (!/^H-[a-z2-7]{10}$/.test(id)) fail(t('reason.idGenerated'));
@@ -83,7 +83,7 @@ export function prepareSpecPreview(beforeBundle: PreviewBundle, currentBundle: P
       pending.set(specId, [...(pending.get(specId) ?? []), record]);
     }
   }
-  const historyText = (base: string | undefined, records: PreviewReason[]) => {
+  const historyText = (base: string | undefined, records: StoreReason[]) => {
     // Committed bytes form the immutable prefix, including their original line endings.
     let text = base ?? '';
     if (records.length) text += (text && !text.endsWith('\n') ? '\n' : '') + records.map(h => JSON.stringify(h) + '\n').join('');

@@ -6,7 +6,7 @@ import { initRepository } from '../adapters/git/init-repository.js';
 import { fileInfo, publishConfig, readConfigFile } from '../adapters/filesystem/config-file.js';
 import { applyAgentDocs, planAgentDocs, skippedAgentDocs, type AgentDocsOptions } from './agent-docs.js';
 import { readBundledDoc } from './docs.js';
-import { generatePreviewId } from '../adapters/filesystem/spec-preview-store.js';
+import { generateId } from '../adapters/filesystem/store.js';
 import { disabledUpdate, npmGlobalInstall, npxUpdate } from '../shared/update-check.js';
 import { getLanguage, t } from '../shared/i18n/index.js';
 
@@ -77,7 +77,7 @@ async function writeWikiPolicy(root: string, readDoc: (name: string) => Promise<
   // the built CLI and the package check assert that a real install writes the README.
   const template = await readDoc('wiki.default').catch(e => { if (e.code === 'ENOENT') return undefined; throw e; });
   if (template === undefined) return;
-  const doc = { id: generatePreviewId('W'), path: WIKI_ENTRY_PATH, title: t('init.wikiReadmeTitle'), body: template.trim() };
+  const doc = { id: generateId('W'), path: WIKI_ENTRY_PATH, title: t('init.wikiReadmeTitle'), body: template.trim() };
   const text = renderDocument(doc); parseDocument(doc.path, text);
   await mkdir(join(root, ...WIKI_DIR.split('/')), { recursive: true });
   await writeFile(join(root, ...WIKI_ENTRY_PATH.split('/')), text, { flag: 'wx' });

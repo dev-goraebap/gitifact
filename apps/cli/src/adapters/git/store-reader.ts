@@ -1,4 +1,4 @@
-import { parsePreviewBundle, SpecPreviewError, recordPathPattern, STORE_DIR, WIKI_DIR, type PreviewBundle } from '@gitifact/core';
+import { parseStoreBundle, StoreError, recordPathPattern, STORE_DIR, WIKI_DIR, type StoreBundle } from '@gitifact/core';
 
 /** Every path prefix Git reads for the record set: the spec folders plus the wiki. */
 export const RECORD_PATHSPECS = [STORE_DIR + '/spec/', WIKI_DIR + '/'];
@@ -6,10 +6,10 @@ import { createGitRunner } from './run-git.js';
 import { commandScoped } from './command-scope.js';
 import { t } from '../../shared/i18n/index.js';
 
-export function specPreviewReader(cwd: string) {
+export function storeReader(cwd: string) {
   // Avoid repository/index overrides and replacements when reading immutable commits.
   for (const key of Object.keys(process.env)) if (/^GIT_(DIR|WORK_TREE|COMMON_DIR|INDEX_FILE|OBJECT_DIRECTORY|ALTERNATE_OBJECT_DIRECTORIES|CONFIG_COUNT|CONFIG_PARAMETERS|CONFIG_KEY_\d+|CONFIG_VALUE_\d+)$/i.test(key)) {
-    throw new SpecPreviewError(t('reader.gitContextOverride'));
+    throw new StoreError(t('reader.gitContextOverride'));
   }
   const runner = createGitRunner();
   const env = { ...process.env, GIT_OPTIONAL_LOCKS: '0', GIT_NO_LAZY_FETCH: '1', GIT_NO_REPLACE_OBJECTS: '1', GIT_TERMINAL_PROMPT: '0', GIT_LITERAL_PATHSPECS: '0', GIT_GLOB_PATHSPECS: '0', GIT_NOGLOB_PATHSPECS: '0', GIT_ICASE_PATHSPECS: '0', LC_ALL: 'C' };
@@ -18,7 +18,7 @@ export function specPreviewReader(cwd: string) {
   });
   const decode = (bytes: Buffer) => {
     try { return new TextDecoder('utf-8', { fatal: true, ignoreBOM: true }).decode(bytes); }
-    catch { throw new SpecPreviewError(t('reader.notUtf8')); }
+    catch { throw new StoreError(t('reader.notUtf8')); }
   };
   return {
     /** Git under the same guarded environment, for readers that shape their own commands (the browser's history). */
@@ -29,11 +29,11 @@ export function specPreviewReader(cwd: string) {
       const files = new Map<string, string>();
       for (const row of output.split('\0').filter(Boolean)) {
         const match = /^(\d+) ([a-f0-9]+) ([0-3])\t([\s\S]+)$/.exec(row);
-        if (!match) throw new SpecPreviewError(t('reader.invalidIndexEntry'));
+        if (!match) throw new StoreError(t('reader.invalidIndexEntry'));
         const [, mode, oid, stage, path] = match;
-        if (!['100644', '100755'].includes(mode!) || stage !== '0') throw new SpecPreviewError(t('reader.stagingConflictOrLink'));
+        if (!['100644', '100755'].includes(mode!) || stage !== '0') throw new StoreError(t('reader.stagingConflictOrLink'));
         // Non-Markdown files in the wiki folder are outside the record set and simply ignored.
-        if (!recordPathPattern.test(path!)) { if (path!.startsWith(WIKI_DIR + '/')) continue; throw new SpecPreviewError(t('reader.stagingUnsupported')); }
+        if (!recordPathPattern.test(path!)) { if (path!.startsWith(WIKI_DIR + '/')) continue; throw new StoreError(t('reader.stagingUnsupported')); }
         files.set(path!, oid!);
       }
       return files;
@@ -49,10 +49,10 @@ export function specPreviewReader(cwd: string) {
       ]);
       const head = decode(headOutput).trim(); const branch = decode(branchOutput).trim();
       if (head) {
-        if (!/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/.test(head)) throw new SpecPreviewError(t('reader.headUnknown'));
+        if (!/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/.test(head)) throw new StoreError(t('reader.headUnknown'));
         return { head, branch: branch || null };
       }
-      if (!branch.startsWith('refs/heads/') || (await git(['for-each-ref', '--format=%(refname)', '--', branch])).length) throw new SpecPreviewError(t('reader.damagedHead'));
+      if (!branch.startsWith('refs/heads/') || (await git(['for-each-ref', '--format=%(refname)', '--', branch])).length) throw new StoreError(t('reader.damagedHead'));
       return { head: null, branch };
     },
     location() {
@@ -63,13 +63,13 @@ export function specPreviewReader(cwd: string) {
         // A legal POSIX path can contain newlines. Read fields individually instead of guessing boundaries.
         if (values.length !== fields.length) values = await Promise.all(fields.map(async flags => line(await git(['rev-parse', '--path-format=absolute', ...flags]))));
         const [root, gitDir, indexPath, objectFormat] = values.map(value => value.trim()) as [string, string, string, string];
-        if (objectFormat !== 'sha1' && objectFormat !== 'sha256') throw new SpecPreviewError(t('reader.objectFormat'));
+        if (objectFormat !== 'sha1' && objectFormat !== 'sha256') throw new StoreError(t('reader.objectFormat'));
         return { root, gitDir, indexPath, objectFormat };
       });
     },
     async resolve(ref: string) {
       const oid = (await git(['rev-parse', '--verify', '--end-of-options', ref + '^{commit}'])).toString('ascii').trim();
-      if (!/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/.test(oid)) throw new SpecPreviewError(t('reader.commitUnknown'));
+      if (!/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/.test(oid)) throw new StoreError(t('reader.commitUnknown'));
       return oid;
     },
     async files(oid: string): Promise<Map<string, string>> {
@@ -77,30 +77,30 @@ export function specPreviewReader(cwd: string) {
       const files = new Map<string, string>();
       for (const row of entries.split('\0').filter(Boolean)) {
         const match = /^(\d+) (\w+) ([a-f0-9]+)\t([\s\S]+)$/.exec(row);
-        if (!match) throw new SpecPreviewError(t('reader.invalidTree'));
+        if (!match) throw new StoreError(t('reader.invalidTree'));
         const [, mode, type, object, path] = match;
-        if (!['100644', '100755'].includes(mode!) || type !== 'blob') throw new SpecPreviewError(t('reader.linkOrSubmodule', { path }));
+        if (!['100644', '100755'].includes(mode!) || type !== 'blob') throw new StoreError(t('reader.linkOrSubmodule', { path }));
         if (!recordPathPattern.test(path!)) continue;
         files.set(path!, object!);
       }
-      if (files.size > 2000) throw new SpecPreviewError(t('reader.fileLimit'));
+      if (files.size > 2000) throw new StoreError(t('reader.fileLimit'));
       const blobs = new Map<string, string>(); const ids = [...new Set(files.values())]; let totalBytes = 0;
       for (let i = 0; i < ids.length; i += 128) {
         const batch = ids.slice(i, i + 128);
         const output = await git(['cat-file', '--batch'], Buffer.from(batch.join('\n') + '\n')); let offset = 0;
         for (const id of batch) {
           const end = output.indexOf(10, offset); const header = output.subarray(offset, end).toString('ascii').split(' '); const size = Number(header[2]);
-          if (end < offset || header[0] !== id || header[1] !== 'blob' || !Number.isSafeInteger(size) || size < 0 || size > 1024 * 1024 || output[end + size + 1] !== 10) throw new SpecPreviewError(t('reader.blobShape'));
+          if (end < offset || header[0] !== id || header[1] !== 'blob' || !Number.isSafeInteger(size) || size < 0 || size > 1024 * 1024 || output[end + size + 1] !== 10) throw new StoreError(t('reader.blobShape'));
           totalBytes += size;
-          if (totalBytes > 16 * 1024 * 1024) throw new SpecPreviewError(t('reader.totalLimit'));
+          if (totalBytes > 16 * 1024 * 1024) throw new StoreError(t('reader.totalLimit'));
           blobs.set(id, decode(output.subarray(end + 1, end + size + 1))); offset = end + size + 2;
         }
-        if (offset !== output.length) throw new SpecPreviewError(t('reader.blobBoundary'));
+        if (offset !== output.length) throw new StoreError(t('reader.blobBoundary'));
       }
       return new Map([...files].map(([path, id]) => [path, blobs.get(id)!]));
     },
-    async readBundle(oid: string): Promise<PreviewBundle> {
-      return parsePreviewBundle(await this.files(oid));
+    async readBundle(oid: string): Promise<StoreBundle> {
+      return parseStoreBundle(await this.files(oid));
     },
   };
 }

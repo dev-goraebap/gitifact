@@ -1,6 +1,6 @@
-import type { PreviewBundle } from '@gitifact/core';
+import type { StoreBundle } from '@gitifact/core';
 import { browserChangeQueryV1, browserChangeV1, browserHistoryQueryV1, browserHistorySummaryQueryV1, browserHistorySummaryV1, browserHistoryV2, browserSearchQueryV1, browserSearchV1 } from '@gitifact/contracts';
-import { specPreviewReader } from '../../adapters/git/spec-preview-reader.js';
+import { storeReader } from '../../adapters/git/store-reader.js';
 import { createCheckoutReader } from '../checkout/checkout-reader.js';
 import { createHistoryIndex } from '../history/history-index.js';
 import { HttpError } from '../http/respond.js';
@@ -15,9 +15,9 @@ const PAGE = 50;
  * counts and searches over all of it through the local index.
  */
 export function recordRoutes(root: string, sessionId: string, env?: NodeJS.ProcessEnv) {
-  const reader = specPreviewReader(root);
+  const reader = storeReader(root);
   // Whole-store snapshots, for the few commits the index cannot read by their changed files alone.
-  const snapshots = new Map<string, Promise<PreviewBundle>>();
+  const snapshots = new Map<string, Promise<StoreBundle>>();
   const snapshot = (oid: string) => {
     const key = oid + ':' + getLanguage();
     let value = snapshots.get(key);

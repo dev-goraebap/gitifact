@@ -1,4 +1,4 @@
-import { specPreviewReader } from '../.test-build/adapters/git/spec-preview-reader.js';
+import { storeReader } from '../.test-build/adapters/git/store-reader.js';
 import { createCheckoutReader } from '../.test-build/server/checkout/checkout-reader.js';
 import { createHistoryIndex } from '../.test-build/server/history/history-index.js';
 
@@ -7,7 +7,7 @@ import { createHistoryIndex } from '../.test-build/server/history/history-index.
  * `limit` changes) beside it, `read.change(key)` one change with its text, and `read.history` the index itself.
  */
 export function openRecords(root, env, limit = 100) {
-  const reader = specPreviewReader(root);
+  const reader = storeReader(root);
   const checkout = createCheckoutReader(root, 'fixture', env);
   const history = createHistoryIndex(root, oid => reader.readBundle(oid));
   async function read() {

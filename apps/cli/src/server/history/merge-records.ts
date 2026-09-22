@@ -1,4 +1,4 @@
-import { recordPathPattern, SpecPreviewError } from '@gitifact/core';
+import { recordPathPattern, StoreError } from '@gitifact/core';
 import { t } from '../../shared/i18n/index.js';
 
 /** Records touched by a remerge patch, rather than by the changes brought in from another branch.
@@ -16,11 +16,11 @@ export function remergeRecords(patch: string): Set<string> {
     const path = (newPath === '/dev/null' ? oldPath : newPath)?.replace(/^[ab]\//, '');
     if (!path || !recordPathPattern.test(path) || !path.endsWith('.md')) continue;
     const start = lines.findIndex(l => l.startsWith('@@ '));
-    if (start < 0 || !/^@@ -[01](?:,\d+)? \+[01](?:,\d+)? @@/.test(lines[start]!)) throw new SpecPreviewError(t('specReader.historyUnreadable'));
+    if (start < 0 || !/^@@ -[01](?:,\d+)? \+[01](?:,\d+)? @@/.test(lines[start]!)) throw new StoreError(t('specReader.historyUnreadable'));
     for (const side of ['-', '+']) {
       const content: { text: string; changed: boolean }[] = [];
       for (const line of lines.slice(start + 1)) {
-        if (line.startsWith('@@ ')) throw new SpecPreviewError(t('specReader.historyUnreadable'));
+        if (line.startsWith('@@ ')) throw new StoreError(t('specReader.historyUnreadable'));
         if (line.startsWith(' ') || line.startsWith(side)) content.push({ text: line.slice(1).replace(/\r$/, ''), changed: line.startsWith(side) });
       }
       if (!path.endsWith('/requirements.md')) {

@@ -5,11 +5,11 @@ import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
-import { comparePreviewBundles, emptyBundle } from '@gitifact/core';
+import { compareStoreBundles, emptyBundle } from '@gitifact/core';
 import { fixture, fingerprint } from './git-fixture.mjs';
 import { openRecords } from './browser-records.mjs';
 import { initializeSpecProject } from '../.test-build/commands/spec-init.js';
-import { specPreviewReader } from '../.test-build/adapters/git/spec-preview-reader.js';
+import { storeReader } from '../.test-build/adapters/git/store-reader.js';
 import { startBrowserServer } from '../.test-build/server/browser-server.js';
 
 const indexFile = f => join(f.repo, '.git', 'gitifact', 'index.sqlite');
@@ -187,10 +187,10 @@ test('reading only changed files reports the same changes, texts and reasons as 
   save([{type:'delete-design',feature:'posts'}]);commit('Drop design',[{requirements:[],designs:[posts],reason:'설계를 다시 쓴다.'}]);
 
   const read=openRecords(f.repo,f.env);const listed=(await read()).events;
-  const git=specPreviewReader(f.repo);const expected=[];
+  const git=storeReader(f.repo);const expected=[];
   for(const line of f.git(['log','--first-parent','--format=%H %P','HEAD']).stdout.trim().split('\n')){
     const [commit,parent]=line.split(' ');
-    const changes=comparePreviewBundles(parent?await git.readBundle(parent):emptyBundle(),await git.readBundle(commit)).changes;
+    const changes=compareStoreBundles(parent?await git.readBundle(parent):emptyBundle(),await git.readBundle(commit)).changes;
     expected.push(...changes.map(c=>({key:commit+':'+c.id,kind:c.kind,types:c.types,reasons:c.reasons.map(r=>r.reason),before:c.before,after:c.after})));
   }
   assert.ok(expected.length>=9,String(expected.length));

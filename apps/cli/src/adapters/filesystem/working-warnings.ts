@@ -1,6 +1,6 @@
 import { lstat, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
-import { ASSETS_DIR, ASSET_SIZE_LIMIT, ASSETS_TOTAL_LIMIT, RECOMMENDED_ASSET_EXTENSIONS, assetExtension, documentLinks, designReferenceWarnings, type PreviewBundle, type PreviewWarning } from '@gitifact/core';
+import { ASSETS_DIR, ASSET_SIZE_LIMIT, ASSETS_TOTAL_LIMIT, RECOMMENDED_ASSET_EXTENSIONS, assetExtension, documentLinks, designReferenceWarnings, type StoreBundle, type StoreWarning } from '@gitifact/core';
 
 const info = async (path: string) => lstat(path).catch(e => { if (e.code === 'ENOENT') return undefined; throw e; });
 const posix = (path: string) => path.split('\\').join('/');
@@ -21,8 +21,8 @@ export async function listAssets(root: string): Promise<{ path: string; bytes: n
  * Advisory findings over the working tree: dangling relative links, assets over the recommended size or outside the
  * recommended extensions, and assets no record references. None of them blocks saving or committing.
  */
-export async function workingWarnings(root: string, bundle: PreviewBundle): Promise<PreviewWarning[]> {
-  const warnings: PreviewWarning[] = designReferenceWarnings(bundle.specs);
+export async function workingWarnings(root: string, bundle: StoreBundle): Promise<StoreWarning[]> {
+  const warnings: StoreWarning[] = designReferenceWarnings(bundle.specs);
   const records = new Set([...bundle.specs.flatMap(s => [s.path, ...(s.design ? [s.path.replace(/requirements\.md$/, 'design.md')] : [])]), ...bundle.wiki.documents.map(d => d.path)]);
   const assets = await listAssets(root); const assetPaths = new Set(assets.map(a => a.path));
   const referenced = new Set<string>();

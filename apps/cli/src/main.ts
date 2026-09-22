@@ -6,7 +6,7 @@ import { runDocs } from './commands/docs.js';
 import { runUpdate } from './commands/update.js';
 import { runUpdateCheck } from './commands/update-check.js';
 import { agentPresetNames } from './commands/agent-block.js';
-import { runSpecPreview } from './commands/spec-preview.js';
+import { runSpec } from './commands/spec.js';
 import { t, configureLanguage, environmentLanguage, type Language } from './shared/i18n/index.js';
 
 declare const __CLI_VERSION__: string;
@@ -69,17 +69,17 @@ program.command('update')
 const spec = program.command('spec').description(t('help.spec'));
 spec.command('commit').description(t('help.specCommit')).allowExcessArguments(false)
   .requiredOption('--file <path>', t('help.specCommitFile'))
-  .option('--dry-run', t('help.specCommitDryRun')).action(o => runSpecPreview('commit', o));
-spec.command('changes').description(t('help.specChanges')).allowExcessArguments(false).action(o => runSpecPreview('changes', o));
+  .option('--dry-run', t('help.specCommitDryRun')).action(o => runSpec('commit', o));
+spec.command('changes').description(t('help.specChanges')).allowExcessArguments(false).action(o => runSpec('changes', o));
 spec.command('working').description(t('help.specWorking')).allowExcessArguments(false)
   .addOption(new Option('--stamp', t('help.specWorkingStamp')).conflicts(['feature', 'ids']))
   .option('--feature <name>', t('help.specWorkingFeature')).option('--ids', t('help.specWorkingIds'))
-  .action(o => runSpecPreview('working', o));
+  .action(o => runSpec('working', o));
 spec.command('save').description(t('help.specSave')).allowExcessArguments(false)
-  .requiredOption('--file <path>', t('help.specSaveFile')).action(o => runSpecPreview('save', o));
-spec.command('read').description(t('help.specRead')).allowExcessArguments(false).option('--ref <commit>', t('help.specReadRef'), 'HEAD').action(o => runSpecPreview('read', o));
+  .requiredOption('--file <path>', t('help.specSaveFile')).action(o => runSpec('save', o));
+spec.command('read').description(t('help.specRead')).allowExcessArguments(false).option('--ref <commit>', t('help.specReadRef'), 'HEAD').action(o => runSpec('read', o));
 spec.command('diff').description(t('help.specDiff')).allowExcessArguments(false)
   .requiredOption('--from <commit>', t('help.specDiffFrom')).requiredOption('--to <commit>', t('help.specDiffTo'))
-  .action(o => runSpecPreview('diff', o));
+  .action(o => runSpec('diff', o));
 
 await program.parseAsync();

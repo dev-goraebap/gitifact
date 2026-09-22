@@ -1,10 +1,10 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { mkdir, open, readFile, rename, rmdir, unlink, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { prepareSpecPreview, pendingPreviewReasons } from '@gitifact/core';
+import { prepareStoreCommit, listPendingReasons } from '@gitifact/core';
 import { createGitRunner } from '../adapters/git/run-git.js';
-import { previewExpected, readPreviewContext } from './spec-preview-context.js';
-import { generatePreviewId, PreservedPreviewError, previewTransaction, readLockedPreviewState } from '../adapters/filesystem/spec-preview-store.js';
+import { expectedStamp, readStoreContext } from './store-context.js';
+import { generateId, PreservedStoreError, storeTransaction, readLockedState } from '../adapters/filesystem/store.js';
 import { checkStoreSelection, fail, fingerprint, hash, info, object, optional, paths, policyPaths, record, text } from './spec-commit-files.js';
 import { t } from '../shared/i18n/index.js';
 
@@ -30,7 +30,7 @@ export async function specCommit(cwd: string, input: unknown, dryRun: boolean) {
   const extra = request.policyFiles === undefined ? [] : paths(request.policyFiles, 1024);
   if (request.expected !== undefined && typeof request.expected !== 'string') fail(t('commit.expectedType'));
 
-  const c = await readPreviewContext(cwd); const { root, gitDir, indexPath, objectFormat } = await c.reader.location();
+  const c = await readStoreContext(cwd); const { root, gitDir, indexPath, objectFormat } = await c.reader.location();
   const runner = createGitRunner();
   const git = (args: string[], index?: string, stdin?: Buffer) => runner(['-c', 'core.fsmonitor=false', ...args], { cwd: root,
     env: { ...process.env, GIT_LITERAL_PATHSPECS: '1', GIT_GLOB_PATHSPECS: '0', GIT_NOGLOB_PATHSPECS: '0', GIT_ICASE_PATHSPECS: '0',
@@ -43,11 +43,11 @@ export async function specCommit(cwd: string, input: unknown, dryRun: boolean) {
   const indexHash = hash(await optional(indexPath) ?? Buffer.alloc(0));
 
   const current = c.working;
-  if (request.expected !== undefined && request.expected !== previewExpected(c.base, current.stamp)) fail(t('commit.staleInput'));
+  if (request.expected !== undefined && request.expected !== expectedStamp(c.base, current.stamp)) fail(t('commit.staleInput'));
   // Omitted reasons keep the uncommitted reasons already written; an explicit list replaces them.
-  const reasons = request.reasons ?? pendingPreviewReasons(c.bundle, current.bundle)
+  const reasons = request.reasons ?? listPendingReasons(c.bundle, current.bundle)
     .map(h => ({ requirements: h.requirements, ...(h.designs ? {designs: h.designs} : {}), ...(h.documents ? {documents: h.documents} : {}), reason: h.reason }));
-  const prepared = prepareSpecPreview(c.bundle, current.bundle, c.files, current.files, reasons, () => generatePreviewId('H'));
+  const prepared = prepareStoreCommit(c.bundle, current.bundle, c.files, current.files, reasons, () => generateId('H'));
   // Judge changes by the blob Git would store, so a CRLF checkout of an LF blob (core.autocrlf, eol attributes) is not a change.
   const blobId = (text: string) => { const bytes = Buffer.from(text); return createHash(objectFormat).update(`blob ${bytes.length}\0`).update(bytes).digest('hex'); };
   const present = [...current.files.keys()];
@@ -84,7 +84,7 @@ export async function specCommit(cwd: string, input: unknown, dryRun: boolean) {
   try {
     try { await mkdir(busy); owned = true; } catch (e) { if ((e as NodeJS.ErrnoException).code === 'EEXIST') fail(t('commit.busy', { path: busy })); throw e; }
     // The transaction verifies the stamp, so the reasons prepared above apply to exactly this state.
-    await previewTransaction({ root, gitDir }, current.stamp, async () => ({ writes, data: {}, recheck: c.recheck }), rename, async published => {
+    await storeTransaction({ root, gitDir }, current.stamp, async () => ({ writes, data: {}, recheck: c.recheck }), rename, async published => {
       let commitStarted = false;
       try {
         const lock = indexLock = await open(indexPath + '.lock', 'wx', 0o600);
@@ -112,7 +112,7 @@ export async function specCommit(cwd: string, input: unknown, dryRun: boolean) {
         }
         const again = await hashes([...locked.keys()]);
         for (const [path, value] of locked) if (again.get(path) !== value) fail(t('commit.fileChangedPreparing', { path }));
-        if ((await readLockedPreviewState(root)).stamp !== published.stamp) fail(t('commit.specsChangedPreparing'));
+        if ((await readLockedState(root)).stamp !== published.stamp) fail(t('commit.specsChangedPreparing'));
         for (const name of integration) if (await info(join(gitDir, name))) fail(t('commit.integrationStarted'));
         if (!same(c.base, await c.reader.baseline())) fail(t('commit.headChanged'));
         const tree = (await git(['write-tree'], temporary)).toString('utf8').trim();
@@ -134,7 +134,7 @@ export async function specCommit(cwd: string, input: unknown, dryRun: boolean) {
         committed = { commit: after.head, paths: actual };
       } catch (error) {
         if (commitStarted) { try { uncertain = !same(c.base, await c.reader.baseline()); } catch { uncertain = true; } }
-        if (uncertain) throw new PreservedPreviewError(t('commit.uncertain', { path: busy }));
+        if (uncertain) throw new PreservedStoreError(t('commit.uncertain', { path: busy }));
         throw error;
       }
     });

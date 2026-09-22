@@ -1,8 +1,8 @@
-import { SpecPreviewError, parseManagedConfig, WIKI_DIR } from '@gitifact/core';
+import { StoreError, parseManagedConfig, WIKI_DIR } from '@gitifact/core';
 import { browserSpecsV4, type BrowserSpecsV4 } from '@gitifact/contracts';
 import { createGitRunner } from '../../adapters/git/run-git.js';
-import { specPreviewReader } from '../../adapters/git/spec-preview-reader.js';
-import { readWorkingPreviewState } from '../../adapters/filesystem/spec-preview-store.js';
+import { storeReader } from '../../adapters/git/store-reader.js';
+import { readWorkingState } from '../../adapters/filesystem/store.js';
 import { readConfigFile } from '../../adapters/filesystem/config-file.js';
 import type { SearchDocument } from '../history/history-index.js';
 import { t, getLanguage } from '../../shared/i18n/index.js';
@@ -28,12 +28,12 @@ export async function settled<T extends readonly unknown[]>(reads: { [K in keyof
  * screens that show it filter it themselves.
  */
 export function createCheckoutReader(root: string, sessionId: string, inherited = process.env) {
-  const reader = specPreviewReader(root); const runner = createGitRunner();
+  const reader = storeReader(root); const runner = createGitRunner();
   const env = { ...inherited, GIT_OPTIONAL_LOCKS: '0', GIT_NO_REPLACE_OBJECTS: '1', GIT_TERMINAL_PROMPT: '0', LC_ALL: 'C' };
   const git = async (args: string[], acceptedExitCodes = [0]) => (await runner(['--no-optional-locks', ...args], { cwd: root, env, timeoutMs: 15000, maxBytes: 32 * 1024 * 1024, acceptedExitCodes })).toString('utf8');
   const readHead = async () => {
     const head = (await git(['rev-parse','--verify','--quiet','HEAD'],[0,1])).trim();
-    if (head && !/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/.test(head)) throw new SpecPreviewError(t('specReader.headUnreadable'));
+    if (head && !/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/.test(head)) throw new StoreError(t('specReader.headUnreadable'));
     if (!head) await reader.baseline();
     return head || null;
   };
@@ -51,7 +51,7 @@ export function createCheckoutReader(root: string, sessionId: string, inherited 
     for (const chunk of text.split('\x1e')) {
       if (!chunk) continue;
       const [name, email, date, ...paths] = chunk.split('\0');
-      if (!name || !email || !date) throw new SpecPreviewError(t('specReader.authorUnreadable'));
+      if (!name || !email || !date) throw new StoreError(t('specReader.authorUnreadable'));
       const seen = new Set<string>();
       for (const raw of paths) {
         const path = raw.replace(/^\n/, ''); if (!path) continue;
@@ -69,11 +69,11 @@ export function createCheckoutReader(root: string, sessionId: string, inherited 
 
   async function read() {
     const raw = await readConfigFile(root);
-    if (!raw) throw new SpecPreviewError(t('specReader.schemaRequired'));
+    if (!raw) throw new StoreError(t('specReader.schemaRequired'));
     parseManagedConfig(raw);
     const head = await readHead();
     const [current, dirty, authors, everyone] = await settled([
-      specPreviewReader(root).location().then(readWorkingPreviewState),
+      storeReader(root).location().then(readWorkingState),
       head ? git(['status', '--porcelain=v1', '--', '.gitifact/spec', WIKI_DIR]) : Promise.resolve(''),
       head ? storeAuthors(head) : Promise.resolve(undefined),
       // Git mailmap may change without a new HEAD; refresh names with every observation that carries them.
@@ -82,7 +82,7 @@ export function createCheckoutReader(root: string, sessionId: string, inherited 
     const people = new Map<string, Contributor>();
     const lines = everyone.trim().split('\n').filter(Boolean);
     for (const line of lines.slice(0, 10000)) {
-      const [name, email, latest] = line.split('\0'); if (!name || !email || !latest) throw new SpecPreviewError(t('specReader.authorUnreadable'));
+      const [name, email, latest] = line.split('\0'); if (!name || !email || !latest) throw new StoreError(t('specReader.authorUnreadable'));
       tally(people, name, email, latest);
     }
     const features = current.specs.map(({ history: _history, ...feature }) => {
@@ -91,9 +91,9 @@ export function createCheckoutReader(root: string, sessionId: string, inherited 
     });
     // Wiki pages record their latest commit by current path; a moved page restarts at the move commit.
     const documents = current.wiki.documents.map(doc => ({ ...doc, updatedAt: authors?.pages.get(doc.path) ?? null }));
-    // The working store was read whole and twice over inside readWorkingPreviewState, so it is consistent in itself;
+    // The working store was read whole and twice over inside readWorkingState, so it is consistent in itself;
     // what can still move under this read is HEAD, which the authors came from.
-    if (await readHead() !== head) throw new SpecPreviewError(t('specReader.projectChanged'));
+    if (await readHead() !== head) throw new StoreError(t('specReader.projectChanged'));
     const checkout = browserSpecsV4.parse({ contract: 'browser-specs', version: 4, sessionId, head, observedAt: new Date().toISOString(),
       working: head ? !!dirty.trim() : features.length > 0 || documents.length > 0, features, documents,
       contributors: [...people.values()].sort((a, b) => b.commits - a.commits), contributorsLimited: lines.length > 10000 });
