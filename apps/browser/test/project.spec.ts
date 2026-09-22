@@ -155,7 +155,7 @@ test('a list row carries no body; opening it reads the change once and shows its
  let reads = 0;
  await page.route(url => url.pathname === '/api/v1/change', async route => { reads++;
   const key = new URL(route.request().url()).searchParams.get('key');
-  await route.fulfill({json:{contract:'browser-change',version:1,sessionId:specs.sessionId,event:specs.events[0],before:null,after:{id:'R-abcdefghij',title:'검색어 입력',body:'본문은 **열 때** 읽습니다.',specId:'S-abcdefghij',path:'.gitifact/spec/search/requirements.md'}}}); });
+  await route.fulfill({json:{contract:'browser-change',version:2,sessionId:specs.sessionId,event:specs.events[0],before:null,after:{id:'R-abcdefghij',kind:'requirement',title:'검색어 입력',description:'검색어 입력',body:'본문은 **열 때** 읽습니다.',specId:'S-abcdefghij',path:'.gitifact/spec/search/requirements/r-abcdefghij.md'}}}); });
  await page.goto('/activity');
  await page.getByText('검색어 입력',{exact:true}).click();
  const drawer = page.getByRole('dialog',{name:'검색어 입력'});

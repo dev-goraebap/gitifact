@@ -133,9 +133,9 @@ function LoadedPalette({ session, isOpen }: { session: BrowserSessionV3; isOpen:
           where: feature.title, body: plain(requirement.body), updatedAt: feature.updatedAt,
           target: { to: '/features/$featureId', params: { featureId: feature.id }, search: { tab: 'requirements' }, hash: requirement.id } } });
       }
-      if (feature.design) out.push({ id: feature.id + ':design', label: feature.design.title, auxiliaryData: { group: groupNames().design, kind: 'design',
-        where: feature.title, body: plain(feature.design.body), updatedAt: feature.updatedAt,
-        target: { to: '/features/$featureId', params: { featureId: feature.id }, search: { tab: 'design' } } } });
+      for (const design of feature.designs) out.push({ id: design.id, label: design.title, auxiliaryData: { group: groupNames().design, kind: 'design',
+        where: feature.title, body: plain(design.description + ' ' + design.body), updatedAt: feature.updatedAt,
+        target: { to: '/features/$featureId', params: { featureId: feature.id }, search: { tab: 'design' }, hash: design.id } } });
     }
     for (const document of checkout.documents) {
       out.push({ id: document.id, label: document.title, auxiliaryData: { group: groupNames().document, kind: 'document',

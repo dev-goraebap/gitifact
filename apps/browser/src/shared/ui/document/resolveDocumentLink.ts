@@ -3,7 +3,8 @@
  * Documents link to each other by repository-relative paths (`../../wiki/architecture.md`), so the target is resolved
  * against the folder of the document being read and then matched to a wiki page, a feature spec, an asset, or nothing.
  */
-export type DocumentIndex = { documents: readonly { id: string; path: string }[]; features: readonly { id: string; path: string }[] };
+type Located = { id: string; path: string };
+export type DocumentIndex = { documents: readonly Located[]; features: readonly (Located & { requirements?: readonly Located[]; designs?: readonly Located[] })[] };
 export type ResolvedLink =
   | { kind: 'external'; href: string }
   | { kind: 'anchor'; href: string }
@@ -45,15 +46,18 @@ export function resolveDocumentLink(href: string, from: string | undefined, inde
     const page = index.documents.find(d => d.path === path);
     return page ? { kind: 'wiki', documentId: page.id, path, hash } : { kind: 'missing', path };
   }
-  const spec = /^(\.gitifact\/spec\/[^/]+\/)(requirements|design)\.md$/.exec(path);
+  // A feature's index.md opens the feature; one of its requirement or design files opens that document on its tab.
+  const spec = /^(\.gitifact\/spec\/[^/]+\/)(?:index\.md|(requirements|design)\/[^/]+\.md)$/.exec(path);
   if (spec) {
-    const feature = index.features.find(f => f.path === spec[1] + 'requirements.md');
-    return feature ? { kind: 'feature', featureId: feature.id, tab: spec[2] as 'requirements' | 'design', path, hash } : { kind: 'missing', path };
+    const feature = index.features.find(f => f.path === spec[1] + 'index.md');
+    if (!feature) return { kind: 'missing', path };
+    if (!spec[2]) return { kind: 'feature', featureId: feature.id, tab: 'requirements', path, hash };
+    const tab = spec[2] as 'requirements' | 'design';
+    const doc = (tab === 'requirements' ? feature.requirements : feature.designs)?.find(d => d.path === path);
+    return doc ? { kind: 'feature', featureId: feature.id, tab, path, hash: hash || '#' + doc.id } : { kind: 'missing', path };
   }
   const asset = /^\.gitifact\/assets\/(.+)$/.exec(path);
   if (asset) return { kind: 'asset', url: '/api/v1/assets/' + asset[1]!.split('/').map(encodeURIComponent).join('/'), path };
   return { kind: 'outside', path };
 }
 
-/** The folder of a design file, which is where its relative source links start from. */
-export const designPathOf = (featurePath: string) => featurePath.replace(/requirements\.md$/, 'design.md');

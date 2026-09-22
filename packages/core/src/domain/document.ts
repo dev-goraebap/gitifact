@@ -1,3 +1,5 @@
+import { t } from '../shared/i18n/index.js';
+
 // The 0.8.0 document model. Every structural fact lives in frontmatter; the body is prose that is never parsed for data.
 // Membership comes from the folder a file sits in, identity from its `id`, order from `order`.
 
@@ -30,12 +32,15 @@ export const docProblemCodes = [
   // One file
   'PATH_UNSUPPORTED', 'FRONTMATTER_REQUIRED', 'FRONTMATTER_UNCLOSED', 'FRONTMATTER_LINE', 'FRONTMATTER_VALUE',
   'FRONTMATTER_UNKNOWN_KEY', 'FRONTMATTER_MISSING_KEY', 'ID_FORMAT', 'SOURCE_INVALID', 'BODY_REQUIRED', 'BODY_HEADING',
-  'BODY_MARKER', 'BODY_UNCLOSED_FENCE', 'INVALID_CHARACTERS', 'REASON_INVALID',
+  'BODY_MARKER', 'BODY_UNCLOSED_FENCE', 'INVALID_CHARACTERS', 'FILE_TOO_LARGE', 'REASON_INVALID',
   // Across files
   'DUPLICATE_ID', 'DUPLICATE_REASON_ID', 'DUPLICATE_ORDER', 'MISSING_REFERENCE', 'FEATURE_INDEX_REQUIRED', 'DESIGN_OVERVIEW_REQUIRED',
 ] as const;
 export type DocProblemCode = typeof docProblemCodes[number];
 export interface DocProblem { code: DocProblemCode; path: string; message: string }
+
+/** A problem with its message in the current language. */
+export const docProblem = (code: DocProblemCode, path: string, values: Record<string, unknown> = {}): DocProblem => ({ code, path, message: t(`doc.${code}`, { path, ...values }) });
 
 export class DocumentError extends Error {
   constructor(readonly code: DocProblemCode, readonly path: string, message: string) { super(message); this.name = 'DocumentError'; }

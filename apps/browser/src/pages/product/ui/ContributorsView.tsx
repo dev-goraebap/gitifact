@@ -1,4 +1,4 @@
-import type { BrowserSessionV3, BrowserSpecsV4, SpecFeature } from '@gitifact/contracts';
+import type { BrowserSessionV3, BrowserSpecsV5, SpecFeature } from '@gitifact/contracts';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { historyOptions } from '../../../entities/project';
 import { VStack } from '@astryxdesign/core/VStack';
@@ -17,7 +17,7 @@ import styles from './product.module.css';
 import { PageState } from '../../../shared/ui/page-state';
 import { t, tNodes, useLanguage } from '../../../shared/i18n';
 
-type Contributor = NonNullable<BrowserSpecsV4['contributors']>[number];
+type Contributor = NonNullable<BrowserSpecsV5['contributors']>[number];
 const names = () => ({created:t('change.created'),modified:t('change.modified'),deleted:t('change.deleted'),moved:t('change.moved')});
 
 export function ContributorsView({session,head,people,features,email,search}: {session:BrowserSessionV3;head:string|null;people:Contributor[];features:SpecFeature[];email?:string|undefined;search:ProductSearch}) {
@@ -94,7 +94,7 @@ function ContributorDetail({session,head,person,features}: {session:BrowserSessi
       {activities.length ? <VStack gap={0} className={styles.personActivity}>
         {activities.map(e => <HStack key={e.key} gap={3} className={styles.personActivityRow}>
           <Token label={e.types.map(type => names()[type]).join(' · ')} color={e.types.includes('deleted') ? 'red' : e.types.includes('modified') ? 'blue' : e.types.includes('moved') ? 'purple' : 'green'}/>
-          <Text type="supporting" color="secondary">{e.kind === 'design' ? t('kind.design') : e.kind === 'wiki' ? t('kind.wiki') : t('kind.requirement')}</Text>
+          <Text type="supporting" color="secondary">{({ feature: t('kind.feature'), requirement: t('kind.requirement'), design: t('kind.design'), wiki: t('kind.wiki') })[e.kind]}</Text>
           <Link to="/activity" search={{selected:e.key}} className={styles.entryTitle}>{(e.after ?? e.before)?.title ?? e.id}</Link>
           <Timestamp value={e.date} format="relative"/>
         </HStack>)}

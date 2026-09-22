@@ -1,17 +1,12 @@
-import { getLanguage } from '../../shared/i18n/index.js';
 import type { DatabaseSync } from 'node:sqlite';
-import type { StoreBundle } from '@gitifact/core';
-import { createCommitChanges, type CommitChanges, type HistoryEvent } from './commit-changes.js';
-import { createIndexDatabase, transaction } from './index-database.js';
-import { containing, plain, snippet } from './search-text.js';
+import { createCommitChanges, type ChangeType, type CommitChanges, type GitAccess, type HistoryEvent } from './commit-changes.js';
+import { transaction, type CacheDatabase } from './database.js';
+import { containing, snippet } from './search-text.js';
 
-type ChangeType = HistoryEvent['types'][number];
 export interface HistoryFilter { kind?: ChangeType | undefined; document?: HistoryEvent['kind'] | undefined; feature?: string | undefined; author?: string | undefined; q?: string | undefined }
-/** A record of the current checkout, as the search box finds it. */
-export interface SearchDocument { kind: 'feature' | 'requirement' | 'design' | 'document'; ref: string; title: string; where: string; body: string; featureId?: string; documentId?: string }
-export interface SearchHit { id: string; kind: SearchDocument['kind'] | 'history'; title: string; where: string; line: string; featureId?: string; documentId?: string; key?: string }
+export interface SearchHit { id: string; kind: 'feature' | 'requirement' | 'design' | 'document' | 'history'; title: string; where: string; line: string; featureId?: string; documentId?: string; key?: string }
 
-/** The list row of a change: the record's name and place, without the text on either side. */
+/** The list row of a change: the document's name and place, without the text on either side. */
 const listed = (e: HistoryEvent) => {
   const reference = (s: HistoryEvent['before']) => s ? { id: s.id, title: s.title, specId: s.specId, path: s.path } : null;
   return { ...e, before: reference(e.before), after: reference(e.after) };
@@ -25,15 +20,14 @@ const KEPT_HEADS = 4;
 const RECENT_COMMITS = 3; const RECENT_CHANGES = 12;
 
 /**
- * The browser's history as a local index, so every screen filters, searches, pages and counts over all of it.
+ * History in the cache, so every screen and command filters, searches, pages and counts over all of it.
  *
- * Commits never change, so a commit's changes are read once and kept in SQLite (see index-database.ts) for good; a
- * HEAD only adds the order of its commits. A new HEAD reads the commits the index does not have yet — after a pull,
- * the new ones; after a branch switch, usually none. Queries are then plain SQL over rows and ask Git nothing.
+ * Commits never change, so a commit's changes are read once and kept for good; a HEAD only adds the order of its
+ * commits. A new HEAD reads the commits the cache does not have yet — after a pull, the new ones; after a branch
+ * switch, usually none. Queries are then plain SQL over rows and ask Git nothing.
  */
-export function createHistoryIndex(root: string, snapshot: (oid: string) => Promise<StoreBundle>) {
-  const changes = createCommitChanges(root, snapshot);
-  const database = createIndexDatabase(root);
+export function createHistory(database: CacheDatabase, git: GitAccess) {
+  const changes = createCommitChanges(git);
   const building = new Map<string, Promise<void>>();
   const built = new Set<string>();
 
@@ -43,7 +37,7 @@ export function createHistoryIndex(root: string, snapshot: (oid: string) => Prom
     const search = db.prepare('INSERT INTO search (scope, kind, ref, oid, payload, title, place, body) VALUES (?,?,?,?,?,?,?,?)');
     transaction(db, () => {
       for (const c of commits) {
-        // Another server may have written this commit meanwhile; its rows are the same, so they are not written twice.
+        // Another process may have written this commit meanwhile; its rows are the same, so they are not written twice.
         if (!Number(commit.run(c.commit).changes)) continue;
         c.events.forEach((e, ord) => {
           change.run(e.key, e.commit, ord, e.id, e.kind, e.types.join(','), e.email, e.date, e.before?.specId ?? null, e.after?.specId ?? null,
@@ -78,14 +72,13 @@ export function createHistoryIndex(root: string, snapshot: (oid: string) => Prom
     }));
   }
 
-  /** Makes sure the index holds every commit of `head` and their order; concurrent callers share one build. */
+  /** Makes sure the cache holds every commit of `head` and their order; concurrent callers share one build. */
   function ensure(head: string): Promise<void> {
     if (built.has(head)) return Promise.resolve();
-    const key = head + ':' + getLanguage();
-    let pending = building.get(key);
+    let pending = building.get(head);
     if (!pending) {
-      pending = build(head).then(() => { built.add(head); }).finally(() => building.delete(key));
-      building.set(key, pending);
+      pending = build(head).then(() => { built.add(head); }).finally(() => building.delete(head));
+      building.set(head, pending);
     }
     return pending;
   }
@@ -113,6 +106,12 @@ export function createHistoryIndex(root: string, snapshot: (oid: string) => Prom
         return { total, events: rows.map(r => JSON.parse(r.row) as ListedEvent) };
       });
     },
+    /** Every change of one document, newest first: `docs history`. */
+    async ofDocument(head: string, id: string) {
+      await ensure(head);
+      return database.with(db => (db.prepare('SELECT c.row FROM lineage l JOIN changes c ON c.oid = l.oid WHERE l.head = ? AND c.id = ? ORDER BY l.pos, c.ord').all(head, id) as { row: string }[])
+        .map(r => JSON.parse(r.row) as ListedEvent));
+    },
     /** Counts over all of history and its newest commits, for the overview. */
     async summary(head: string) {
       await ensure(head);
@@ -129,7 +128,7 @@ export function createHistoryIndex(root: string, snapshot: (oid: string) => Prom
         return { total, byType: { created: count('created'), modified: count('modified'), moved: count('moved'), deleted: count('deleted') }, pulse, recent };
       });
     },
-    /** One change with the text on both sides; a commit the index has not read yet is read now. */
+    /** One change with the text on both sides; a commit the cache has not read yet is read now. */
     async change(key: string): Promise<{ event: ListedEvent; before: HistoryEvent['before']; after: HistoryEvent['after'] } | undefined> {
       const lookup = () => database.with(db => db.prepare('SELECT row, detail FROM changes WHERE key = ?').get(key) as { row: string; detail: string } | undefined);
       let found = await lookup();
@@ -146,28 +145,11 @@ export function createHistoryIndex(root: string, snapshot: (oid: string) => Prom
       const detail = JSON.parse(found.detail) as { before: HistoryEvent['before']; after: HistoryEvent['after'] };
       return { event: JSON.parse(found.row) as ListedEvent, before: detail.before, after: detail.after };
     },
-    /** Replaces the search rows of one worktree's checkout when it changed since they were written. */
-    async syncCheckout(scope: string, stamp: string, documents: SearchDocument[]) {
-      await database.with(db => {
-        const current = db.prepare('SELECT stamp FROM checkouts WHERE scope = ?').get(scope) as { stamp: string } | undefined;
-        if (current?.stamp === stamp) return;
-        transaction(db, () => {
-          db.prepare('DELETE FROM search WHERE scope = ?').run(scope);
-          const row = db.prepare('INSERT INTO search (scope, kind, ref, oid, payload, title, place, body) VALUES (?,?,?,?,?,?,?,?)');
-          for (const d of documents) {
-            const body = plain(d.body);
-            row.run(scope, d.kind, d.ref, null, JSON.stringify({ title: d.title, where: d.where, body, featureId: d.featureId, documentId: d.documentId }),
-              d.title.toLowerCase(), d.where.toLowerCase(), body.toLowerCase());
-          }
-          db.prepare('INSERT INTO checkouts (scope, stamp) VALUES (?, ?) ON CONFLICT (scope) DO UPDATE SET stamp = excluded.stamp').run(scope, stamp);
-        });
-      });
-    },
     /**
-     * Records whose title, place or text holds the query. The checkout comes first — a title match before a place
-     * match before a text match — then past changes of `head`'s history, newest first.
+     * Documents whose title, place or text holds the query — a title match before a place match before a text match —
+     * then past changes of `head`'s history, newest first. The caller syncs the working documents first.
      */
-    async search(scope: string, head: string | null, raw: string): Promise<SearchHit[]> {
+    async search(head: string | null, raw: string): Promise<SearchHit[]> {
       const query = raw.trim().toLowerCase();
       if (!query) return [];
       if (head) await ensure(head);
@@ -177,14 +159,16 @@ export function createHistoryIndex(root: string, snapshot: (oid: string) => Prom
         const literal = /[\\%_]/.test(query);
         const match = (column: string) => literal ? `instr(${column}, ?) > 0` : `${column} LIKE ?`;
         const needle = literal ? query : containing(query);
-        const found = db.prepare(`SELECT kind, ref, payload, title, place, body FROM search WHERE scope = ? AND (${match('title')} OR ${match('place')} OR ${match('body')}) LIMIT 400`)
-          .all(scope, needle, needle, needle) as { kind: SearchDocument['kind']; ref: string; payload: string; title: string; place: string; body: string }[];
+        const features = new Map((db.prepare("SELECT feature, id FROM documents WHERE kind = 'feature'").all() as { feature: string; id: string }[]).map(r => [r.feature, r.id]));
+        const found = db.prepare(`SELECT kind, payload, title, place FROM search WHERE scope = 'checkout' AND (${match('title')} OR ${match('place')} OR ${match('body')}) LIMIT 400`)
+          .all(needle, needle, needle) as { kind: Exclude<SearchHit['kind'], 'history'>; payload: string; title: string; place: string }[];
         const documents = found.map(r => {
           const at = r.title.indexOf(query);
           const rank = at === 0 ? 0 : at > 0 ? 1 : r.place.includes(query) ? 2 : 3;
-          const p = JSON.parse(r.payload) as { title: string; where: string; body: string; featureId?: string; documentId?: string };
-          const hit: SearchHit = { id: r.ref, kind: r.kind, title: p.title, where: p.where, line: snippet(p.body, query),
-            ...(p.featureId ? { featureId: p.featureId } : {}), ...(p.documentId ? { documentId: p.documentId } : {}) };
+          const p = JSON.parse(r.payload) as { id: string; title: string; where: string; body: string; feature: string | null };
+          const featureId = p.feature ? features.get(p.feature) : undefined;
+          const hit: SearchHit = { id: p.id, kind: r.kind, title: p.title, where: p.where, line: snippet(p.body, query),
+            ...(featureId ? { featureId } : {}), ...(r.kind === 'document' ? { documentId: p.id } : {}) };
           return { rank, hit };
         }).sort((a, b) => a.rank - b.rank || a.hit.title.localeCompare(b.hit.title)).slice(0, 24).map(r => r.hit);
         const past = !head ? [] : (db.prepare(`SELECT s.ref AS ref, s.payload AS payload FROM search s JOIN lineage l ON l.head = ? AND l.oid = s.oid

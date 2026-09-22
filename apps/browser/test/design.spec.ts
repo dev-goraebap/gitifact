@@ -13,7 +13,7 @@ test('design tab, explicit references and URL restoration',async({page})=>{
  await expect(page).toHaveURL(/tab=design/);await expect(page.getByRole('tabpanel',{name:'설계'})).toContainText('검색 색인을 조회합니다.');
  await expect(page.getByText('R-zzzzzzzzzz (현재 명세에 없음)')).toBeVisible();
  await page.reload();await expect(page.getByRole('tab',{name:'설계',exact:true})).toHaveAttribute('aria-selected','true');
- await page.getByRole('link',{name:'R-abcdefghij',exact:true}).click();await expect(page).toHaveURL(/tab=requirements/);await expect(page.locator('#R-abcdefghij')).toBeVisible();
+ await page.getByRole('tabpanel',{name:'설계'}).getByRole('link',{name:'검색어 입력',exact:true}).click();await expect(page).toHaveURL(/tab=requirements/);await expect(page.locator('#R-abcdefghij')).toBeVisible();
  await page.goBack();await expect(page.getByRole('tab',{name:'설계',exact:true})).toHaveAttribute('aria-selected','true');
  await page.screenshot({path:'../../.tmp/design-development/features-design.png',fullPage:true});
 });

@@ -8,7 +8,7 @@ import { t, useLanguage } from '../../../shared/i18n';
 
 const names=() => ({created:t('change.created'),modified:t('change.modified'),deleted:t('change.deleted'),moved:t('change.moved')});
 const colors={created:'green',modified:'blue',deleted:'red',moved:'purple'} as const;
-const kinds=() => ({requirement:t('kind.requirement'),design:t('kind.design'),wiki:t('kind.wiki')});
+const kinds=() => ({feature:t('kind.feature'),requirement:t('kind.requirement'),design:t('kind.design'),wiki:t('kind.wiki')});
 
 /**
  * One record a commit changed, on one line: what happened to it, what kind of record it is, its title, and where it

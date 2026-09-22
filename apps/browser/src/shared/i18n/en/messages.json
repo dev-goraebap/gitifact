@@ -266,5 +266,6 @@
   "documents.path": "Current location",
   "settings.language": "Language",
   "settings.language.system": "Browser default",
-  "shell.githubTooltip": "Gitifact on GitHub (opens in a new tab)"
+  "shell.githubTooltip": "Gitifact on GitHub (opens in a new tab)",
+  "kind.feature": "Feature overview"
 }

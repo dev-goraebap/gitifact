@@ -1,5 +1,5 @@
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
-import { browserSpecsV4, browserHistoryV2, browserHistorySummaryV1, browserChangeV1, browserSearchV1, type BrowserSessionV3 } from '@gitifact/contracts';
+import { browserSpecsV5, browserHistoryV3, browserHistorySummaryV2, browserChangeV2, browserSearchV1, type BrowserSessionV3 } from '@gitifact/contracts';
 import { requestJson, ApiError } from '../../../shared/api/client';
 import { httpFailure } from './repository';
 import { t } from '../../../shared/i18n';
@@ -23,9 +23,9 @@ const scope = (session: BrowserSessionV3) => [window.location.origin, session.se
  * that shows specs shares it, and the header's refresh button is how this project says an observation is explicit.
  */
 export const specsOptions = (session: BrowserSessionV3) => queryOptions({
-  queryKey: ['browser-specs', 4, ...scope(session)],
+  queryKey: ['browser-specs', 5, ...scope(session)],
   staleTime: Infinity, retry: false,
-  queryFn: ({ signal }) => read(session, '/api/v1/specs', browserSpecsV4, signal),
+  queryFn: ({ signal }) => read(session, '/api/v1/specs', browserSpecsV5, signal),
 });
 
 /**
@@ -34,21 +34,21 @@ export const specsOptions = (session: BrowserSessionV3) => queryOptions({
  * so its pages are kept for the session.
  */
 export const historyOptions = (session: BrowserSessionV3, head: string, filter: HistoryFilter, limit = 50) => infiniteQueryOptions({
-  queryKey: ['browser-history', 2, ...scope(session), head, filter, limit],
+  queryKey: ['browser-history', 3, ...scope(session), head, filter, limit],
   initialPageParam: 0, staleTime: Infinity, retry: false,
   queryFn: ({ signal, pageParam }) => {
     const query = new URLSearchParams({ head, offset: String(pageParam), limit: String(limit) });
     for (const [key, value] of Object.entries(filter)) if (value) query.set(key, value);
-    return read(session, '/api/v1/history?' + query, browserHistoryV2, signal);
+    return read(session, '/api/v1/history?' + query, browserHistoryV3, signal);
   },
   getNextPageParam: last => last.offset + last.events.length < last.total ? last.offset + last.events.length : undefined,
 });
 
 /** Counts over all of `head`'s history and its newest commits, for the overview. */
 export const summaryOptions = (session: BrowserSessionV3, head: string) => queryOptions({
-  queryKey: ['browser-history-summary', 1, ...scope(session), head],
+  queryKey: ['browser-history-summary', 2, ...scope(session), head],
   staleTime: Infinity, retry: false,
-  queryFn: ({ signal }) => read(session, '/api/v1/history/summary?head=' + head, browserHistorySummaryV1, signal),
+  queryFn: ({ signal }) => read(session, '/api/v1/history/summary?head=' + head, browserHistorySummaryV2, signal),
 });
 
 /**
@@ -56,9 +56,9 @@ export const summaryOptions = (session: BrowserSessionV3, head: string) => query
  * of a page, and a reader opens few entries. A change never changes, so the answer is kept for the session.
  */
 export const changeOptions = (session: BrowserSessionV3, key: string) => queryOptions({
-  queryKey: ['browser-change', 1, ...scope(session), key],
+  queryKey: ['browser-change', 2, ...scope(session), key],
   staleTime: Infinity, retry: false,
-  queryFn: ({ signal }) => read(session, '/api/v1/change?key=' + encodeURIComponent(key), browserChangeV1, signal),
+  queryFn: ({ signal }) => read(session, '/api/v1/change?key=' + encodeURIComponent(key), browserChangeV2, signal),
 });
 
 /** Records whose title, place or text holds the words: the current specs and wiki, then past changes of `head`. */

@@ -130,5 +130,6 @@
   "doc.DUPLICATE_ORDER": "같은 폴더에 order {order}인 문서가 둘 있습니다: {path}, {other}",
   "doc.MISSING_REFERENCE": "가리키는 문서가 없습니다: {path}: {id}",
   "doc.FEATURE_INDEX_REQUIRED": "기능 폴더에 index.md가 필요합니다: {feature}",
-  "doc.DESIGN_OVERVIEW_REQUIRED": "설계가 있는 기능에는 design/overview.md가 필요합니다: {feature}"
+  "doc.DESIGN_OVERVIEW_REQUIRED": "설계가 있는 기능에는 design/overview.md가 필요합니다: {feature}",
+  "doc.FILE_TOO_LARGE": "문서 파일이 1MB를 넘어 읽지 않았습니다: {path}"
 }

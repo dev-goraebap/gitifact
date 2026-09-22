@@ -128,7 +128,7 @@ test('relative links in a page resolve to wiki pages, feature specs, assets, mis
   await page.goto('/wiki/W-abcdefghij');
   const reading = page.getByRole('article', { name: '위키 페이지' });
   await expect(reading.getByRole('link', { name: '레이아웃 지침' })).toHaveAttribute('href', '/wiki/W-bbbbbbbbbb');
-  await expect(reading.getByRole('link', { name: '검색 설계' })).toHaveAttribute('href', '/features/S-abcdefghij?tab=design');
+  await expect(reading.getByRole('link', { name: '검색어 입력' })).toHaveAttribute('href', '/features/S-abcdefghij?tab=requirements#R-abcdefghij');
   // A repository file the browser does not serve: no navigation, a hint on hover, the path copied on click.
   const outside = reading.getByRole('button', { name: '개발 환경' });
   await outside.hover();

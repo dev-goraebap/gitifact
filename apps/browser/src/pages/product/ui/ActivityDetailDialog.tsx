@@ -11,7 +11,7 @@ import { EventDetail } from './EventDetail';
 import styles from './product.module.css';
 import { t, useLanguage } from '../../../shared/i18n';
 const names=() => ({created:t('change.created'),modified:t('change.modified'),deleted:t('change.deleted'),moved:t('change.moved')});
-const kinds=() => ({requirement:t('kind.requirement'),design:t('kind.design'),wiki:t('kind.wiki')});
+const kinds=() => ({feature:t('kind.feature'),requirement:t('kind.requirement'),design:t('kind.design'),wiki:t('kind.wiki')});
 /**
  * Detail drawer for one change, opened by its key. The change is read by that key, so a link to any change opens —
  * one from a contributor's page or an old bookmark, not only one in the loaded list. When the entry is in the list

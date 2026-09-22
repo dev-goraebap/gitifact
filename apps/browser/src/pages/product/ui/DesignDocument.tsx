@@ -5,11 +5,11 @@ import { Text } from '@astryxdesign/core/Text';
 import { VStack } from '@astryxdesign/core/VStack';
 import { HStack } from '@astryxdesign/core/HStack';
 import { List, ListItem } from '@astryxdesign/core/List';
+import { Link } from '@tanstack/react-router';
 import styles from './product.module.css';
-import { designSectionsOf } from '../model/design-sections';
 import { t, useLanguage } from '../../../shared/i18n';
 
-/** Rows, not cards, for the documents a design drew on: each is a link (wiki page in the app, URL in a new tab) with its note beneath. */
+/** Rows, not cards, for the documents a design drew on: each is a link (a document in the app, a URL in a new tab) with its note beneath. */
 function DesignSources({ sources, path }: { sources: DesignSource[]; path: string }) {
   useLanguage();
   const index = useDocumentIndex();
@@ -17,38 +17,44 @@ function DesignSources({ sources, path }: { sources: DesignSource[]; path: strin
     <Text type="supporting" color="secondary">{t('design.sources')}</Text>
     <List density="compact">
       {sources.map((source, i) => {
-        const link = source.url ? resolveDocumentLink(source.url, path, index) : resolveDocumentLink(source.path ?? '', path, index);
+        // A source names a document by ID; the server resolved its path when the document exists.
+        const link = source.url ? resolveDocumentLink(source.url, path, index) : source.path ? resolveDocumentLink(relativeTo(path, source.path), path, index) : { kind: 'missing' as const, path: source.id ?? '' };
         const where = link.kind === 'external' ? hostOf(link.href) : link.kind === 'wiki' ? link.path.replace(/^\.gitifact\/wiki\//, '') : link.kind === 'missing' ? t('link.missing', { path: link.path }) : link.kind === 'outside' ? link.path : '';
-        return <ListItem key={i} label={<DocumentLink link={link}>{source.title}</DocumentLink>} description={<HStack gap={2} wrap="wrap">{source.note && <Text type="supporting" color="secondary">{source.note}</Text>}{where && <Text type="supporting" color="secondary">{where}</Text>}</HStack>}/>;
+        return <ListItem key={i} label={<DocumentLink link={link}>{source.title ?? source.id}</DocumentLink>} description={<HStack gap={2} wrap="wrap">{source.note && <Text type="supporting" color="secondary">{source.note}</Text>}{where && <Text type="supporting" color="secondary">{where}</Text>}</HStack>}/>;
       })}
     </List>
   </VStack>;
 }
 const hostOf = (href: string) => { try { return new URL(href).hostname; } catch { return href; } };
+/** A repository path written relative to the folder of `from`, the form links in documents take. */
+function relativeTo(from: string, to: string) {
+  const a = from.split('/').slice(0, -1); const b = to.split('/');
+  let common = 0; while (common < a.length && common < b.length - 1 && a[common] === b[common]) common++;
+  return [...Array(a.length - common).fill('..'), ...b.slice(common)].join('/');
+}
 
 /**
- * `path` is the design file's repository path; its relative links and source paths start from that folder.
- * `current` is the requirement the reader arrived for: the section that explains it is marked, the way the
- * requirements tab marks the requirement itself, so the page says which part of the design was meant.
+ * One design document. `path` is its repository path; relative links and sources start from that folder. The
+ * requirements it explains come from its frontmatter and link to the requirements tab. `isCurrent` marks the design
+ * the reader arrived for, the way the requirements tab marks the requirement itself.
  */
-export function DesignDocument({design, path, features, current}: {design: {title: string; body: string; sources?: DesignSource[] | undefined}; path: string; features: SpecFeature[]; current?: string | undefined}) {
+export function DesignDocument({design, path, features, isCurrent}: {design: {title: string; description?: string | undefined; body: string; sources?: DesignSource[] | undefined; requirements?: string[] | undefined}; path: string; features: SpecFeature[]; isCurrent?: boolean | undefined}) {
   useLanguage();
-  const section = current ? designSectionsOf(design.body).get(current) : undefined;
-  let fence: {char: string; size: number} | undefined;
-  const body = design.body.split('\n').map(line => {
-    if (fence) { if (new RegExp(`^ {0,3}${fence.char}{${fence.size},}\\s*$`).test(line)) fence = undefined; return line; }
-    const open = /^ {0,3}(`{3,}|~{3,})/.exec(line);
-    if (open) { fence = {char: open[1]![0]!, size: open[1]!.length}; return line; }
-    const ref = /^<!-- gitifact-ref: (R-[a-z2-7]{10}(?:, R-[a-z2-7]{10})*) -->$/.exec(line);
-    if (!ref) return line;
-    return '\n' + t('design.relatedRequirements') + ': ' + ref[1]!.split(', ').map(id => {
-      const feature = features.find(f => f.requirements.some(r => r.id === id));
-      return feature ? `[${id}](/features/${encodeURIComponent(feature.id)}?selected=${id}&tab=requirements#${id})` : t('design.missingRequirement', { id });
-    }).join(', ') + '\n';
-  }).join('\n');
+  const requirements = design.requirements ?? [];
   return <VStack gap={4}>
-    <Heading level={3}>{design.title}</Heading>
+    <Heading level={3}>{isCurrent ? <mark className={styles.currentMark}>{design.title}</mark> : design.title}</Heading>
+    {design.description && <Text type="supporting" color="secondary">{design.description}</Text>}
+    {!!requirements.length && <HStack gap={2} wrap="wrap">
+      <Text type="supporting" color="secondary">{t('design.relatedRequirements')}:</Text>
+      {requirements.map(id => {
+        const feature = features.find(f => f.requirements.some(r => r.id === id));
+        const title = feature?.requirements.find(r => r.id === id)?.title;
+        return feature
+          ? <Link key={id} to="/features/$featureId" params={{ featureId: feature.id }} search={{ selected: id, tab: 'requirements' }} hash={id}>{title ?? id}</Link>
+          : <Text key={id} type="supporting" color="secondary">{t('design.missingRequirement', { id })}</Text>;
+      })}
+    </HStack>}
     {!!design.sources?.length && <DesignSources sources={design.sources} path={path}/>}
-    <DocumentBody headingLevelStart={4} path={path} currentHeading={section}>{body}</DocumentBody>
+    <DocumentBody headingLevelStart={4} path={path}>{design.body}</DocumentBody>
   </VStack>;
 }

@@ -1,6 +1,5 @@
-import { DocumentError, type Doc, type DocProblem, type DocProblemCode, type DocReason } from '../domain/document.js';
+import { DocumentError, docProblem, type Doc, type DocProblem, type DocProblemCode, type DocReason } from '../domain/document.js';
 import { classifyDocPath, parseDocumentFile, parseReasonLines } from '../formats/document-file.js';
-import { t } from '../shared/i18n/index.js';
 
 export interface DocumentSet { documents: Doc[]; reasons: (DocReason & { path: string })[]; problems: DocProblem[] }
 
@@ -11,7 +10,7 @@ export interface DocumentSet { documents: Doc[]; reasons: (DocReason & { path: s
  */
 export function checkDocuments(files: ReadonlyMap<string, string>): DocumentSet {
   const documents: Doc[] = []; const reasons: DocumentSet['reasons'] = []; const problems: DocProblem[] = [];
-  const report = (code: DocProblemCode, path: string, values: Record<string, unknown> = {}) => problems.push({ code, path, message: t(`doc.${code}`, { path, ...values }) });
+  const report = (code: DocProblemCode, path: string, values: Record<string, unknown> = {}) => problems.push(docProblem(code, path, values));
   const features = new Set<string>(); const designFolders = new Map<string, boolean>();
   for (const [path, source] of [...files].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) {
     try {

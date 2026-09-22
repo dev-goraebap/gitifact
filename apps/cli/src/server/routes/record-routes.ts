@@ -1,64 +1,39 @@
-import type { StoreBundle } from '@gitifact/core';
-import { browserChangeQueryV1, browserChangeV1, browserHistoryQueryV1, browserHistorySummaryQueryV1, browserHistorySummaryV1, browserHistoryV2, browserSearchQueryV1, browserSearchV1 } from '@gitifact/contracts';
+import { browserChangeQueryV2, browserChangeV2, browserHistoryQueryV2, browserHistorySummaryQueryV1, browserHistorySummaryV2, browserHistoryV3, browserSearchQueryV1, browserSearchV1 } from '@gitifact/contracts';
 import { storeReader } from '../../adapters/git/store-reader.js';
+import { openCache } from '../../adapters/cache/index.js';
 import { createCheckoutReader } from '../checkout/checkout-reader.js';
-import { createHistoryIndex } from '../history/history-index.js';
 import { HttpError } from '../http/respond.js';
 import { ok, route } from '../http/router.js';
-import { t, getLanguage } from '../../shared/i18n/index.js';
+import { t } from '../../shared/i18n/index.js';
 
 /** A page of history unless the reader asks for another size. */
 const PAGE = 50;
 
 /**
- * The records: the checkout (current specs and wiki, sent whole), and history, which the server filters, pages,
- * counts and searches over all of it through the local index.
+ * The records: the checkout (current features and wiki, sent whole), and history, which the server filters, pages,
+ * counts and searches over all of it. Both come from the cache the CLI uses too (`.gitifact/cache/index.db`).
  */
 export function recordRoutes(root: string, sessionId: string, env?: NodeJS.ProcessEnv) {
-  const reader = storeReader(root);
-  // Whole-store snapshots, for the few commits the index cannot read by their changed files alone.
-  const snapshots = new Map<string, Promise<StoreBundle>>();
-  const snapshot = (oid: string) => {
-    const key = oid + ':' + getLanguage();
-    let value = snapshots.get(key);
-    if (!value) { value = reader.readBundle(oid).catch(e => { snapshots.delete(key); throw e; }); snapshots.set(key, value); }
-    if (snapshots.size > 128) snapshots.delete(snapshots.keys().next().value!);
-    return value;
-  };
-  const readCheckout = createCheckoutReader(root, sessionId, env);
-  const history = createHistoryIndex(root, snapshot);
-  // The search rows describe the checkout this worktree last showed, so a search finds what is on screen.
-  const scope = 'checkout:' + root;
+  const git = storeReader(root);
+  const cache = openCache(root, { run: (args, input) => git.run(args, input), decode: git.decode });
+  const readCheckout = createCheckoutReader(root, sessionId, cache, env);
   const unreadable = () => t('server.specsUnreadable');
-  // Reading the checkout writes its search rows; the first search of a server that has not read one yet reads it.
-  let synced: Promise<void> | undefined;
-  const checkout = async () => {
-    const read = await readCheckout();
-    synced = history.syncCheckout(scope, read.stamp, read.search);
-    await synced;
-    return read.checkout;
-  };
 
   return [
-    route({ method: 'GET', path: '/api/v1/specs', session: true, unreadable, handle: async () => {
-      return ok(await checkout());
-    } }),
-    route({ method: 'GET', path: '/api/v1/history', session: true, query: browserHistoryQueryV1, unreadable, handle: async ({ query }) => {
+    route({ method: 'GET', path: '/api/v1/specs', session: true, unreadable, handle: async () => ok((await readCheckout()).checkout) }),
+    route({ method: 'GET', path: '/api/v1/history', session: true, query: browserHistoryQueryV2, unreadable, handle: async ({ query }) => {
       const offset = query.offset ?? 0;
-      const page = await history.page(query.head, { kind: query.kind, document: query.document, feature: query.feature, author: query.author, q: query.q }, offset, query.limit ?? PAGE);
-      return ok(browserHistoryV2.parse({ contract: 'browser-history', version: 2, sessionId, head: query.head, offset, ...page }));
+      const page = await cache.history.page(query.head, { kind: query.kind, document: query.document, feature: query.feature, author: query.author, q: query.q }, offset, query.limit ?? PAGE);
+      return ok(browserHistoryV3.parse({ contract: 'browser-history', version: 3, sessionId, head: query.head, offset, ...page }));
     } }),
     route({ method: 'GET', path: '/api/v1/history/summary', session: true, query: browserHistorySummaryQueryV1, unreadable, handle: async ({ query }) =>
-      ok(browserHistorySummaryV1.parse({ contract: 'browser-history-summary', version: 1, sessionId, head: query.head, ...await history.summary(query.head) })) }),
-    route({ method: 'GET', path: '/api/v1/change', session: true, query: browserChangeQueryV1, unreadable, handle: async ({ query }) => {
-      const change = await history.change(query.key);
+      ok(browserHistorySummaryV2.parse({ contract: 'browser-history-summary', version: 2, sessionId, head: query.head, ...await cache.history.summary(query.head) })) }),
+    route({ method: 'GET', path: '/api/v1/change', session: true, query: browserChangeQueryV2, unreadable, handle: async ({ query }) => {
+      const change = await cache.history.change(query.key);
       if (!change) throw new HttpError(404, 'NOT_FOUND', t('server.changeNotFound'));
-      return ok(browserChangeV1.parse({ contract: 'browser-change', version: 1, sessionId, ...change }));
+      return ok(browserChangeV2.parse({ contract: 'browser-change', version: 2, sessionId, ...change }));
     } }),
-    route({ method: 'GET', path: '/api/v1/search', session: true, query: browserSearchQueryV1, unreadable, handle: async ({ query }) => {
-      // The palette may open before any screen read the checkout; then it is read once so there is something to find.
-      await (synced ?? checkout()).catch(() => undefined);
-      return ok(browserSearchV1.parse({ contract: 'browser-search', version: 1, sessionId, query: query.q, hits: await history.search(scope, query.head ?? null, query.q) }));
-    } }),
+    route({ method: 'GET', path: '/api/v1/search', session: true, query: browserSearchQueryV1, unreadable, handle: async ({ query }) =>
+      ok(browserSearchV1.parse({ contract: 'browser-search', version: 1, sessionId, query: query.q, hits: await cache.search(query.head ?? null, query.q) })) }),
   ];
 }

@@ -130,5 +130,6 @@
   "doc.DUPLICATE_ORDER": "Two documents in one folder have order {order}: {path}, {other}",
   "doc.MISSING_REFERENCE": "The referenced document does not exist: {path}: {id}",
   "doc.FEATURE_INDEX_REQUIRED": "The feature folder needs an index.md: {feature}",
-  "doc.DESIGN_OVERVIEW_REQUIRED": "A feature with a design needs design/overview.md: {feature}"
+  "doc.DESIGN_OVERVIEW_REQUIRED": "A feature with a design needs design/overview.md: {feature}",
+  "doc.FILE_TOO_LARGE": "The document file exceeds 1 MB and was not read: {path}"
 }

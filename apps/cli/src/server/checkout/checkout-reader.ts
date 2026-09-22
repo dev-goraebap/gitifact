@@ -1,13 +1,12 @@
-import { StoreError, parseManagedConfig, WIKI_DIR } from '@gitifact/core';
-import { browserSpecsV4, type BrowserSpecsV4 } from '@gitifact/contracts';
+import { StoreError, parseManagedConfig, docProblem, WIKI_ROOT, type Doc, type DesignDoc, type RequirementDoc } from '@gitifact/core';
+import { browserSpecsV5, type BrowserSpecsV5, type DesignSource } from '@gitifact/contracts';
 import { createGitRunner } from '../../adapters/git/run-git.js';
 import { storeReader } from '../../adapters/git/store-reader.js';
-import { readWorkingState } from '../../adapters/filesystem/store.js';
 import { readConfigFile } from '../../adapters/filesystem/config-file.js';
-import type { SearchDocument } from '../history/history-index.js';
+import type { Cache } from '../../adapters/cache/index.js';
 import { t, getLanguage } from '../../shared/i18n/index.js';
 
-type Contributor = BrowserSpecsV4['contributors'][number];
+type Contributor = BrowserSpecsV5['contributors'][number];
 const tally = (people: Map<string, Contributor>, name: string, email: string, latest: string) => {
   const person = people.get(email); if (person) person.commits++; else people.set(email, { name, email, latest, commits: 1 });
 };
@@ -21,13 +20,42 @@ export async function settled<T extends readonly unknown[]>(reads: { [K in keyof
   if (failure) throw (failure as PromiseRejectedResult).reason;
   return results.map(r => (r as PromiseFulfilledResult<unknown>).value) as unknown as T;
 }
+const byOrder = <T extends { order: number; path: string }>(a: T, b: T) => a.order - b.order || (a.path < b.path ? -1 : a.path > b.path ? 1 : 0);
+const folderOf = (path: string) => path.split('/').slice(0, 3).join('/');
+
+/** The documents grouped the way the screens read them: features with their requirements and designs in order, and the wiki. */
+export function arrangeDocuments(documents: Doc[]) {
+  const byId = new Map(documents.map(d => [d.id, d]));
+  const source = (s: DesignDoc['sources'][number]): DesignSource => {
+    if (!('id' in s)) return { title: s.title, url: s.url, ...(s.note ? { note: s.note } : {}) };
+    const target = byId.get(s.id);
+    return { id: s.id, ...(target ? { title: target.title, path: target.path } : {}), ...(s.note ? { note: s.note } : {}) };
+  };
+  const folders = new Map<string, { index?: Doc; requirements: RequirementDoc[]; designs: DesignDoc[] }>();
+  const folder = (path: string) => { const key = folderOf(path); let f = folders.get(key); if (!f) folders.set(key, f = { requirements: [], designs: [] }); return f; };
+  for (const doc of documents) {
+    if (doc.kind === 'feature') folder(doc.path).index = doc;
+    else if (doc.kind === 'requirement') folder(doc.path).requirements.push(doc);
+    else if (doc.kind === 'design') folder(doc.path).designs.push(doc);
+  }
+  const features = []; const orphans: string[] = [];
+  for (const [path, f] of [...folders].sort(([a], [b]) => (a < b ? -1 : 1))) {
+    // A folder without index.md has no feature ID to show its documents under; the check reports it.
+    if (!f.index) { orphans.push(path); continue; }
+    features.push({ id: f.index.id, path: f.index.path, title: f.index.title, description: f.index.description, body: f.index.body,
+      requirements: f.requirements.sort(byOrder).map(r => ({ id: r.id, path: r.path, title: r.title, description: r.description, order: r.order, body: r.body })),
+      designs: f.designs.sort(byOrder).map(d => ({ id: d.id, path: d.path, title: d.title, description: d.description, order: d.order, body: d.body,
+        requirements: d.requirements, sources: d.sources.map(source) })) });
+  }
+  const wiki = documents.filter(d => d.kind === 'wiki').map(d => ({ id: d.id, path: d.path, title: d.title, description: d.description, body: d.body }));
+  return { features, wiki, orphans };
+}
 
 /**
- * The checkout the browser shows: the specs and wiki of the working tree, who wrote them, and whether anything is
- * uncommitted. It is bounded by the store's own limits (2000 files, 16 MB), so it is read and sent whole, and the
- * screens that show it filter it themselves.
+ * The checkout the browser shows: the features and wiki of the working tree from the cache, who wrote them, and
+ * whether anything is uncommitted.
  */
-export function createCheckoutReader(root: string, sessionId: string, inherited = process.env) {
+export function createCheckoutReader(root: string, sessionId: string, cache: Cache, inherited = process.env) {
   const reader = storeReader(root); const runner = createGitRunner();
   const env = { ...inherited, GIT_OPTIONAL_LOCKS: '0', GIT_NO_REPLACE_OBJECTS: '1', GIT_TERMINAL_PROMPT: '0', LC_ALL: 'C' };
   const git = async (args: string[], acceptedExitCodes = [0]) => (await runner(['--no-optional-locks', ...args], { cwd: root, env, timeoutMs: 15000, maxBytes: 32 * 1024 * 1024, acceptedExitCodes })).toString('utf8');
@@ -37,7 +65,7 @@ export function createCheckoutReader(root: string, sessionId: string, inherited 
     if (!head) await reader.baseline();
     return head || null;
   };
-  const pending = new Map<string, Promise<{ checkout: BrowserSpecsV4; stamp: string; search: SearchDocument[] }>>();
+  const pending = new Map<string, Promise<{ checkout: BrowserSpecsV5; head: string | null }>>();
 
   /**
    * Authors per feature folder and the latest commit per wiki page, from one walk over the commits that touched the
@@ -45,7 +73,7 @@ export function createCheckoutReader(root: string, sessionId: string, inherited 
    * and 63 pages, about 80 ms each on Windows. A feature still counts at most 2000 commits.
    */
   async function storeAuthors(head: string) {
-    const text = await git(['log', '--format=%x1e%aN%x00%aE%x00%aI', '-z', '--name-only', '--no-renames', '--max-count=20000', head, '--', '.gitifact']);
+    const text = await git(['log', '--format=%x1e%aN%x00%aE%x00%aI', '-z', '--name-only', '--no-renames', '--max-count=20000', head, '--', '.gitifact/spec', WIKI_ROOT]);
     const folders = new Map<string, { people: Map<string, Contributor>; count: number; latest: string }>();
     const pages = new Map<string, string>();
     for (const chunk of text.split('\x1e')) {
@@ -55,13 +83,13 @@ export function createCheckoutReader(root: string, sessionId: string, inherited 
       const seen = new Set<string>();
       for (const raw of paths) {
         const path = raw.replace(/^\n/, ''); if (!path) continue;
-        const folder = /^\.gitifact\/(spec\/[^/]+)\//.exec(path)?.[1];
+        const folder = /^(\.gitifact\/spec\/[^/]+)\//.exec(path)?.[1];
         if (folder && !seen.has(folder)) {
           seen.add(folder);
           let entry = folders.get(folder); if (!entry) folders.set(folder, entry = { people: new Map(), count: 0, latest: date });
           if (entry.count < 2000) { entry.count++; tally(entry.people, name, email, date); }
         }
-        if (path.startsWith(WIKI_DIR + '/') && !pages.has(path)) pages.set(path, date);
+        if (path.startsWith(WIKI_ROOT + '/') && !pages.has(path)) pages.set(path, date);
       }
     }
     return { folders, pages };
@@ -73,8 +101,8 @@ export function createCheckoutReader(root: string, sessionId: string, inherited 
     parseManagedConfig(raw);
     const head = await readHead();
     const [current, dirty, authors, everyone] = await settled([
-      storeReader(root).location().then(readWorkingState),
-      head ? git(['status', '--porcelain=v1', '--', '.gitifact/spec', WIKI_DIR]) : Promise.resolve(''),
+      cache.documents.list(),
+      head ? git(['status', '--porcelain=v1', '--', '.gitifact/spec', WIKI_ROOT]) : Promise.resolve(''),
       head ? storeAuthors(head) : Promise.resolve(undefined),
       // Git mailmap may change without a new HEAD; refresh names with every observation that carries them.
       head ? git(['log', '--format=%aN%x00%aE%x00%aI', '--max-count=10001', head]) : Promise.resolve(''),
@@ -85,25 +113,19 @@ export function createCheckoutReader(root: string, sessionId: string, inherited 
       const [name, email, latest] = line.split('\0'); if (!name || !email || !latest) throw new StoreError(t('specReader.authorUnreadable'));
       tally(people, name, email, latest);
     }
-    const features = current.specs.map(({ history: _history, ...feature }) => {
-      const entry = authors?.folders.get(feature.path.replace(/^\.gitifact\/(spec\/[^/]+)\/requirements\.md$/, '$1'));
+    const arranged = arrangeDocuments(current.documents);
+    const features = arranged.features.map(feature => {
+      const entry = authors?.folders.get(folderOf(feature.path));
       return { ...feature, contributors: entry ? [...entry.people.values()].sort((a, b) => b.commits - a.commits) : [], updatedAt: entry?.latest ?? null };
     });
     // Wiki pages record their latest commit by current path; a moved page restarts at the move commit.
-    const documents = current.wiki.documents.map(doc => ({ ...doc, updatedAt: authors?.pages.get(doc.path) ?? null }));
-    // The working store was read whole and twice over inside readWorkingState, so it is consistent in itself;
-    // what can still move under this read is HEAD, which the authors came from.
+    const documents = arranged.wiki.map(doc => ({ ...doc, updatedAt: authors?.pages.get(doc.path) ?? null }));
+    const problems = [...current.problems, ...arranged.orphans.map(path => docProblem('FEATURE_INDEX_REQUIRED', path + '/index.md', { feature: path.split('/')[2] }))];
     if (await readHead() !== head) throw new StoreError(t('specReader.projectChanged'));
-    const checkout = browserSpecsV4.parse({ contract: 'browser-specs', version: 4, sessionId, head, observedAt: new Date().toISOString(),
-      working: head ? !!dirty.trim() : features.length > 0 || documents.length > 0, features, documents,
+    const checkout = browserSpecsV5.parse({ contract: 'browser-specs', version: 5, sessionId, head, observedAt: new Date().toISOString(),
+      working: head ? !!dirty.trim() : features.length > 0 || documents.length > 0, features, documents, problems,
       contributors: [...people.values()].sort((a, b) => b.commits - a.commits), contributorsLimited: lines.length > 10000 });
-    // The same records as the search box finds them.
-    const search: SearchDocument[] = features.flatMap((f): SearchDocument[] => [
-      { kind: 'feature' as const, ref: f.id, title: f.title, where: f.path.replace(/^\.gitifact\//, ''), body: f.description, featureId: f.id },
-      ...f.requirements.map(r => ({ kind: 'requirement' as const, ref: r.id, title: r.title, where: f.title, body: r.body, featureId: f.id })),
-      ...(f.design ? [{ kind: 'design' as const, ref: f.id + ':design', title: f.design.title, where: f.title, body: f.design.body, featureId: f.id }] : []),
-    ]).concat(documents.map(d => ({ kind: 'document' as const, ref: d.id, title: d.title, where: d.path.replace(/^\.gitifact\/wiki\//, ''), body: d.body, documentId: d.id })));
-    return { checkout, stamp: current.stamp, search };
+    return { checkout, head };
   }
 
   /** Concurrent callers share one read per language, including its errors. */

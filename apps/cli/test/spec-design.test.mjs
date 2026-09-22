@@ -5,7 +5,6 @@ import {join} from 'node:path';
 import {spawnSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import {fixture, fingerprint} from './git-fixture.mjs';
-import { openRecords } from './browser-records.mjs';
 const exe=fileURLToPath(new URL('../dist/main.js',import.meta.url));
 const auth={basis:'user-request',evidence:'Isolated design test'};
 function run(f,args){return spawnSync(process.execPath,[exe,...args],{cwd:f.repo,env:{...f.env,GITIFACT_NO_UPDATE_CHECK: '1'},encoding:'utf8',timeout:45000});}
@@ -14,7 +13,7 @@ function input(f,action,value,flags=[]){const p=join(f.root,'design-input.json')
 function save(f,operations){return ok(input(f,'save',{expected:ok(run(f,['spec','working'])).stamp,operations}));}
 const req='.gitifact/spec/posts/requirements.md', design='.gitifact/spec/posts/design.md', history='.gitifact/spec/posts/history.jsonl';
 function setup(t,format){const f=fixture(t,format);f.git(['config','user.name','Fixture']);f.git(['config','user.email','fixture@example.test']);f.git(['config','commit.gpgsign','false']);ok(run(f,['init']));f.commit('init');return f;}
-for(const format of ['sha1','sha256'])test(`design lifecycle, reasons and real browser history (${format})`,async t=>{
+for(const format of ['sha1','sha256'])test(`design lifecycle and reasons (${format})`,async t=>{
  const f=setup(t,format);
  const saved=save(f,[{type:'create',feature:'posts',title:'Posts'},{type:'add',feature:'posts',title:'Save',body:'Save posts.'},{type:'set-design',feature:'posts',title:'Post design',body:'## Flow\nPersist posts.'}]);
  const sid=saved.results[0].id,rid=saved.results[1].id;
@@ -28,18 +27,12 @@ for(const format of ['sha1','sha256'])test(`design lifecycle, reasons and real b
  ok(input(f,'commit',request,['--dry-run']));assert.deepEqual(fingerprint(f.repo),before);
  const changed=ok(input(f,'commit',request));assert.deepEqual(changed.requirements,[]);assert.deepEqual(changed.withoutReason,[]);
  assert.ok(readFileSync(join(f.repo,history),'utf8').startsWith(initial));
- const read=openRecords(f.repo, f.env);const page=await read();
- assert.equal(page.events[0].kind,'design');
- // The list names the change; the text on both sides is read by key.
- const change=await read.change(page.events[0].key);assert.equal(change.before.body,'## Flow\nPersist posts.');assert.match(change.after.body,/Use a cache/);
- assert.deepEqual(page.features[0].design.requirements,[rid]);assert.equal(page.events.filter(e=>e.commit===first.commit).length,2);
  const renamed='.gitifact/spec/renamed';f.git(['mv','.gitifact/spec/posts',renamed]);f.git(['reset']);
  const move=ok(run(f,['spec','changes']));assert.equal(move.changes[0].kind,'design');assert.deepEqual(move.changes[0].types,['moved']);
- f.commit('Rename folder');assert.equal((await read()).events[0].id,sid);
+ f.commit('Rename folder');
  save(f,[{type:'delete-design',feature:'renamed'}]);
  const deleted=ok(input(f,'commit',{paths:[renamed+'/design.md',renamed+'/history.jsonl'],message:'Remove design',authorization:auth}));
  assert.deepEqual(deleted.withoutReason,[sid]);assert.equal(deleted.changes[0].types[0],'deleted');
- assert.equal((await read()).features[0].design,undefined);assert.equal((await read()).events[0].before.id,sid);
  assert.equal(f.git(['status','--porcelain']).stdout,'');
 });
 test('invalid identities, missing references, stale writes and rejected commits preserve files',t=>{

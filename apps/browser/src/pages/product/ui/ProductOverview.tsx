@@ -1,4 +1,4 @@
-import type { SpecDocument, SpecEvent, SpecFeature, BrowserSessionV3, BrowserSpecsV4, BrowserHistorySummaryV1 } from '@gitifact/contracts';
+import type { SpecDocument, SpecEvent, SpecFeature, BrowserSessionV3, BrowserSpecsV5, BrowserHistorySummaryV2 } from '@gitifact/contracts';
 import { useQuery } from '@tanstack/react-query';
 import { VStack } from '@astryxdesign/core/VStack';
 import { HStack } from '@astryxdesign/core/HStack';
@@ -16,7 +16,7 @@ import { statusOptions, summaryOptions } from '../../../entities/project';
 import styles from './product.module.css';
 import { t, useLanguage, getLanguage } from '../../../shared/i18n';
 
-type Contributor = NonNullable<BrowserSpecsV4['contributors']>[number];
+type Contributor = NonNullable<BrowserSpecsV5['contributors']>[number];
 type ChangeType = SpecEvent['types'][number];
 
 // Categorical hues in a fixed order validated for adjacent-pair CVD separation (blue → orange → purple → green); gray closes a tail.
@@ -24,7 +24,7 @@ const series = ['var(--color-data-categorical-blue, #0171E3)', 'var(--color-data
 const tail = 'var(--color-data-neutral, #8494A3)';
 const changeNames: () => Record<ChangeType, string> = () => ({ created: t('change.created'), modified: t('change.modified'), moved: t('change.moved'), deleted: t('change.deleted') });
 const changeOrder: ChangeType[] = ['created', 'modified', 'moved', 'deleted'];
-const kindNames: () => Record<NonNullable<SpecEvent['kind']>, string> = () => ({ requirement: t('kind.requirement'), design: t('kind.design'), wiki: t('kind.wiki') });
+const kindNames: () => Record<NonNullable<SpecEvent['kind']>, string> = () => ({ feature: t('kind.feature'), requirement: t('kind.requirement'), design: t('kind.design'), wiki: t('kind.wiki') });
 const day = 86_400_000;
 // A commit that introduced the project can hold hundreds of records; the overview shows this many and links on.
 const RECENT_RECORDS = 10;
@@ -59,7 +59,7 @@ function StackedBar({ segments, label }: { segments: Segment[]; label: string })
  * Changes per day across the loaded history, as one column per day. A single series, so it carries no legend; the
  * caption states that it counts the loaded range rather than the whole repository.
  */
-function Pulse({ pulse, total }: { pulse: BrowserHistorySummaryV1['pulse']; total: number }) {
+function Pulse({ pulse, total }: { pulse: BrowserHistorySummaryV2['pulse']; total: number }) {
   useLanguage();
   // The server sends one entry per commit of the last three weeks; they are counted here by the reader's own day.
   const times = pulse.flatMap(c => { const time = Date.parse(c.date); return Number.isFinite(time) ? [{ time, count: c.count }] : []; });

@@ -132,10 +132,12 @@ test('a fragment typed from outside lands on its section, and only that one is m
   await expect(page.locator('mark')).toHaveCount(1);
 });
 
-test('a design section names its requirements, and each requirement links back to that section', async ({ page }) => {
+test('a design document names its requirements, and each requirement links back to that document', async ({ page }) => {
   const linked = structuredClone(many);
-  linked.features[1]!.design = { title: '알림 설계', requirements: [], sources: [],
-    body: '## 개요\n서버가 밀지 않는다.\n\n## 표시 방식\n<!-- gitifact-ref: R-bbbbbbbbbb -->\n조회로 읽는다.\n\n## 끄기\n<!-- gitifact-ref: R-bbbbbbbbbc -->\n설정에 둔다.' };
+  linked.features[1]!.design = undefined;
+  linked.features[1]!.designs = [{ title: '알림 설계', requirements: [], sources: [], body: '서버가 밀지 않는다.' },
+    { title: '표시 방식', requirements: ['R-bbbbbbbbbb'], sources: [], body: '조회로 읽는다.' },
+    { title: '끄기', requirements: ['R-bbbbbbbbbc'], sources: [], body: '설정에 둔다.' }];
   await mockApi(page);
   await serve(page, linked);
   await page.goto('/features/S-bbbbbbbbbb?tab=requirements');
@@ -144,11 +146,11 @@ test('a design section names its requirements, and each requirement links back t
   await expect(page.locator('#R-bbbbbbbbbd').getByRole('link', { name: '이 요구사항의 설계 →' })).toHaveCount(0);
   await page.locator('#R-bbbbbbbbbc').getByRole('link', { name: '이 요구사항의 설계 →' }).click();
   await expect(page).toHaveURL(/tab=design/);
-  // The design opens on the section that explains it, marked the same way the requirement was.
+  // The design opens on the document that explains it, marked the same way the requirement was.
   await expect(page.getByRole('tabpanel', { name: '설계' }).locator('mark')).toHaveText('끄기');
   await expect(page.locator('mark')).toHaveCount(1);
   // The same link read the other way round is already there.
-  await expect(page.getByRole('link', { name: 'R-bbbbbbbbbc' })).toHaveCount(1);
+  await expect(page.getByRole('tabpanel', { name: '설계' }).getByRole('link', { name: '알림 끄기' })).toHaveCount(1);
 });
 
 test('the list pages by feature so a feature is never split, and the page is kept in the address', async ({ page }) => {

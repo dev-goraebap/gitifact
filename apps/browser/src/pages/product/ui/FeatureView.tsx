@@ -18,11 +18,11 @@ import { Link, useNavigate } from '@tanstack/react-router';
 import { DesignDocument } from './DesignDocument';
 import { avatarSource, contributorHref } from './Person';
 import type { ProductSearch } from '../model/search';
-import { designSectionsOf } from '../model/design-sections';
+import { designsByRequirement } from '../model/design-sections';
 import { pagesOf, type FeatureRow } from '../model/feature-rows';
 import styles from './product.module.css';
 import { PageState } from '../../../shared/ui/page-state';
-import { DocumentBody, designPathOf } from '../../../shared/ui/document';
+import { DocumentBody } from '../../../shared/ui/document';
 import { t, useLanguage } from '../../../shared/i18n';
 
 export function FeatureView({ features, featureId, search, change }: { features: SpecFeature[]; featureId?: string | undefined; search: ProductSearch; change: (s: ProductSearch) => void }) {
@@ -62,7 +62,7 @@ function FeatureList({ features, search, change }: { features: SpecFeature[]; se
   // requirement keeps that one, so the list answers with the requirement rather than the document holding it.
   const named = (f: SpecFeature) => !query || (f.title + ' ' + f.id).toLowerCase().includes(query);
   const groups = features
-    .filter(f => !search.design || (search.design === 'yes') === !!f.design)
+    .filter(f => !search.design || (search.design === 'yes') === f.designs.length > 0)
     .filter(f => !search.author || f.contributors.some(p => p.email === search.author))
     .map(f => ({ feature: f, requirements: named(f) ? f.requirements : f.requirements.filter(r => (r.title + ' ' + r.id).toLowerCase().includes(query!)) }))
     .filter(g => named(g.feature) || g.requirements.length)
@@ -77,7 +77,7 @@ function FeatureList({ features, search, change }: { features: SpecFeature[]; se
   const page = Math.min(Math.max(1, search.page ?? 1), Math.max(1, pages.length));
   const rows = pages[page - 1] ?? [];
   const shown = groups.reduce((sum, g) => sum + g.requirements.length, 0);
-  const sections = new Map(groups.map(g => [g.feature.id, g.feature.design ? designSectionsOf(g.feature.design.body) : new Map<string, string>()]));
+  const sections = new Map(groups.map(g => [g.feature.id, designsByRequirement(g.feature.designs)]));
   const designOf = (row: FeatureRow) => sections.get(row.feature.id)?.get(row.requirement?.id ?? '');
   const open = (row: FeatureRow) => {
     const requirement = row.kind === 'requirement' ? row.requirement!.id : undefined;
@@ -91,7 +91,7 @@ function FeatureList({ features, search, change }: { features: SpecFeature[]; se
     { key: 'title', header: t('features.column.feature'), sortable: true, width: proportional(1, { minWidth: 200 }), renderCell: row => row.kind === 'feature'
       ? <HStack gap={3} className={styles.featureTitleRow}>
         <Link to="/features/$featureId" params={{ featureId: row.feature.id }} search={carried} className={styles.featureTitle}>{row.feature.title}</Link>
-        {!row.feature.design && <Token label={t('features.noDesignMark')} color="yellow" size="sm"/>}
+        {!row.feature.designs.length && <Token label={t('features.noDesignMark')} color="yellow" size="sm"/>}
         {row.feature.description && <Text type="supporting" color="secondary" className={`${styles.featureDescription} ${styles.oneLine}`}>{row.feature.description.replace(/[#*_`]/g, '').replace(/\s+/g, ' ').trim()}</Text>}
       </HStack>
       : row.kind === 'more'
@@ -129,7 +129,7 @@ function FeatureList({ features, search, change }: { features: SpecFeature[]; se
 function FeatureDetail({ feature: selected, features, search, change }: { feature: SpecFeature; features: SpecFeature[]; search: ProductSearch; change: (s: ProductSearch) => void }) {
   useLanguage();
   const tab = search.tab === 'design' ? 'design' : 'requirements';
-  const designSections = selected.design ? designSectionsOf(selected.design.body) : new Map<string, string>();
+  const designSections = designsByRequirement(selected.designs);
   // Where the reader was sent: the requirement itself, or the design section that explains it.
   const target = search.selected ? (tab === 'design' ? designSections.get(search.selected) : search.selected) : undefined;
   // The fragment of an address typed or shared from outside is read before this page has drawn the section it
@@ -152,8 +152,10 @@ function FeatureDetail({ feature: selected, features, search, change }: { featur
       <Tab value="requirements" label={t('features.tab.requirements')} panelId="feature-requirements"/>
       <Tab value="design" label={t('features.tab.design')} panelId="feature-design"/>
     </TabList>
-    {tab === 'design' ? <VStack id="feature-design" role="tabpanel" aria-label={t('features.tab.design')} gap={4} className={styles.designPanel}>
-      {selected.design ? <DesignDocument design={selected.design} path={designPathOf(selected.path)} features={features} current={search.selected}/> : <PageState isCompact title={t('features.noDesignTitle')} description={t('features.noDesignDescription')}/>}
+    {tab === 'design' ? <VStack id="feature-design" role="tabpanel" aria-label={t('features.tab.design')} gap={6} className={styles.designPanel}>
+      {selected.designs.length ? selected.designs.map(design => <VStack key={design.id} id={design.id} gap={0} {...(design.id === target ? { 'aria-current': 'location' as const } : {})}>
+        <DesignDocument design={design} path={design.path} features={features} isCurrent={design.id === target}/>
+      </VStack>) : <PageState isCompact title={t('features.noDesignTitle')} description={t('features.noDesignDescription')}/>}
     </VStack> : <VStack id="feature-requirements" role="tabpanel" aria-label={t('features.tab.requirements')} gap={0}>
       <VStack as="nav" aria-label={t('features.index')} gap={2} className={styles.documentIndex}>
         <Text type="supporting" color="secondary">{t('features.indexTitle')}</Text>
