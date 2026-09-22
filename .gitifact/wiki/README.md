@@ -8,7 +8,7 @@ description: 이 저장소 위키에 결정 기록과 개발 규칙을 쌓는 �
 
 ## 결정 기록
 
-여러 기능에 걸치는 구조·기술 선택을 새로 하거나 바꾸면 `adr/` 아래에 하나 남긴다. 파일 이름은 `0001-use-postgres.md`처럼 네 자리 번호와 소문자·숫자·하이픈이며, 번호는 늘리기만 한다. 한 기능 안에서만 유효한 선택은 그 기능의 design.md에 둔다.
+여러 기능에 걸치는 구조·기술 선택을 새로 하거나 바꾸면 `adr/` 아래에 하나 남긴다. 파일 이름은 `0001-use-postgres.md`처럼 네 자리 번호와 소문자·숫자·하이픈이며, 번호는 늘리기만 한다. 한 기능 안에서만 유효한 선택은 그 기능의 설계(`design/overview.md`)에 둔다.
 
 ```markdown
 # 결정 NNNN. 제목
@@ -43,7 +43,7 @@ description: 이 저장소 위키에 결정 기록과 개발 규칙을 쌓는 �
 | [프론트엔드 개발 환경](rules/frontend/development.md) | 실행·빌드·테스트 |
 | [프론트엔드 코드 스타일](rules/frontend/code-style.md) | 파일·컴포넌트·상태 규칙 |
 | [프론트엔드 디자인 시스템](rules/frontend/design-system.md) | Astryx 사용 규칙 |
-| [기능 설계 문서](rules/design-documents.md) | design.md의 식별자·작성·개정 규약 |
+| [기능 설계 문서](rules/design-documents.md) | 설계 형식을 정하는 곳과 이 저장소의 설계 파일 구성 |
 | [검증](rules/verification.md) | 통합 검증과 테스트 자료의 기준 |
 | [문서 문체](rules/writing.md) | 위키·명세·지침의 톤앤매너 |
 

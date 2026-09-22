@@ -14,7 +14,7 @@ requirements:
 - `apps/cli/src/adapters/registry/latest-version.ts`: CLI의 유일한 외부 요청. `https://registry.npmjs.org/gitifact`의 축약 매니페스트(`application/vnd.npm.install-v1+json`)에서 `dist-tags.latest`를 읽는다. 프로젝트 정보는 보내지 않는다.
 - `apps/cli/src/shared/update-check.ts`: `isNewerRelease`(x.y.z 비교, 같은 숫자의 사전 릴리스 빌드는 정식 릴리스보다 낮음), `resolveUpdate`(제한 시간 3초, 거부하지 않고 항상 상태를 반환), `updateCheckDisabled`(`GITIFACT_NO_UPDATE_CHECK`), 버전을 지정한 npx 업데이트 명령과 선택적인 npm 전역 설치 명령 문자열.
 - 확인 결과는 `available`·`up-to-date`·`unavailable`·`disabled`다. 과거 계약에 남아 있는 `checking`은 새 확인 응답에서 허용하지 않는다. `latestVersion`은 조회가 결과를 낸 `available`·`up-to-date`에서만 값이 있다. 레지스트리의 값이 x.y.z 형식이 아니면 `unavailable`로 처리한다.
-- 계약: `browser-session` version 3은 `update` 필드를 제거하고 `cliVersion`을 유지한다. 이전 v2 스키마는 변경하지 않는다. `update-check` version 1은 읽기 전용 확인 결과(cliVersion·update·새 버전일 때만 command)를 담는다. `update` version 4와 `project-init` version 6은 `install.npx`를 추가한다. strict 계약이므로 버전을 올리고, 기존 update v3와 project-init v5 스키마는 변경하지 않고 유지한다. `changelog` version 1은 패치노트 응답이다.
+- 계약: `browser-session` version 3은 `update` 필드를 제거하고 `cliVersion`을 유지한다. `update-check` version 1은 읽기 전용 확인 결과(cliVersion·update·새 버전일 때만 command)를 담는다. `update` version 4와 `project-init` version 6에서 `install.npx`를 추가했다. strict 계약이므로 버전을 올렸다. `project-init`은 schemaVersion 3을 담는 version 7이 현재다. 이전 스키마(browser-session v2, update v3, project-init v5·v6)는 0.8.0 준비에서 지웠다. `changelog` version 1은 패치노트 응답이다.
 - `apps/cli/src/adapters/git/agent-docs-commit.ts`: `update --commit`의 Git 접근. HEAD의 파일 내용 조회, `git commit --only`, 커밋의 부모·변경 파일 조회만 한다.
 - 현재 버전은 빌드 시 주입되는 CLI 버전(`gitifact --version`과 같은 값)이다. 에이전트가 블록에 고정된 npx 명령을 실행하므로 조회 기준도 프로젝트의 지정 버전이 된다. CLI는 AGENTS.md를 읽어 실행 버전을 바꾸지 않는다.
 

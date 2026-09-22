@@ -18,23 +18,25 @@ requirements:
 
 ## 구조와 데이터
 
-`.gitifact/wiki/**/*.md`를 읽는다. 페이지는 frontmatter(`id: W-…`), 제목, 본문이며 core의 `parseDocument`가 검증한다. 진입 페이지 `README.md`는 대문자 이름을 허용하는 유일한 예외로, 루트에만 둘 수 있다. Markdown이 아닌 파일은 무시한다. 변경 이유는 `.gitifact/wiki/history.jsonl` 하나에 `documents: [W-…]`로 기록한다.
+`.gitifact/wiki/**/*.md`를 읽는다. 페이지는 frontmatter(`id: W-…`, `title`, `description`)와 본문이며 core의 `parseDocumentFile`이 검증한다. 본문에는 `#` 제목을 쓰지 않는다. 파일·폴더 이름은 소문자·숫자·하이픈이고 폴더 깊이는 7단계까지다. 대문자 이름(`README.md`, `ARCHITECTURE.md` 등)은 위키 루트에서만 허용하며, 진입 페이지는 `README.md`다. Markdown이 아닌 파일은 무시한다. 변경 이유는 명세와 같은 `.gitifact/history.jsonl`에 `docs: [W-…]`로 기록한다.
 
-에셋은 `.gitifact/assets/**`이며 core의 `isAssetPath`가 경로를 판정한다. 파싱하지 않고 커밋 선택 검사와 서버 제공이 같은 판정을 쓴다. 권장 확장자·크기 한도는 core 상수다.
+에셋은 `.gitifact/assets/**`이며 core의 `isAssetPath`가 경로를 판정한다. 파싱하지 않고 `changes commit`의 선택 검사와 서버 제공이 같은 판정을 쓴다. 권장 확장자·크기 한도는 core 상수다.
 
-## 저장 흐름
+## 작성 흐름
 
-spec working이 `wiki.documents`·`wiki.history`와 함께 `warnings`를 반환한다. spec save의 operations는 `create-doc`(path·title·body), `update-doc`(id·title·body), `move-doc`(id·path), `delete-doc`(id)다. `set-product`·`delete-product`는 제거했다. path는 위키 폴더 안 상대 경로다.
+`docs list --kind wiki`와 `docs show <W-ID>`로 읽는다. 새 페이지는 `docs new wiki <경로>`로 만들고(경로는 위키 폴더 안 상대 경로, `.md`는 생략 가능), 그 밖의 수정·이동·삭제는 파일을 직접 고친 뒤 `docs check`로 확인한다.
 
-지침 블록이 요구사항·설계·코드를 바꾸기 전에 `gitifact docs wiki`를 확인하도록 안내하고, `docs wiki`는 형식 뒤에 `README.md`를 운영 방침으로 싣는다(에이전트 작업 흐름 설계의 위키 운영 방침 절). `init`은 처음 도입할 때 기본 방침 README 한 페이지만 만든다. 기본 방침은 결정 기록을 쌓는 것 하나로 두었다. 목적별 페이지 세트를 미리 만드는 안은 프로젝트마다 구성이 달라 대부분 고치게 되므로 기각했다.
+지침 블록이 요구사항·설계·코드를 바꾸기 전에 `gitifact guide show wiki`를 확인하도록 안내하고, `guide show wiki`는 형식 뒤에 `README.md` 본문을 운영 방침으로 싣는다(에이전트 작업 흐름 설계의 위키 운영 방침 절). README가 없으면 기본 방침을 싣는다. `init`은 처음 도입할 때 기본 방침 README 한 페이지만 만든다. 기본 방침은 결정 기록을 쌓는 것 하나로 두었다. 목적별 페이지 세트를 미리 만드는 안은 프로젝트마다 구성이 달라 대부분 고치게 되므로 기각했다.
 
 ## 링크와 경고
 
-core의 `extractLinks`는 코드 블록 밖의 Markdown 링크·이미지를 모으고 `resolveLink`가 문서 폴더 기준으로 저장소 상대 경로를 계산한다. 외부 URL·앵커·절대 경로·저장소 밖으로 나가는 경로는 대상이 아니다. CLI의 `working-warnings.ts`가 대상을 기록·에셋·저장소 파일 순으로 찾고 없으면 `MISSING_LINK_TARGET`을 낸다. 에셋 폴더를 훑어 `ASSET_SIZE`·`ASSET_EXTENSION`·`ASSETS_TOTAL_SIZE`·`UNREFERENCED_ASSET`을 내고, 비어 있는 재정의 파일은 `EMPTY_OVERRIDE`다. 어떤 경고도 저장·커밋을 막지 않는다.
+본문 링크는 그 파일 기준 상대 경로이며 브라우저가 그릴 때 대상을 해석한다. 문서 사이의 관계는 링크가 아니라 frontmatter로 나타내므로 CLI는 링크를 참조로 읽지 않는다.
+
+0.7에서는 `spec working`이 core `extractLinks`·`resolveLink`로 링크 대상을 찾아 `MISSING_LINK_TARGET`을, 에셋 폴더를 훑어 `ASSET_SIZE`·`ASSET_EXTENSION`·`ASSETS_TOTAL_SIZE`·`UNREFERENCED_ASSET`을 경고로 냈다(`working-warnings.ts`). 0.8.0 명령에는 이 경고가 아직 없다. `docs check`는 링크와 에셋을 검사하지 않으며, 경고 코드는 옛 store 코드에만 남아 있다. 경고를 되살릴 때도 저장·커밋은 막지 않는다.
 
 ## 이력과 비교
 
-커밋 전후 비교는 페이지 ID 단위다. 경로가 바뀌면 이동, 제목·본문이 바뀌면 변경이다. spec commit의 reasons에 `{requirements: [], documents: [W-…], reason}`을 받고 history.jsonl에 H-ID로 추가한다. 커밋 메시지 트레일러는 `Gitifact-Doc: <ID>`다. 커밋된 이유의 수정·삭제는 거부한다. 0.4.x의 product·guides 경로는 삭제로만 커밋 선택할 수 있다.
+커밋 전후 비교는 페이지 ID 단위다. 경로가 바뀌면 이동, 파일 내용이 바뀌면 변경이다. `changes commit`의 reasons에 `{docs: [W-…], reason}`을 받고 `.gitifact/history.jsonl`에 H-ID를 붙여 줄을 더한다. 커밋 메시지 트레일러는 `Gitifact-Doc: <ID>`다. 문서 이력은 `docs history <W-ID>`와 브라우저 활동으로 본다.
 
 ## 화면
 
@@ -44,7 +46,7 @@ core의 `extractLinks`는 코드 블록 밖의 Markdown 링크·이미지를 모
 
 - 경로가 아니라 파일 안의 ID로 식별한다. 이름 변경과 폴더 이동에도 이력이 이어진다.
 - product·guides를 위키 하나로 합쳤다. 사용자마다 필요한 문서 구성이 달라 고정된 두 폴더가 맞지 않았고, 브라우저 메뉴와 지침도 하나로 단순해진다. 기존 `P-`·`G-` ID를 이어 받는 안은 접두어 세 종류가 남아 기각했고, 정식 버전 전이라 전환 도구도 두지 않는다(2026-09-18 사용자 결정).
-- 에셋에 ID를 두지 않는다. ID 참조는 에디터·GitHub에서 이미지로 보이지 않아 상대 링크 방식과 충돌한다. 대신 깨진 링크를 경고한다.
+- 에셋에 ID를 두지 않는다. ID 참조는 에디터·GitHub에서 이미지로 보이지 않아 상대 링크 방식과 충돌한다. 대신 깨진 링크를 경고한다(0.8.0 명령에는 아직 없다. 링크와 경고 절).
 - 제한은 경고로만 한다. Git 저장소에 큰 파일을 두는 것은 사용자의 선택이며 커밋을 막으면 우회하게 된다.
 
 ## 자체 적용
