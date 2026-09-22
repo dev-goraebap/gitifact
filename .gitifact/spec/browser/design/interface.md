@@ -27,6 +27,10 @@ API와 계약은 다음과 같다. 모두 세션 헤더가 필요하고 응답�
 | `/api/v1/history?head&offset&limit&kind&document&feature&id&author&q` | browser-history v3 | 조건에 맞는 변경 한 페이지와 전체 건수 |
 | `/api/v1/history/summary?head` | browser-history-summary v2 | 종류별 건수, 최근 3주 커밋별 건수, 최신 커밋 셋 |
 | `/api/v1/change?key` | browser-change v2 | 변경 하나의 목록 정보와 전후 본문 |
+| `/api/v1/commit/files?commit` | browser-commit-files v1 | 커밋이 첫 부모 대비 바꾼 소스 파일(`.gitifact` 밖)의 경로·상태·줄 수, 500개까지와 전체 수 |
+| `/api/v1/commit/file?commit&path` | browser-commit-file v1 | 그 목록의 파일 하나의 양쪽 원문. 이진 파일과 512KB 넘는 쪽은 원문 대신 표시만 |
 | `/api/v1/search?q&head` | browser-search v1 | 체크아웃과 지난 변경의 검색 결과 |
+
+소스 변경은 `server/commit/commit-files.ts`가 Git에서 바로 읽는다. 목록은 커밋마다 `rev-list --parents`로 첫 부모를 찾아 `diff --name-status`와 `diff --numstat`(루트 커밋은 `diff-tree --root`)를 한 번씩 부르고, 이름 변경은 `-M`으로 옛 경로를 함께 싣는다. 커밋은 바뀌지 않으므로 목록을 서버 메모리에 200커밋까지 두고 캐시(SQLite)에는 넣지 않는다. 01 7장의 계획은 캐시에 두는 것이었으나, 서랍을 열 때 커밋 하나만 읽으면 되고 캐시 표를 늘리면 형식 번호가 바뀌어 전체 재생성(이 저장소에서 8.6초)이 일어나 기각했다. 파일 하나는 목록에 있는 경로만 받고 `cat-file blob`으로 양쪽을 읽는다. Git이 줄 수를 세지 않은 파일, NUL이 있거나 UTF-8이 아닌 파일은 이진으로 보고 원문을 보내지 않는다. 없는 커밋과 그 커밋이 바꾸지 않은 경로는 404다.
 
 v3까지는 체크아웃이 이력의 첫 페이지에 실렸고 화면은 불러온 페이지만 거르고 셌다. 필터가 불러온 범위에만 걸려, `.gitifact` 커밋이 10개인 프로젝트는 첫 페이지에 이력 325건·1.9MB가 한 번에 오는 반면 커밋이 많은 프로젝트는 필터가 오래된 변경을 찾지 못했다. 2026-09-19 사용자가 "DB를 쓸 때처럼 전체를 대상으로 검색·페이징해야 한다"고 해 v4에서 체크아웃과 이력을 나눴다. 0.8.0에서 문서 하나가 파일 하나인 모양으로 바꾸며 specs v5·history v3·summary v2·change v2가 되었고, 기능마다 requirements.md·design.md 하나를 싣던 이전 판은 지웠다. 체크아웃은 현재 문서뿐이라(문서 파일 하나 1MB, 파일 2만 개까지 읽는다) 통째로 보내고 화면이 거른다. 이력은 끝이 없어 서버가 거르고 세며 50건씩 준다. 목록 이벤트의 before·after는 id·title·specId·path만 담고 본문은 change로 받는다. 이력 쿼리는 HEAD를 받으므로 같은 HEAD의 답은 바뀌지 않고, 브라우저는 HEAD·조건별로 세션 동안 보관한다. 쿼리 스키마도 계약 패키지에 두어 서버와 브라우저가 같은 규칙을 쓴다. FSD의 entities는 조회를, pages/product는 화면 구성과 검색 상태를 담당한다.

@@ -281,5 +281,20 @@
   "diff.split": "좌우",
   "diff.body": "본문 변경",
   "diff.unfold": "바뀌지 않은 {count}줄 펼치기",
-  "diff.bodyUnchanged": "본문은 바뀌지 않았습니다."
+  "diff.bodyUnchanged": "본문은 바뀌지 않았습니다.",
+  "source.title": "같은 커밋의 소스 변경",
+  "source.count": "파일 {count}개",
+  "source.shown": "앞의 {count}개만 표시",
+  "source.none": "이 커밋은 문서 밖의 파일을 바꾸지 않았습니다.",
+  "source.listLoading": "바뀐 파일을 불러오는 중",
+  "source.listFailed": "바뀐 파일을 불러오지 못했습니다.",
+  "source.fileLoading": "파일 변경을 불러오는 중",
+  "source.fileFailed": "파일 변경을 불러오지 못했습니다.",
+  "source.binary": "텍스트가 아닌 파일이라 줄 비교를 보이지 않습니다.",
+  "source.tooLarge": "파일이 커서(512KB 초과) 줄 비교를 보이지 않습니다.",
+  "source.fileDiff": "{path} 변경",
+  "source.added": "추가",
+  "source.modified": "변경",
+  "source.deleted": "삭제",
+  "source.renamed": "이동"
 }

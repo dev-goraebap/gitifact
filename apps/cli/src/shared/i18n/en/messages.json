@@ -68,6 +68,8 @@
   "server.sessionChanged": "The server session changed. Reconnect to continue.",
   "server.badRange": "Check the requested range.",
   "server.changeNotFound": "This commit does not contain that change.",
+  "server.commitNotFound": "This repository has no such commit.",
+  "server.commitFileNotFound": "That commit did not change this file.",
   "server.specsUnreadable": "Could not read specifications.",
   "server.refreshOrigin": "Refresh requires a same-origin Origin header.",
   "server.fileNotFound": "File not found.",

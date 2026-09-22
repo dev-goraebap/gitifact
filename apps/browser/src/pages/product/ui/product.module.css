@@ -130,6 +130,11 @@
 .personHero { align-items:center; padding-block:var(--spacing-4) var(--spacing-6); }
 .personActivityRow { align-items:center; padding-block:var(--spacing-3); border-bottom:1px solid var(--color-border); min-width:0; }
 .personActivityRow > :nth-child(3) { flex:1; min-width:0; }
+.sourceRow { align-items:center; min-width:0; flex:1; }
+.sourcePath { min-width:0; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-family:var(--font-family-code); font-size:.8125rem; }
+.sourceAdded { color:var(--color-text-green); font-family:var(--font-family-code); }
+.sourceRemoved { color:var(--color-text-red); font-family:var(--font-family-code); }
+
 .personSection { border-top:1px solid var(--color-border); padding-block:var(--spacing-5) var(--spacing-7); }
 
 

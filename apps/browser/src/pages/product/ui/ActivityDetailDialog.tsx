@@ -30,7 +30,7 @@ export function ActivityDetailDialog({changeKey,listed,features,session,close}: 
   return <Dialog isOpen onOpenChange={onOpenChange} purpose="info" padding={0} maxHeight="100dvh" {...docked}>
     <VStack gap={0} className={styles.drawerHeader}><DialogHeader title={e?(e.after??e.before)?.title??e.id:t('event.bodyLoading')} subtitle={subtitle} onOpenChange={onOpenChange}/></VStack>
     <VStack padding={6} gap={0}>
-      {e?<EventDetail event={e} change={change} features={features}/>
+      {e?<EventDetail event={e} change={change} features={features} session={session}/>
         :change.error?<VStack role="alert" gap={2}><Text>{t('history.selectedMissing')}</Text><Text type="supporting" color="secondary">{change.error.message}</Text></VStack>
         :<VStack gap={3} role="status" aria-label={t('event.bodyLoading')}>{[60,92,86,74].map((w,i)=><Skeleton key={i} index={i} width={`${w}%`} height="var(--spacing-4)"/>)}</VStack>}
     </VStack>

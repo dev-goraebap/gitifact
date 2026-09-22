@@ -278,3 +278,33 @@ test('authors per feature and the latest commit per page match a log per path', 
   }
   for (const doc of result.documents) assert.equal(doc.updatedAt, f.git(['log', '-1', '--format=%aI', 'HEAD', '--', doc.path]).stdout.trim() || null, doc.path);
 });
+
+test('a commit lists the source files it changed beside its documents, and one file reads on both sides', async t => {
+  const { f, d } = await adopted(t);
+  mkdirSync(join(f.repo, 'src'));
+  f.write('src/a.ts', 'one\ntwo\nthree\nfour\nfive\n'); f.write('logo.bin', Buffer.from([0, 1, 2, 0]));
+  d.feature('posts', S, { title: 'Posts' }); f.commit('Add');
+  const first = f.git(['rev-parse', 'HEAD']).stdout.trim();
+  f.git(['mv', 'src/a.ts', 'src/b.ts']); f.write('src/b.ts', 'one\ntwo\nthree\nfour\nsix\n'); unlinkSync(join(f.repo, 'logo.bin'));
+  d.feature('posts', S, { title: 'Posts', body: 'Changed' }); f.commit('Move');
+  const second = f.git(['rev-parse', 'HEAD']).stdout.trim();
+  const server = await startBrowserServer({ cwd: f.repo, env: f.env, assetsDirectory: fileURLToPath(new URL('../../browser/dist/', import.meta.url)) }); t.after(() => server.close());
+  const get = async path => { const response = await fetch(server.url + path, { headers: { 'X-Gitifact-Session': server.session.sessionId } }); return { status: response.status, body: await response.json() }; };
+  // Documents are records and stay out; a rename keeps its old path, a binary file has no line counts. The first
+  // commit also carries the .gitattributes rule init wrote.
+  const listed = (await get('/api/v1/commit/files?commit=' + second)).body;
+  assert.deepEqual([listed.contract, listed.total], ['browser-commit-files', 2]);
+  assert.deepEqual(listed.files, [
+    { path: 'logo.bin', status: 'deleted', additions: null, deletions: null },
+    { path: 'src/b.ts', previousPath: 'src/a.ts', status: 'renamed', additions: 1, deletions: 1 },
+  ]);
+  assert.deepEqual((await get('/api/v1/commit/files?commit=' + first)).body.files.map(x => [x.path, x.status, x.additions]), [['.gitattributes', 'added', 1], ['logo.bin', 'added', null], ['src/a.ts', 'added', 5]]);
+  const moved = (await get('/api/v1/commit/file?commit=' + second + '&path=src/b.ts')).body;
+  assert.deepEqual([moved.before, moved.after, moved.binary, moved.tooLarge], ['one\ntwo\nthree\nfour\nfive\n', 'one\ntwo\nthree\nfour\nsix\n', false, false]);
+  const logo = (await get('/api/v1/commit/file?commit=' + first + '&path=logo.bin')).body;
+  assert.deepEqual([logo.before, logo.after, logo.binary], [null, null, true]);
+  // A path the commit did not change, a commit the repository lacks and a malformed commit are refused.
+  assert.equal((await get('/api/v1/commit/file?commit=' + second + '&path=.gitifact/config.json')).status, 404);
+  assert.equal((await get('/api/v1/commit/files?commit=' + '0'.repeat(second.length))).status, 404);
+  assert.equal((await get('/api/v1/commit/files?commit=nope')).status, 400);
+});

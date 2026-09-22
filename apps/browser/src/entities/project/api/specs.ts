@@ -1,5 +1,5 @@
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
-import { browserSpecsV5, browserHistoryV3, browserHistorySummaryV2, browserChangeV2, browserSearchV1, type BrowserSessionV3 } from '@gitifact/contracts';
+import { browserSpecsV5, browserHistoryV3, browserHistorySummaryV2, browserChangeV2, browserSearchV1, browserCommitFilesV1, browserCommitFileV1, type BrowserSessionV3 } from '@gitifact/contracts';
 import { requestJson, ApiError } from '../../../shared/api/client';
 import { httpFailure } from './repository';
 import { t } from '../../../shared/i18n';
@@ -59,6 +59,20 @@ export const changeOptions = (session: BrowserSessionV3, key: string) => queryOp
   queryKey: ['browser-change', 2, ...scope(session), key],
   staleTime: Infinity, retry: false,
   queryFn: ({ signal }) => read(session, '/api/v1/change?key=' + encodeURIComponent(key), browserChangeV2, signal),
+});
+
+/** The source files a commit changed beside its documents. A commit never changes, so the answer is kept. */
+export const commitFilesOptions = (session: BrowserSessionV3, commit: string) => queryOptions({
+  queryKey: ['browser-commit-files', 1, ...scope(session), commit],
+  staleTime: Infinity, retry: false,
+  queryFn: ({ signal }) => read(session, '/api/v1/commit/files?commit=' + commit, browserCommitFilesV1, signal),
+});
+
+/** One of those files on both sides, read when the reader opens it. */
+export const commitFileOptions = (session: BrowserSessionV3, commit: string, path: string) => queryOptions({
+  queryKey: ['browser-commit-file', 1, ...scope(session), commit, path],
+  staleTime: Infinity, retry: false,
+  queryFn: ({ signal }) => read(session, '/api/v1/commit/file?' + new URLSearchParams({ commit, path }), browserCommitFileV1, signal),
 });
 
 /** Records whose title, place or text holds the words: the current specs and wiki, then past changes of `head`. */

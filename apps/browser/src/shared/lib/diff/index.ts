@@ -28,9 +28,12 @@ function common<T>(a: readonly T[], b: readonly T[]): ('same' | 'del' | 'add')[]
   return out;
 }
 
-/** Every line of both texts in reading order, numbered on the side it belongs to. */
-export function diffLines(before: string, after: string): DiffLine[] {
-  const a = before.replace(/\r\n/g, '\n').split('\n'); const b = after.replace(/\r\n/g, '\n').split('\n');
+/** A text as lines; a missing side has none, and the newline that ends a file does not open an empty last line. */
+const linesOf = (text: string | null) => text === null ? [] : text.replace(/\r\n/g, '\n').replace(/\n$/, '').split('\n');
+
+/** Every line of both texts in reading order, numbered on the side it belongs to. A null side did not exist. */
+export function diffLines(before: string | null, after: string | null): DiffLine[] {
+  const a = linesOf(before); const b = linesOf(after);
   const out: DiffLine[] = []; let i = 0, j = 0;
   for (const step of common(a, b)) {
     if (step === 'same') { out.push({ type: 'same', text: a[i]!, old: i + 1, new: j + 1 }); i++; j++; }

@@ -96,3 +96,26 @@ export const browserChangeQueryV2 = z.strictObject({ key: z.string().regex(/^(?:
 /** `/api/v1/search`: the words, and the HEAD whose history to look through (none before the first commit). */
 export const browserSearchQueryV1 = z.strictObject({ q: z.string().min(1).max(200), head: headQuery.optional() });
 export const changelogQueryV1 = z.strictObject({ lang: z.string().regex(/^[a-z]{2}(?:-[A-Z]{2})?$/).optional() });
+
+// The source files a commit changed beside its documents, for the activity detail. Paths under `.gitifact` are left
+// out: their changes are the records above.
+const fileStatus = z.enum(['added', 'modified', 'deleted', 'renamed']);
+const commitFile = z.strictObject({ path: z.string(), previousPath: z.string().optional(), status: fileStatus,
+  // Line counts against the first parent; null for a binary file, which has no lines.
+  additions: z.number().int().nonnegative().nullable(), deletions: z.number().int().nonnegative().nullable() });
+/** Every source file one commit changed against its first parent, capped at `limit` with the whole count beside. */
+export const browserCommitFilesV1 = z.strictObject({
+  contract: z.literal('browser-commit-files'), version: z.literal(1), sessionId: z.string(), commit: oid,
+  total: z.number().int().nonnegative(), files: z.array(commitFile),
+});
+/** One file of a commit on both sides, as text; a side is null where the file did not exist. */
+export const browserCommitFileV1 = z.strictObject({
+  contract: z.literal('browser-commit-file'), version: z.literal(1), sessionId: z.string(), commit: oid, file: commitFile,
+  // `binary` and `tooLarge` leave both texts null: the reader is told why instead of shown noise.
+  before: z.string().nullable(), after: z.string().nullable(), binary: z.boolean(), tooLarge: z.boolean(),
+});
+export const browserCommitFilesQueryV1 = z.strictObject({ commit: oid });
+export const browserCommitFileQueryV1 = z.strictObject({ commit: oid, path: z.string().min(1).max(4096) });
+export type BrowserCommitFilesV1 = z.infer<typeof browserCommitFilesV1>;
+export type BrowserCommitFileV1 = z.infer<typeof browserCommitFileV1>;
+export type CommitFile = z.infer<typeof commitFile>;

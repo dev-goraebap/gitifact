@@ -1,5 +1,5 @@
 import {expect,test} from '@playwright/test';
-import {mockApi,specs,changeBodies,serve,checkoutOf} from './mock-api';
+import {mockApi,specs,changeBodies,commitSources,serve,checkoutOf} from './mock-api';
 test('history links to current features and contributors with URL restoration',async({page})=>{
  await mockApi(page);await page.goto('/activity');await page.getByText('검색어 입력',{exact:true}).click();
  await expect(page.getByRole('dialog',{name:'검색어 입력'})).toContainText('사용자가 검색을 요청했습니다.');
@@ -134,6 +134,27 @@ test('history rows preview change reasons and mark missing ones', async ({page})
  await pane.getByRole('radio',{name:'좌우'}).click();
  await expect(body.locator('tr',{hasText:'날짜순으로'})).toContainText('이름순으로');
  expect(await page.evaluate(()=>localStorage.getItem('gitifact-diff-view'))).toBe('split');
+});
+
+test('the drawer lists the source the same commit changed, and a file opens to its own diff', async ({page}) => {
+ await mockApi(page);
+ const event=specs.events[0]!;
+ commitSources[event.commit]=[
+  {file:{path:'src/search.ts',status:'modified',additions:1,deletions:1},before:'export const order = "date";\n',after:'export const order = "name";\n'},
+  {file:{path:'assets/logo.png',status:'added',additions:null,deletions:null},before:null,after:null,binary:true},
+ ];
+ await serve(page, specs);
+ await page.goto('/activity?selected='+encodeURIComponent(event.key));
+ const source=page.getByRole('region',{name:'같은 커밋의 소스 변경'});
+ await expect(source).toContainText('파일 2개');
+ await expect(source).toContainText('+1');
+ // Nothing is read until a row opens; then that file's lines compare with the changed word marked.
+ await source.getByRole('button',{name:/src\/search\.ts/}).click();
+ const diff=source.getByRole('table',{name:'src/search.ts 변경'});
+ await expect(diff.locator('mark')).toHaveText(['date','name']);
+ await source.getByRole('button',{name:/assets\/logo\.png/}).click();
+ await expect(source).toContainText('텍스트가 아닌 파일이라');
+ delete commitSources[event.commit];
 });
 
 test('a reason is written once over the records it explains, and each day is marked once', async ({page}) => {

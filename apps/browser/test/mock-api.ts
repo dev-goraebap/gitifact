@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test';
-import { browserSessionV3, changelogV1, repositoryStatusSuccessV1, type BrowserSpecsV5, type DesignSource, type SpecEvent, type SpecFeature } from '@gitifact/contracts';
+import { browserSessionV3, changelogV1, repositoryStatusSuccessV1, type BrowserSpecsV5, type CommitFile, type DesignSource, type SpecEvent, type SpecFeature } from '@gitifact/contracts';
 
 export const session = browserSessionV3.parse({
   contract: 'browser-session',
@@ -100,6 +100,18 @@ export async function serve(page: Page, data: Fixture) {
     return event && change ? route.fulfill({ json: { contract: 'browser-change', version: 2, sessionId: session.sessionId, event, before: side(change.before), after: side(change.after) } })
       : route.fulfill({ status: 404, json: notFound });
   });
+  // The source a commit changed: none unless a test lists some in commitSources.
+  await page.route(url => url.pathname === '/api/v1/commit/files', route => {
+    const commit = new URL(route.request().url()).searchParams.get('commit') ?? '';
+    const files = (commitSources[commit] ?? []).map(s => s.file);
+    return route.fulfill({ json: { contract: 'browser-commit-files', version: 1, sessionId: session.sessionId, commit, total: files.length, files } });
+  });
+  await page.route(url => url.pathname === '/api/v1/commit/file', route => {
+    const q = new URL(route.request().url()).searchParams; const commit = q.get('commit') ?? '';
+    const found = (commitSources[commit] ?? []).find(s => s.file.path === q.get('path'));
+    return found ? route.fulfill({ json: { contract: 'browser-commit-file', version: 1, sessionId: session.sessionId, commit, binary: false, tooLarge: false, ...found } })
+      : route.fulfill({ status: 404, json: notFound });
+  });
   await page.route('**/api/v1/search*', route => {
     const query = lower(new URL(route.request().url()).searchParams.get('q') ?? '');
     const records = [
@@ -126,6 +138,8 @@ export const specs: Fixture = {
 
 type Side = { id: string; title: string; body: string; specId: string; path: string; kind?: SpecEvent['kind']; description?: string; sources?: DesignSource[]; requirements?: string[] } | null;
 /** The text on both sides of each listed change, as the change endpoint returns it. Tests add entries for their own events. */
+/** Source files per commit with both sides, for the activity detail's source section. */
+export const commitSources: Record<string, { file: CommitFile; before: string | null; after: string | null; binary?: boolean }[]> = {};
 export const changeBodies: Record<string, { before: Side; after: Side }> = {
   ['c'.repeat(40) + ':R-abcdefghij']: { before: null, after: { id: 'R-abcdefghij', title: '검색어 입력', body: '**검색어**를 입력합니다.', specId: 'S-abcdefghij', path: '.gitifact/spec/search/requirements.md' } },
 };

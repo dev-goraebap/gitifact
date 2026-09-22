@@ -281,5 +281,20 @@
   "diff.split": "Side by side",
   "diff.body": "Body changes",
   "diff.unfold": "Show {count} unchanged lines",
-  "diff.bodyUnchanged": "The body did not change."
+  "diff.bodyUnchanged": "The body did not change.",
+  "source.title": "Source changed in the same commit",
+  "source.count": "{count} files",
+  "source.shown": "showing the first {count}",
+  "source.none": "This commit changed no files outside the documents.",
+  "source.listLoading": "Loading the changed files",
+  "source.listFailed": "Could not load the changed files.",
+  "source.fileLoading": "Loading the file change",
+  "source.fileFailed": "Could not load the file change.",
+  "source.binary": "Not a text file, so no line comparison is shown.",
+  "source.tooLarge": "The file is too large (over 512 KB) for a line comparison.",
+  "source.fileDiff": "Changes to {path}",
+  "source.added": "Added",
+  "source.modified": "Modified",
+  "source.deleted": "Deleted",
+  "source.renamed": "Moved"
 }

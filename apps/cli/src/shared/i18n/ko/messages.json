@@ -68,6 +68,8 @@
   "server.sessionChanged": "서버 세션이 변경됐습니다. 다시 연결하세요.",
   "server.badRange": "조회 범위를 확인하세요.",
   "server.changeNotFound": "그 커밋에 해당 변경이 없습니다.",
+  "server.commitNotFound": "이 저장소에 그 커밋이 없습니다.",
+  "server.commitFileNotFound": "그 커밋이 바꾼 파일이 아닙니다.",
   "server.specsUnreadable": "명세를 읽지 못했습니다.",
   "server.refreshOrigin": "새로고침에는 같은 출처의 Origin이 필요합니다.",
   "server.fileNotFound": "파일을 찾을 수 없습니다.",
