@@ -39,10 +39,10 @@ Git tracks changes to files and lines. Requirements describe product behavior an
 
 When a document is reorganized, a heading changes, or a section moves to another file, a diff can show it as a deletion and an addition. An agent then has to infer where the requirement went from the conversation and the diff. I wanted code to preserve that continuity instead of relying on the agent to reconstruct it each time.
 
-Gitifact pairs **requirements (`requirements.md`)** with **designs (`design.md`)** for each feature. It continues to track the same requirement when its title or location changes.
+Gitifact pairs **requirements** with **designs** for each feature. Each requirement is its own file, and a design is split into files by concern. Every document carries an ID issued by the CLI, so it is tracked as the same document when its title changes or its file moves to another feature.
 
-- **Requirements (`requirements.md`)** describe the behavior and rules the product should provide, in a form people can read and review.
-- **Designs (`design.md`)** give agents the technical context needed to implement a feature. They cover details and processing flows that do not belong in a project-wide architecture decision record, along with the wiki pages and external documents that informed the design.
+- **Requirements (`requirements/`)** describe the behavior and rules the product should provide, in a form people can read and review.
+- **Designs (`design/`)** give agents the technical context needed to implement a feature. They cover details and processing flows that do not belong in a project-wide architecture decision record, along with the wiki pages and external documents that informed the design.
 
 ![Feature requirements grouped by feature in the Fieldnotes demo project](https://raw.githubusercontent.com/dev-goraebap/gitifact/main/packages/intro/assets/screenshots/feature-requirements.jpg)
 

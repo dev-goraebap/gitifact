@@ -71,6 +71,8 @@ Gitifact를 업데이트해주세요.
 
 npx로 사용한다면 `npx gitifact@latest update`로 프로젝트 지침을 갱신하세요. 프로젝트 의존성이나 전역 설치로 관리한다면 같은 방식으로 버전을 올린 뒤 해당 설치본으로 `update`를 실행하세요. 브라우저 서버도 새 버전으로 다시 열면 됩니다.
 
+0.7로 기록한 프로젝트(저장 규약 schemaVersion 2)는 0.8.0에서 문서 구조가 바뀌어 한 번 옮겨야 합니다. 업데이트하면 에이전트가 이를 알리고, 동의하면 `npx gitifact guide show migrate`의 절차로 기존 ID와 변경 이유를 그대로 둔 채 문서를 옮깁니다.
+
 ## 직접 명령 실행하기
 
 Node.js 24.x와 Git이 설치된 환경에서 대상 Git 저장소 안에서 실행하세요. 전역 설치는 필요하지 않습니다.
@@ -103,28 +105,31 @@ npx gitifact browser
 | `npx gitifact init --dry-run` | 파일을 바꾸기 전에 도입 계획 확인 |
 | `npx gitifact init` | 프로젝트에 Gitifact 도입, 에이전트 지침 설치·갱신 |
 | `npx gitifact browser` | 브라우저 뷰어 실행 |
-| `npx gitifact status` | 현재 Git 상태 조회 |
 | `npx gitifact update --check` | 파일 변경 없이 새 버전 확인 |
 | `npx gitifact@latest update` | 최신 버전으로 프로젝트 지침 갱신 |
-| `npx gitifact docs` | 에이전트 작업 지침의 주제 목록 |
-| `npx gitifact docs spec` | 요구사항 저장 형식과 작성 규칙 |
-| `npx gitifact docs design` | 기능 설계 작성 규칙 |
-| `npx gitifact docs wiki` | 위키 형식과 이 프로젝트의 운영 방침 |
-| `npx gitifact docs commit` | 변경 이유와 관련 파일을 함께 커밋하는 방법 |
+| `npx gitifact guide list` | 에이전트 작업 지침의 주제 목록 |
+| `npx gitifact guide show spec` | 요구사항 파일 형식과 작성 규칙 |
+| `npx gitifact guide show design` | 기능 설계 작성 규칙 |
+| `npx gitifact guide show wiki` | 위키 형식과 이 프로젝트의 운영 방침 |
+| `npx gitifact guide show commit` | 변경 이유와 관련 파일을 함께 커밋하는 방법 |
 
-### 명세 조회와 저장
+### 문서 조회와 커밋
+
+요구사항·설계·위키는 `.gitifact/` 아래의 Markdown 파일이며 직접 고칩니다. 새 문서는 CLI로 만들어 ID를 받습니다.
 
 | 명령 | 용도 |
 | :--- | :--- |
-| `npx gitifact spec working` | 현재 명세·위키와 저장에 필요한 정보 조회 |
-| `npx gitifact spec save --file <입력 파일>` | 요구사항·설계·위키 저장 |
-| `npx gitifact spec changes` | HEAD와 작업 중인 명세의 차이, 미커밋 변경 이유 조회 |
-| `npx gitifact spec commit --file <입력 파일> --dry-run` | 파일을 바꾸지 않고 커밋 계획 확인 |
-| `npx gitifact spec commit --file <입력 파일>` | 변경 이유 기록과 관련 파일 커밋 |
-| `npx gitifact spec read --ref HEAD` | 특정 커밋의 명세 조회 |
-| `npx gitifact spec diff --from <이전 커밋> --to <이후 커밋>` | 두 커밋 사이의 명세 변경 조회 |
+| `npx gitifact docs list` | 기능·요구사항·설계·위키 목록(본문 없이 ID·제목·설명) |
+| `npx gitifact docs search <검색어>` | 문서 본문 검색 |
+| `npx gitifact docs show <ID>` | 문서 원문과 그 문서를 가리키는 설계. `--ref <커밋>`으로 과거 원문 |
+| `npx gitifact docs history <ID>` | 문서의 변경 이유와 커밋 |
+| `npx gitifact docs new requirement <기능>/<이름>` | ID를 발급하고 뼈대를 채운 새 문서 생성 |
+| `npx gitifact docs check` | 모든 문서의 형식·ID·참조 검사 |
+| `npx gitifact changes list` | HEAD 이후 바뀐 문서와 아직 이유가 없는 문서 |
+| `npx gitifact changes commit --file <입력 파일> --dry-run` | 파일을 바꾸지 않고 커밋 계획 확인 |
+| `npx gitifact changes commit --file <입력 파일>` | 변경 이유 기록과 관련 파일 커밋 |
 
-저장·커밋 입력 형식은 `npx gitifact docs spec`과 `npx gitifact docs commit`에서 확인할 수 있습니다.
+커밋 입력 형식은 `npx gitifact guide show commit`에서 확인할 수 있습니다.
 
 ### 도입과 실행 옵션
 

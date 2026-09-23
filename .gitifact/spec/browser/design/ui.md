@@ -59,7 +59,7 @@ WORKSPACE 그룹의 마지막 메뉴인 `/settings`에서 화면 모드(시스�
 
 GITIFACT 메뉴에서 소개 다음에 `/getting-started`를 둔다. `pages/getting-started`는 소개와 같은 64rem 중앙 컬럼, PageHeader와 DocumentBody를 사용한다. 페이지 제목은 화면 문구 카탈로그에서 읽고 Markdown의 최상위 제목은 표시할 때 제거해 중복하지 않는다. 소개의 GitHub CLI 안내 링크는 앱 안에서 이 경로로 연결한다.
 
-한국어·영어 원본은 `packages/intro/<lang>/getting-started.md`다. packages/intro의 공개 export를 shared/i18n이 가져와 localDocument로 제공한다. 소개와 같은 언어별 문서 방식으로 번들하므로 별도 HTTP 조회나 명세 저장소에 의존하지 않는다. 현재 CLI 도움말·내장 지침으로 확인한 사용 흐름을 한국어로 작성한 뒤 영어판을 만들었으며 npm README도 영어 원문과 일치시킨다. 입력 JSON의 상세 형식은 복제하지 않고 docs spec·commit으로 안내한다. 사용자용 명령 예시는 npx로 통일한다. 처음 도입·업데이트에는 @latest를 쓰고 일상 예시는 npx gitifact로 짧게 적는다. --yes와 버전 고정은 에이전트 블록에서 관리한다. 프로젝트 설치 예시는 별도 절에 두며 에이전트용 docs의 gitifact 약칭은 유지한다.
+한국어·영어 원본은 `packages/intro/<lang>/getting-started.md`다. packages/intro의 공개 export를 shared/i18n이 가져와 localDocument로 제공한다. 소개와 같은 언어별 문서 방식으로 번들하므로 별도 HTTP 조회나 명세 저장소에 의존하지 않는다. 현재 CLI 도움말·내장 지침으로 확인한 사용 흐름을 한국어로 작성한 뒤 영어판을 만들었으며 npm README도 영어 원문과 일치시킨다. 입력 JSON의 상세 형식은 복제하지 않고 `guide show spec`·`commit`으로 안내한다. 사용자용 명령 예시는 npx로 통일한다. 처음 도입·업데이트에는 @latest를 쓰고 일상 예시는 npx gitifact로 짧게 적는다. --yes와 버전 고정은 에이전트 블록에서 관리한다. 프로젝트 설치 예시는 별도 절에 두며 에이전트용 지침의 gitifact 약칭은 유지한다. 0.7 저장 규약 프로젝트에는 업데이트 절에서 한 번 옮겨야 한다는 것과 `guide show migrate`를 알린다.
 
 메뉴 순서, 소개 링크, 키보드 이동, 직접 진입·새로고침과 모바일 두 테마를 검사한다. 명세가 없는 임시 Git 저장소에서도 실제 CLI 서버가 안내를 제공하는지 확인한다.
 
