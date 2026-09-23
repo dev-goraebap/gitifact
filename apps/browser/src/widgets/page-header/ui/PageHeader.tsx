@@ -16,7 +16,7 @@ export function PageHeader({ trail, actions }: { trail: Crumb[]; actions?: React
   useLanguage();
   return (
     <HStack as="header" aria-label={t('header.location')} gap={3} className={styles.bar}>
-      <HStack gap={2} className={styles.trail}>
+      <HStack as="nav" aria-label={t('header.trail')} gap={2} className={styles.trail}>
         <HgiFolder />
         <ProjectName />
         {trail.map((crumb, index) => <Fragment key={index}>

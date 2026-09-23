@@ -17,6 +17,6 @@ export function ActivityPage({ search, change }: { search: RecordSearch; change:
       <Selector label={t('filters.change')} isLabelHidden value={search.kind ?? ''} options={[{ value: '', label: t('filters.allChanges') }, { value: 'created', label: t('change.created') }, { value: 'modified', label: t('change.modified') }, { value: 'moved', label: t('change.moved') }, { value: 'deleted', label: t('change.deleted') }]} onChange={kind => change({ ...search, kind: kind || undefined })}/>
       <Selector label={t('filters.author')} isLabelHidden value={search.author ?? ''} options={[{ value: '', label: t('filters.allAuthors') }, ...checkout.contributors.map(p => ({ value: p.email, label: p.name }))]} onChange={author => change({ ...search, author: author || undefined })}/>
     </>}>
-    {({ checkout, session }) => <HistoryView features={checkout.features} search={search} change={change} session={session} head={checkout.head}/>}
+    {({ checkout, session }) => <HistoryView features={checkout.features} search={search} session={session} head={checkout.head}/>}
   </RecordsPage>;
 }

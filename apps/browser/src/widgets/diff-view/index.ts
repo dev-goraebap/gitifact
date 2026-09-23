@@ -1,1 +1,1 @@
-export { LineDiff } from './ui/LineDiff';
+export { LineDiff, languageOf } from './ui/LineDiff';

@@ -33,7 +33,7 @@ export function DocumentHistory({ session, head, id, featureId }: { session: Bro
         {page.events.map(e => {
           const kind = e.types.includes('deleted') ? 'deleted' : e.types.includes('modified') ? 'modified' : e.types.includes('moved') ? 'moved' : 'created';
           return <ListItem key={e.key}
-            label={<Link to="/activity" search={{ selected: e.key }} className={styles.oneLine}>{e.reasons[0] ?? e.message}</Link>}
+            label={<Link to="/activity/$commit" params={{ commit: e.commit }} hash={id} className={styles.oneLine}>{e.reasons[0] ?? e.message}</Link>}
             description={<HStack gap={2} wrap="wrap" className={styles.entryLine}>
               <Token label={e.types.map(type => names()[type]).join(' · ')} color={colors[kind]} size="sm"/>
               <Timestamp value={e.date} format="relative"/>

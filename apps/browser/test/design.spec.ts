@@ -1,7 +1,7 @@
 import {test, expect} from '@playwright/test';
 import {mockApi, specs, changeBodies, serve, type Fixture } from './mock-api';
 const design={title:'검색 구현 설계',body:'## 처리 흐름\n<!-- gitifact-ref: R-abcdefghij -->\n검색 색인을 조회합니다.\n\n<!-- gitifact-ref: R-zzzzzzzzzz -->',requirements:['R-abcdefghij','R-zzzzzzzzzz'],sources:[{title:'레이아웃 지침',path:'../../wiki/frontend/layout.md',note:'열 폭 기준'},{title:'React 참조',url:'https://react.dev/reference/react',note:'훅 규칙'},{title:'옮겨진 페이지',path:'../../wiki/gone.md'}]};
-// The list names the design change; its text on both sides is what the drawer reads from the change endpoint.
+// The list names the design change; its text on both sides is what the commit page reads from the commit endpoint.
 const designKey=specs.head+':S-abcdefghij';
 const designSide={id:'S-abcdefghij',specId:'S-abcdefghij',path:'.gitifact/spec/search/design.md',title:design.title};
 changeBodies[designKey]={before:{...designSide,body:'이전 설계'},after:{...designSide,body:design.body}};
@@ -22,9 +22,9 @@ test('mixed commit history, design filter and before/after panel',async({page})=
  await expect(page.getByText('ccccccc',{exact:true})).toHaveCount(1);
  await expect(page.getByRole('list',{name:'이 이유로 바뀐 기록'})).toHaveCount(2);
  await page.getByRole('link',{name:'검색 구현 설계',exact:true}).click();
- const detail=page.getByRole('dialog',{name:'검색 구현 설계'});await expect(detail).toContainText('검색 부하를 줄입니다.');
+ const detail=page.getByRole('article',{name:'커밋 상세'});await expect(detail).toContainText('검색 부하를 줄입니다.');
  await expect(detail.getByRole('table',{name:'본문 변경'})).toContainText('이전 설계');
- await detail.getByRole('link',{name:'현재 기능 명세 보기 →'}).click();await expect(page.getByRole('tab',{name:'설계',exact:true})).toHaveAttribute('aria-selected','true');
+ await detail.getByRole('region',{name:'검색 구현 설계'}).getByRole('link',{name:'현재 기능 명세 보기 →'}).click();await expect(page.getByRole('tab',{name:'설계',exact:true})).toHaveAttribute('aria-selected','true');
  const rows=page.getByRole('list',{name:'이 이유로 바뀐 기록'}).getByRole('listitem');
  await page.goto('/activity?document=design');await expect(rows).toHaveCount(1);await expect(rows.first()).toContainText('설계');await expect(page.getByRole('link',{name:'검색 구현 설계',exact:true})).toBeVisible();
  await page.goto('/activity?document=requirement');await expect(rows).toHaveCount(1);await expect(page.getByText('검색어 입력',{exact:true})).toBeVisible();

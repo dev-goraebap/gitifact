@@ -279,6 +279,28 @@ test('authors per feature and the latest commit per page match a log per path', 
   for (const doc of result.documents) assert.equal(doc.updatedAt, f.git(['log', '-1', '--format=%aI', 'HEAD', '--', doc.path]).stdout.trim() || null, doc.path);
 });
 
+test('a commit answers with every document it changed, and with its author when it changed none', async t => {
+  const { f, d } = await adopted(t);
+  d.feature('posts', S, { title: 'Posts' }); d.requirement('posts', 'save', R, { title: 'Save', body: 'First' }); f.commit('Add');
+  d.requirement('posts', 'save', R, { title: 'Save', body: 'Second' }); d.wiki('guide.md', W, { title: 'Guide' });
+  d.reasons({ id: 'H-aaaaaaaaaa', docs: [R, W], reason: '정리했다' }); f.commit('Refine');
+  const withDocuments = f.git(['rev-parse', 'HEAD']).stdout.trim();
+  mkdirSync(join(f.repo, 'src'), { recursive: true }); f.write('src/only.ts', 'export const x = 1;\n'); f.commit('Source only');
+  const sourceOnly = f.git(['rev-parse', 'HEAD']).stdout.trim();
+  const server = await startBrowserServer({ cwd: f.repo, env: f.env, assetsDirectory: fileURLToPath(new URL('../../browser/dist/', import.meta.url)) }); t.after(() => server.close());
+  const get = async path => { const response = await fetch(server.url + path, { headers: { 'X-Gitifact-Session': server.session.sessionId } }); return { status: response.status, body: await response.json() }; };
+  const commit = (await get('/api/v1/commit?commit=' + withDocuments)).body;
+  assert.deepEqual([commit.contract, commit.message, commit.author], ['browser-commit', 'Refine', 'Tryce fixture']);
+  // Both documents of the commit come with the text on both sides, in the order the timeline lists them.
+  assert.deepEqual(commit.changes.map(c => [c.event.id, c.event.types, c.before?.body ?? null, c.after?.body ?? null]), [[R, ['modified'], 'First', 'Second'], [W, ['created'], null, 'Guide 본문']]);
+  assert.deepEqual(commit.changes[0].event.reasons, ['정리했다']);
+  // A commit that changed no document is still a page: Git names its author and the source list carries the rest.
+  const source = (await get('/api/v1/commit?commit=' + sourceOnly)).body;
+  assert.deepEqual([source.changes.length, source.message], [0, 'Source only']);
+  assert.equal((await get('/api/v1/commit?commit=' + '0'.repeat(sourceOnly.length))).status, 404);
+  assert.equal((await get('/api/v1/commit?commit=nope')).status, 400);
+});
+
 test('a commit lists the source files it changed beside its documents, and one file reads on both sides', async t => {
   const { f, d } = await adopted(t);
   mkdirSync(join(f.repo, 'src'));

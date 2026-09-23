@@ -163,7 +163,7 @@ test('the design tab reads one document at a time, and each requirement links to
   await expect(panel.getByRole('link', { name: '알림 끄기' })).toHaveCount(1);
   // Its own changes are beside it and open in the activity.
   const history = page.getByRole('region', { name: '이 문서의 변경' });
-  await expect(history.getByRole('link', { name: '끄기 설계를 더한다.' })).toHaveAttribute('href', /\/activity\?selected=/);
+  await expect(history.getByRole('link', { name: '끄기 설계를 더한다.' })).toHaveAttribute('href', new RegExp('/activity/[a-f0-9]+#' + off));
   // The last design has only a way back; the first is where the tab opens without a choice.
   const pager = page.getByRole('navigation', { name: '이전·다음 설계' });
   await expect(pager.getByRole('link')).toHaveText(['← 표시 방식']);

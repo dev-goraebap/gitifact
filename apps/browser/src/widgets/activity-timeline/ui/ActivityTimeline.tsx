@@ -11,11 +11,10 @@ import { t, useLanguage } from '../../../shared/i18n';
  * of records printed the same paragraph once per record — 209 times over this repository's 81 reasons. Here the
  * reason is written once and the records it explains sit under it.
  */
-export function ActivityTimeline({events,features,selected,hidden}: {events:SpecEvent[];features:SpecFeature[];selected:SpecEvent|undefined;hidden?:Record<string,number>}) {
+export function ActivityTimeline({events,features,hidden}: {events:SpecEvent[];features:SpecFeature[];hidden?:Record<string,number>}) {
   useLanguage();
  return <VStack as="ol" aria-label={t('activity.list')} gap={0} className={styles.timeline}>
   {groupCommits(events).map(group=>
-   <TimelineCommit key={group.commit} events={group.events} day={group.day} features={features} hidden={hidden?.[group.commit]??0}
-    selected={selected&&group.events.some(e=>e.key===selected.key)?selected.key:undefined}/>)}
+   <TimelineCommit key={group.commit} events={group.events} day={group.day} features={features} hidden={hidden?.[group.commit]??0}/>)}
  </VStack>;
 }

@@ -29,6 +29,8 @@ export interface RecordsPageProps {
   hasTitle: boolean;
   /** The wiki explorer fills the whole card instead of the centred column. */
   isFill?: boolean;
+  /** A screen whose content is compared side by side (the commit page) gets a wider column than reading prose needs. */
+  isWide?: boolean;
   /** The filter row under the heading, which stays in view while the list scrolls. */
   filters?: (checkout: BrowserSpecsV5) => ReactNode;
   /** Shaped like the screen, shown while the checkout is read. */
@@ -47,7 +49,7 @@ export function RecordsPage(props: RecordsPageProps) {
   return <RecordsPanel key={session.data.sessionId} session={session.data} {...props}/>;
 }
 
-function RecordsPanel({ session, header: Header, title, root, trail, hasTitle, isFill = false, filters, skeleton, children }: RecordsPageProps & { session: BrowserSessionV3 }) {
+function RecordsPanel({ session, header: Header, title, root, trail, hasTitle, isFill = false, isWide = false, filters, skeleton, children }: RecordsPageProps & { session: BrowserSessionV3 }) {
   useLanguage();
   const query = useQuery(specsOptions(session));
   const disconnected = query.error instanceof ApiError && query.error.code === 'SESSION_CHANGED';
@@ -62,7 +64,7 @@ function RecordsPanel({ session, header: Header, title, root, trail, hasTitle, i
   </HStack>;
   return <VStack gap={0} className={isFill ? styles.pageFill : styles.page}>
     <Header trail={crumbs} actions={actions}/>
-    <VStack gap={0} className={isFill ? styles.fill : styles.column}>
+    <VStack gap={0} className={isFill ? styles.fill : isWide ? `${styles.column} ${styles.wide}` : styles.column}>
       {hasTitle && <VStack gap={1} className={styles.pageTitle}><Heading level={1}>{title}</Heading></VStack>}
       {query.error && first && <VStack padding={4} role="alert"><Text>{query.error.message}</Text><Text>{t('history.staleData')}</Text></VStack>}
       {!first && query.error && <RequestState error={query.error} retry={() => { if (disconnected) window.location.reload(); else void query.refetch(); }}/>}

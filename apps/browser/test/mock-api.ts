@@ -100,6 +100,22 @@ export async function serve(page: Page, data: Fixture) {
     return event && change ? route.fulfill({ json: { contract: 'browser-change', version: 2, sessionId: session.sessionId, event, before: side(change.before), after: side(change.after) } })
       : route.fulfill({ status: 404, json: notFound });
   });
+  // One commit as its page reads it: the events of that commit with whatever bodies the fixture gave them.
+  await page.route(url => url.pathname === '/api/v1/commit', route => {
+    const commit = new URL(route.request().url()).searchParams.get('commit') ?? '';
+    const own = events.filter(e => e.commit === commit);
+    const first = own[0];
+    if (!first) return route.fulfill({ status: 404, json: notFound });
+    const side = (s: Side, event: SpecEvent) => s && { kind: event.kind, description: '', ...s };
+    return route.fulfill({ json: { contract: 'browser-commit', version: 1, sessionId: session.sessionId, commit,
+      author: first.author, email: first.email, committer: first.committer, date: first.date, message: first.message,
+      changes: own.map(event => ({
+        event,
+        before: side(changeBodies[event.key]?.before ?? (event.before && { ...event.before, body: '' }), event),
+        after: side(changeBodies[event.key]?.after ?? (event.after && { ...event.after, body: '' }), event),
+      })) } });
+  });
+
   // The source a commit changed: none unless a test lists some in commitSources.
   await page.route(url => url.pathname === '/api/v1/commit/files', route => {
     const commit = new URL(route.request().url()).searchParams.get('commit') ?? '';

@@ -119,3 +119,12 @@ export const browserCommitFileQueryV1 = z.strictObject({ commit: oid, path: z.st
 export type BrowserCommitFilesV1 = z.infer<typeof browserCommitFilesV1>;
 export type BrowserCommitFileV1 = z.infer<typeof browserCommitFileV1>;
 export type CommitFile = z.infer<typeof commitFile>;
+
+/** One commit as its page reads it: who made it, why, and every document it changed with both sides. */
+export const browserCommitV1 = z.strictObject({
+  contract: z.literal('browser-commit'), version: z.literal(1), sessionId: z.string(), commit: oid,
+  author: z.string(), email: z.string(), committer: z.string(), date: z.string(), message: z.string(),
+  changes: z.array(z.strictObject({ event, before: snapshot, after: snapshot })),
+});
+export const browserCommitQueryV1 = z.strictObject({ commit: oid });
+export type BrowserCommitV1 = z.infer<typeof browserCommitV1>;

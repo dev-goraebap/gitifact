@@ -158,6 +158,19 @@ export function createHistory(database: CacheDatabase, git: GitAccess) {
       const detail = JSON.parse(found.detail) as { before: HistoryEvent['before']; after: HistoryEvent['after'] };
       return { event: JSON.parse(found.row) as ListedEvent, before: detail.before, after: detail.after };
     },
+    /** Every change of one commit with the text on both sides: what the commit page reads. */
+    async ofCommit(commit: string): Promise<{ event: ListedEvent; before: HistoryEvent['before']; after: HistoryEvent['after'] }[]> {
+      const rows = await database.with(db => db.prepare('SELECT row, detail FROM changes WHERE oid = ? ORDER BY ord').all(commit) as { row: string; detail: string }[]);
+      if (rows.length) return rows.map(r => ({ event: JSON.parse(r.row) as ListedEvent, ...JSON.parse(r.detail) as { before: HistoryEvent['before']; after: HistoryEvent['after'] } }));
+      // A commit no lineage has read yet (an old link, another branch): read it once, the way one change is read.
+      const known = await database.with(db => !!db.prepare('SELECT 1 FROM commits WHERE oid = ?').get(commit));
+      if (known) return [];
+      const read = await changes.of([commit]).catch(() => undefined);
+      if (!read) return [];
+      await database.with(db => insert(db, read, new Map()));
+      return database.with(db => (db.prepare('SELECT row, detail FROM changes WHERE oid = ? ORDER BY ord').all(commit) as { row: string; detail: string }[])
+        .map(r => ({ event: JSON.parse(r.row) as ListedEvent, ...JSON.parse(r.detail) as { before: HistoryEvent['before']; after: HistoryEvent['after'] } })));
+    },
     /**
      * Documents whose title, place or text holds the query — a title match before a place match before a text match —
      * then past changes of `head`'s history, newest first. The caller syncs the working documents first.

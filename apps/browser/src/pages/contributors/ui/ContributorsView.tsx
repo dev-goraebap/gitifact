@@ -95,7 +95,7 @@ function ContributorDetail({session,head,person,features}: {session:BrowserSessi
         {activities.map(e => <HStack key={e.key} gap={3} className={styles.personActivityRow}>
           <Token label={e.types.map(type => names()[type]).join(' · ')} color={e.types.includes('deleted') ? 'red' : e.types.includes('modified') ? 'blue' : e.types.includes('moved') ? 'purple' : 'green'}/>
           <Text type="supporting" color="secondary">{({ feature: t('kind.feature'), requirement: t('kind.requirement'), design: t('kind.design'), wiki: t('kind.wiki') })[e.kind]}</Text>
-          <Link to="/activity" search={{selected:e.key}} className={styles.entryTitle}>{(e.after ?? e.before)?.title ?? e.id}</Link>
+          <Link to="/activity/$commit" params={{commit:e.commit}} hash={e.id} className={styles.entryTitle}>{(e.after ?? e.before)?.title ?? e.id}</Link>
           <Timestamp value={e.date} format="relative"/>
         </HStack>)}
       </VStack> : <Text color="secondary">{t('contributors.noRecentActivity')}</Text>}

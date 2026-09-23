@@ -1,0 +1,26 @@
+/* One commit read as a page: its own heading, then a section per changed document, then the source beside them. */
+.commitPage { min-width:0; overflow-wrap:anywhere; padding-inline:var(--spacing-5); }
+.commitHeading { padding-block:var(--spacing-3) var(--spacing-5); }
+.commitHeading h1 { font-size:1.5rem; line-height:1.4; letter-spacing:-.02em; }
+.commitMeta { align-items:center; min-width:0; }
+.commitHash { font-family:var(--font-family-code); }
+.commitSection { padding-block:var(--spacing-5); border-top:1px solid var(--color-border); }
+.reason p { line-height:1.9; max-width:46rem; }
+.reasonRecords { align-items:center; }
+.reasonRecord { display:inline-flex; align-items:baseline; gap:var(--spacing-2); font-size:.8125rem; text-decoration:none;
+  border:1px solid var(--color-border); border-radius:var(--radius-element); padding:var(--spacing-1) var(--spacing-3); }
+.reasonRecord:hover { background:var(--color-background-muted); }
+.reasonKind { color:var(--color-text-secondary); }
+/* Each changed document is a section of the page; a link that named one lands on it, which is mark enough. */
+.change { padding-block:var(--spacing-6); border-top:1px solid var(--color-border); scroll-margin-top:calc(var(--gitifact-topbar-height) + var(--spacing-4)); }
+.changeHead { align-items:baseline; min-width:0; }
+.changeHead h2 { font-size:1.125rem; line-height:1.5; }
+.changePlace { align-items:baseline; min-width:0; font-size:.8125rem; }
+.changePlace span { font-family:var(--font-family-code); }
+.readingSection { border-top:1px solid var(--color-border); padding-top:var(--spacing-5); }
+.sourceRow { align-items:center; min-width:0; flex:1; }
+.sourcePath { min-width:0; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-family:var(--font-family-code); font-size:.8125rem; }
+.sourceAdded { color:var(--color-text-green); font-family:var(--font-family-code); }
+.sourceRemoved { color:var(--color-text-red); font-family:var(--font-family-code); }
+.commitBack { align-self:flex-start; margin-top:var(--spacing-5); font-size:.8125rem; text-decoration:none; color:var(--color-text-secondary); }
+.commitBack:hover { text-decoration:underline; }

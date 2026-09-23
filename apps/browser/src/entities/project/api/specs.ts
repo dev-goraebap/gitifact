@@ -1,5 +1,5 @@
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
-import { browserSpecsV5, browserHistoryV3, browserHistorySummaryV2, browserChangeV2, browserSearchV1, browserCommitFilesV1, browserCommitFileV1, type BrowserSessionV3 } from '@gitifact/contracts';
+import { browserSpecsV5, browserHistoryV3, browserHistorySummaryV2, browserChangeV2, browserSearchV1, browserCommitFilesV1, browserCommitFileV1, browserCommitV1, type BrowserSessionV3 } from '@gitifact/contracts';
 import { requestJson, ApiError } from '../../../shared/api/client';
 import { httpFailure } from './repository';
 import { t } from '../../../shared/i18n';
@@ -59,6 +59,13 @@ export const changeOptions = (session: BrowserSessionV3, key: string) => queryOp
   queryKey: ['browser-change', 2, ...scope(session), key],
   staleTime: Infinity, retry: false,
   queryFn: ({ signal }) => read(session, '/api/v1/change?key=' + encodeURIComponent(key), browserChangeV2, signal),
+});
+
+/** One commit with every document it changed and the text on both sides: what its page reads. A commit never changes. */
+export const commitOptions = (session: BrowserSessionV3, commit: string) => queryOptions({
+  queryKey: ['browser-commit', 1, ...scope(session), commit],
+  staleTime: Infinity, retry: false,
+  queryFn: ({ signal }) => read(session, '/api/v1/commit?commit=' + commit, browserCommitV1, signal),
 });
 
 /** The source files a commit changed beside its documents. A commit never changes, so the answer is kept. */

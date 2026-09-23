@@ -14,7 +14,7 @@ sources:
 
 ## 개요
 
-명세 이력·요구사항·참여자를 연결하는 읽기 전용 브라우저다. React·Astryx로 UI를 구성하고 TanStack Router가 경로·선택·필터를, TanStack Query가 서버 조회 상태를 관리한다. 목록을 대체하는 상세 페이지는 경로 계층(`/features/<S-ID>`, `/contributors/<이메일>`)으로 구분하고, 같은 화면 안의 검색·탭·드로어 선택은 URL 검색 인자에 둔다. 브라우저는 파일이나 Git 명령을 직접 실행하지 않는다.
+명세 이력·요구사항·참여자를 연결하는 읽기 전용 브라우저다. React·Astryx로 UI를 구성하고 TanStack Router가 경로·선택·필터를, TanStack Query가 서버 조회 상태를 관리한다. 목록을 대체하는 상세 페이지는 경로 계층(`/features/<S-ID>`, `/contributors/<이메일>`)으로 구분하고, 같은 화면 안의 검색·탭 선택은 URL 검색 인자에 둔다. 브라우저는 파일이나 Git 명령을 직접 실행하지 않는다.
 
 ## 주요 설계 결정과 제한
 

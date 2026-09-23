@@ -31,3 +31,5 @@
    containing block as tall as the rows; shrunk to the card they let the rows overflow and push the header away. */
 .page:has([data-page-footer]) { min-height:100%; flex:0 0 auto; }
 .page:has([data-page-footer]) .column, .page:has([data-page-footer]) .content { flex:1 0 auto; }
+/* A screen that compares two versions side by side needs more than the reading column; it still centres. */
+.wide { max-width:96rem; }

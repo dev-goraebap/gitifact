@@ -153,7 +153,7 @@ export function ProductOverview({ session, head, features, documents, contributo
       {counting ? <TimelineSkeleton isPlain/>
         : recent.length
           ? <VStack gap={0} aria-label={t('overview.recentActivity')}>
-            <ActivityTimeline events={recent} features={features} selected={undefined} hidden={hidden}/>
+            <ActivityTimeline events={recent} features={features} hidden={hidden}/>
           </VStack>
           : <Text color="secondary">{t('overview.noActivity')}</Text>}
     </VStack>

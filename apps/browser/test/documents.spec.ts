@@ -65,8 +65,8 @@ test('wiki changes appear in the activity feed with their kind and open the curr
   await expect(rows.first()).toContainText('위키 페이지');
   await expect(rows.first()).toContainText('frontend/layout.md');
   await rows.first().getByRole('link', { name: '레이아웃 지침' }).click();
-  const pane = page.getByRole('dialog', { name: '레이아웃 지침' });
-  await expect(pane).toContainText('위키 페이지 변경');
+  const pane = page.getByRole('article', { name: '커밋 상세' });
+  await expect(pane).toContainText('레이아웃 지침');
   await pane.getByRole('link', { name: '현재 문서 보기 →' }).click();
   await expect(page).toHaveURL(/\/wiki\/W-bbbbbbbbbb$/);
 });
@@ -87,7 +87,7 @@ test('the product page leads with what changed and why, and does not treat the w
   await expect(reasons).toContainText('사용자가 검색을 요청했습니다.');
   await expect(reasons).toContainText('검색어 입력');
   await reasons.getByRole('link', { name: '검색어 입력' }).click();
-  await expect(page).toHaveURL(/\/activity\?selected=/);
+  await expect(page).toHaveURL(/\/activity\/[a-f0-9]+#R-/);
   await page.goBack();
   // The overview draws the activity screen's own timeline, so its parts are here too.
   await expect(reasons.getByRole('list', { name: '활동 목록' })).toHaveCount(1);
@@ -217,9 +217,9 @@ test('a commit that touched a great many records shows ten of them and carries o
   const more = activity.getByRole('link', { name: '기록 15건 더 →' });
   await expect(more).toHaveCount(1);
   await more.click();
-  await expect(page).toHaveURL(/\/activity/);
-  // The activity screen itself draws them all; nothing is capped there.
-  await expect(page.getByRole('list', { name: '이 이유로 바뀐 기록' }).getByRole('listitem')).toHaveCount(25);
+  // The rest of that commit is its own page, which carries every record it changed.
+  await expect(page).toHaveURL(new RegExp('/activity/' + specs.head + '$'));
+  await expect(page.getByRole('article', { name: '커밋 상세' }).getByRole('region', { name: /도입 기록/ })).toHaveCount(25);
 });
 
 test('while history is still being counted the overview says nothing about zero or emptiness', async ({ page }) => {

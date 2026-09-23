@@ -92,8 +92,8 @@ test('past changes are found by their reason and open in the activity', async ({
   const dialog = page.getByRole('dialog', palette);
   await expect(dialog).toContainText('변경 이력');
   await page.getByRole('option').filter({ hasText: '사용자가 검색을 요청했습니다.' }).first().click();
-  await expect(page).toHaveURL(/\/activity\?selected=/);
-  await expect(page.getByRole('dialog', { name: '검색어 입력' })).toContainText('검색어를 입력합니다.');
+  await expect(page).toHaveURL(/\/activity\/[a-f0-9]+#R-/);
+  await expect(page.getByRole('article', { name: '커밋 상세' })).toContainText('검색어를 입력합니다.');
 });
 
 test('while a search is on its way the palette shows the loading rows, never an empty state', async ({ page }) => {

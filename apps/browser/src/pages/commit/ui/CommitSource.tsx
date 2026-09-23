@@ -9,8 +9,8 @@ import { Token } from '@astryxdesign/core/Token';
 import { Skeleton } from '@astryxdesign/core/Skeleton';
 import { Collapsible, CollapsibleGroup } from '@astryxdesign/core/Collapsible';
 import { commitFileOptions, commitFilesOptions } from '../../../entities/project';
-import { LineDiff } from '../../../widgets/diff-view';
-import styles from './activity.module.css';
+import { LineDiff, languageOf } from '../../../widgets/diff-view';
+import styles from './commit.module.css';
 import { t, useLanguage } from '../../../shared/i18n';
 
 const colors = { added: 'green', modified: 'blue', deleted: 'red', renamed: 'purple' } as const;
@@ -25,7 +25,7 @@ function FileDiff({ session, commit, file }: { session: BrowserSessionV3; commit
   if (!query.data) return <VStack gap={2} role="status" aria-label={t('source.fileLoading')}>{lines()}</VStack>;
   if (query.data.binary) return <Text type="supporting" color="secondary">{t('source.binary')}</Text>;
   if (query.data.tooLarge) return <Text type="supporting" color="secondary">{t('source.tooLarge')}</Text>;
-  return <LineDiff before={query.data.before} after={query.data.after} label={t('source.fileDiff', { path: file.path })}/>;
+  return <LineDiff before={query.data.before} after={query.data.after} label={t('source.fileDiff', { path: file.path })} language={languageOf(file.path)}/>;
 }
 
 /**

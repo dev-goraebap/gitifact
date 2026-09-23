@@ -12,7 +12,7 @@ import styles from './timeline.module.css';
 import { t, useLanguage } from '../../../shared/i18n';
 
 /** `hidden` counts the commit's records this list leaves out — the overview shows a few of a large commit. */
-type Props = {events:SpecEvent[];day:string|undefined;features:SpecFeature[];selected:string|undefined;hidden:number};
+type Props = {events:SpecEvent[];day:string|undefined;features:SpecFeature[];hidden:number};
 
 /** Names the day a marker stands for when the reader still counts it by name; other days are left to the date. */
 function nearbyDay(iso:string) {
@@ -27,7 +27,7 @@ function nearbyDay(iso:string) {
  * "load more" draws the new commits and leaves the ones already on screen alone; before the list was grouped every
  * press drew the whole list again and took longer the more had been loaded.
  */
-export const TimelineCommit = memo(function TimelineCommit({events,day,features,selected,hidden}: Props) {
+export const TimelineCommit = memo(function TimelineCommit({events,day,features,hidden}: Props) {
   useLanguage();
  const first=events[0]!;
  return <VStack as="li" gap={0} className={styles.commit}>
@@ -56,12 +56,12 @@ export const TimelineCommit = memo(function TimelineCommit({events,day,features,
       ? group.reasons.map((reason,index)=><Text key={index} className={styles.reasonText}>{reason}</Text>)
       : <Text color="secondary">{t('activity.noReason')}</Text>}
      <VStack as="ul" gap={0} className={styles.records} aria-label={t('activity.changedRecords')}>
-      {group.events.map(event=><TimelineRecord key={event.key} event={event} features={features} current={event.key===selected}/>)}
+      {group.events.map(event=><TimelineRecord key={event.key} event={event} features={features}/>)}
      </VStack>
     </VStack>)}
-    {hidden>0&&<Link to="/activity" search={{selected:undefined}} className={styles.commitMore}>{t('activity.moreRecords', { count: hidden })}</Link>}
+    {hidden>0&&<Link to="/activity/$commit" params={{commit:events[0]!.commit}} className={styles.commitMore}>{t('activity.moreRecords', { count: hidden })}</Link>}
    </VStack>
   </HStack>
  </VStack>;
-}, (before,after)=>before.day===after.day&&before.selected===after.selected&&before.features===after.features
+}, (before,after)=>before.day===after.day&&before.features===after.features
  &&before.hidden===after.hidden&&before.events.length===after.events.length&&before.events.every((event,index)=>event===after.events[index]));

@@ -1,18 +1,12 @@
-import { Fragment, useState } from 'react';
+import { Fragment, useMemo, useState, type ReactNode } from 'react';
+import { tokenize, type TokenLine } from '@astryxdesign/core/CodeBlock';
 import { VStack } from '@astryxdesign/core/VStack';
-import { HStack } from '@astryxdesign/core/HStack';
 import { Text } from '@astryxdesign/core/Text';
 import { Button } from '@astryxdesign/core/Button';
-import { SegmentedControl, SegmentedControlItem } from '@astryxdesign/core/SegmentedControl';
 import { useMediaQuery } from '@astryxdesign/core/hooks';
 import { diffLines, diffWords, foldUnchanged, pairLines, type DiffLine, type WordPart } from '../../../shared/lib/diff';
 import styles from './LineDiff.module.css';
 import { t, useLanguage } from '../../../shared/i18n';
-
-type Mode = 'unified' | 'split';
-const STORAGE = 'gitifact-diff-view';
-// The layout is a reader's habit, like the drawer width, so it is remembered in this browser only.
-const storedMode = (): Mode => { try { return localStorage.getItem(STORAGE) === 'split' ? 'split' : 'unified'; } catch { return 'unified'; } };
 
 /** Word marks for the lines of one change: the n-th removed line against the n-th added one, when they are alike. */
 function wordMarks(lines: readonly DiffLine[]): Map<DiffLine, WordPart[]> {
@@ -28,57 +22,85 @@ function wordMarks(lines: readonly DiffLine[]): Map<DiffLine, WordPart[]> {
   return marks;
 }
 
-function Content({ line, marks }: { line: DiffLine | undefined; marks: Map<DiffLine, WordPart[]> }) {
+/** The tokenizer's language for a file, by extension; a name it does not know is read as plain text. */
+export function languageOf(path: string | undefined): string {
+  const extension = /\.([A-Za-z0-9]+)$/.exec(path ?? '')?.[1]?.toLowerCase() ?? '';
+  return ({ ts: 'typescript', tsx: 'tsx', mts: 'typescript', cts: 'typescript', js: 'javascript', mjs: 'javascript', cjs: 'javascript', jsx: 'jsx',
+    json: 'json', css: 'css', html: 'html', md: 'markdown', yml: 'yaml', yaml: 'yaml', sh: 'bash', bash: 'bash', py: 'python', sql: 'sql', toml: 'toml' } as Record<string, string>)[extension] ?? 'plaintext';
+}
+
+/** The parts of a line coloured by what they are, from the same tokenizer and colours the code blocks use. */
+function Coloured({ text, tokens }: { text: string; tokens: TokenLine | undefined }) {
+  if (!tokens?.length) return <>{text}</>;
+  const parts: ReactNode[] = [];
+  let at = 0;
+  for (const token of tokens) {
+    if (token.start > at) parts.push(text.slice(at, token.start));
+    parts.push(<span key={token.start} className={styles['token-' + token.type] ?? ''}>{text.slice(token.start, token.end)}</span>);
+    at = token.end;
+  }
+  if (at < text.length) parts.push(text.slice(at));
+  return <>{parts.map((part, i) => <Fragment key={i}>{part}</Fragment>)}</>;
+}
+
+function Content({ line, marks, tokens }: { line: DiffLine | undefined; marks: Map<DiffLine, WordPart[]>; tokens: Map<DiffLine, TokenLine> }) {
   if (!line) return null;
   const parts = marks.get(line);
-  return <>{parts ? parts.map((p, i) => p.changed ? <mark key={i} className={styles.word}>{p.text}</mark> : <Fragment key={i}>{p.text}</Fragment>) : line.text || ' '}</>;
+  // A line whose words are marked shows the change; one that is not is coloured by its syntax.
+  if (parts) return <>{parts.map((p, i) => p.changed ? <mark key={i} className={styles.word}>{p.text}</mark> : <Fragment key={i}>{p.text}</Fragment>)}</>;
+  return <Coloured text={line.text || ' '} tokens={tokens.get(line)}/>;
 }
-const sign = { same: ' ', del: '-', add: '+' } as const;
+const sign = { same: '', del: '−', add: '+' } as const;
 
 /**
  * Two texts as source lines, the way `git diff` shows them: removed and added lines with both line numbers, the
- * changed words marked, and unchanged stretches away from a change folded. Unified is the default; a wide screen may
- * lay the two sides next to each other. A null side did not exist, so every line of the other is added or removed.
+ * changed words marked, the rest coloured by syntax, and unchanged stretches away from a change folded. The width
+ * decides the layout: one column when the screen is narrow, the two sides next to each other when it is wide.
  */
-export function LineDiff({ before, after, label }: { before: string | null; after: string | null; label: string }) {
+export function LineDiff({ before, after, label, language = 'plaintext' }: { before: string | null; after: string | null; label: string; language?: string }) {
   useLanguage();
-  const wide = useMediaQuery('(min-width: 1024px)');
-  const [chosen, setChosen] = useState<Mode>(storedMode);
+  // Two versions side by side need the room; below that width they would each be too narrow to read.
+  const view = useMediaQuery('(min-width: 1024px)') ? 'split' : 'unified';
   const [opened, setOpened] = useState<Set<number>>(new Set());
-  const mode: Mode = wide ? chosen : 'unified';
-  const choose = (next: Mode) => { setChosen(next); try { localStorage.setItem(STORAGE, next); } catch { /* kept for this page only */ } };
-  const lines = diffLines(before, after);
-  const marks = wordMarks(lines);
-  const blocks = foldUnchanged(lines);
+  const lines = useMemo(() => diffLines(before, after), [before, after]);
+  const marks = useMemo(() => wordMarks(lines), [lines]);
+  // Both sides are tokenized whole, so a string or comment that runs over several lines is coloured as one thing.
+  const tokens = useMemo(() => {
+    const map = new Map<DiffLine, TokenLine>();
+    for (const [text, side] of [[before, 'del'], [after, 'add']] as const) {
+      if (text === null) continue;
+      const rows = tokenize(text.replace(/\r\n/g, '\n').replace(/\n$/, ''), language);
+      let row = 0;
+      for (const line of lines) { if (line.type === 'same' || line.type === side) { const found = rows[row++]; if (found) map.set(line, found); } }
+    }
+    return map;
+  }, [before, after, language, lines]);
+  const blocks = useMemo(() => foldUnchanged(lines), [lines]);
   if (!lines.some(l => l.type !== 'same')) return <Text type="supporting" color="secondary">{t('diff.bodyUnchanged')}</Text>;
-  return <VStack gap={2}>
-      {wide && <HStack gap={0} className={styles.toolbar}>
-        <SegmentedControl label={t('diff.layout')} value={mode} onChange={(value: string) => choose(value === 'split' ? 'split' : 'unified')} size="sm">
-          <SegmentedControlItem value="unified" label={t('diff.unified')}/>
-          <SegmentedControlItem value="split" label={t('diff.split')}/>
-        </SegmentedControl>
-      </HStack>}
-      <table className={`${styles.diff} ${mode === 'split' ? styles.split : ''}`} aria-label={label}>
-        {/* Widths come from the columns: the first row may be a fold spanning them all, which a fixed layout would size from. */}
-        <colgroup>{(mode === 'split' ? ['number', 'code', 'number', 'code'] : ['number', 'number', 'code']).map((c, i) => <col key={i} className={c === 'number' ? styles.numberColumn : undefined}/>)}</colgroup>
-        <tbody>
-          {blocks.map((block, index) => block.kind === 'fold' && !opened.has(index)
-            ? <tr key={index} className={styles.foldRow}><td colSpan={mode === 'split' ? 4 : 3}>
-              <Button variant="ghost" size="sm" label={t('diff.unfold', { count: block.lines.length })} onClick={() => setOpened(new Set(opened).add(index))}/>
-            </td></tr>
-            : mode === 'split'
-              ? pairLines(block.lines).map(([left, right], i) => <tr key={index + ':' + i}>
-                <td className={styles.number}>{left?.old ?? ''}</td>
-                <td className={`${styles.code} ${left ? styles[left.type] : styles.empty}`}><Content line={left} marks={marks}/></td>
-                <td className={styles.number}>{right?.new ?? ''}</td>
-                <td className={`${styles.code} ${right ? styles[right.type] : styles.empty}`}><Content line={right} marks={marks}/></td>
-              </tr>)
-              : block.lines.map((line, i) => <tr key={index + ':' + i} className={styles[line.type]}>
-                <td className={styles.number}>{line.old ?? ''}</td>
-                <td className={styles.number}>{line.new ?? ''}</td>
-                <td className={styles.code}><span className={styles.sign} aria-hidden>{sign[line.type]}</span><Content line={line} marks={marks}/></td>
-              </tr>))}
-        </tbody>
-      </table>
+  return <VStack gap={0} className={styles.frame}>
+    <table className={`${styles.diff} ${view === 'split' ? styles.split : ''}`} aria-label={label}>
+      {/* Widths come from the columns: the first row may be a fold spanning them all, which a fixed layout would size from. */}
+      <colgroup>{(view === 'split' ? ['number', 'code', 'number', 'code'] : ['number', 'number', 'sign', 'code']).map((c, i) =>
+        <col key={i} className={c === 'number' ? styles.numberColumn : c === 'sign' ? styles.signColumn : undefined}/>)}</colgroup>
+      <tbody>
+        {blocks.map((block, index) => block.kind === 'fold' && !opened.has(index)
+          ? <tr key={index} className={styles.foldRow}><td colSpan={4}>
+            <Button variant="ghost" size="sm" label={t('diff.unfold', { count: block.lines.length })} onClick={() => setOpened(new Set(opened).add(index))}/>
+          </td></tr>
+          : view === 'split'
+            ? pairLines(block.lines).map(([left, right], i) => <tr key={index + ':' + i}>
+              <td className={`${styles.number} ${left ? styles[left.type] : styles.empty}`}>{left?.old ?? ''}</td>
+              <td className={`${styles.code} ${left ? styles[left.type] : styles.empty}`}><Content line={left} marks={marks} tokens={tokens}/></td>
+              <td className={`${styles.number} ${styles.numberRight} ${right ? styles[right.type] : styles.empty}`}>{right?.new ?? ''}</td>
+              <td className={`${styles.code} ${right ? styles[right.type] : styles.empty}`}><Content line={right} marks={marks} tokens={tokens}/></td>
+            </tr>)
+            : block.lines.map((line, i) => <tr key={index + ':' + i} className={styles[line.type]}>
+              <td className={styles.number}>{line.old ?? ''}</td>
+              <td className={`${styles.number} ${styles.numberRight}`}>{line.new ?? ''}</td>
+              <td className={styles.sign} aria-hidden>{sign[line.type]}</td>
+              <td className={styles.code}><Content line={line} marks={marks} tokens={tokens}/></td>
+            </tr>))}
+      </tbody>
+    </table>
   </VStack>;
 }

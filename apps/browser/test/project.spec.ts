@@ -2,7 +2,7 @@ import {expect,test} from '@playwright/test';
 import {mockApi,specs,changeBodies,commitSources,serve,checkoutOf} from './mock-api';
 test('history links to current features and contributors with URL restoration',async({page})=>{
  await mockApi(page);await page.goto('/activity');await page.getByText('검색어 입력',{exact:true}).click();
- await expect(page.getByRole('dialog',{name:'검색어 입력'})).toContainText('사용자가 검색을 요청했습니다.');
+ await expect(page.getByRole('article',{name:'커밋 상세'})).toContainText('사용자가 검색을 요청했습니다.');
  await page.getByRole('link',{name:'현재 기능 명세 보기 →'}).click();
  const detail=page.getByRole('article',{name:'기능 명세'});await expect(detail).toContainText('기대 동작:');await page.reload();await expect(detail).toBeVisible();
  await page.getByRole('link',{name:'참여자',exact:true}).click();await page.getByText('fixture@example.test',{exact:true}).click();
@@ -81,18 +81,22 @@ test('initial request shows delayed skeleton then the Gentask empty illustration
  await expect(page.getByRole('status',{name:'프로젝트 불러오는 중'})).toHaveCount(0);
 });
 
-test('detail drawer opens from the timeline, keeps avatars and can be resized from the keyboard', async ({page}) => {
+test('a record opens its commit on a page of its own, at that document, and the list is one step back', async ({page}) => {
  await mockApi(page);await page.goto('/activity');
  await expect(page.getByRole('list',{name:'활동 목록'}).locator('img').first()).toBeVisible();
  await page.getByText('검색어 입력',{exact:true}).click();
- const pane=page.getByRole('dialog',{name:'검색어 입력'});
- await expect(pane.getByRole('heading',{name:'변경 후',exact:true})).toBeVisible();
- await expect(page).toHaveURL(/selected=/);
- const width=(await pane.boundingBox())!.width;
- const handle=page.getByRole('separator',{name:'변경 상세 너비 조절'});
- await handle.focus();await handle.press('ArrowLeft');
- await expect.poll(async()=>(await pane.boundingBox())!.width).not.toBe(width);
- await page.keyboard.press('Escape');await expect(pane).toHaveCount(0);await expect(page).not.toHaveURL(/selected=/);
+ await expect(page).toHaveURL(new RegExp('/activity/' + specs.head + '#R-abcdefghij$'));
+ const article=page.getByRole('article',{name:'커밋 상세'});
+ await expect(article.getByRole('heading',{level:1})).toHaveText(specs.events[0]!.message);
+ // The document the link named is the section marked on the page.
+ await expect(article.locator('[aria-current=location]')).toHaveCount(1);
+ await expect(article.locator('[aria-current=location]')).toContainText('검색어 입력');
+ await expect(article).toContainText('사용자가 검색을 요청했습니다.');
+ // An address written before the commit page still opens that change, now on its page.
+ await page.goto('/activity?selected=' + encodeURIComponent(specs.events[0]!.key));
+ await expect(page).toHaveURL(new RegExp('/activity/' + specs.head + '#R-abcdefghij$'));
+ await page.getByRole('navigation',{name:'이동 경로'}).getByRole('link',{name:'활동',exact:true}).click();
+ await expect(page).toHaveURL(/\/activity$/);
 });
 
 test('history rows preview change reasons and mark missing ones', async ({page}) => {
@@ -102,7 +106,7 @@ test('history rows preview change reasons and mark missing ones', async ({page})
   {...event,key:specs.head+':R-bbbbbbbbbb',id:'R-bbbbbbbbbb',types:['modified' as const],before:event.after,after:{...event.after!,id:'R-bbbbbbbbbb',title:'검색 결과 정렬'},reasons:['정렬을 요청했습니다.','응답 순서를 고정합니다.']},
   {...event,key:specs.head+':R-cccccccccc',id:'R-cccccccccc',after:{...event.after!,id:'R-cccccccccc',title:'이유 없는 변경'},reasons:[]},
  ]};
- // The rows carry names only; the drawer reads the text on both sides by key.
+ // The rows carry names only; the commit page reads the text on both sides.
  // Twelve lines where only the sixth changes one word, so the far unchanged lines fold and the word is marked.
  const sorted=(order:string)=>[...[1,2,3,4,5].map(n=>`${n}번째 줄입니다.`),`검색 결과를 ${order} 정렬합니다.`,...[7,8,9,10,11,12].map(n=>`${n}번째 줄입니다.`)].join('\n');
  changeBodies[specs.head+':R-bbbbbbbbbb']={before:{...event.after!,id:'R-bbbbbbbbbb',title:'검색 정렬',body:sorted('날짜순으로')},after:{...event.after!,id:'R-bbbbbbbbbb',title:'검색 결과 정렬',body:sorted('이름순으로')}};
@@ -118,8 +122,8 @@ test('history rows preview change reasons and mark missing ones', async ({page})
  await expect(commits.first()).not.toContainText('정렬 본문입니다.');
  await expect(commits.first()).toContainText('변경 이유가 기록되지 않았습니다.');
  await reasons.nth(0).getByRole('link',{name:'검색 결과 정렬'}).click();
- const pane=page.getByRole('dialog',{name:'검색 결과 정렬'});
- await expect(pane.getByRole('heading',{name:'변경 내용',exact:true})).toBeVisible();
+ const pane=page.getByRole('article',{name:'커밋 상세'});
+ await expect(pane.getByRole('heading',{name:'검색 결과 정렬',exact:true})).toBeVisible();
  // The title changed as a field; the body as source lines, one removed and one added, the changed word marked.
  await expect(pane.getByRole('region',{name:'바뀐 항목'})).toContainText('title');
  await expect(pane.getByRole('region',{name:'바뀐 항목'}).locator('del')).toHaveText('검색 정렬');
@@ -130,13 +134,13 @@ test('history rows preview change reasons and mark missing ones', async ({page})
  await expect(body.getByRole('button',{name:'바뀌지 않은 3줄 펼치기'})).toBeVisible();
  await expect(body).not.toContainText('1번째 줄입니다.');
  await body.getByRole('button',{name:'바뀌지 않은 2줄 펼치기'}).click();await expect(body).toContainText('1번째 줄입니다.');
- // Side by side puts the two versions of the line on one row, and the choice is kept for the next change.
- await pane.getByRole('radio',{name:'좌우'}).click();
+ // A desktop width puts the two versions of the line on one row; a narrow one puts them under each other.
  await expect(body.locator('tr',{hasText:'날짜순으로'})).toContainText('이름순으로');
- expect(await page.evaluate(()=>localStorage.getItem('gitifact-diff-view'))).toBe('split');
+ await page.setViewportSize({width:820,height:900});
+ await expect(body.locator('tr',{hasText:'날짜순으로'})).not.toContainText('이름순으로');
 });
 
-test('the drawer lists the source the same commit changed, and a file opens to its own diff', async ({page}) => {
+test('the commit page lists the source the same commit changed, and a file opens to its own diff', async ({page}) => {
  await mockApi(page);
  const event=specs.events[0]!;
  commitSources[event.commit]=[
@@ -144,7 +148,7 @@ test('the drawer lists the source the same commit changed, and a file opens to i
   {file:{path:'assets/logo.png',status:'added',additions:null,deletions:null},before:null,after:null,binary:true},
  ];
  await serve(page, specs);
- await page.goto('/activity?selected='+encodeURIComponent(event.key));
+ await page.goto('/activity/'+event.commit);
  const source=page.getByRole('region',{name:'같은 커밋의 소스 변경'});
  await expect(source).toContainText('파일 2개');
  await expect(source).toContainText('+1');
@@ -183,30 +187,30 @@ test('a reason is written once over the records it explains, and each day is mar
  await expect(commits.nth(1)).not.toContainText('기록 1건');
 });
 
-test('a list row carries no body; opening it reads the change once and shows its text', async ({page}) => {
+test('a list row carries no body; the commit is read once and shows the text of its documents', async ({page}) => {
  await mockApi(page);
  let reads = 0;
- await page.route(url => url.pathname === '/api/v1/change', async route => { reads++;
-  const key = new URL(route.request().url()).searchParams.get('key');
-  await route.fulfill({json:{contract:'browser-change',version:2,sessionId:specs.sessionId,event:specs.events[0],before:null,after:{id:'R-abcdefghij',kind:'requirement',title:'검색어 입력',description:'검색어 입력',body:'본문은 **열 때** 읽습니다.',specId:'S-abcdefghij',path:'.gitifact/spec/search/requirements/r-abcdefghij.md'}}}); });
+ await page.route(url => url.pathname === '/api/v1/commit', async route => { reads++;
+  const event = specs.events[0]!;
+  await route.fulfill({json:{contract:'browser-commit',version:1,sessionId:specs.sessionId,commit:event.commit,author:event.author,email:event.email,committer:event.committer,date:event.date,message:event.message,
+   changes:[{event,before:null,after:{id:'R-abcdefghij',kind:'requirement',title:'검색어 입력',description:'검색어 입력',body:'본문은 **열 때** 읽습니다.',specId:'S-abcdefghij',path:'.gitifact/spec/search/requirements/r-abcdefghij.md'}}]}}); });
  await page.goto('/activity');
+ await expect(page.getByRole('list',{name:'활동 목록'})).not.toContainText('본문은 열 때 읽습니다.');
  await page.getByText('검색어 입력',{exact:true}).click();
- const drawer = page.getByRole('dialog',{name:'검색어 입력'});
- await expect(drawer).toContainText('본문은 열 때 읽습니다.');
- await expect(drawer).toContainText('사용자가 검색을 요청했습니다.');
- // Closing and reopening the same entry does not ask again: a change never changes.
- await page.keyboard.press('Escape'); await expect(drawer).toHaveCount(0);
- await page.getByText('검색어 입력',{exact:true}).click();
- await expect(page.getByRole('dialog',{name:'검색어 입력'})).toContainText('본문은 열 때 읽습니다.');
+ const article = page.getByRole('article',{name:'커밋 상세'});
+ await expect(article).toContainText('본문은 열 때 읽습니다.');
+ await expect(article).toContainText('사용자가 검색을 요청했습니다.');
+ // Coming back to it does not ask again: a commit never changes.
+ await page.goBack(); await page.getByText('검색어 입력',{exact:true}).click();
+ await expect(page.getByRole('article',{name:'커밋 상세'})).toContainText('본문은 열 때 읽습니다.');
  expect(reads).toBe(1);
 });
 
-test('a change that cannot be read says so in the drawer instead of leaving it blank', async ({page}) => {
+test('a commit that cannot be read says so on its page instead of leaving it blank', async ({page}) => {
  await mockApi(page);
- await page.route(url => url.pathname === '/api/v1/change', route => route.fulfill({status:503,json:{contract:'browser-http-error',version:1,error:{code:'INTERNAL_ERROR',message:'읽기 실패'}}}));
- await page.goto('/activity');
- await page.getByText('검색어 입력',{exact:true}).click();
- await expect(page.getByRole('dialog',{name:'검색어 입력'}).getByRole('alert')).toContainText('변경 내용을 불러오지 못했습니다.');
+ await page.route(url => url.pathname === '/api/v1/commit', route => route.fulfill({status:503,json:{contract:'browser-http-error',version:1,error:{code:'INTERNAL_ERROR',message:'읽기 실패'}}}));
+ await page.goto('/activity/' + specs.head);
+ await expect(page.getByRole('alert')).toContainText('읽기 실패');
 });
 
 test('a filter and a search word find changes that were never loaded, with the whole count', async ({page}) => {
@@ -220,13 +224,14 @@ test('a filter and a search word find changes that were never loaded, with the w
  await expect(page.getByText('전체 1건 중 1건을 보고 있습니다.',{exact:false})).toBeVisible();
 });
 
-test('a link to any change opens its drawer, loaded or not', async ({page}) => {
+test('a link to any commit opens its page, whether the list loaded it or not', async ({page}) => {
  const data = longHistory(); const last = data.events.at(-1)!;
  changeBodies[last.key] = { before: null, after: { ...last.after!, body: '오래된 변경의 본문' } };
  await mockApi(page, data);
- await page.goto('/activity?selected=' + encodeURIComponent(last.key));
- const drawer = page.getByRole('dialog', { name: '이전 검색 요구사항' });
- await expect(drawer).toContainText('오래된 변경의 본문');
+ await page.goto('/activity/' + last.commit);
+ const article = page.getByRole('article', { name: '커밋 상세' });
+ await expect(article).toContainText('오래된 변경의 본문');
+ await expect(article).toContainText('이전 검색 요구사항');
 });
 
 test('the overview counts all of history, and a contributor page asks for that person\'s changes', async ({page}) => {

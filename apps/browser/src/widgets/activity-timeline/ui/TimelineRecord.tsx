@@ -16,16 +16,16 @@ const kinds=() => ({feature:t('kind.feature'),requirement:t('kind.requirement'),
  * The title is cut by CSS, not by Text's maxLines: maxLines measures every element to decide on a tooltip, which
  * forces a layout per row, and a list of 334 rows took 2.7 s to draw again when the reader came back to it.
  */
-export function TimelineRecord({event:e,features,current}: {event:SpecEvent;features:SpecFeature[];current:boolean}) {
+export function TimelineRecord({event:e,features}: {event:SpecEvent;features:SpecFeature[]}) {
   useLanguage();
  const spec=e.after??e.before;
  const kind=e.types.includes('deleted')?'deleted':e.types.includes('modified')?'modified':e.types.includes('moved')?'moved':'created';
  const feature=e.kind==='wiki'?undefined:features.find(f=>f.id===spec?.specId);
  const page=e.kind==='wiki'?(e.after??e.before)?.path.replace(/^\.gitifact\/wiki\//,''):undefined;
- return <HStack as="li" gap={2} className={styles.record} aria-current={current?true:undefined}>
+ return <HStack as="li" gap={2} className={styles.record}>
   <HStack gap={0} className={styles.recordType}><Token label={e.types.map(type=>names()[type]).join(' · ')} color={colors[kind]} size="sm"/></HStack>
   <Text type="supporting" color="secondary" className={styles.recordKind}>{kinds()[e.kind]}</Text>
-  <Link to="/activity" search={s=>({...s,selected:e.key})} className={styles.recordTitle}>{spec?.title??e.id}</Link>
+  <Link to="/activity/$commit" params={{commit:e.commit}} hash={e.id} className={styles.recordTitle}>{spec?.title??e.id}</Link>
   {(feature??page)&&<Text type="supporting" color="secondary" className={styles.recordDot}>·</Text>}
   {feature&&<Link to="/features/$featureId" params={{featureId:feature.id}} className={styles.recordTarget}>{feature.title}</Link>}
   {page&&e.after&&<Link to="/wiki/$documentId" params={{documentId:e.id}} className={styles.recordTarget}>{page}</Link>}

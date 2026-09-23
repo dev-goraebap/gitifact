@@ -51,6 +51,6 @@ export function ChangeDiff({ before, after, features }: { before: SpecSnapshot; 
           : <><del className={styles.fieldBefore}>{f.before[0]}</del><Text type="supporting" color="secondary">→</Text><ins className={styles.fieldAfter}>{f.after[0]}</ins></>}
       </HStack>)}
     </VStack>}
-    <LineDiff before={before.body} after={after.body} label={t('diff.body')}/>
+    <LineDiff before={before.body} after={after.body} label={t('diff.body')} language="markdown"/>
   </VStack>;
 }

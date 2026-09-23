@@ -10,7 +10,7 @@ test('language switches live, persists, synchronizes tabs, and returns to browse
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
   await page.getByRole('radio', { name: '한국어', exact: true }).click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('설정');
-  await expect(page.getByRole('navigation').getByRole('link', { name: '기능별 요구사항', exact: true })).toBeVisible();
+  await expect(page.getByRole('navigation').first().getByRole('link', { name: '기능별 요구사항', exact: true })).toBeVisible();
   await expect(page.getByRole('radio', { name: '라이트', exact: true })).toBeVisible();
   await page.reload();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('설정');
@@ -55,7 +55,7 @@ test('switching language preserves the current URL, filter, and project text', a
     localStorage.setItem('gitifact-language', 'ko');
     window.dispatchEvent(new StorageEvent('storage', { key: 'gitifact-language', newValue: 'ko' }));
   });
-  await expect(page.getByRole('navigation').getByRole('link', { name: '기능별 요구사항', exact: true })).toBeVisible();
+  await expect(page.getByRole('navigation').first().getByRole('link', { name: '기능별 요구사항', exact: true })).toBeVisible();
   await expect(page.getByRole('heading', { name: '검색어 입력', exact: true })).toBeVisible();
   await expect(page.getByText('기대 동작: 결과를 보여줍니다.', { exact: false })).toBeVisible();
   expect(page.url()).toBe(url);
