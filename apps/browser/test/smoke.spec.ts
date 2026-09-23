@@ -137,3 +137,19 @@ test('the content card glides under the wheel, and stays native for a reader who
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('시작하기');
   await expect(page.locator('.lenis')).toHaveCount(0);
 });
+
+test('a new screen starts at the top of the content card, and going back returns to where the reader was', async ({ page }) => {
+  await mockApi(page);
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.setViewportSize({ width: 1280, height: 600 });
+  await page.goto('/getting-started');
+  const card = page.locator('[data-scroll-restoration-id="content"]');
+  await expect(card.getByRole('heading', { level: 1 })).toHaveText('시작하기');
+  await card.evaluate(e => { e.scrollTop = 500; e.dispatchEvent(new Event('scroll')); });
+  await page.getByRole('link', { name: '소개', exact: true }).click();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Gitifact 소개');
+  await expect.poll(() => card.evaluate(e => e.scrollTop)).toBe(0);
+  await page.goBack();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('시작하기');
+  await expect.poll(() => card.evaluate(e => e.scrollTop)).toBe(500);
+});

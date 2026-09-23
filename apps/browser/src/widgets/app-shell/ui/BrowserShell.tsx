@@ -81,7 +81,7 @@ export function BrowserShell() {
       }
     >
       <VStack gap={0} className={styles.frame}>
-        <VStack gap={0} ref={card} className={styles.card}>
+        <VStack gap={0} ref={card} className={styles.card} data-scroll-restoration-id="content">
           <Outlet />
         </VStack>
         <SearchPalette/>

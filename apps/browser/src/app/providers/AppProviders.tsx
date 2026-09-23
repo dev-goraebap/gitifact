@@ -22,6 +22,9 @@ const router = createRouter({
   defaultPreload: 'intent',
   defaultPreloadStaleTime: 0,
   scrollRestoration: true,
+  // The content card scrolls, not the window: a new screen starts it at the top (or at the #section it names), and
+  // going back restores where the reader was. The card carries the matching data-scroll-restoration-id.
+  scrollToTopSelectors: ['[data-scroll-restoration-id="content"]'],
   defaultPendingComponent: RequestState,
   defaultPendingMs: 200,
   defaultPendingMinMs: 0,
