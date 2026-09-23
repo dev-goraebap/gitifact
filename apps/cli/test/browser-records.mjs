@@ -12,7 +12,7 @@ import { createCheckoutReader } from '../.test-build/server/checkout/checkout-re
  */
 export function openRecords(root, env, limit = 100) {
   const git = storeReader(root);
-  const cache = openCache(root, { run: (args, input) => git.run(args, input), decode: git.decode, legacyBundle: oid => git.readBundle(oid) });
+  const cache = openCache(root, { run: (args, input) => git.run(args, input), decode: git.decode, legacyBundles: oids => git.readBundles(oids) });
   const checkout = createCheckoutReader(root, 'fixture', cache, env);
   async function read() {
     const { checkout: current } = await checkout();

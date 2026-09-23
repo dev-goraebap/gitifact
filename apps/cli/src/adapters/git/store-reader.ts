@@ -72,7 +72,8 @@ export function storeReader(cwd: string) {
       if (!/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/.test(oid)) throw new StoreError(t('reader.commitUnknown'));
       return oid;
     },
-    async files(oid: string): Promise<Map<string, string>> {
+    /** The record files of one commit's tree, path to blob ID. */
+    async tree(oid: string): Promise<Map<string, string>> {
       const entries = decode(await git(['ls-tree', '--full-tree', '-r', '-z', oid, '--', ...RECORD_PATHSPECS]));
       const files = new Map<string, string>();
       for (const row of entries.split('\0').filter(Boolean)) {
@@ -84,23 +85,56 @@ export function storeReader(cwd: string) {
         files.set(path!, object!);
       }
       if (files.size > 2000) throw new StoreError(t('reader.fileLimit'));
-      const blobs = new Map<string, string>(); const ids = [...new Set(files.values())]; let totalBytes = 0;
-      for (let i = 0; i < ids.length; i += 128) {
-        const batch = ids.slice(i, i + 128);
+      return files;
+    },
+    /** The text of the given blobs, read a few hundred at a time, with the size limits of the store convention. */
+    async blobs(ids: readonly string[], limitBytes = 16 * 1024 * 1024): Promise<Map<string, string>> {
+      const blobs = new Map<string, string>(); let totalBytes = 0;
+      for (let i = 0; i < ids.length; i += 512) {
+        const batch = ids.slice(i, i + 512);
         const output = await git(['cat-file', '--batch'], Buffer.from(batch.join('\n') + '\n')); let offset = 0;
         for (const id of batch) {
           const end = output.indexOf(10, offset); const header = output.subarray(offset, end).toString('ascii').split(' '); const size = Number(header[2]);
           if (end < offset || header[0] !== id || header[1] !== 'blob' || !Number.isSafeInteger(size) || size < 0 || size > 1024 * 1024 || output[end + size + 1] !== 10) throw new StoreError(t('reader.blobShape'));
           totalBytes += size;
-          if (totalBytes > 16 * 1024 * 1024) throw new StoreError(t('reader.totalLimit'));
+          if (totalBytes > limitBytes) throw new StoreError(t('reader.totalLimit'));
           blobs.set(id, decode(output.subarray(end + 1, end + size + 1))); offset = end + size + 2;
         }
         if (offset !== output.length) throw new StoreError(t('reader.blobBoundary'));
       }
+      return blobs;
+    },
+    async files(oid: string): Promise<Map<string, string>> {
+      const files = await this.tree(oid);
+      const blobs = await this.blobs([...new Set(files.values())]);
       return new Map([...files].map(([path, id]) => [path, blobs.get(id)!]));
     },
     async readBundle(oid: string): Promise<StoreBundle> {
       return parseStoreBundle(await this.files(oid));
+    },
+    /**
+     * The 0.7 trees of many commits at once. Their trees are listed a few at a time — one `ls-tree` is a process, and
+     * several at once fill the wait — and then every blob they name is read in one pass. Commits in a row share most
+     * of their files, so reading each tree on its own asked Git for the same blobs again and again: a first history
+     * build of this repository spent about 80ms per tree that way.
+     */
+    async readBundles(oids: readonly string[]): Promise<Map<string, StoreBundle>> {
+      const trees = new Map<string, Map<string, string>>();
+      let next = 0;
+      await Promise.all(Array.from({ length: Math.min(8, oids.length) }, async () => {
+        while (next < oids.length) {
+          const oid = oids[next++]!;
+          // A tree the 0.7 parser cannot list contributes nothing; the caller treats a missing bundle as empty.
+          await this.tree(oid).then(files => { trees.set(oid, files); }, () => undefined);
+        }
+      }));
+      const ids = [...new Set([...trees.values()].flatMap(files => [...files.values()]))];
+      const blobs = await this.blobs(ids, 16 * 1024 * 1024 * Math.max(1, trees.size));
+      const bundles = new Map<string, StoreBundle>();
+      for (const [oid, files] of trees) {
+        try { bundles.set(oid, parseStoreBundle(new Map([...files].map(([path, id]) => [path, blobs.get(id)!])))); } catch { /* left out, read as empty */ }
+      }
+      return bundles;
     },
   };
 }

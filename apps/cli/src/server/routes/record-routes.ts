@@ -17,7 +17,7 @@ const PAGE = 50;
 export function recordRoutes(root: string, sessionId: string, env?: NodeJS.ProcessEnv) {
   const git = storeReader(root);
   // The 0.7 reader serves the history before a migration; it is read-only and goes with the 0.7 parser at 1.0.0.
-  const cache = openCache(root, { run: (args, input) => git.run(args, input), decode: git.decode, legacyBundle: oid => git.readBundle(oid) });
+  const cache = openCache(root, { run: (args, input) => git.run(args, input), decode: git.decode, legacyBundles: oids => git.readBundles(oids) });
   const readCheckout = createCheckoutReader(root, sessionId, cache, env);
   const commitFiles = createCommitFiles(git);
   const unreadable = () => t('server.specsUnreadable');

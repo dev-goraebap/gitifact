@@ -1,13 +1,13 @@
 import { t } from '../../shared/i18n/index.js';
-import { classifyDocPath, parseDocumentFile, parseReasonLines, HISTORY_PATH, SPEC_ROOT, WIKI_ROOT, type Doc, type DocKind, type DocReason, type StoreBundle } from '@gitifact/core';
+import { classifyDocPath, parseDocumentFile, parseReasonLines, emptyBundle as emptyStore, HISTORY_PATH, SPEC_ROOT, WIKI_ROOT, type Doc, type DocKind, type DocReason, type StoreBundle } from '@gitifact/core';
 import { legacyChanges } from './legacy-changes.js';
 import type { ChangeType, CommitChanges, DocSnapshot, HistoryEvent } from './events.js';
 
 /**
  * Git run under the project's guarded environment, supplied by the caller so this adapter does not import another.
- * `legacyBundle` reads a commit with the 0.7 parser, for history before a migration; without it that history is empty.
+ * `legacyBundles` reads commits with the 0.7 parser, for history before a migration; without it that history is empty.
  */
-export interface GitAccess { run(args: string[], input?: Buffer): Promise<Buffer>; decode(bytes: Buffer): string; legacyBundle?(oid: string): Promise<StoreBundle> }
+export interface GitAccess { run(args: string[], input?: Buffer): Promise<Buffer>; decode(bytes: Buffer): string; legacyBundles?(oids: readonly string[]): Promise<Map<string, StoreBundle>> }
 
 export type { DocSnapshot, SnapshotSource, ChangeType, HistoryEvent, CommitChanges } from './events.js';
 interface RawCommit { commit: string; parent: string | undefined; parents: string[]; author: string; email: string; date: string; committer: string; message: string; paths: string[] }
@@ -27,6 +27,7 @@ export const HISTORY_PATHSPECS = [
 ];
 const FORMAT = '%x1e%H%x00%P%x00%aN%x00%aE%x00%aI%x00%cN%x00%s';
 const BATCH = 100;
+
 const unreadable = () => new Error(t('specReader.historyUnreadable'));
 /** Whether a path is a document or reason file; malformed paths in old commits are simply not records. */
 const recordKind = (path: string) => { try { return classifyDocPath(path).type; } catch { return 'ignored'; } };
@@ -177,15 +178,19 @@ export function createCommitChanges(git: GitAccess) {
   async function batch(commits: RawCommit[], readers: Map<string, CommitReader>): Promise<CommitChanges[]> {
     const plain = commits.filter(c => c.parents.length < 2 && (readers.get(c.commit) ?? 'current') === 'current');
     const names = plain.flatMap(c => { const files = wanted(c.paths); return [...files.map(f => c.commit + ':' + f), ...(c.parent ? files.map(f => c.parent + ':' + f) : [])]; });
-    const [blobs, reasons] = await Promise.all([readBlobs(names), addedReasons(plain)]);
+    // The 0.7 commits of this batch: their own trees and their parents', read together because commits in a row
+    // share most of their blobs. Without a bundle a commit reads as empty, the way an unreadable side always did.
+    const legacy = git.legacyBundles ? commits.filter(c => readers.get(c.commit) === 'legacy') : [];
+    const sides = [...new Set(legacy.flatMap(c => [c.commit, ...c.parents]))];
+    const [blobs, reasons, bundles] = await Promise.all([readBlobs(names), addedReasons(plain),
+      sides.length ? git.legacyBundles!(sides) : new Map<string, StoreBundle>()]);
+    const legacyOf = new Map<string, HistoryEvent[]>();
+    for (const c of legacy) legacyOf.set(c.commit, await legacyChanges(c, async oid => bundles.get(oid) ?? emptyStore()).catch(() => []));
     const result: CommitChanges[] = [];
     for (const c of commits) {
       const reader = readers.get(c.commit) ?? 'current';
       if (reader === 'migration') { result.push({ commit: c.commit, events: [] }); continue; }
-      if (reader === 'legacy') {
-        const events = git.legacyBundle ? await legacyChanges(c, git.legacyBundle).catch(() => []) : [];
-        result.push({ commit: c.commit, events }); continue;
-      }
+      if (reader === 'legacy') { result.push({ commit: c.commit, events: legacyOf.get(c.commit) ?? [] }); continue; }
       if (c.parents.length > 1) { result.push(await merge(c)); continue; }
       const files = wanted(c.paths);
       const after = sideOf(at(blobs, c.commit, files));

@@ -23,7 +23,7 @@ export async function openProject(cwd: string, options: { writing?: boolean } = 
   if (raw === undefined) throw new CommandError('NOT_INITIALIZED', t('project.notInitialized'));
   const config = parseManagedConfig(raw);
   // The 0.7 reader serves the history before a migration; it is read-only and goes with the 0.7 parser at 1.0.0.
-  const cache = openCache(location.root, { run: (args, input) => reader.run(args, input), decode: reader.decode, legacyBundle: oid => reader.readBundle(oid) });
+  const cache = openCache(location.root, { run: (args, input) => reader.run(args, input), decode: reader.decode, legacyBundles: oids => reader.readBundles(oids) });
   return {
     ...location, reader, config, cache,
     /** The commit HEAD points at, or null in a repository without commits. */
