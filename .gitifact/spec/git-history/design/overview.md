@@ -27,7 +27,7 @@ requirements:
 
 변경 이유는 `.gitifact/history.jsonl` 한 파일에 한 줄씩 `{id, docs, reason}`으로 둔다. `id`는 CLI가 발급하는 `H-` ID이고 `docs`는 대상 문서 ID다. 원문·작성자·시각은 이유 파일에 두지 않고 Git에서 읽는다. 두 브랜치가 함께 줄을 더해도 합쳐지도록 `init`이 `.gitattributes`에 `/.gitifact/history.jsonl merge=union`을 더한다(`commands/history-attributes.ts`).
 
-CLI는 HEAD와 작업 폴더의 문서를 파싱해 ID로 비교한다(core `compareDocumentSets`). 경로가 바뀌면 이동, 내용이 바뀌면 변경이며, 파일을 옮겨도 ID가 같으면 같은 문서다. 내용 비교는 CRLF를 LF로 맞춘 원문으로 한다. 아직 커밋하지 않은 이유는 HEAD에 없고 작업 폴더에만 있는 줄이다.
+CLI는 HEAD와 작업 폴더의 문서를 파싱해 ID로 비교한다(core `compareDocumentSets`). 경로가 바뀌면 이동, 내용이 바뀌면 변경이며, 파일을 옮겨도 ID가 같으면 같은 문서다. 내용 비교는 CRLF를 LF로 맞춘 원문으로 한다. 아직 커밋하지 않은 이유는 HEAD에 없고 작업 폴더에만 있는 줄이다. HEAD에 있는 이유 줄이 작업 폴더에서 바뀌거나 사라졌으면 `compareDocumentSets`가 그 ID를 `altered`로 돌려주고, `changes list`는 `alteredReasons`와 한 줄로 알리며 `changes commit`은 `INVALID_COMMIT`으로 거부한다. 이유 파일이 파싱되지 않을 때는 문서 검사의 `REASON_INVALID`로만 알린다.
 
 ## 커밋 입력
 

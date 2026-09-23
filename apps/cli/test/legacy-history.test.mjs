@@ -76,7 +76,8 @@ test('0.7 trees are read in one batch: every asked commit comes back and an unre
   const reader = storeReader(f.repo);
   const bundles = await reader.readBundles([ann, bob, broken, '0'.repeat(40)]);
   assert.deepEqual([...bundles.keys()].sort(), [ann, bob].sort());
-  assert.deepEqual([...bundles.values()].map(b => b.specs[0].requirements[0].body), ['First', 'Second']);
+  // Trees are listed concurrently, so the map's order is not the asked order; callers look bundles up by commit.
+  assert.deepEqual([ann, bob].map(oid => bundles.get(oid).specs[0].requirements[0].body), ['First', 'Second']);
   // The same blob is read once however many commits name it.
   const trees = await Promise.all([ann, bob].map(oid => reader.tree(oid)));
   assert.notEqual(trees[0].get('.gitifact/spec/posts/requirements.md'), trees[1].get('.gitifact/spec/posts/requirements.md'));

@@ -113,6 +113,27 @@ test('unknown documents, malformed reasons and a message with trailers are rejec
   assert.equal(JSON.parse(f.run(['changes', 'commit', '--file', bad, '--format', 'json']).stderr).error.code, 'INVALID_INPUT');
 });
 
+test('a committed reason cannot be rewritten or removed; changes list names it before the commit is refused', t => {
+  const f = setup(t); const [{ id }] = f.done(f.commit(request())).reasons;
+  const file = join(f.repo, history); const committed = readFileSync(file, 'utf8');
+  f.write('app.js', 'export const save = title => title.length > 0;\n');
+  const next = { paths: [history, 'app.js'], message: 'Check the length', authorization };
+  for (const edited of [committed.replace('제목 없는 저장을 방지', '다른 이유로 바꿈'), '']) {
+    writeFileSync(file, edited);
+    assert.deepEqual(f.ok(['changes', 'list']).alteredReasons, [id]);
+    assert.match(f.run(['changes', 'list']).stdout, new RegExp(`\\n커밋된 이유가 바뀌거나 사라짐\\(커밋이 거부됨\\): ${id}\\n`));
+    const before = fingerprint(f.repo); const head = f.git(['rev-parse', 'HEAD']).stdout;
+    const refused = f.commit(next);
+    assert.equal(refused.status, 1); const { error } = JSON.parse(refused.stderr);
+    assert.equal(error.code, 'INVALID_COMMIT'); assert.match(error.message, new RegExp(id));
+    assert.deepEqual(fingerprint(f.repo), before); assert.equal(f.git(['rev-parse', 'HEAD']).stdout, head); assert.deepEqual(locks(f), []);
+  }
+  // Restored to HEAD, a new reason is appended as usual.
+  writeFileSync(file, committed);
+  const appended = f.done(f.commit({ ...next, reasons: [{ docs: [R], reason: '길이로 빈 제목을 막음' }] }));
+  assert.equal(f.git(['show', 'HEAD:' + history]).stdout, committed + JSON.stringify({ id: appended.reasons[0].id, docs: [R], reason: '길이로 빈 제목을 막음' }) + '\n');
+});
+
 test('unpaired selection, files outside the store rules, existing staging and intent-to-add are rejected without changes', t => {
   const f = setup(t); let before = fingerprint(f.repo);
   for (const paths of [codePaths, [docPaths[0], ...codePaths], [...docPaths, ...codePaths]]) {

@@ -27,7 +27,7 @@ Do not copy example paths, IDs or evidence literally. The input holds only these
 ## Input rules
 
 - **`reasons`:** each reason is `{docs: [document IDs…], reason}`. List in `docs` the IDs of the requirements (R-), designs (D-), features (S-) and wiki pages (W-) that changed for that reason, whatever their kind. Put the documents one reason explains in one entry; give separate reasons separate entries. IDs of documents this commit deletes may be listed.
-- **Reason IDs:** the CLI issues an `H-` ID for each and appends one line per reason to `.gitifact/history.jsonl`. Do not edit that file by hand or change committed lines.
+- **Reason IDs:** the CLI issues an `H-` ID for each and appends one line per reason to `.gitifact/history.jsonl`. Do not edit that file by hand. If a committed line is changed or removed, `changes list` reports it and `changes commit` refuses; restore the line to HEAD and write the correction as a new reason.
 - **Without reasons:** omit `reasons` to commit without one. Changed documents without a reason are reported in `withoutReason`. Do not invent reasons you do not know.
 - **`paths`:** the changed document files, `.gitifact/history.jsonl` when recording reasons, and related code and tests. Every changed document file must be selected. For a moved document include the old and the new path; for a deleted one, the deleted path. Include new referenced assets (`.gitifact/assets/…`). If unrelated work is mixed in, report the limitation instead of forcing it into the commit.
 - **Check:** the same check as `docs check` runs just before the commit. Problems or a remaining `draft: true` stop the commit. Link and asset warnings do not.

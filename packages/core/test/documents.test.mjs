@@ -158,11 +158,22 @@ test('comparing two sets names created, modified, moved and deleted documents, a
     [paths.feature, feature.replaceAll('\n', '\r\n')], [paths.api, '# broken\n'],
     [paths.r2, requirement(R1, 10, '결제 취소 요청')], [paths.overview, overview], [paths.reasons, old + '\n' + added + '\n'],
   ]);
-  const { changes, reasons } = compareDocumentSets(before, after);
+  const { changes, reasons, altered } = compareDocumentSets(before, after);
   assert.deepEqual(changes.map(c => [c.id, c.types, c.path, c.previousPath]), [
     [D1, ['created'], paths.overview, undefined],
     [R1, ['moved', 'modified'], paths.r2, paths.r1],
     [W, ['deleted'], paths.wiki, undefined],
   ]);
-  assert.deepEqual(reasons.map(r => r.id), ['H-hhhhhhhhhh']);
+  assert.deepEqual([reasons.map(r => r.id), altered], [['H-hhhhhhhhhh'], []]);
+});
+
+test('a committed reason that the newer set rewrites or drops is named as altered', () => {
+  const kept = renderReasonLine({ id: 'H-kkkkkkkkkk', docs: [R1], reason: '그대로 둠' });
+  const before = new Map([[paths.reasons, renderReasonLine({ id: H, docs: [R1], reason: '처음 작성' }) + '\n' + kept + '\n']]);
+  const rewritten = new Map([[paths.reasons, renderReasonLine({ id: H, docs: [R1], reason: '고쳐 씀' }) + '\n' + kept + '\n']]);
+  assert.deepEqual(compareDocumentSets(before, rewritten).altered, [H]);
+  assert.deepEqual(compareDocumentSets(before, new Map([[paths.reasons, kept + '\n']])).altered, [H]);
+  assert.deepEqual(compareDocumentSets(before, new Map()).altered, ['H-kkkkkkkkkk', H].sort());
+  // A reason file that does not parse is the check's problem, not every reason removed.
+  assert.deepEqual(compareDocumentSets(before, new Map([[paths.reasons, 'not json\n']])).altered, []);
 });

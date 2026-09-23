@@ -38,7 +38,7 @@ const reasonLine = (r: DocReason) => `${r.id} ${r.docs.join(', ')}: ${r.reason.r
 export const runChangesList = (options: { format: Format }, controls: AgentInputControls = {}) => runCommand('changes', options.format, async () => {
   const project = await openProject(process.cwd());
   const head = await project.head();
-  const { changes, reasons, working } = await pendingChanges(project, head);
+  const { changes, reasons, altered, working } = await pendingChanges(project, head);
   const withoutReason = uncovered(changes, reasons);
   // The files are already read, so the commit's own check costs nothing here and a draft shows up before the commit fails.
   const checked = checkDocuments(working.files);
@@ -50,10 +50,11 @@ export const runChangesList = (options: { format: Format }, controls: AgentInput
   const out = changes.length ? [t('changes.changed', { count: changes.length }), ...changes.map(c => '  ' + changeLine(c))] : [t('changes.none')];
   out.push(...section(t('changes.pendingReasons', { count: reasons.length }), reasons.map(reasonLine)));
   if (withoutReason.length) out.push(t('changes.withoutReason', { ids: withoutReason.join(', ') }));
+  if (altered.length) out.push(t('changes.reasonAltered', { ids: altered.join(', ') }));
   out.push(problems.length ? t('changes.problems', { count: problems.length }) : t('changes.clean'));
   if (warnings.length) out.push(t('changes.warnings', { count: warnings.length }));
   if (inputs) out.push(t('changes.input', { path: inputs.commit }));
-  return { json: { head, changes, pendingReasons: reasons, withoutReason, problems, warnings, inputs: inputs ?? null }, text: text(out) };
+  return { json: { head, changes, pendingReasons: reasons, withoutReason, alteredReasons: altered, problems, warnings, inputs: inputs ?? null }, text: text(out) };
 });
 
 /** `changes commit`: reads the input, records the reasons and commits, then removes an input file it consumed. */
@@ -149,7 +150,9 @@ export async function commitChanges(cwd: string, input: unknown, dryRun: boolean
   const existing = new Set([...checked.documents, ...documentsOf(headFiles)].map(d => d.id));
   const unknown = [...new Set(lines.flatMap(r => r.docs))].filter(id => !existing.has(id));
   if (unknown.length) fail(t('commit.unknownDocument', { ids: unknown.join(', ') }));
-  const { changes, reasons: pendingReasons } = compareDocumentSets(headFiles, finalFiles);
+  const { changes, reasons: pendingReasons, altered } = compareDocumentSets(headFiles, finalFiles);
+  // Committed reasons are the record of why; new ones are only ever appended.
+  if (altered.length) fail(t('commit.reasonAltered', { ids: altered.join(', ') }));
   const withoutReason = uncovered(changes, pendingReasons);
 
   // Every changed document file and the reason file go into this commit; Git decides what changed, line endings included.
