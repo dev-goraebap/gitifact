@@ -3,7 +3,7 @@ import { createCommitChanges, type ChangeType, type CommitChanges, type CommitRe
 import { transaction, type CacheDatabase } from './database.js';
 import { containing, snippet } from './search-text.js';
 
-export interface HistoryFilter { kind?: ChangeType | undefined; document?: HistoryEvent['kind'] | undefined; feature?: string | undefined; id?: string | undefined; author?: string | undefined; q?: string | undefined }
+export interface HistoryFilter { kind?: ChangeType | undefined; document?: HistoryEvent['kind'] | undefined; feature?: string | undefined; author?: string | undefined; q?: string | undefined }
 export interface SearchHit { id: string; kind: 'feature' | 'requirement' | 'design' | 'document' | 'history'; title: string; where: string; line: string; featureId?: string; documentId?: string; key?: string }
 
 /** The list row of a change: the document's name and place, without the text on either side. */
@@ -97,7 +97,6 @@ export function createHistory(database: CacheDatabase, git: GitAccess) {
     if (filter.kind) { clauses.push("instr(',' || c.types || ',', ?) > 0"); params.push(',' + filter.kind + ','); }
     if (filter.document) { clauses.push('c.kind = ?'); params.push(filter.document); }
     if (filter.feature) { clauses.push('(c.before_spec = ? OR c.after_spec = ?)'); params.push(filter.feature, filter.feature); }
-    if (filter.id) { clauses.push('c.id = ?'); params.push(filter.id); }
     if (filter.author) { clauses.push('c.email = ?'); params.push(filter.author); }
     if (filter.q?.trim()) { clauses.push('instr(c.needle, ?) > 0'); params.push(filter.q.trim().toLowerCase()); }
     return { sql: clauses.map(c => ' AND ' + c).join(''), params };
@@ -140,29 +139,11 @@ export function createHistory(database: CacheDatabase, git: GitAccess) {
         return { total, byType: { created: count('created'), modified: count('modified'), moved: count('moved'), deleted: count('deleted') }, pulse, recent };
       });
     },
-    /** One change with the text on both sides; a commit the cache has not read yet is read now. */
-    async change(key: string): Promise<{ event: ListedEvent; before: HistoryEvent['before']; after: HistoryEvent['after'] } | undefined> {
-      const lookup = () => database.with(db => db.prepare('SELECT row, detail FROM changes WHERE key = ?').get(key) as { row: string; detail: string } | undefined);
-      let found = await lookup();
-      if (!found) {
-        const commit = key.slice(0, key.indexOf(':'));
-        const known = await database.with(db => !!db.prepare('SELECT 1 FROM commits WHERE oid = ?').get(commit));
-        if (known) return undefined;
-        // A commit outside every lineage read so far: read it as the current format. Its HEAD's lineage, when built, decides again.
-        const read = await changes.of([commit]).catch(() => undefined);
-        if (!read) return undefined;
-        await database.with(db => insert(db, read, new Map()));
-        found = await lookup();
-      }
-      if (!found) return undefined;
-      const detail = JSON.parse(found.detail) as { before: HistoryEvent['before']; after: HistoryEvent['after'] };
-      return { event: JSON.parse(found.row) as ListedEvent, before: detail.before, after: detail.after };
-    },
     /** Every change of one commit with the text on both sides: what the commit page reads. */
     async ofCommit(commit: string): Promise<{ event: ListedEvent; before: HistoryEvent['before']; after: HistoryEvent['after'] }[]> {
       const rows = await database.with(db => db.prepare('SELECT row, detail FROM changes WHERE oid = ? ORDER BY ord').all(commit) as { row: string; detail: string }[]);
       if (rows.length) return rows.map(r => ({ event: JSON.parse(r.row) as ListedEvent, ...JSON.parse(r.detail) as { before: HistoryEvent['before']; after: HistoryEvent['after'] } }));
-      // A commit no lineage has read yet (an old link, another branch): read it once, the way one change is read.
+      // A commit no lineage has read yet (an old link, another branch): read it once as the current format.
       const known = await database.with(db => !!db.prepare('SELECT 1 FROM commits WHERE oid = ?').get(commit));
       if (known) return [];
       const read = await changes.of([commit]).catch(() => undefined);

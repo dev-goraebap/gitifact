@@ -7,7 +7,8 @@ import { createCheckoutReader } from '../.test-build/server/checkout/checkout-re
 
 /**
  * The browser's records as the server builds them: `read()` gives the checkout with the first page of history (up to
- * `limit` changes) beside it, `read.change(key)` one change with its text, `read.history` the history in the cache and
+ * `limit` changes) beside it, `read.change(key)` one change with its text (from its commit, as the commit page reads it),
+ * `read.history` the history in the cache and
  * `read.cache` the cache itself.
  */
 export function openRecords(root, env, limit = 100) {
@@ -20,7 +21,7 @@ export function openRecords(root, env, limit = 100) {
     const page = await cache.history.page(current.head, {}, 0, limit);
     return { ...current, events: page.events, total: page.total };
   }
-  read.change = key => cache.history.change(key);
+  read.change = async key => (await cache.history.ofCommit(key.slice(0, key.indexOf(':')))).find(c => c.event.key === key);
   read.history = cache.history;
   read.cache = cache;
   read.checkout = checkout;

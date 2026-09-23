@@ -54,11 +54,6 @@ export const browserHistorySummaryV2 = z.strictObject({
   // The newest commits: a few of their changes each and how many there are in all.
   recent: z.array(z.strictObject({ commit: oid, count: z.number().int().positive(), events: z.array(event) })),
 });
-/** One change as the list shows it, with the text on both sides; keyed `<commit>:<document id>`. */
-export const browserChangeV2 = z.strictObject({
-  contract: z.literal('browser-change'), version: z.literal(2), sessionId: z.string(),
-  event, before: snapshot, after: snapshot,
-});
 /** Documents whose title, place or text holds the query: the current features and wiki, then past changes. */
 export const browserSearchV1 = z.strictObject({
   contract: z.literal('browser-search'), version: z.literal(1), sessionId: z.string(), query: z.string(),
@@ -72,7 +67,6 @@ export const browserSearchV1 = z.strictObject({
 export type BrowserSpecsV5 = z.infer<typeof browserSpecsV5>;
 export type BrowserHistoryV3 = z.infer<typeof browserHistoryV3>;
 export type BrowserHistorySummaryV2 = z.infer<typeof browserHistorySummaryV2>;
-export type BrowserChangeV2 = z.infer<typeof browserChangeV2>;
 export type BrowserSearchV1 = z.infer<typeof browserSearchV1>;
 export type SpecEvent = z.infer<typeof event>;
 export type SpecSnapshot = NonNullable<z.infer<typeof snapshot>>;
@@ -85,14 +79,13 @@ export type DesignSource = z.infer<typeof source>;
 // Query strings the browser API accepts. Every value arrives as text; a key given twice is refused before these run.
 const headQuery = oid;
 const count = (max: number) => z.string().regex(/^(0|[1-9]\d{0,6})$/).transform(Number).pipe(z.number().int().min(0).max(max));
-/** `/api/v1/history`: which HEAD, which page, and the filters, all optional but the HEAD. v3 added `id`, one document's changes. */
-export const browserHistoryQueryV3 = z.strictObject({
+/** `/api/v1/history`: which HEAD, which page, and the filters, all optional but the HEAD. */
+export const browserHistoryQueryV2 = z.strictObject({
   head: headQuery, offset: count(1_000_000).optional(), limit: count(100).pipe(z.number().min(1)).optional(),
   kind: changeType.optional(), document: kind.optional(),
-  feature: z.string().regex(/^S-[a-z2-7]{10}$/).optional(), id: z.string().regex(/^[SRDW]-[a-z2-7]{10}$/).optional(), author: z.string().min(1).max(320).optional(), q: z.string().max(200).optional(),
+  feature: z.string().regex(/^S-[a-z2-7]{10}$/).optional(), author: z.string().min(1).max(320).optional(), q: z.string().max(200).optional(),
 });
 export const browserHistorySummaryQueryV1 = z.strictObject({ head: headQuery });
-export const browserChangeQueryV2 = z.strictObject({ key: z.string().regex(/^(?:[a-f0-9]{40}|[a-f0-9]{64}):[SRDW]-[a-z2-7]{10}$/) });
 /** `/api/v1/search`: the words, and the HEAD whose history to look through (none before the first commit). */
 export const browserSearchQueryV1 = z.strictObject({ q: z.string().min(1).max(200), head: headQuery.optional() });
 export const changelogQueryV1 = z.strictObject({ lang: z.string().regex(/^[a-z]{2}(?:-[A-Z]{2})?$/).optional() });

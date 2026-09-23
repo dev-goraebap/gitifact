@@ -90,16 +90,6 @@ export async function serve(page: Page, data: Fixture) {
       pulse: commits.map(c => ({ date: events.find(e => e.commit === c)!.date, count: events.filter(e => e.commit === c).length })),
       recent: commits.slice(0, 3).map(c => ({ commit: c, count: events.filter(e => e.commit === c).length, events: events.filter(e => e.commit === c).slice(0, 12) })) } });
   });
-  // The list carries no bodies; opening an entry asks for its text by key.
-  // An exact path: a pattern ending in change* would also answer /api/v1/changelog.
-  await page.route(url => url.pathname === '/api/v1/change', route => {
-    const key = new URL(route.request().url()).searchParams.get('key') ?? '';
-    const event = events.find(e => e.key === key); const change = changeBodies[key];
-    // A side written without its kind or description takes them from the event.
-    const side = (s: Side) => s && { kind: event!.kind, description: '', ...s };
-    return event && change ? route.fulfill({ json: { contract: 'browser-change', version: 2, sessionId: session.sessionId, event, before: side(change.before), after: side(change.after) } })
-      : route.fulfill({ status: 404, json: notFound });
-  });
   // One commit as its page reads it: the events of that commit with whatever bodies the fixture gave them.
   await page.route(url => url.pathname === '/api/v1/commit', route => {
     const commit = new URL(route.request().url()).searchParams.get('commit') ?? '';

@@ -1,11 +1,11 @@
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
-import { browserSpecsV5, browserHistoryV3, browserHistorySummaryV2, browserChangeV2, browserSearchV1, browserCommitFilesV1, browserCommitFileV1, browserCommitV1, type BrowserSessionV3 } from '@gitifact/contracts';
+import { browserSpecsV5, browserHistoryV3, browserHistorySummaryV2, browserSearchV1, browserCommitFilesV1, browserCommitFileV1, browserCommitV1, type BrowserSessionV3 } from '@gitifact/contracts';
 import { requestJson, ApiError } from '../../../shared/api/client';
 import { httpFailure } from './repository';
 import { t } from '../../../shared/i18n';
 
 /** Filters the server applies to the whole of history. */
-export interface HistoryFilter { kind?: string | undefined; document?: string | undefined; feature?: string | undefined; id?: string | undefined; author?: string | undefined; q?: string | undefined }
+export interface HistoryFilter { kind?: string | undefined; document?: string | undefined; feature?: string | undefined; author?: string | undefined; q?: string | undefined }
 
 // Reads one API answer, checks its shape and that it came from this server session.
 async function read<T extends { sessionId: string }>(session: BrowserSessionV3, path: string, schema: { safeParse(v: unknown): { success: true; data: T } | { success: false } }, signal?: AbortSignal): Promise<T> {
@@ -49,16 +49,6 @@ export const summaryOptions = (session: BrowserSessionV3, head: string) => query
   queryKey: ['browser-history-summary', 2, ...scope(session), head],
   staleTime: Infinity, retry: false,
   queryFn: ({ signal }) => read(session, '/api/v1/history/summary?head=' + head, browserHistorySummaryV2, signal),
-});
-
-/**
- * One change with the text on both sides, read when its entry is opened. The list carries no bodies: they were most
- * of a page, and a reader opens few entries. A change never changes, so the answer is kept for the session.
- */
-export const changeOptions = (session: BrowserSessionV3, key: string) => queryOptions({
-  queryKey: ['browser-change', 2, ...scope(session), key],
-  staleTime: Infinity, retry: false,
-  queryFn: ({ signal }) => read(session, '/api/v1/change?key=' + encodeURIComponent(key), browserChangeV2, signal),
 });
 
 /** One commit with every document it changed and the text on both sides: what its page reads. A commit never changes. */

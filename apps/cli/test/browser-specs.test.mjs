@@ -71,10 +71,8 @@ test('the server refuses bad queries, missing sessions and other methods on ever
   assert.equal(await status('/api/v1/history?head=' + head + '&kind=renamed'), 400);
   assert.equal(await status('/api/v1/history?head=' + head + '&unknown=1'), 400);
   assert.equal(await status('/api/v1/history?head=' + head + '&kind=created&document=feature&offset=0&limit=10&q=x'), 200);
-  assert.equal(await status('/api/v1/history?head=' + head + '&id=R-aaaaaaaaaa'), 200);
-  assert.equal(await status('/api/v1/history?head=' + head + '&id=R-1'), 400);
+  assert.equal(await status('/api/v1/history?head=' + head + '&id=R-aaaaaaaaaa'), 400);
   assert.equal(await status('/api/v1/history/summary?head=' + head), 200);
-  assert.equal(await status('/api/v1/change?key=nope'), 400);
   assert.equal(await status('/api/v1/change?key=' + head + ':D-zzzzzzzzzz'), 404);
   assert.equal(await status('/api/v1/search'), 400);
   assert.equal(await status('/api/v1/search?q=x&head=' + head), 200);
@@ -115,10 +113,9 @@ test('filters and the search word apply to all of history, and the count is the 
   assert.equal((await history.page(head, { document: 'feature' }, 0, 50)).total, 2);
   assert.equal((await history.page(head, { document: 'wiki' }, 0, 50)).total, 0);
   assert.equal((await history.page(head, { q: 'tags 요구' }, 0, 50)).total, 1);
-  // One document's changes: R2 was created once; R changed in every posts commit.
-  assert.equal((await history.page(head, { id: R2 }, 0, 50)).total, 1);
-  assert.equal((await history.page(head, { id: R, author: 'bob@example.invalid' }, 0, 50)).total, 0);
-  assert.equal((await history.page(head, { id: R }, 0, 100)).total, 60);
+  // One document's changes (`docs history`): R2 was created once; R changed in every posts commit.
+  assert.equal((await history.ofDocument(head, R2)).length, 1);
+  assert.equal((await history.ofDocument(head, R)).length, 60);
   // Each filter's pages together are exactly the matching changes of the whole list.
   const created = []; for (let i = 0; i < 4; i++) created.push(...(await history.page(head, { kind: 'created' }, i, 1)).events);
   assert.deepEqual(created.map(e => e.key), all.events.filter(e => e.types.includes('created')).map(e => e.key));
