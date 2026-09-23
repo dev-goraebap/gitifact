@@ -19,7 +19,7 @@ import { HgiInfo } from '../../../shared/ui/icons/HgiInfo';
 import { HgiSettings } from '../../../shared/ui/icons/HgiSettings';
 import { VersionFooter } from './VersionFooter';
 import { useSmoothWheel } from '../../../shared/lib/smooth-scroll';
-import { SearchPalette } from '../../search-palette';
+import { SearchPalette } from '../../../features/search-palette';
 import styles from './app-shell.module.css';
 import { t, useLanguage } from '../../../shared/i18n';
 const destinations = () => ([

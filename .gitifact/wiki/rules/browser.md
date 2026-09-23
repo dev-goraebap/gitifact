@@ -24,7 +24,7 @@ description: 브라우저 화면 구성, 라우트, 레이아웃, 데이터 흐�
 
 ## 코드 구성
 
-FSD의 계층·의존 방향·공개 API 규칙은 [프론트엔드 코드 스타일](frontend/code-style.md)을 따른다. 단일 화면의 api/model/ui는 그 page에 두고, 여러 화면이 공유하는 조회·도메인 표현만 entities, 공통 화면 블록은 widgets에 둔다. `features` 계층에는 지금 슬라이스가 없다. 주요 슬라이스의 의존은 아래와 같다.
+FSD의 계층·의존 방향·공개 API 규칙은 [프론트엔드 코드 스타일](frontend/code-style.md)을 따른다. 단일 화면의 api/model/ui는 그 page에 두고, 여러 화면이 공유하는 조회·도메인 표현만 entities, 공통 화면 블록은 widgets에 둔다. `features`에는 사용자 동작인 문서 검색(`search-palette`)이 있고, 셸과 머리 막대 위젯이 가져다 쓴다. 주요 슬라이스의 의존은 아래와 같다.
 
 ```mermaid
 flowchart TD
@@ -36,12 +36,16 @@ flowchart TD
     DV["diff-view"]
   end
   P --> RP & PH & AT & DV
+  subgraph F["features"]
+    SP["search-palette"]
+  end
+  PH --> SP
   subgraph E["entities"]
     EP["project"]
     EC["contributor"]
     ED["document"]
   end
-  RP & PH --> EP
+  RP & PH & SP --> EP
   AT --> EC
   P --> ED
   E --> S["shared"]
@@ -54,7 +58,8 @@ flowchart TD
 | `widgets/records-page` | 명세·문서 화면이 함께 쓰는 틀: 세션·명세 조회, 머리 막대, 골격, 오류, 검색 인자 |
 | `widgets/activity-timeline` | 활동 화면·제품 개요·커밋 페이지가 쓰는 타임라인 |
 | `widgets/diff-view` | 줄 단위 diff(`LineDiff`) |
-| `widgets/page-header`·`app-shell`·`search-palette` | 머리 막대, 셸, 검색창 |
+| `widgets/page-header`·`app-shell` | 머리 막대, 셸 |
+| `features/search-palette` | 검색창(`SearchPalette`)과 머리의 검색 버튼(`SearchTrigger`) |
 | `entities/project` | 세션·명세·이력 Query와 미커밋 여부 훅(`useWorkingChanges`) |
 | `entities/contributor`·`document` | 작성자 표시, 설계 문서 표시 |
 

@@ -9,7 +9,7 @@ requirements:
 
 ## 창과 상태
 
-`mod+K`와 머리의 검색 버튼이 같은 창을 연다. 창은 Astryx CommandPalette다. 열림 여부는 `shared/lib/search`의 작은 저장소가 들고, 팔레트는 셸이 한 번 그리며 버튼은 헤더가 그린다. 두 위젯이 서로를 참조하지 않도록 상태만 shared에 둔다.
+`mod+K`와 머리의 검색 버튼이 같은 창을 연다. 창은 Astryx CommandPalette다. 팔레트와 버튼은 `features/search-palette` 슬라이스이고, 팔레트는 셸(`widgets/app-shell`)이 한 번 그리며 버튼은 머리 막대(`widgets/page-header`)가 그린다. 열림 여부는 둘이 함께 쓰도록 `shared/lib/search`의 작은 저장소가 든다.
 
 결과 영역은 22rem 고정이라 결과 수에 따라 창 크기가 바뀌지 않는다. 목록은 다음 상태를 오간다.
 

@@ -5,7 +5,7 @@ import { Text } from '@astryxdesign/core/Text';
 import { Link } from '@tanstack/react-router';
 import { ProjectName } from '../../../entities/project';
 import { HgiFolder } from '../../../shared/ui/icons/HgiFolder';
-import { SearchTrigger } from '../../search-palette';
+import { SearchTrigger } from '../../../features/search-palette';
 import styles from './page-header.module.css';
 import { t, useLanguage } from '../../../shared/i18n';
 
