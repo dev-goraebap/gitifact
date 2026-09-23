@@ -6,12 +6,21 @@
   --text-heading-4-size:1.0625rem; --text-heading-5-size:1rem; --text-heading-6-size:1rem;
   width:100%; max-width:48rem; min-width:0; overflow-wrap:anywhere;
 }
-.reading :global(.astryx-markdown-paragraph), .reading :global(.astryx-markdown-list) li { line-height:1.8; }
+.reading :global(.astryx-markdown-paragraph) { line-height:1.8; }
+/* Lists read as a denser block than prose: a step smaller and tighter, set through the body token so a paragraph
+   inside an item or a nested list follows. */
+.reading :global(.astryx-markdown-list) { --text-body-size:.9375rem; --text-body-leading:1.65; font-size:var(--text-body-size); }
+.reading :global(.astryx-markdown-list) li, .reading :global(.astryx-markdown-list) li :global(.astryx-markdown-paragraph) { line-height:1.65; }
+/* Markdown lists are Astryx Lists, which pad each item by --spacing-1 and space items by --spacing-0-5 through atomic
+   classes weighted as two IDs. Only document lists are tightened, so the override repeats that weight here instead
+   of changing the List theme, which the history and wiki lists share. */
+.reading :global(.astryx-markdown-list) :global(.astryx-list):not(#\#):not(#\#) { gap:0; }
+.reading :global(.astryx-markdown-list) li:not(#\#):not(#\#) { padding-block:.125rem; }
 /* A heading belongs to what follows it: more room above than below, and none above the first block. */
 .reading :global(.astryx-markdown-heading) { margin-block:2.25em .6em; line-height:1.35; letter-spacing:-.015em; scroll-margin-top:calc(var(--gitifact-topbar-height) + var(--spacing-4)); }
 .reading :global(.astryx-markdown-heading[data-level="4"]), .reading :global(.astryx-markdown-heading[data-level="5"]), .reading :global(.astryx-markdown-heading[data-level="6"]) { margin-block-start:1.75em; }
 .reading :global(.astryx-markdown) > :first-child { margin-block-start:0; }
-.reading :global(.astryx-markdown-list) li + li { margin-block-start:.35em; }
+.reading :global(.astryx-markdown-list) li + li { margin-block-start:.15em; }
 /* Inline code: a quiet chip that stays on the text baseline. */
 .reading :global(.astryx-markdown-paragraph) code, .reading :global(.astryx-markdown-list) code, .reading :global(.astryx-markdown-table) code { font-size:.875em; padding:.125em .375em; border-radius:var(--radius-inner, var(--radius-element)); background:var(--color-background-muted); border:1px solid var(--color-border); }
 .reading :global(.astryx-markdown-codeblock) { margin-block:var(--spacing-5); }

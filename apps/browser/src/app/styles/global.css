@@ -1,6 +1,9 @@
 @import '@astryxdesign/core/reset.css';
 @import '@astryxdesign/core/astryx.css';
 @import '@astryxdesign/theme-stone/theme.css';
+/* Code and diffs: JetBrains Mono for Latin, Pretendard for the Hangul it lacks. Bundled, never fetched from a CDN. */
+@import '@fontsource-variable/jetbrains-mono';
+@import 'pretendard/dist/web/variable/pretendardvariable.css';
 /* Self-hosted title face, preloaded from index.html. `optional` never swaps after first paint, so a reload does not reflow. */
 @font-face { font-family: 'Outfit'; font-style: normal; font-weight: 800; font-display: optional; src: url('/fonts/outfit-latin-800-normal.woff2') format('woff2'); }
 html,

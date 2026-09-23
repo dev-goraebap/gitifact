@@ -31,6 +31,8 @@ export async function writeNotices() {
       // under licenses/ are that section, extracted from the installed packages.
       if (!texts.length && key === 'fastdom@1.0.12') texts.push(await readFile(new URL('../licenses/fastdom-LICENSE', import.meta.url), 'utf8'));
       if (!texts.length && key === 'strictdom@1.0.1') texts.push(await readFile(new URL('../licenses/strictdom-LICENSE', import.meta.url), 'utf8'));
+      // Pretendard keeps its OFL text under dist/ rather than at the package root.
+      if (!texts.length && key === 'pretendard@1.3.9') texts.push(await readFile(new URL('../licenses/pretendard-LICENSE', import.meta.url), 'utf8'));
       if (!texts.length) missingLicenses.push(key);
       seen.set(key, `${key} (${typeof pkg.license === 'string' ? pkg.license : 'see license text'})\n\n${texts.join('\n\n')}`);
     }
