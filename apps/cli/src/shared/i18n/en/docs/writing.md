@@ -54,4 +54,4 @@ Use diagrams on the same basis: add a `mermaid` fence where a flow or state tran
 | Separate concerns clearly to improve maintainability. | The UI handles input and display; the server validates permissions and business rules. |
 | It is important to keep documentation consistent. | Maintain shared rules in one document and link to it elsewhere. |
 
-Apply these principles to user stories and acceptance criteria too. Preserve the story and condition/expected-behavior structure required by `gitifact docs spec`.
+Apply these principles to user stories and acceptance criteria too. Preserve the story and condition/expected-behavior structure required by `gitifact guide show spec`.

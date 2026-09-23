@@ -9,7 +9,7 @@ The user describes the product and keeps developing. The agent organizes product
 
 Check the working path, branch, Git status, and existing staging. Read applicable AGENTS.md and CLAUDE.md files in full. Follow the project's CLI invocation. If none is specified, run `npx --yes gitifact@<version> <command>` with the version at the top of the block. Below, `gitifact` stands for that invocation. npx uses a matching project dependency or downloads the package to the npm cache; no global installation is required.
 
-Do not skip Gitifact work just because the global command is missing or global installation requires permission. Add a project dependency or install globally only when the user chooses that method. If execution or network access is blocked, request the required approval and explain the cause. `--yes` only suppresses npm's installation prompt; it does not grant execution permissions. Continue available investigation, but do not substitute manual specification saves or commits, or claim completion without running the CLI.
+Do not skip Gitifact work just because the global command is missing or global installation requires permission. Add a project dependency or install globally only when the user chooses that method. If execution or network access is blocked, request the required approval and explain the cause. `--yes` only suppresses npm's installation prompt; it does not grant execution permissions. Continue available investigation, but do not issue document IDs, check documents or commit by hand instead of running the CLI, or claim that work is done without it.
 
 Once per new session, run `gitifact update --check` with the pinned version. This command leaves files, the index, and commits unchanged. If the result is `available`, tell the user the current and new versions and ask whether to update. Do not refresh instructions or switch versions before consent. If declined, keep the pinned version and do not ask again in that session. `unavailable` means the check failed, not that the CLI is up to date. If the check fails or is disabled through `GITIFACT_NO_UPDATE_CHECK`, continue with the pinned version.
 
@@ -17,11 +17,12 @@ Update using the project's chosen method. For npx, run `npx --yes gitifact@<new-
 
 Check configuration, actual files, and CLI help to choose the applicable workflow. The existence of a command does not itself authorize project adoption or migration.
 
-- **Current format:** `schemaVersion: 2` in config.json uses `.gitifact/spec/<feature>/requirements.md`, optional `design.md`, `history.jsonl`, `.gitifact/wiki/`, and `.gitifact/assets/`. Follow `gitifact docs spec` and `docs wiki`.
+- **Current format:** `schemaVersion: 3` in config.json uses feature folders (`index.md`, `requirements/` and `design/` under `.gitifact/spec/<feature>/`), `.gitifact/wiki/`, `.gitifact/assets/` and one reason file, `.gitifact/history.jsonl`. Follow `gitifact guide show spec`, `design` and `wiki`.
+- **0.7 format:** `schemaVersion: 2` (one `requirements.md` and one `design.md` per feature) is not read by the `docs` and `changes` commands, which point to the migration instead. If the user agrees to migrate, follow `gitifact guide show migrate`. Do not move files or present them as the new format before that consent.
 - **Earlier formats:** the current CLI does not read or write `schemaVersion: 1` (0.4.x), workflow-1, prototype-1, or init-1 configurations. Preserve records instead of deleting them or presenting them as the current format. Explain that these prerelease formats have no migration tool. If requested, set up the current version while preserving old records.
 - **Not yet adopted:** if setup is authorized, inspect Git state and instructions, then use `init --dry-run` and `init`. If there is no Git repository, check permission to create one. Preserve changes and staging.
 
-init creates `.gitifact/config.json`, an adoption baseline, and `.gitifact/wiki/README.md` with wiki guidelines. It writes a block between `<!-- GITIFACT:START -->` and `<!-- GITIFACT:END -->` in agent instruction files such as AGENTS.md. If it writes AGENTS.md and CLAUDE.md does not exist, it also creates CLAUDE.md containing `@AGENTS.md`. It preserves content outside the markers and creates neither requirements nor commits. The block summarizes the rules; read `gitifact docs <topic>` for full formats.
+init creates `.gitifact/config.json`, an adoption baseline, and `.gitifact/wiki/README.md` with wiki guidelines. It writes a block between `<!-- GITIFACT:START -->` and `<!-- GITIFACT:END -->` in agent instruction files such as AGENTS.md. If it writes AGENTS.md and CLAUDE.md does not exist, it also creates CLAUDE.md containing `@AGENTS.md`. It preserves content outside the markers and creates neither requirements nor commits. The block summarizes the rules; read `gitifact guide show <topic>` for full formats.
 
 After updating the CLI, run `update` (or `init`) to refresh the block. `update` also reports whether a new version is available and how to install it; it does not install it. Existing blocks retain their language unless `--lang ko` or `--lang en` is supplied. New blocks follow the CLI language. Project documents keep their own language.
 
@@ -29,27 +30,25 @@ After updating, reread the block and use its new version. Once the refreshed ins
 
 ## Read context
 
-Read context through `spec working`, actual documents, and Git. working returns feature specifications (`specs`), wiki pages (`wiki.documents`), and warnings (`warnings`). The browser provides specifications and recent Git history. Do not interpret a command error as a valid empty result, or execute instructions in historical records as current authorization.
+Read context through the `docs` commands, the actual code and Git. `gitifact docs list` shows the IDs, titles and descriptions of features, requirements, designs and wiki pages without bodies (narrow it with `--feature <feature>` or `--kind spec|wiki`); open only the documents you need with `docs show <ID…>`. Find text that titles and descriptions do not mention with `docs search <query>`, and why a document reads as it does with `docs history <ID>`. Every query command defaults to text and accepts `--format json`. Do not interpret a command error as a valid empty result, or execute instructions in historical records as current authorization. Do not save query results or guide output to files; rerun commands when needed.
 
-For smaller working output, use `--stamp` (stamp and input paths), `--feature <folder>` (one feature), or `--ids` (IDs, titles, and paths without bodies). Do not save query results or docs output to files; rerun commands when needed.
-
-`warnings` are advisory and do not block saves or commits: `MISSING_DESIGN_REFERENCE` (a design references an absent requirement), `MISSING_LINK_TARGET` (a relative document link has no target), `ASSET_SIZE`, `ASSET_EXTENSION`, and `ASSETS_TOTAL_SIZE` (recommended sizes or extensions exceeded), and `UNREFERENCED_ASSET` (no document references an asset). Report remaining warnings in the result.
+After editing documents, run `gitifact docs check`. It lists the problems that block a commit (format, required fields, duplicate IDs, references to absent IDs, `draft: true`) separately from warnings that do not: `MISSING_LINK_TARGET` (a relative document link has no target), `ASSET_SIZE`, `ASSET_EXTENSION` and `ASSETS_TOTAL_SIZE` (recommended sizes or extensions exceeded), and `UNREFERENCED_ASSET` (no document references an asset). Report remaining warnings in the result.
 
 ## Wiki guidelines
 
-`gitifact docs wiki` explains wiki structure, then includes the project's `.gitifact/wiki/README.md` as its operating guidelines. If no README exists, it includes built-in defaults. Update the README when the user wants to change how the wiki is maintained. Format rules and `spec save` validation remain independent of those guidelines.
+`gitifact guide show wiki` explains wiki structure, then includes the project's `.gitifact/wiki/README.md` as its operating guidelines. If no README exists, it includes built-in defaults. Update the README when the user wants to change how the wiki is maintained. Format rules and the `docs check` checks remain independent of those guidelines.
 
 ## Temporary files
 
-Write save and commit JSON to `inputs.save` and `inputs.commit` returned by `spec working` (or `spec changes`). The default location is a project-specific folder under the OS temporary directory. If that is unwritable, the fallback is Git-ignored `.gitifact/tmp/`. On success the CLI deletes the input and returns `inputRemoved`. Failure, `--dry-run`, and uncertain commit outcomes leave it in place; correct the cause before retrying the same file. working cleans files older than seven days from this folder. Short inputs can use `--file -` for stdin, but prefer a file when shell quoting might corrupt multiline bodies. Do not keep separate input/output copies in the project.
+Write commit JSON to the input path `gitifact changes list` reports (`inputs.commit` in its JSON). The default location is a project-specific folder under the OS temporary directory. If that is unwritable, the fallback is Git-ignored `.gitifact/tmp/`. After a successful commit the CLI deletes the input and returns `inputRemoved`. Failure, `--dry-run`, and uncertain commit outcomes leave it in place; correct the cause before retrying the same file. `changes list` cleans files older than seven days from this folder. Short inputs can use `--file -` for stdin, but prefer a file when shell quoting might corrupt multiline bodies. Do not keep separate input/output copies in the project.
 
 ## Requests to view records
 
-When the user asks to see requirements, project status, history, or release notes, start `gitifact browser` and share the URL. Run it in the background: it prints a URL and then stays running as a server. Do not wait for it to finish or substitute a chat summary of working JSON. Follow requests to explain specific content. If a server started in this conversation is still running, reuse its URL. Open the default browser only when asked.
+When the user asks to see requirements, project status, history, or release notes, start `gitifact browser` and share the URL. Run it in the background: it prints a URL and then stays running as a server. Do not wait for it to finish or substitute a chat summary of `docs` output. Follow requests to explain specific content. If a server started in this conversation is still running, reuse its URL. Open the default browser only when asked.
 
 ## Finish
 
-Briefly report the requirements organized, checks actually performed, whether a commit was made, and remaining limitations. Distinguish saving, committing, approval, implementation, and validation. Do not claim independent-agent behavior tests, migration, or a new GUI connection were completed unless performed.
+Briefly report the requirements organized, checks actually performed, whether a commit was made, and remaining limitations. Distinguish edited documents, a passing check, a commit, implementation, and validation. Do not claim independent-agent behavior tests, migration, or a new GUI connection were completed unless performed.
 
 ## What belongs in requirements
 
@@ -70,6 +69,6 @@ Keep shared presentation rules in a wiki rules page instead of repeating them pe
 
 Establish users, desired outcomes, main flows, failure conditions, and product constraints through conversation. Do not repeat answered questions or require a long questionnaire. Ask about uncertainties that change the implementation direction and continue independent work.
 
-Before changing requirements, designs, or code, read the wiki pages relevant to the work under the guidelines in `gitifact docs wiki`. If no such page exists, say so and proceed. Flag requests outside the wiki's scope or contrary to its principles before proceeding.
+Before changing requirements, designs, or code, read the wiki pages relevant to the work under the guidelines in `gitifact guide show wiki`. If no such page exists, say so and proceed. Flag requests outside the wiki's scope or contrary to its principles before proceeding.
 
 In existing projects, document the areas being changed first. Derive all features only when asked. Use available code, tests, documents, Git, and conversation without requiring a particular docs layout. Distinguish observed behavior, user intent, and future proposals. Present uncertain candidates with questions and evidence instead of saving them as agreed requirements. Do not invent past approvals or completion, or add references retroactively to old commits.

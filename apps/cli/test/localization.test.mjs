@@ -48,10 +48,10 @@ test('CLI help, documentation and errors follow language without changing contra
       assert.equal(success(f, ['--lang', lang, 'guide', 'show', topic]), readFileSync(join(root, 'apps/cli/src/shared/i18n', lang, 'docs', topic + '.md'), 'utf8'));
     }
   }
-  assert.match(success(f, ['guide', 'show', 'spec', '--lang=ko']), /title: Markdown 명세/);
+  assert.match(success(f, ['guide', 'show', 'spec', '--lang=ko']), /title: 요구사항 형식/);
   assert.match(success(f, ['--lang=en', 'guide', 'show', 'wiki'], 'ko'), /title: Project wiki format/);
-  assert.match(success(f, ['guide', 'show', 'spec'], '', { LC_ALL: 'ja_JP.UTF-8' }), /title: Markdown specification format/);
-  assert.match(success(f, ['--lang', 'ko', 'guide', 'list']), /^spec +Markdown 명세 형식 — /m);
+  assert.match(success(f, ['guide', 'show', 'spec'], '', { LC_ALL: 'ja_JP.UTF-8' }), /title: Requirement format/);
+  assert.match(success(f, ['--lang', 'ko', 'guide', 'list']), /^spec +요구사항 형식 — /m);
   for (const args of [['--lang', 'ja', 'guide', 'list'], ['--lang'], ['--lang=']]) assert.notEqual(run(f, args).status, 0);
   const errors = ['ko', 'en'].map(lang => JSON.parse(run(f, ['--lang', lang, 'docs', 'list', '--format', 'json']).stderr));
   assert.equal(errors[0].error.code, errors[1].error.code);

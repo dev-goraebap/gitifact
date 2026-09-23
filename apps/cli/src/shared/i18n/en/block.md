@@ -6,7 +6,7 @@ CLI: use `npx --yes gitifact@{version} <cmd>` by default. Below, `gitifact` stan
 
 ### At the start
 
-- A global installation is optional. Version-pinned npx uses a matching project dependency or downloads the package to the npm cache. If execution or downloading is blocked, request the required approval and explain the cause. Do not substitute manual specification saves or commits, or claim completion without running the CLI.
+- A global installation is optional. Version-pinned npx uses a matching project dependency or downloads the package to the npm cache. If execution or downloading is blocked, request the required approval and explain the cause. Do not issue document IDs, check documents or commit by hand instead of running the CLI, or claim that work is done without it.
 - Once per new session, run `gitifact update --check` with the pinned version. If the result is `available`, ask whether to update; run the suggested new-version `update` command only with consent. If declined, unavailable, or disabled, continue with the pinned version and do not ask again in that session. After updating, reread the block and use its new version. Commit and push only when separately authorized.
 - Run `gitifact docs list` to read the list of features, requirements, designs, and wiki pages. Check git status and existing staging. Read the documents you need with `gitifact docs show <ID>`.
 - This block is a summary. Read `gitifact guide show <topic>` for detailed formats instead of relying on memory.

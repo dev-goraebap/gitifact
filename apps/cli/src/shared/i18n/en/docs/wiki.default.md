@@ -2,10 +2,14 @@ This wiki holds architecture decision records (ADRs).
 
 ## Decision records
 
-When making or changing a structural or technical choice that spans features, add a record under `adr/`. File names use a four-digit number followed by lowercase letters, digits, and hyphens, such as `0001-use-postgres.md`. Numbers only increase. Choices confined to one feature belong in that feature's design.md.
+When making or changing a structural or technical choice that spans features, add a record under `adr/`. File names use a four-digit number followed by lowercase letters, digits and hyphens, such as `0001-use-postgres.md`. Numbers only increase. Choices confined to one feature belong in that feature's design (`design/overview.md`).
 
 ```markdown
-# Decision NNNN. Title
+---
+id: W-issued-by-the-CLI
+title: Decision NNNN. Title
+description: What was decided, in one line
+---
 
 Status: Accepted · YYYY-MM-DD
 
@@ -24,4 +28,4 @@ Statuses are `Proposed`, `Accepted`, `Deprecated`, and `Superseded by NNNN`. Do 
 ## Agents
 
 - Read and follow relevant decision records before changing requirements, designs, or code.
-- When a choice merits a record, propose adding one and save it with `spec save` if the user agrees.
+- When a choice merits a record, propose adding one; if the user agrees, create it with `gitifact docs new wiki adr/NNNN-<name>.md` and fill it in.

@@ -1,65 +1,97 @@
 ---
-title: Markdown specification format
-description: User story and acceptance criteria format, ID rules
+title: Requirement format
+description: Feature and requirement files, frontmatter, user stories and acceptance criteria, creating, editing and moving
 ---
 
-Each feature has a `.gitifact/spec/<feature>/requirements.md` containing its requirements. Its design is in `design.md` in the same folder (`gitifact docs design`); reasons for changes are in `history.jsonl`.
+A feature is one folder, `.gitifact/spec/<feature>/`. The feature introduction is `index.md`, each requirement is its own `requirements/<slug>.md`, and the design is the files under `design/` (`gitifact guide show design`). Reasons for changes to every document accumulate in one file, `.gitifact/history.jsonl`, which the CLI writes at commit time (`gitifact guide show commit`).
 
-## Files and IDs
+```text
+.gitifact/spec/posts/
+  index.md                 feature introduction (S-)
+  requirements/
+    create.md              one requirement (R-)
+    delete.md
+  design/
+    overview.md            design (D-)
+```
 
-Use S-IDs and R-IDs exactly as issued by the CLI. They have the form `S-<random>` and `R-<random>`, with ten lowercase base32 characters. Do not put feature names into R-IDs or invent example IDs for actual saves. Files start with frontmatter; each requirement heading is immediately followed by its ID comment.
+## Creating
+
+Create files through the CLI. It issues the ID, fills in the frontmatter and writes a body skeleton.
+
+```text
+gitifact docs new feature posts --title "Posts" --description "Writing, editing and deleting posts"
+gitifact docs new requirement posts/create --title "Create a post" --description "An author saves a post with a title and body"
+```
+
+A new file carries `draft: true`. Fill in the body, remove that line and run `gitifact docs check`. While the line remains, `docs check` and `changes commit` fail. Do not invent IDs or copy another document's ID.
+
+## File structure
 
 ```markdown
 ---
-id: S-issued-by-the-CLI
+id: R-issued-by-the-CLI
+title: Create a post
+description: An author saves a post with a title and body
+order: 10
 ---
-
-# Posts
-
-## Create a post
-<!-- gitifact-req: R-issued-by-the-CLI -->
 
 As a post author, I want to save a title and body so that I can return to my writing later.
 
 ### Acceptance criteria
 
 1. Condition: The user requests a save with an empty title.
-   Expected behavior: The system asks for a title and does not save the post.
+   Expected: The system asks for a title and does not save the post.
 ```
 
-These IDs illustrate the structure and are not valid input. Frontmatter contains only `id`. Use one top-level heading (`#`) and `##` for requirements. Do not add other gitifact comments to the body. Links to other documents are relative to this file, such as `../../wiki/architecture.md` or `../../assets/flow.png`. The browser resolves them to their destinations. `spec working` reports missing targets as `MISSING_LINK_TARGET`.
+These IDs and sentences illustrate the structure and are not valid input.
 
-## Saving
+- **`id`:** issued by the CLI. Features use `S-`, requirements `R-`, followed by ten lowercase base32 characters. It stays the same when the file moves or its title changes.
+- **`title` and `description`:** required, one line each. Do not repeat the title as a `#` heading in the body. Write the description so that the list (`docs list`) tells what the document is without opening it.
+- **`order`:** requirements only. Number them in the order of the feature's use; two in one feature may not share a number. `docs new` uses the folder's highest value plus 10, leaving room to insert between.
+- **Body:** required. Do not use a `#` heading or gitifact comments (`<!-- gitifact-… -->`). The body of a feature's `index.md` states in a paragraph or two what the feature is and where it ends.
 
-Use the stamp from `spec working` to prepare this JSON, write it to the returned `inputs.save` path, and run `spec save --file <that-path>`. The CLI removes the input file on success. On failure, the file remains; correct it and retry.
+Put no other keys in the frontmatter. Relations between documents are expressed by a design's `requirements` and `sources`; the folder decides which feature a requirement belongs to.
 
-```json
-{
-  "expected": "actual stamp from working",
-  "operations": [
-    { "type": "create", "feature": "posts", "title": "Posts" },
-    { "type": "add", "feature": "posts", "title": "Create a post", "body": "As a post author, I want to save a title and body so that I can return to my writing later.\n\n### Acceptance criteria\n\n1. Condition: The user requests a save with an empty title.\n   Expected behavior: The system asks for a title and does not save the post." },
-    { "type": "set-design", "feature": "posts", "title": "Posts design", "body": "## Overview\n\nAgreed approach and scope.\n\n## Structure and data\n\nComponents and storage needed for implementation." }
-  ]
-}
-```
+Links to other documents are relative to this file (from a requirement to the wiki: `../../../wiki/architecture.md`; to an asset: `../../../assets/flow.png`). The browser opens their destinations. `docs check` and `changes list` report a missing target as a `MISSING_LINK_TARGET` warning. Warnings do not block a commit.
 
-The command group is `gitifact spec`. Use `update` with id, title, and body for an existing requirement; `move` with id and feature to move one; and `rename-spec` with id and title to rename a specification. Pass actual R-IDs or S-IDs obtained from a query. Dedicated requirement deletion and feature-folder renaming commands are not available. Do not invent commands or migration procedures for unsupported operations.
+## Reading
 
-Include designs in the same request with `set-design` (type, feature, title, body, and optional sources). Read `gitifact docs design` for design rules and `gitifact docs wiki` for wiki pages and assets.
+| Command | When |
+| :--- | :--- |
+| `gitifact docs list [--feature <feature>]` | IDs, titles and descriptions of features, requirements, designs and wiki pages, without bodies |
+| `gitifact docs search <query>` | Finding text in bodies that titles and descriptions do not mention |
+| `gitifact docs show <ID…>` | The source of the chosen documents and the designs that point to them. `--ref <commit>` shows them as of that commit |
+| `gitifact docs history <ID>` | Why a document changed over time, with reasons and commits |
 
-Follow `gitifact docs writing` for prose. Its style rules do not replace the user-story structure and condition/expected-behavior format below. Write project content in the project's language; the language of these instructions does not change it.
+Choose with the list and search, then `show` only the documents you need. This reads far less than grepping or opening every file.
+
+## Editing, moving and deleting
+
+Edit the files directly; there is no save command. Afterwards run `gitifact docs check` to verify format and references.
+
+| Task | How |
+| :--- | :--- |
+| Change content | Edit `title`, `description` and the body. Keep the ID |
+| Move to another feature | Move the file into that feature's `requirements/`, keep the ID, and adjust `order` to its place there |
+| Rename the slug | Rename the file only. ID and content stay |
+| Delete | Delete the file. Remove its ID from the `requirements` of any design that pointed to it, or `docs check` fails |
+| Rename a feature (folder) | Move the folder. The S- ID in `index.md` stays |
+
+Do not duplicate a document under a new ID when moving or renaming it, and do not reuse a deleted ID. When a requirement changes, review the designs that point to it (“Referenced by” in `docs show <R-ID>`).
 
 ## Grouping features
 
-Group requirements into cohesive features that mean something to users. Do not reproduce code modules or DDD layers. Check whether an existing specification is a suitable home first. Keep a requirement's ID when its title or folder changes, including when correcting a misplaced requirement. Do not duplicate it under a new ID. Use the feature name as the specification title without a suffix such as “requirements.”
+Group requirements into cohesive features that mean something to users. Do not reproduce code modules or DDD layers. Before creating a feature, check whether an existing one is a suitable home. Use the feature name as its title without a suffix such as “requirements.” Slugs and folder names use lowercase letters, digits and hyphens.
 
 ## User stories and acceptance criteria
 
 Start each requirement with a user story: one or two sentences explaining who wants what and why. The default pattern is “As a [role], I want [goal] so that [reason],” expressed naturally in the project's language. Use an actual user or operator of the product. Do not copy the post author in this example, or a Gitifact user, into an unrelated product.
 
-Follow the story with an acceptance-criteria heading and numbered condition/expected-behavior pairs, in the project's language. Do not substitute paths, IDs, or storage conventions for user goals. Put additional agreed constraints in a scope-and-constraints section and implementation details in the design. Base roles, goals, and reasons on the conversation and verified context. Do not invent motives to fill the template; ask only for information needed to settle the meaning.
+Follow the story with an acceptance-criteria heading (`###`) and numbered condition/expected pairs, in the project's language. Do not substitute paths, IDs or storage conventions for user goals. Put additional agreed constraints in a scope-and-constraints section and implementation details in the design. Base roles, goals and reasons on the conversation and verified context. Do not invent motives to fill the template; ask only for information needed to settle the meaning.
 
-Apply this to new requirements and those being revised for the current request. Preserve existing IDs, agreed constraints, and the meaning of acceptance criteria. Do not rewrite unrelated requirements in bulk. Before saving, check that the story states a role, goal, and reason, and that its criteria determine success or failure. The CLI does not enforce particular sentences or validate user intent.
+Apply this to new requirements and those being revised for the current request. Preserve existing IDs, agreed constraints and the meaning of acceptance criteria. Do not rewrite unrelated requirements in bulk. When done, check that the story states a role, goal and reason, and that its criteria determine success or failure. The CLI does not enforce particular sentences or validate user intent.
 
-Refine specification drafts during the conversation. Do not record a reason or event for every intermediate edit. While changing code and tests, bring requirements into line with the final agreement.
+Follow `gitifact guide show writing` for prose. Its style rules do not replace the user-story pattern and the condition/expected format above. Write project content in the project's language; the language of these instructions does not change it.
+
+Refine the files during the conversation. Do not record a reason for every intermediate edit; write reasons once at commit time from the final change. While changing code and tests, bring requirements into line with the final agreement.
