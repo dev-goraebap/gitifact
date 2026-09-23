@@ -258,9 +258,6 @@
   "features.designIndex": "설계 목차",
   "features.designIndexTitle": "이 기능의 설계",
   "features.requirementDesigns": "이 요구사항의 설계",
-  "document.pager": "이전·다음 설계",
-  "document.previous": "← {title}",
-  "document.next": "{title} →",
   "diff.fields": "바뀐 항목",
   "diff.body": "본문 변경",
   "diff.unfold": "바뀌지 않은 {count}줄 펼치기",
@@ -290,5 +287,6 @@
   "header.trail": "이동 경로",
   "commit.back": "← 활동",
   "features.requirementHistoryLabel": "변경 이력",
-  "features.designHistory": "이 설계의 이력 →"
+  "features.designHistory": "이 설계의 이력 →",
+  "features.designNumber": "설계 {number}"
 }

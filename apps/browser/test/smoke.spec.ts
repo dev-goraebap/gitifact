@@ -125,3 +125,15 @@ for (const colorScheme of ['light', 'dark'] as const) {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   });
 }
+
+test('the content card glides under the wheel, and stays native for a reader who asks for less motion', async ({ page }) => {
+  await mockApi(page);
+  await page.goto('/getting-started');
+  const card = page.locator('.lenis');
+  await expect(card).toHaveCount(1);
+  await expect(card.getByRole('heading', { level: 1 })).toHaveText('시작하기');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.reload();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('시작하기');
+  await expect(page.locator('.lenis')).toHaveCount(0);
+});

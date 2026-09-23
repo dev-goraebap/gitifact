@@ -36,7 +36,7 @@ test('optional design empty state and mobile safe Markdown',async({page})=>{
  await expect(page.getByRole('tabpanel',{name:'설계'})).toContainText('검색 색인');await expect(page.locator('article script,article a[href^="javascript:"]')).toHaveCount(0);
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });
-test('design sources list above the body: wiki pages open in the app, URLs open in a new tab, missing pages are disabled',async({page})=>{
+test('design sources list under the body: wiki pages open in the app, URLs open in a new tab, missing pages are disabled',async({page})=>{
  await mockApi(page);await serve(page, data());
  await page.goto('/features/S-abcdefghij?tab=design');
  const sources=page.getByRole('tabpanel',{name:'설계'}).getByLabel('참고 문서');
@@ -44,6 +44,6 @@ test('design sources list above the body: wiki pages open in the app, URLs open 
  const external=sources.getByRole('link',{name:'React 참조'});
  await expect(external).toHaveAttribute('href','https://react.dev/reference/react');await expect(external).toHaveAttribute('target','_blank');await expect(sources).toContainText('react.dev');
  await expect(sources.getByRole('link',{name:'옮겨진 페이지'})).toHaveCount(0);await expect(sources.getByText('옮겨진 페이지',{exact:true})).toBeVisible();await expect(sources).toContainText('페이지가 없습니다: .gitifact/wiki/gone.md');
- expect(await sources.boundingBox().then(b=>b!.y)).toBeLessThan(await page.getByText('검색 색인을 조회합니다.').boundingBox().then(b=>b!.y));
+ expect(await sources.boundingBox().then(b=>b!.y)).toBeGreaterThan(await page.getByText('검색 색인을 조회합니다.').boundingBox().then(b=>b!.y));
  await sources.getByRole('link',{name:'레이아웃 지침'}).click();await expect(page).toHaveURL(/\/wiki\/W-bbbbbbbbbb$/);
 });

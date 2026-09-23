@@ -1,4 +1,4 @@
-import type { MouseEvent } from 'react';
+import { useRef, type MouseEvent } from 'react';
 import { AppShell } from '@astryxdesign/core/AppShell';
 import { SideNav, SideNavItem, SideNavSection } from '@astryxdesign/core/SideNav';
 import { StatusDot } from '@astryxdesign/core/StatusDot';
@@ -18,6 +18,7 @@ import { HgiRocket } from '../../../shared/ui/icons/HgiRocket';
 import { HgiInfo } from '../../../shared/ui/icons/HgiInfo';
 import { HgiSettings } from '../../../shared/ui/icons/HgiSettings';
 import { VersionFooter } from './VersionFooter';
+import { useSmoothWheel } from '../../../shared/lib/smooth-scroll';
 import { SearchPalette } from '../../search-palette';
 import styles from './app-shell.module.css';
 import { t, useLanguage } from '../../../shared/i18n';
@@ -36,6 +37,9 @@ export function BrowserShell() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
   const working = useWorkingChanges();
+  // The card is what scrolls; the wheel glides over it.
+  const card = useRef<HTMLDivElement>(null);
+  useSmoothWheel(card);
   const go = (to: string) => (event: MouseEvent) => { if (plainClick(event)) { event.preventDefault(); void navigate({ to }); } };
   return (
     <AppShell
@@ -77,7 +81,7 @@ export function BrowserShell() {
       }
     >
       <VStack gap={0} className={styles.frame}>
-        <VStack gap={0} className={styles.card}>
+        <VStack gap={0} ref={card} className={styles.card}>
           <Outlet />
         </VStack>
         <SearchPalette/>

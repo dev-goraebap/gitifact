@@ -24,11 +24,6 @@
   .requirementLayout .documentIndex a { font-size:.8125rem; line-height:1.5; }
   .requirementLayout .documentIndex a[aria-current] { color:var(--color-text-primary); font-weight:600; box-shadow:inset 2px 0 0 var(--color-text-primary); margin-left:calc(-1 * var(--spacing-4)); padding-left:var(--spacing-4); }
 }
-/* The design being read is marked in its index at every width: unlike the requirements, only that one is on the page. */
-.designSection { scroll-margin-top:calc(var(--gitifact-topbar-height) + var(--spacing-4)); }
-.designIndex a[aria-current] { color:var(--color-text-primary); font-weight:600; }
-.documentPager { padding-block:var(--spacing-5); border-top:1px solid var(--color-border); }
-.pagerNext { margin-inline-start:auto; }
 .featureDetail a:hover { text-decoration:underline; }
 .requirementSection { padding-block:var(--spacing-7); border-bottom:1px solid var(--color-border); scroll-margin-top:calc(var(--gitifact-topbar-height) + var(--spacing-4)); }
 .requirementSection h3 { font-size:1.25rem; line-height:1.5; }
@@ -42,6 +37,9 @@
 .requirementSection p,.requirementSection li { line-height:1.9; }
 .documentHeading a { font-size:.8125rem; }
 .requirementRelations { padding-block-start:var(--spacing-2); }
+/* Above a title: its number in the feature and its ID, apart by a dot. */
+.numberLine { font-variant-numeric:tabular-nums; }
+.numberDot { margin-inline:var(--spacing-2); opacity:.6; }
 @media(width<64rem) {
   .documentHeading h1 {font-size:1.5rem}
 }

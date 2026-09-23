@@ -258,9 +258,6 @@
   "features.designIndex": "Design index",
   "features.designIndexTitle": "Designs of this feature",
   "features.requirementDesigns": "Designs for this requirement",
-  "document.pager": "Previous and next design",
-  "document.previous": "← {title}",
-  "document.next": "{title} →",
   "diff.fields": "Changed fields",
   "diff.body": "Body changes",
   "diff.unfold": "Show {count} unchanged lines",
@@ -290,5 +287,6 @@
   "header.trail": "Breadcrumb",
   "commit.back": "← Activity",
   "features.requirementHistoryLabel": "History",
-  "features.designHistory": "Design history →"
+  "features.designHistory": "Design history →",
+  "features.designNumber": "Design {number}"
 }

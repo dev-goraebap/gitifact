@@ -133,18 +133,15 @@ function FeatureDetail({ feature: selected, features, search, change }: { featur
   useLanguage();
   const tab = search.tab === 'design' ? 'design' : 'requirements';
   const designSections = designsByRequirement(selected.designs);
-  // The design tab shows one document at a time, the one `selected` names or else the first in `order`. An older
-  // address that selected a requirement on the design tab opens the first design explaining it.
+  // Both tabs show every document of the feature in `order`, with an index to move between them. An older address
+  // that selected a requirement on the design tab lands on the first design explaining it.
   const designs = selected.designs;
-  const design = designs.find(d => d.id === search.selected) ?? designs.find(d => d.id === designSections.get(search.selected ?? '')?.[0]) ?? designs[0];
-  const at = design ? designs.indexOf(design) : -1;
-  const around = [designs[at - 1], designs[at + 1]] as const;
-  // Where the reader was sent: the requirement itself, or the top of the design they picked.
-  const target = search.selected ? (tab === 'design' ? design?.id : search.selected) : undefined;
+  const target = !search.selected ? undefined : tab === 'requirements' ? search.selected
+    : designs.some(d => d.id === search.selected) ? search.selected : designSections.get(search.selected)?.[0];
   // The fragment of an address typed or shared from outside is read before this page has drawn the section it
   // names, so the browser has nothing to scroll to. Router navigation inside the app already lands on it.
   useEffect(() => { if (target) document.getElementById(target)?.scrollIntoView({ block: 'start' }); }, [target, tab]);
-  const reading = useReadingSection(tab === 'requirements' ? selected.requirements.map(r => r.id) : []);
+  const reading = useReadingSection((tab === 'requirements' ? selected.requirements : designs).map(d => d.id));
 
   return <VStack as="article" aria-label={t('features.detail')} gap={0} className={styles.featureDetail}>
     <Link to="/features" search={{ q: search.q, design: search.design, author: search.author, sort: search.sort }} className={styles.featureBack}>{t('features.back')}</Link>
@@ -163,47 +160,32 @@ function FeatureDetail({ feature: selected, features, search, change }: { featur
       <Tab value="requirements" label={t('features.tab.requirements')} panelId="feature-requirements"/>
       <Tab value="design" label={t('features.tab.design')} panelId="feature-design"/>
     </TabList>
-    {tab === 'design' ? (design ? <VStack id="feature-design" role="tabpanel" aria-label={t('features.tab.design')} gap={0} className={styles.requirementLayout}>
-      {/* The feature's design files in `order`, beside the one being read, the way the requirements have their index. */}
-      <VStack as="nav" aria-label={t('features.designIndex')} gap={2} className={`${styles.documentIndex} ${styles.designIndex}`}>
-        <Text type="supporting" color="secondary">{t('features.designIndexTitle')}</Text>
-        {designs.map(d => <Link key={d.id} to="/features/$featureId" params={{ featureId: selected.id }} search={{ ...search, tab: 'design', selected: d.id }}
-          {...(d.id === design.id ? { 'aria-current': 'page' as const } : {})}>{d.title}</Link>)}
-      </VStack>
-      <VStack gap={0} className={`${styles.requirementList} ${styles.designPanel}`}>
-        <VStack key={design.id} id={design.id} gap={6} className={styles.designSection}>
-          <DesignDocument design={design} path={design.path} features={features}/>
-          {/* Like a requirement, a design points to its history in the activity rather than listing it here. */}
-          <RelatedList label={t('features.requirementHistoryLabel')}>
-            <RelatedItem title={<Link to="/activity" search={{ feature: selected.id, q: design.id }}>{t('features.designHistory')}</Link>}/>
-          </RelatedList>
-        </VStack>
-        <HStack as="nav" aria-label={t('document.pager')} gap={4} className={styles.documentPager}>
-          {around[0] && <Link to="/features/$featureId" params={{ featureId: selected.id }} search={{ ...search, tab: 'design', selected: around[0].id }}>{t('document.previous', { title: around[0].title })}</Link>}
-          {around[1] && <Link to="/features/$featureId" params={{ featureId: selected.id }} search={{ ...search, tab: 'design', selected: around[1].id }} className={styles.pagerNext}>{t('document.next', { title: around[1].title })}</Link>}
-        </HStack>
+    {tab === 'design' ? (designs.length ? <VStack id="feature-design" role="tabpanel" aria-label={t('features.tab.design')} gap={0} className={styles.requirementLayout}>
+      <DocumentIndex label={t('features.designIndex')} title={t('features.designIndexTitle')} documents={designs} reading={reading}/>
+      <VStack gap={0} className={styles.requirementList}>
+        {designs.map((d, index) => <VStack key={d.id} id={d.id} gap={0} className={styles.requirementSection} {...(d.id === target ? { 'aria-current': 'location' as const } : {})}>
+          <DesignDocument design={d} path={d.path} features={features}
+            eyebrow={<NumberLine label={t('features.designNumber', { number: number(index) })} id={d.id}/>}
+            footer={<RelatedList label={t('features.requirementHistoryLabel')}>
+              <RelatedItem title={<Link to="/activity" search={{ feature: selected.id, q: d.id }}>{t('features.designHistory')}</Link>}/>
+            </RelatedList>}/>
+        </VStack>)}
       </VStack>
     </VStack> : <VStack id="feature-design" role="tabpanel" aria-label={t('features.tab.design')} gap={0} className={styles.designPanel}>
       <PageState isCompact title={t('features.noDesignTitle')} description={t('features.noDesignDescription')}/>
-    </VStack>) : <VStack id="feature-requirements" role="tabpanel" aria-label={t('features.tab.requirements')} gap={0}>
-      {/* The feature's own introduction (index.md) is short; it heads the requirements once instead of a tab of its own. */}
-      <VStack gap={0} className={styles.featureIntro}><DocumentBody headingLevelStart={3} path={selected.path}>{selected.body}</DocumentBody></VStack>
-      {/* On a wide screen the index stands to the right of the requirements and stays in view; on a narrow one it heads them. */}
-      <VStack gap={0} className={styles.requirementLayout}>
-      <VStack as="nav" aria-label={t('features.index')} gap={2} className={styles.documentIndex}>
-        <Text type="supporting" color="secondary">{t('features.indexTitle')}</Text>
-        {selected.requirements.map((r, index) => <a key={r.id} href={`#${r.id}`} {...(r.id === reading ? { 'aria-current': 'true' as const } : {})}>{String(index + 1).padStart(2, '0')}　{r.title}</a>)}
-      </VStack>
+    </VStack>) : <VStack id="feature-requirements" role="tabpanel" aria-label={t('features.tab.requirements')} gap={0} className={styles.requirementLayout}>
+      {/* On a wide screen the index stands to the right from the top of the tab and stays in view; on a narrow one it heads them. */}
+      <DocumentIndex label={t('features.index')} title={t('features.indexTitle')} documents={selected.requirements} reading={reading}/>
       <VStack gap={0} className={styles.requirementList}>
+      {/* The feature's own introduction (index.md) is short; it heads the requirements once, at their width, instead of a tab of its own. */}
+      <VStack gap={0} className={styles.featureIntro}><DocumentBody headingLevelStart={3} path={selected.path}>{selected.body}</DocumentBody></VStack>
       {selected.requirements.map((r, index) => {
-        const isCurrent = r.id === search.selected;
         const explained = (designSections.get(r.id) ?? []).map(id => designs.find(d => d.id === id)!);
-        return <VStack key={r.id} id={r.id} gap={4} className={styles.requirementSection} {...(isCurrent ? { 'aria-current': 'location' as const } : {})}>
+        return <VStack key={r.id} id={r.id} gap={4} className={styles.requirementSection} {...(r.id === target ? { 'aria-current': 'location' as const } : {})}>
           <VStack gap={2}>
-            <Text type="supporting" color="secondary">{t('features.requirementNumber', { number: String(index + 1).padStart(2, '0') })}</Text>
+            <NumberLine label={t('features.requirementNumber', { number: number(index) })} id={r.id}/>
             {/* Every title carries the highlighter; the one the reader was sent to lies on hatching instead (the section above). */}
             <Heading level={3}><mark className={styles.titleMark}>{r.title}</mark></Heading>
-            <Text type="supporting" color="secondary">{r.id}</Text>
           </VStack>
           {/* Each requirement is its own file one folder below index.md; its links start from there. */}
           <DocumentBody headingLevelStart={4} path={r.path}>{r.body}</DocumentBody>
@@ -211,7 +193,7 @@ function FeatureDetail({ feature: selected, features, search, change }: { featur
           <VStack gap={4} className={styles.requirementRelations}>
             {/* A design names the requirements it explains; these are those links read the other way round, every design that names this one. */}
             {!!explained.length && <RelatedList label={t('features.requirementDesigns')}>
-              {explained.map(d => <RelatedItem key={d.id} title={<Link to="/features/$featureId" params={{ featureId: selected.id }} search={{ ...search, tab: 'design', selected: d.id }}>{d.title}</Link>} description={d.description}/>)}
+              {explained.map(d => <RelatedItem key={d.id} title={<Link to="/features/$featureId" params={{ featureId: selected.id }} search={{ ...search, tab: 'design', selected: d.id }} hash={d.id}>{d.title}</Link>} description={d.description}/>)}
             </RelatedList>}
             <RelatedList label={t('features.requirementHistoryLabel')}>
               <RelatedItem title={<Link to="/activity" search={{ feature: selected.id, q: r.id }}>{t('features.requirementHistory')}</Link>}/>
@@ -221,8 +203,22 @@ function FeatureDetail({ feature: selected, features, search, change }: { featur
       })}
       {!selected.requirements.length && <Text>{t('features.noRequirements')}</Text>}
       </VStack>
-      </VStack>
     </VStack>}
+  </VStack>;
+}
+
+const number = (index: number) => String(index + 1).padStart(2, '0');
+
+/** The line above a title: which one it is in the feature, a dot, and its ID. */
+function NumberLine({ label, id }: { label: string; id: string }) {
+  return <Text type="supporting" color="secondary" className={styles.numberLine}>{label}<span aria-hidden className={styles.numberDot}>·</span>{id}</Text>;
+}
+
+/** The documents of one tab in order, marking the one being read; on a wide screen it stands to the right and follows the scroll. */
+function DocumentIndex({ label, title, documents, reading }: { label: string; title: string; documents: { id: string; title: string }[]; reading: string | undefined }) {
+  return <VStack as="nav" aria-label={label} gap={2} className={styles.documentIndex}>
+    <Text type="supporting" color="secondary">{title}</Text>
+    {documents.map((d, index) => <a key={d.id} href={`#${d.id}`} {...(d.id === reading ? { 'aria-current': 'true' as const } : {})}>{number(index)}　{d.title}</a>)}
   </VStack>;
 }
 

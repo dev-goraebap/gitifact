@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type { DesignSource, SpecFeature } from '@gitifact/contracts';
 import { DocumentBody, DocumentLink, resolveDocumentLink, useDocumentIndex } from '../../../shared/ui/document';
 import { RelatedList, RelatedItem } from '../../../shared/ui/related-list';
@@ -32,18 +33,23 @@ function relativeTo(from: string, to: string) {
 }
 
 /**
- * One design document. `path` is its repository path; relative links and sources start from that folder. The
- * requirements it explains come from its frontmatter and link to the requirements tab. The design the reader arrived
- * for is marked by its section on the design tab, the way the requirements tab marks the requirement itself.
+ * One design document. `path` is its repository path; relative links and sources start from that folder. It reads
+ * the way a requirement does: an optional line above the title (the feature page puts the design's number and ID
+ * there), the title and its one-line description, the prose, and under the prose what it relates to, each kind in
+ * its own block: the requirements it explains (linking to the requirements tab), the documents it drew on, and
+ * whatever the page adds (`footer`, the feature page's history link).
  */
-export function DesignDocument({design, path, features}: {design: {title: string; description?: string | undefined; body: string; sources?: DesignSource[] | undefined; requirements?: string[] | undefined}; path: string; features: SpecFeature[]}) {
+export function DesignDocument({design, path, features, eyebrow, footer}: {design: {title: string; description?: string | undefined; body: string; sources?: DesignSource[] | undefined; requirements?: string[] | undefined}; path: string; features: SpecFeature[]; eyebrow?: ReactNode; footer?: ReactNode}) {
   useLanguage();
   const requirements = design.requirements ?? [];
   return <VStack gap={4}>
-    <Heading level={3}><mark className={styles.titleMark}>{design.title}</mark></Heading>
-    {design.description && <Text type="supporting" color="secondary">{design.description}</Text>}
-    {/* The frontmatter's relations, each kind in its own block with the documents one per row, above the prose. */}
-    {(!!requirements.length || !!design.sources?.length) && <VStack gap={4} className={styles.relations}>
+    <VStack gap={2}>
+      {eyebrow}
+      <Heading level={3}><mark className={styles.titleMark}>{design.title}</mark></Heading>
+      {design.description && <Text type="supporting" color="secondary">{design.description}</Text>}
+    </VStack>
+    <DocumentBody headingLevelStart={4} path={path}>{design.body}</DocumentBody>
+    {(!!requirements.length || !!design.sources?.length || footer) && <VStack gap={4} className={styles.relations}>
       {!!requirements.length && <RelatedList label={t('design.relatedRequirements')}>
         {requirements.map(id => {
           const feature = features.find(f => f.requirements.some(r => r.id === id));
@@ -54,7 +60,7 @@ export function DesignDocument({design, path, features}: {design: {title: string
         })}
       </RelatedList>}
       {!!design.sources?.length && <DesignSources sources={design.sources} path={path}/>}
+      {footer}
     </VStack>}
-    <DocumentBody headingLevelStart={4} path={path}>{design.body}</DocumentBody>
   </VStack>;
 }

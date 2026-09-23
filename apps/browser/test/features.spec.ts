@@ -135,7 +135,7 @@ test('a fragment typed from outside lands on its section, and only that one lies
   await expect(page.locator('[aria-current=location]')).toHaveCount(1);
 });
 
-test('the design tab reads one document at a time, links to its history, and each requirement links to every design that names it', async ({ page }) => {
+test('the design tab reads every design in order, each with its number, ID and history, and each requirement links to every design that names it', async ({ page }) => {
   const linked = structuredClone(many);
   linked.features[1]!.design = undefined;
   linked.features[1]!.designs = [{ title: '알림 설계', requirements: [], sources: [], body: '서버가 밀지 않는다.' },
@@ -152,26 +152,29 @@ test('the design tab reads one document at a time, links to its history, and eac
   await expect(page.locator('#R-bbbbbbbbbd').getByText('이 요구사항의 설계')).toHaveCount(0);
   await designsOf('R-bbbbbbbbbc').filter({ hasText: '끄기' }).click();
   await expect(page).toHaveURL(new RegExp('tab=design.*selected=' + off + '|selected=' + off + '.*tab=design'));
-  // Only the chosen document is on the page, and the index marks it among the feature's designs in order.
+  // Every design is on the page in order, like the requirements; the one the link named is the section marked.
   const panel = page.getByRole('tabpanel', { name: '설계' });
-  await expect(panel.locator('mark')).toHaveText(['끄기']);
+  await expect(panel.locator('mark')).toHaveText(['알림 설계', '표시 방식', '끄기']);
+  await expect(page).toHaveURL(new RegExp('#' + off + '$'));
+  await expect(panel.locator('[aria-current=location]')).toHaveCount(1);
+  await expect(page.locator('#' + off)).toHaveAttribute('aria-current', 'location');
+  // Above each title, its number in the feature and its ID.
+  await expect(page.locator('#' + off)).toContainText(new RegExp('설계 03\\s*·\\s*' + off));
   const index = page.getByRole('navigation', { name: '설계 목차' });
-  await expect(index.getByRole('link')).toHaveText(['알림 설계', '표시 방식', '끄기']);
-  await expect(index.locator('[aria-current=page]')).toHaveText('끄기');
-  await expect(panel.getByRole('link', { name: '알림 끄기' })).toHaveCount(1);
-  // Like a requirement, its history is one link into the activity, narrowed to this design.
-  const historyLink = () => panel.getByRole('region', { name: '변경 이력' }).getByRole('link', { name: '이 설계의 이력 →' });
-  await expect(historyLink()).toHaveAttribute('href', new RegExp('q=' + off));
-  // The last design has only a way back; the first is where the tab opens without a choice.
-  const pager = page.getByRole('navigation', { name: '이전·다음 설계' });
-  await expect(pager.getByRole('link')).toHaveText(['← 표시 방식']);
-  await pager.getByRole('link').click();
-  await expect(page).toHaveURL(new RegExp('selected=' + shown));
-  await expect(pager.getByRole('link')).toHaveText(['← 알림 설계', '끄기 →']);
-  await expect(historyLink()).toHaveAttribute('href', new RegExp('q=' + shown));
+  await expect(index.getByRole('link')).toHaveText(['01　알림 설계', '02　표시 방식', '03　끄기']);
+  // Both designs that explain "알림 끄기" list it under their prose.
+  await expect(panel.getByRole('link', { name: '알림 끄기' })).toHaveCount(2);
+  // Under the prose, each design has its history as one link into the activity, narrowed to that design.
+  const historyOf = (id: string) => page.locator('#' + id).getByRole('region', { name: '변경 이력' }).getByRole('link', { name: '이 설계의 이력 →' });
+  await expect(historyOf(off)).toHaveAttribute('href', new RegExp('q=' + off));
+  await expect(historyOf(shown)).toHaveAttribute('href', new RegExp('q=' + shown));
+  // The index moves between them on the same page.
+  await index.getByRole('link', { name: '02　표시 방식' }).click();
+  await expect(page).toHaveURL(new RegExp('#' + shown + '$'));
+  // Opened without a choice, nothing is marked.
   await page.goto('/features/S-bbbbbbbbbb?tab=design');
-  await expect(panel.locator('mark')).toHaveText(['알림 설계']);
-  await expect(index.locator('[aria-current=page]')).toHaveText('알림 설계');
+  await expect(panel.locator('mark')).toHaveText(['알림 설계', '표시 방식', '끄기']);
+  await expect(panel.locator('[aria-current=location]')).toHaveCount(0);
 });
 
 test('the list pages by feature so a feature is never split, and the page is kept in the address', async ({ page }) => {

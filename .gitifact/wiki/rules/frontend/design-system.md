@@ -25,6 +25,8 @@ Astryx의 설치 버전이 API 기준이며 제품별 배치 규칙은 이 문�
 
 그 밖의 글자는 두 글꼴로 통일한다. 본문·작은 제목·메뉴는 영문과 한글 모두 Pretendard다(영문 자형은 Inter 기반이라 따로 영문 글꼴을 두지 않는다). 코드와 diff는 영문 JetBrains Mono, 한글 Pretendard다. 테마의 `typography`(`themes.ts`)가 body·heading을 `"Pretendard Variable"`로, code를 `"JetBrains Mono Variable", "Pretendard Variable", Consolas, monospace`로 정하고, 글자마다 JetBrains Mono에 없는 한글이 Pretendard로 넘어간다. 두 글꼴은 npm 패키지(`@fontsource-variable/jetbrains-mono`, `pretendard`)의 CSS를 global.css가 가져와 Vite가 번들한다. stone 테마가 Figtree와 JetBrains Mono를 이름만 적고 불러오지 않아, Windows에서는 본문이 Segoe UI에 한글 맑은 고딕, 코드가 Consolas에 한글 굴림체로 섞여 그려졌다(2026-09-23 측정, 사용자 요청으로 통일). Pretendard는 한 파일(2.0MB)을 쓴다. 로컬 서버라 나눠 받는 판(92개 파일, 3.1MB)의 이득이 없고 패키지가 더 커진다. Pretendard의 OFL 원문은 패키지 루트에 없어 `apps/cli/licenses/pretendard-LICENSE`로 고지에 넣는다.
 
+스크롤은 콘텐츠 카드가 맡고, 마우스 휠은 Lenis(`shared/lib/smooth-scroll`)로 감속하며 부드럽게 움직인다. 브라우저의 `scroll-behavior: smooth`는 앵커와 scrollTo에만 먹고 휠에는 효과가 없어서다. 운영체제에서 움직임 줄이기를 켜면 쓰지 않고, 카드 안에서 따로 스크롤되는 영역(위키 트리, 목차, 넓은 표)은 네이티브 스크롤을 둔다(`allowNestedScroll`). Lenis는 요소가 커질 때 스크롤 길이를 다시 재는데, 카드 자체는 크기가 그대로이고 안의 페이지만 바뀌므로 카드의 자식들을 ResizeObserver로 지켜 다시 재게 한다. 그러지 않으면 빈 카드일 때 잰 길이가 남아 휠이 움직이지 않았다(2026-09-23 사용자 요청).
+
 GITIFACT 워드마크는 public/gitifact-logo.svg를 CSS 마스크에 텍스트 색상 토큰으로 칠해 라이트·다크 모두에서 쓴다. 홈 링크에 접근 가능한 이름을 둔다.
 
 메뉴 아이콘은 shared/ui/icons의 SvgIcon과 @hugeicons/core-free-icons를 쓰며 필요한 아이콘만 하위 경로에서 가져온다. 장식 아이콘은 접근성 트리에서 숨기고 텍스트 이름을 유지한다.
