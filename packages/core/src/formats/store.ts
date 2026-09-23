@@ -37,7 +37,7 @@ const nameToken = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 /** Root pages may carry the conventional upper-case names (README.md, ARCHITECTURE.md, ...); everything else is lower-case. */
 const rootUpperName = /^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*\.md$/;
 /** Relative page path inside the wiki: lower-case segments, `.md` file, at most 8 levels; `README.md` at the root is the entry page. */
-export function validateDocumentRelativePath(relative: string): void {
+function validateDocumentRelativePath(relative: string): void {
   const parts = relative.split('/');
   if (relative.length > 200 || parts.length > 8) fail(t('document.pathTooLong', { path: relative }));
   const file = parts.pop()!;
@@ -99,7 +99,7 @@ function parseFrontmatter(lines: string[], kind: 'spec' | 'design' | 'wiki', leg
   const sources = fields.get('sources');
   return { id: id as string, ...(Array.isArray(sources) ? { sources } : {}) };
 }
-export function validateSource(value: unknown): DesignSource {
+function validateSource(value: unknown): DesignSource {
   if (!value || typeof value !== 'object' || Array.isArray(value)) fail(t('source.invalid'));
   const map = value as Record<string, unknown>;
   const keys = Object.keys(map).sort();
@@ -109,24 +109,7 @@ export function validateSource(value: unknown): DesignSource {
   if (typeof map.path === 'string' && (/^[a-z]+:/i.test(map.path) || map.path.startsWith('/') || !map.path.endsWith('.md'))) fail(t('source.path', { path: map.path }));
   return { title: (map.title as string).trim(), ...(map.path !== undefined ? { path: (map.path as string).trim() } : {}), ...(map.url !== undefined ? { url: (map.url as string).trim() } : {}), ...(map.note !== undefined ? { note: (map.note as string).trim() } : {}) };
 }
-export function renderFrontmatter(front: Frontmatter): string {
-  const lines = ['---', 'id: ' + front.id];
-  if (front.sources?.length) {
-    lines.push('sources:');
-    for (const s of front.sources) {
-      const entries = (['title', 'path', 'url', 'note'] as const).filter(k => s[k] !== undefined).map(k => k + ': ' + quote(s[k]!));
-      lines.push('  - ' + entries[0], ...entries.slice(1).map(e => '    ' + e));
-    }
-  }
-  lines.push('---');
-  return lines.join('\n') + '\n';
-}
-
 // ---- Design --------------------------------------------------------------------------------------------------
-export function renderDesign(id: string, design: {title: string; body: string; sources?: DesignSource[]}): string {
-  return renderFrontmatter({ id, ...(design.sources?.length ? { sources: design.sources } : {}) }) + `\n# ${design.title}\n\n${design.body}\n`;
-}
-
 /** References are explicit annotations outside fenced code; prose and examples are not identifiers. */
 export function parseDesign(source: string, specId: string): StoreDesign {
   if (source.includes('\0') || /\r(?!\n)/.test(source)) fail(t('design.invalidCharacters'));
@@ -156,10 +139,6 @@ export function parseDesign(source: string, specId: string): StoreDesign {
 }
 
 // ---- Wiki ----------------------------------------------------------------------------------------------------
-export function renderDocument(doc: {id: string; title: string; body: string}): string {
-  return renderFrontmatter({ id: doc.id }) + `\n# ${doc.title}\n\n${doc.body}\n`;
-}
-
 /** A wiki page is one Markdown file: frontmatter with its ID, title, body. Other gitifact annotations outside fenced code are rejected. */
 export function parseDocument(path: string, source: string): StoreDocument {
   const match = documentPathPattern.exec(path);
@@ -201,7 +180,7 @@ export function validateWiki(wiki: StoreWiki): void {
   for (const h of wiki.history) { if (historyIds.has(h.id)) fail(t('history.duplicateId', { id: h.id })); historyIds.add(h.id); }
 }
 
-export const emptyWiki = (): StoreWiki => ({ documents: [], history: [] });
+const emptyWiki = (): StoreWiki => ({ documents: [], history: [] });
 export const emptyBundle = (): StoreBundle => ({ specs: [], wiki: emptyWiki() });
 
 export function parseStoreBundle(files: ReadonlyMap<string, string>): StoreBundle {
@@ -209,35 +188,13 @@ export function parseStoreBundle(files: ReadonlyMap<string, string>): StoreBundl
   validateBundle(bundle); return bundle;
 }
 
-export function validateBundle(bundle: StoreBundle): void {
+function validateBundle(bundle: StoreBundle): void {
   validateSpecs(bundle.specs); validateWiki(bundle.wiki);
   const ids = new Set<string>();
   for (const h of [...bundle.specs.flatMap(s => s.history), ...bundle.wiki.history]) { if (ids.has(h.id)) fail(t('history.duplicateId', { id: h.id })); ids.add(h.id); }
 }
 
-export type StoreWarning =
-  | { code: 'MISSING_DESIGN_REFERENCE'; specId: string; requirement: string }
-  | { code: 'MISSING_LINK_TARGET'; path: string; target: string; link: string }
-  | { code: 'ASSET_SIZE' | 'ASSET_EXTENSION' | 'UNREFERENCED_ASSET'; path: string; bytes?: number }
-  | { code: 'ASSETS_TOTAL_SIZE'; bytes: number };
-export function designReferenceWarnings(specs: StoreSpec[]): StoreWarning[] {
-  const known = new Set(specs.flatMap(s => s.requirements.map(r => r.id)));
-  return specs.flatMap(s => (s.design?.requirements ?? []).filter(id => !known.has(id)).map(id => ({specId: s.id, requirement: id, code: 'MISSING_DESIGN_REFERENCE' as const})));
-}
-
 // ---- Links ---------------------------------------------------------------------------------------------------
-/** Every relative link of every record, resolved to a repo-relative path; design sources by path are included. */
-export function documentLinks(bundle: StoreBundle): DocumentLink[] {
-  const out: DocumentLink[] = [];
-  const collect = (from: string, links: string[]) => { for (const link of links) { const target = resolveLink(from, link); if (target !== null) out.push({ from, link, target }); } };
-  for (const s of bundle.specs) {
-    collect(s.path, extractLinks(s.description + '\n' + s.requirements.map(r => r.body).join('\n')));
-    if (s.design) { const path = s.path.replace(/requirements\.md$/, 'design.md'); collect(path, [...extractLinks(s.design.body), ...s.design.sources.flatMap(x => x.path ? [x.path] : [])]); }
-  }
-  for (const d of bundle.wiki.documents) collect(d.path, extractLinks(d.body));
-  return out;
-}
-
 // ---- Specs ---------------------------------------------------------------------------------------------------
 export function parseSpecFiles(files: ReadonlyMap<string, string>): StoreSpec[] {
   const specs: StoreSpec[] = [];

@@ -28,7 +28,7 @@ requirements:
 4. 실제 실행에서는 이유 파일을 반영한 뒤 격리 index로 선택 경로만 커밋한다. 실행 전 기존 staging이 있으면 보존하고 거부한다.
 5. 커밋 결과와 선택 경로를 확인한다. 바뀐 문서와 이유가 가리킨 문서를 트레일러로 연결한다. 요구사항은 `Gitifact-Req`, 설계는 `Gitifact-Design`, 기능 개요와 위키는 `Gitifact-Doc`이다. 설계만 바뀌면 요구사항 변경을 만들지 않는다. 형식 전환 커밋은 입력의 `migration: true`로 `Gitifact-Migration: 0.8.0` 트레일러를 붙인다.
 
-이력은 캐시(`.gitifact/cache/index.db`)가 커밋 100개 단위로 `git log --raw`와 `git cat-file --batch`로 읽어 커밋별 문서 변경을 한 번만 계산해 둔다. 이유는 커밋이 이유 파일에 더한 줄을 diff로 읽는다. 문서는 ID별로 비교하며, 같은 커밋의 항목을 함께 표시하되 각 문서의 변경 관계를 구분한다. 마이그레이션 커밋 이전 커밋은 1.0.0까지 남기는 0.7 파서로 읽고, 마이그레이션 커밋 자체는 활동에 보이지 않는다.
+이력은 캐시(`.gitifact/cache/index.db`)가 커밋 100개 단위로 `git log --raw`와 `git cat-file --batch`로 읽어 커밋별 문서 변경을 한 번만 계산해 둔다. 이유는 커밋이 이유 파일에 더한 줄을 diff로 읽는다. 문서는 ID별로 비교하며, 같은 커밋의 항목을 함께 표시하되 각 문서의 변경 관계를 구분한다. 마이그레이션 커밋 이전 커밋은 1.0.0까지 남기는 0.7 파서로 읽고, 마이그레이션 커밋 자체는 활동에 보이지 않는다. 남은 0.7 코드는 읽기뿐이다. core `formats/store.ts`의 파서와 CLI `adapters/git/store-reader.ts`·`adapters/cache/legacy-changes.ts`이며, 0.7이 쓰던 편집·커밋 준비 코드는 0.8.0에서 지웠다.
 
 ## 오류 처리와 검증
 
@@ -54,4 +54,3 @@ core.autocrlf=true에서 LF 문서가 CRLF로 checkout돼도 변경으로 보지
 
 - init이 새 프로젝트에 .gitattributes의 eol=lf 규칙을 제안하거나 생성할지는 정하지 않았다. 지금 init은 이유 파일의 `merge=union` 규칙만 더한다.
 - CLI는 이유 파일 끝에 줄을 더하기만 하며, 커밋된 줄의 수정·삭제는 따로 검사하지 않는다(H-ID 중복만 검사).
-- 0.7 `spec commit`이 쓰던 옛 store 쓰기 코드(core `edit-store`·`prepare-store-commit`, CLI `adapters/filesystem/store.ts`)는 남아 있어 별도 작업으로 지운다.

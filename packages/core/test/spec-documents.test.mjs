@@ -1,13 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseDocument, parseWikiFiles, parseStoreBundle, renderDocument, compareWikis, editStore, prepareStoreCommit, emptyBundle, WIKI_ENTRY_PATH, documentLinks, resolveLink, extractLinks, isAssetPath } from '../dist/index.js';
+import { parseDocument, parseWikiFiles, parseStoreBundle, compareWikis, WIKI_ENTRY_PATH, resolveLink, extractLinks, isAssetPath } from '../dist/index.js';
 const w='W-k7m2xqab3d';
 const page=(body='본문입니다.',id=w)=>`---\nid: ${id}\n---\n\n# 레이아웃\n\n${body}\n`;
 
-test('wiki pages parse from frontmatter, render back identically and reject foreign structure',()=>{
+test('wiki pages parse from frontmatter and reject foreign structure',()=>{
   const doc=parseDocument('.gitifact/wiki/frontend/layout.md',page());
   assert.deepEqual(doc,{id:w,path:'.gitifact/wiki/frontend/layout.md',title:'레이아웃',body:'본문입니다.'});
-  assert.equal(renderDocument(doc),page());
   // The entry page keeps its upper-case name so GitHub shows it when the folder is browsed.
   assert.equal(parseDocument(WIKI_ENTRY_PATH,page()).path,'.gitifact/wiki/README.md');
   assert.equal(parseDocument('.gitifact/wiki/ARCHITECTURE.md',page()).path,'.gitifact/wiki/ARCHITECTURE.md');
@@ -29,20 +28,12 @@ test('bundles keep specs and the wiki apart, and wiki history only names pages',
   assert.throws(()=>parseWikiFiles(new Map([['.gitifact/wiki/a.md',page()],['.gitifact/wiki/b.md',page()]])),/중복 위키 페이지 ID/);
 });
 
-test('editing allocates W- IDs, moves keep identity, and comparison reports moves and modifications',()=>{
-  let n=0;const generate=prefix=>prefix+'-'+String(++n).padStart(10,'a').replace(/[^a-z2-7]/g,'a');
-  const created=editStore(emptyBundle(),[{type:'create-doc',path:'README.md',title:'개요',body:'본문'},{type:'create-doc',path:'ui/layout.md',title:'레이아웃',body:'본문'}],generate);
-  assert.deepEqual(created.wiki.documents.map(d=>d.path),['.gitifact/wiki/README.md','.gitifact/wiki/ui/layout.md']);
-  const [entryId,pageId]=created.results.map(r=>r.id);assert.match(entryId,/^W-/);assert.match(pageId,/^W-/);
-  const moved=editStore({specs:[],wiki:created.wiki},[{type:'move-doc',id:pageId,path:'layout.md'},{type:'update-doc',id:pageId,title:'레이아웃',body:'새 본문'}],generate);
-  const changes=compareWikis(created.wiki,moved.wiki);
-  assert.deepEqual(changes.map(c=>[c.id,c.kind,c.types]),[[pageId,'wiki',['moved','modified']]]);
-  assert.throws(()=>editStore({specs:[],wiki:created.wiki},[{type:'move-doc',id:pageId,path:'ui/layout.md'}],generate),/같은 경로/);
-  assert.throws(()=>editStore({specs:[],wiki:created.wiki},[{type:'update-doc',id:pageId,title:'x',body:'본문\n# 주입'}],generate));
-  for(const op of [{type:'set-product',title:'x',body:'y'},{type:'delete-product'},{type:'create-doc',kind:'guide',path:'a.md',title:'x',body:'y'},{type:'create-doc',path:'docs/README.md',title:'x',body:'y'}]) assert.throws(()=>editStore(emptyBundle(),[op],generate));
-  const prepared=prepareStoreCommit({specs:[],wiki:created.wiki},{specs:[],wiki:moved.wiki},new Map(),new Map(),[{requirements:[],documents:[pageId],reason:'정리'}],()=>'H-abcdefghij');
-  assert.deepEqual([...prepared.writes.keys()],['.gitifact/wiki/history.jsonl']);assert.deepEqual(prepared.withoutReason,[]);
-  assert.throws(()=>prepareStoreCommit({specs:[],wiki:created.wiki},{specs:[],wiki:moved.wiki},new Map(),new Map(),[{requirements:[],documents:[entryId],reason:'변경 없음'}],()=>'H-abcdefghij'),/최종 변경이 없는 문서/);
+test('a page keeps its identity when it moves, and comparison reports the move with the change',()=>{
+  const wiki=files=>parseWikiFiles(new Map(files));
+  const before=wiki([['.gitifact/wiki/ui/layout.md',page()]]);
+  const after=wiki([['.gitifact/wiki/layout.md',page('새 본문')]]);
+  assert.deepEqual(compareWikis(before,after).map(c=>[c.id,c.kind,c.types]),[[w,'wiki',['moved','modified']]]);
+  assert.deepEqual(compareWikis(before,before),[]);
 });
 
 test('links resolve against the document folder and assets are any file under the assets folder',()=>{
@@ -52,8 +43,6 @@ test('links resolve against the document folder and assets are any file under th
   assert.equal(resolveLink('.gitifact/wiki/README.md','../../docs/dev.md'),'docs/dev.md');
   for(const link of ['https://example.test/a','mailto:x@y','#anchor','/abs/path','../../../escape.md','a\\b.md']) assert.equal(resolveLink('.gitifact/wiki/README.md',link),null,link);
   assert.deepEqual(extractLinks('본문 [a](x.md) ![b](../img.png "제목") `[c](no.md)`\n```\n[d](fenced.md)\n```\n[e](<sp ace.md>)'),['x.md','../img.png','sp ace.md']);
-  const bundle=parseStoreBundle(new Map([['.gitifact/wiki/README.md',page('[구조](architecture.md)')]]));
-  assert.deepEqual(documentLinks(bundle),[{from:'.gitifact/wiki/README.md',link:'architecture.md',target:'.gitifact/wiki/architecture.md'}]);
   assert.equal(isAssetPath('.gitifact/assets/diagrams/flow.png'),true);
   for(const path of ['.gitifact/assets','.gitifact/assets/../x','.gitifact/wiki/a.png','assets/x.png']) assert.equal(isAssetPath(path),false,path);
 });

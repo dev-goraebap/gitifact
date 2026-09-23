@@ -13,7 +13,5 @@ export * from './use-cases/arrange-documents.js';
 export * from './use-cases/compare-documents.js';
 export * from './use-cases/document-warnings.js';
 export * from './formats/changelog.js';
-export * from './use-cases/edit-store.js';
-export * from './use-cases/prepare-store-commit.js';
 
 export { configureCoreLanguage } from './shared/i18n/index.js';
