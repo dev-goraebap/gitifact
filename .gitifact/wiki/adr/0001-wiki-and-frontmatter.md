@@ -4,7 +4,7 @@ title: 결정 0001. 위키 통합과 frontmatter
 description: 제품 설명과 지침을 위키 하나로 합치고 파일 ID를 frontmatter로 옮긴 결정
 ---
 
-상태: Accepted · 2026-09-18
+상태: Superseded by 0010 · 2026-09-18
 
 ## 맥락
 

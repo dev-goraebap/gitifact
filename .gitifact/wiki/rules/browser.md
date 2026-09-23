@@ -72,7 +72,7 @@ AppShell은 wash 변형의 inset 배치다. 왼쪽 메뉴(기본 240px, 200~400p
 
 ## 서버 계약
 
-`/api/v1/session`, `/api/v1/status`(+`/refresh` POST), `/api/v1/changelog`, `/api/v1/specs`, `/api/v1/history`, `/api/v1/history/summary`, `/api/v1/change`, `/api/v1/search`, `/api/v1/commit`(커밋 상세), `/api/v1/commit/files`·`/api/v1/commit/file`(그 커밋의 소스 변경), `/api/v1/assets/<경로>`를 쓴다. specs는 체크아웃(현재 명세·위키·Git author 집계·미커밋 여부)을 통째로 준다. 체크아웃은 저장 규약의 상한이 있어 화면이 거른다. 이력은 끝이 없으므로 화면이 받은 범위에서 거르거나 세지 않는다. 필터·검색어·건수·페이지는 모두 서버가 전체 이력에 대해 답하고(history), 개요의 집계도 서버 요약(history/summary)을 쓴다. 이력은 `.git` 안의 SQLite 색인이 답하며 git은 색인에 없는 커밋을 읽을 때만 부른다(결정 0009). Windows에서 git 프로세스는 하는 일과 무관하게 약 80ms이므로, 기록 수나 파일 수만큼 git을 띄우는 읽기를 새로 만들지 않는다. 참여자는 최근 10,000개 커밋 기준이며 초과 시 표시한다.
+`/api/v1/session`, `/api/v1/status`(+`/refresh` POST), `/api/v1/changelog`, `/api/v1/specs`, `/api/v1/history`, `/api/v1/history/summary`, `/api/v1/change`, `/api/v1/search`, `/api/v1/commit`(커밋 상세), `/api/v1/commit/files`·`/api/v1/commit/file`(그 커밋의 소스 변경), `/api/v1/assets/<경로>`를 쓴다. specs는 체크아웃(현재 명세·위키·Git author 집계·미커밋 여부)을 통째로 준다. 체크아웃은 저장 규약의 상한이 있어 화면이 거른다. 이력은 끝이 없으므로 화면이 받은 범위에서 거르거나 세지 않는다. 필터·검색어·건수·페이지는 모두 서버가 전체 이력에 대해 답하고(history), 개요의 집계도 서버 요약(history/summary)을 쓴다. 이력은 CLI와 함께 쓰는 캐시 `.gitifact/cache/index.db`가 답하며 git은 캐시에 없는 커밋을 읽을 때만 부른다(결정 0011). Windows에서 git 프로세스는 하는 일과 무관하게 약 80ms이므로, 기록 수나 파일 수만큼 git을 띄우는 읽기를 새로 만들지 않는다. 참여자는 최근 10,000개 커밋 기준이며 초과 시 표시한다.
 
 서버 경로는 `server/routes/`의 경로 표에 한 줄씩 둔다(메서드·경로·세션·쿼리 스키마·처리 함수). 쿼리 스키마는 `@gitifact/contracts`에 두어 브라우저와 함께 쓴다. 모든 요청의 공통 검사는 `server/http/guard.ts` 한 곳이다. 서버 프레임워크는 쓰지 않는다.
 

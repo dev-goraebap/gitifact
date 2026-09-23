@@ -20,13 +20,13 @@ description: 문서에 쓸 수 있는 Markdown 표기와 브라우저가 그리�
 
 ## 다이어그램
 
-쓰는 자리와 빈도는 `gitifact docs writing`을 따른다. 아래는 브라우저가 그리는 것을 확인한 예다.
+쓰는 자리와 빈도는 `gitifact guide show writing`을 따른다. 아래는 브라우저가 그리는 것을 확인한 예다.
 
 ```mermaid
 flowchart LR
   U[사용자] --> A[에이전트]
-  A -->|spec save| S[".gitifact/spec · wiki"]
-  A -->|spec commit| G[(Git)]
+  A -->|파일 수정| S[".gitifact/spec · wiki"]
+  A -->|changes commit| G[(Git)]
   S --> B[브라우저]
   G --> B
 ```
@@ -39,10 +39,10 @@ sequenceDiagram
   participant 에이전트
   participant CLI
   사용자->>에이전트: 게시물을 지울 수 있게 해주세요
-  에이전트->>CLI: spec working
-  CLI-->>에이전트: 현재 명세·위키·stamp
-  에이전트->>CLI: spec save
-  CLI-->>에이전트: 발급한 R-ID
+  에이전트->>CLI: docs list
+  CLI-->>에이전트: 기능·요구사항 목록
+  에이전트->>CLI: docs new requirement
+  CLI-->>에이전트: 발급한 R-ID와 파일
 ```
 
 > [!NOTE]
@@ -50,7 +50,7 @@ sequenceDiagram
 
 ## 알림
 
-다섯 종류의 뜻과 쓰는 기준은 `gitifact docs writing`에 있다. 브라우저에서는 이렇게 보인다.
+다섯 종류의 뜻과 쓰는 기준은 `gitifact guide show writing`에 있다. 브라우저에서는 이렇게 보인다.
 
 > [!TIP]
 > 알아 두면 편하지만 몰라도 되는 것.

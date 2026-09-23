@@ -12,11 +12,12 @@ CLI는 사용자 입력과 실행 환경을 받아 제품 규칙을 실행하는
 apps/cli/src/
   main.ts            프로세스 시작과 명령 연결 (Commander)
   commands/          인자 해석, 유스케이스 호출
-  adapters/git/      Git 실행과 스냅샷 읽기
-  adapters/filesystem/  파일·잠금·보존·복구 (설정·지침 파일 어댑터)
+  adapters/git/      Git 실행과 스냅샷 읽기, 0.7 저장소 읽기(1.0.0까지)
+  adapters/filesystem/  파일·잠금·보존·복구 (설정·지침·문서 파일 어댑터)
+  adapters/cache/    캐시 .gitifact/cache/index.db: 문서·참조·검색·이력
   output/            core 결과를 버전 있는 DTO·텍스트로 변환
   server/            브라우저 서버: browser-server(수명), http/(검사·라우터·응답·앱 파일),
-                     routes/(경로 표), checkout/(작업 폴더 체크아웃), history/(이력 색인)
+                     routes/(경로 표), checkout/(작업 폴더 체크아웃), commit/(커밋의 소스 변경)
   shared/i18n/       사용자에게 보이는 문구와 언어별 Markdown
 packages/core/src/
   domain/            상태·사건·진단
@@ -57,25 +58,37 @@ stdout에는 선택한 출력 형식만 내보내고 로그·진행 상황은 st
 
 ## 저장 규약
 
-`.gitifact/config.json`은 `schemaVersion: 1`과 `baseline`만 쓴다. baseline은 최초 도입 기준점이며 규약 버전 변경으로 갱신하지 않는다.
+`.gitifact/config.json`은 `schemaVersion: 3`과 `baseline`만 쓴다. baseline은 최초 도입 기준점이며 규약 버전 변경으로 갱신하지 않는다.
 
-기록 집합은 다음 파일이다. 모두 UTF-8이며 1 MiB, 전체 16 MiB 한도가 있다.
+문서는 파일 하나가 문서 하나이고, 구조 정보는 모두 YAML 프론트매터에 둔다. 본문은 산문이며 CLI가 데이터를 뽑으려고 파싱하지 않는다. 형식 규칙은 core의 `formats/document-file.ts`와 `use-cases/check-documents.ts` 한 곳에 있고 `docs check`와 `changes commit`이 같은 검사를 쓴다.
 
-- `.gitifact/spec/<기능>/requirements.md`, 선택적인 `design.md`, 변경 이유가 생겼을 때 `history.jsonl`
-- `.gitifact/product/PRODUCT.md` 하나와 `.gitifact/product/history.jsonl`. 같은 폴더의 이미지는 파싱하는 기록은 아니지만 제품 설명과 함께 커밋한다. 커밋 선택과 서버 제공 모두 제품 폴더 바로 아래의 이미지 파일(png·jpg·gif·svg·webp)만 허용하며 규칙은 core가 한 곳에서 정의한다. 그 밖의 `.gitifact` 파일은 커밋에 선택할 수 없다.
-- `.gitifact/guides/**/*.md`(깊이 8, 소문자·숫자·하이픈 이름)와 `.gitifact/guides/history.jsonl`
+| 파일 | 프론트매터 |
+| :--- | :--- |
+| `.gitifact/spec/<기능>/index.md` | `id`(S-), `title`, `description` |
+| `.gitifact/spec/<기능>/requirements/<slug>.md` | `id`(R-), `title`, `description`, `order` |
+| `.gitifact/spec/<기능>/design/<slug>.md` | `id`(D-), `title`, `description`, `order`, `requirements`, `sources` |
+| `.gitifact/wiki/**/*.md` | `id`(W-), `title`, `description` |
+| `.gitifact/history.jsonl` 한 줄 | `{id, docs, reason}` |
 
-ID는 CLI가 발급하는 소문자 base32 10자다. 명세 S-, 요구사항 R-, 제품 P-, 지침 G-, 이유 H-. 파일 첫 줄의 HTML 주석 마커로 식별하며 경로·제목과 독립적이다. 이유 기록은 `{id, requirements, designs?, documents?, reason}`이고 커밋된 기록은 수정·삭제하지 않는다. 원문·작성자·시각은 JSONL에 복제하지 않고 Git에서 읽는다.
+- **ID:** CLI가 발급하는 소문자 base32 10자다. 기능 S-, 요구사항 R-, 설계 D-, 위키 W-, 이유 H-. 경로·제목과 독립적이며 파일을 옮겨도 바뀌지 않는다. 소속은 폴더 위치로만 정한다.
+- **필드:** `title`(200자)과 `description`(300자)은 한 줄·필수다. `order`는 0~999999 정수이고 같은 폴더 안에서 겹치면 오류다. 설계의 `requirements`는 있는 R-만, `sources`는 `{id, note?}` 또는 `{title, url, note?}`(http·https)다. 프론트매터 끝의 `draft: true`는 `docs new`가 붙이며 남아 있으면 검사가 실패한다.
+- **본문:** 필수다. 코드 블록 밖의 `#` 제목과 gitifact HTML 주석을 금지한다. UTF-8이며 NUL·단독 CR·BOM을 금지하고 CRLF는 LF로 읽는다. 파일 하나는 1MB까지 읽는다.
+- **개요 파일:** 요구사항이나 설계가 있는 기능은 `index.md`, 설계가 하나라도 있으면 `design/overview.md`가 필수다.
+- **이유:** `.gitifact/history.jsonl` 하나에 모든 문서의 이유가 쌓인다. 한 줄이 `{id: H-, docs: [고유한 S·R·D·W ID], reason}`이고 커밋된 줄은 수정·삭제하지 않는다. 원문·작성자·시각은 복제하지 않고 Git에서 읽는다. 두 브랜치가 같은 끝에 줄을 더해도 둘 다 남도록 `init`이 `.gitattributes`에 `merge=union`을 둔다.
+- **에셋:** `.gitifact/assets/` 아래 파일이며 ID가 없다. 권장 크기(파일당 1MB, 전체 50MB)와 확장자를 넘거나 참조가 없으면 경고만 낸다.
+- **캐시:** `.gitifact/cache/index.db`는 문서·참조·검색·이력의 파생물이다. 원본은 파일과 Git이며 지우거나 형식 번호가 다르면 다시 만든다. 폴더 안의 `.gitignore`(`*`)로 커밋에서 빠진다.
 
-옛 형식은 읽지 않는다. `.tryce` 경로, `tryce-*` 마커, 구형 JSON 기록, Tryce 설정, schemaVersion 1은 지원하지 않고 `migrate` 명령도 없다(2026-09-22). 과거 커밋의 옛 기록은 이력에 기록으로 나타나지 않고 Git에만 남는다.
+옛 형식은 쓰지 않는다. schemaVersion 2(0.7)는 `guide show migrate`의 절차로 에이전트가 옮기라고 안내하고 거부한다. 전환 커밋은 `Gitifact-Migration: 0.8.0` 트레일러를 가지며, 그 이전 커밋의 활동은 0.7 파서(`formats/store.ts`의 읽기, `adapters/git/store-reader.ts`)로 읽어 브라우저에 보인다. 이 파서는 1.0.0까지 두고 쓰기 코드는 두지 않는다. `.tryce` 경로, `tryce-*` 마커, 구형 JSON 기록, Tryce 설정, schemaVersion 1은 지원하지 않는다(2026-09-22).
 
-## 저장과 커밋 흐름
+## 조회와 커밋 흐름
 
-`spec working` → `spec save --file`(expected stamp와 operations) → `spec commit --file`(reasons·paths·message·authorization)이다. save는 잠금 아래 stamp를 대조하고 실제로 바뀐 파일만 반영하며 실패 시 원복하고 복구 자료를 남긴다. commit은 격리 index로 선택 파일만 staging하고, 훅·필터가 원문을 바꾸면 거부하며, HEAD가 바뀐 불확실한 실행은 복구 자료를 보존한다. 커밋 메시지 트레일러는 `Gitifact-Req`·`Gitifact-Design`·`Gitifact-Doc`이다. `prepare·verify·commit-plan·commit-apply`는 0.6.0에서 삭제했다. 이유 기록과 커밋은 `spec commit` 하나다.
+문서는 에이전트가 파일을 직접 고친다. 저장 명령은 없다. 새 문서는 `docs new`가 ID를 발급하고 뼈대를 쓴다. 조회는 `docs list·search·show·history`, 검사는 `docs check`, 커밋은 `changes list` → `changes commit --file`(reasons·paths·message·authorization, 마이그레이션이면 `migration: true`)이다. 모든 조회는 캐시를 거치며, 캐시는 명령마다 수정 시각·크기가 바뀐 문서만 다시 읽는다.
+
+commit은 `docs check`와 같은 검사를 먼저 돌리고, H- ID를 발급해 이유 파일에 줄을 더한 뒤 격리 index로 선택 파일만 staging한다. 바뀐 문서와 이유 파일은 모두 선택해야 하고, 기존 staging이 있으면 거부한다. 훅·필터가 원문을 바꾸면 거부하고, 커밋이 거부되면 이유 파일과 index를 되돌린다. HEAD가 바뀐 불확실한 실행은 잠금 폴더에 복구 자료를 보존한다. 커밋 메시지 트레일러는 `Gitifact-Req`·`Gitifact-Design`·`Gitifact-Doc`이고 CLI만 붙인다.
 
 ## 로컬 서버
 
-`node:http`로 제공하며 별도 프레임워크를 두지 않는다. loopback에 바인딩하고 Host·Origin·세션 헤더를 검증한다. 클라이언트의 임의 경로로 로컬 파일이나 명령을 실행하지 않는다. GET은 정의한 조회만 수행하고 재검사는 별도 POST로 받아 중복 실행을 제어한다. 제품 이미지는 `/api/v1/product/assets/<파일명>`으로 제품 폴더 바로 아래의 이미지 파일(5 MiB 이하)만 제공한다. 편집 endpoint와 명령 실행 endpoint는 두지 않는다.
+`node:http`로 제공하며 별도 프레임워크를 두지 않는다. loopback에 바인딩하고 Host·Origin·세션 헤더를 검증한다. 클라이언트의 임의 경로로 로컬 파일이나 명령을 실행하지 않는다. GET은 정의한 조회만 수행하고 재검사는 별도 POST로 받아 중복 실행을 제어한다. 문서가 참조하는 에셋은 `/api/v1/assets/<경로>`로 `.gitifact/assets/` 아래의 일반 파일(20MB 이하, 링크 제외)만 제공한다. 이미지는 본문에 표시하고 그 밖의 파일은 내려받게 한다. 편집 endpoint와 명령 실행 endpoint는 두지 않는다.
 
 CLI가 외부로 보내는 요청은 하나다. `init`·`update`·`update --check` 실행 시 `registry.npmjs.org/gitifact`의 최신 버전을 조회하며 프로젝트 정보는 보내지 않는다. 제한 시간 안에 답이 없으면 확인 불가로 처리하고 동작을 막지 않는다. `GITIFACT_NO_UPDATE_CHECK`로 끈다. 브라우저 서버는 새 버전을 조회하지 않는다. 이 요청은 `adapters/registry/`에만 두고 테스트는 조회 함수를 주입해 네트워크 없이 실행한다.
 

@@ -8,8 +8,8 @@ requirements:
   - R-hsflueyc4b
   - R-5eehizubwl
 sources:
-  - id: W-onjctb4nxj
-    note: 재생성 가능한 이력 색인
+  - id: W-vur3kiu3gg
+    note: CLI와 함께 쓰는 재생성 가능한 캐시
 ---
 
 ## 커밋별 변경 계산
@@ -36,7 +36,7 @@ Git 커밋과 프로젝트 문서는 바꾸지 않는다. Git의 재병합 비�
 
 작업 폴더 문서는 에이전트가 파일을 직접 고치므로, 읽을 때마다 `.gitifact/spec`·`.gitifact/wiki` 아래 파일의 수정 시각·크기를 캐시가 마지막에 본 값과 견주어 달라진 파일만 다시 파싱한다(`documents.ts`). 문서 행에는 프론트매터와 파싱한 문서를, 참조 행에는 설계의 `requirements`·`sources`를 역조회용으로, 검색 행에는 제목·위치·설명·본문을 넣는다. 1MB를 넘는 문서 파일은 읽지 않고 문제로 알리며, 파일 2만 개에서 훑기를 멈춘다.
 
-파일은 작업 폴더의 `.gitifact/cache/index.db`다. CLI가 캐시 폴더 안에 내용이 `*`인 `.gitignore`를 만들어 Git에서 빼며 프로젝트의 루트 `.gitignore`는 건드리지 않는다. `.gitifact` 폴더가 없으면 캐시 폴더를 만들지 않는다. worktree마다 캐시가 따로라 새 worktree에서는 이력을 처음 한 번 다시 읽는다. 0.7 브라우저는 이력 색인을 `<git 공용 폴더>/gitifact/index.sqlite`에 두었으나(2026-09-19 사용자 결정, 결정 0009), 0.8.0에서 CLI와 브라우저가 캐시 하나를 함께 쓰기로 하며 이 위치로 옮겼다. 결정 0009의 위치 서술은 낡았고 대체 결정은 아직 없다. 옛 파일은 CLI가 지우지 않으며 마이그레이션 지침(`guide show migrate`)이 지워도 된다고 안내한다. 서버 메모리에만 두는 안은 서버를 띄울 때마다 전체를 다시 읽어 기각했다. JSON 파일 안은 결국 메모리에 올려 직접 거르고 찾아야 해 기각했다. SQLite는 Node 24에 내장된 `node:sqlite`라 패키지 의존성이 늘지 않는다.
+파일은 작업 폴더의 `.gitifact/cache/index.db`다. CLI가 캐시 폴더 안에 내용이 `*`인 `.gitignore`를 만들어 Git에서 빼며 프로젝트의 루트 `.gitignore`는 건드리지 않는다. `.gitifact` 폴더가 없으면 캐시 폴더를 만들지 않는다. worktree마다 캐시가 따로라 새 worktree에서는 이력을 처음 한 번 다시 읽는다. 0.7 브라우저는 이력 색인을 `<git 공용 폴더>/gitifact/index.sqlite`에 두었으나(2026-09-19 사용자 결정, 결정 0009), 0.8.0에서 CLI와 브라우저가 캐시 하나를 함께 쓰기로 하며 이 위치로 옮겼다. 위치와 공유는 결정 0011이 결정 0009를 대체해 적는다. 옛 파일은 CLI가 지우지 않으며 마이그레이션 지침(`guide show migrate`)이 지워도 된다고 안내한다. 서버 메모리에만 두는 안은 서버를 띄울 때마다 전체를 다시 읽어 기각했다. JSON 파일 안은 결국 메모리에 올려 직접 거르고 찾아야 해 기각했다. SQLite는 Node 24에 내장된 `node:sqlite`라 패키지 의존성이 늘지 않는다.
 
 연결은 쓸 때마다 열고 닫는다. 서버가 요청 사이에 파일을 잡지 않아 테스트가 저장소를 지울 수 있다. WAL 모드라 CLI와 서버가 읽기와 쓰기를 나란히 하고, 쓰기는 SQLite 잠금(`BEGIN IMMEDIATE`, busy_timeout 5초)으로 차례를 지킨다. 같은 커밋을 둘이 쓰면 먼저 쓴 쪽이 남는다(`INSERT OR IGNORE`). 형식 번호(`PRAGMA user_version`, 지금 2)가 다르면 표를 지우고 다시 만들고, 파일이 손상돼 열리지 않으면 지우고 한 번 다시 만든다. 그래도 안 되면(읽기 전용 저장소 등) 그 프로세스 동안 메모리 DB를 쓴다. 표는 files(읽은 작업 폴더 파일의 수정 시각·크기·문제), documents(작업 폴더 문서), doc_references(프론트매터의 ID 참조), commits(읽은 커밋과 읽은 방식: 현재 형식·0.7·마이그레이션), changes(변경별 목록 JSON·전후 본문 JSON·필터 열), lineage(HEAD별 커밋 순서), heads, search(FTS5)다.
 
