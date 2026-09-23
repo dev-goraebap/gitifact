@@ -22,7 +22,8 @@ export function fixture(t, format = 'sha1') {
   const temp = join(root, 'tmp');
   mkdirSync(temp);
   const config = join(root, 'empty-config');
-  writeFileSync(config, '');
+  // Commits in fixtures would start Git's background maintenance; it only adds processes to the run.
+  writeFileSync(config, '[maintenance]\n\tauto = false\n[gc]\n\tauto = 0\n');
   const env = { ...process.env, GIT_CONFIG_GLOBAL: config, GIT_CONFIG_SYSTEM: config,
     GIT_CONFIG_NOSYSTEM: '1', GIT_TERMINAL_PROMPT: '0', LC_ALL: 'C', TEMP: temp, TMP: temp, TMPDIR: temp,
     GIT_AUTHOR_DATE: '2026-09-13T00:00:00Z', GIT_COMMITTER_DATE: '2026-09-13T00:00:00Z' };

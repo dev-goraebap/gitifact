@@ -14,7 +14,7 @@
     "dev:cli": "pnpm --filter @gitifact/core --filter @gitifact/contracts build && pnpm --filter @gitifact/browser build && pnpm --parallel --filter @gitifact/core --filter @gitifact/contracts --filter gitifact dev",
     "cli": "node apps/cli/dist/main.js",
     "test": "pnpm build && pnpm test:built",
-    "test:built": "pnpm -r --if-present test:built && node scripts/test-package.mjs",
+    "test:built": "pnpm -r --workspace-concurrency=1 --if-present test:built && node scripts/test-package.mjs",
     "test:package": "node scripts/test-package.mjs",
     "check": "pnpm typecheck && pnpm test",
     "browser:install": "pnpm --filter @gitifact/browser exec playwright install chromium"
