@@ -103,7 +103,7 @@ test('getting started follows the intro and keeps Korean guidance on reload', as
   const article = page.getByRole('article', { name: '시작하기' });
   await expect(article).toContainText('npx gitifact@latest init');
   await expect(article).toContainText('프로젝트에 맞게 위키 구성하기');
-  await expect(article).toContainText('npx gitifact spec commit');
+  await expect(article).toContainText('npx gitifact changes commit');
   await page.reload();
   await expect(article).toBeVisible();
   await page.goBack();
