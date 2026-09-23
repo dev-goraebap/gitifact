@@ -24,6 +24,7 @@ import { pagesOf, type FeatureRow } from '../model/feature-rows';
 import styles from './features.module.css';
 import { PageState } from '../../../shared/ui/page-state';
 import { DocumentBody } from '../../../shared/ui/document';
+import { RelatedList, RelatedItem } from '../../../shared/ui/related-list';
 import { t, useLanguage } from '../../../shared/i18n';
 
 export function FeatureView({ features, featureId, search, change, session, head }: { features: SpecFeature[]; featureId?: string | undefined; search: RecordSearch; change: (s: RecordSearch) => void; session: BrowserSessionV3; head: string | null }) {
@@ -204,14 +205,16 @@ function FeatureDetail({ feature: selected, features, search, change, session, h
           </VStack>
           {/* Each requirement is its own file one folder below index.md; its links start from there. */}
           <DocumentBody headingLevelStart={4} path={r.path}>{r.body}</DocumentBody>
-          <HStack gap={4} wrap="wrap" className={styles.entryLine}>
+          {/* What the requirement connects to, each kind in its own block: the designs that name it, then its history. */}
+          <VStack gap={4} className={styles.requirementRelations}>
             {/* A design names the requirements it explains; these are those links read the other way round, every design that names this one. */}
-            {!!explained.length && <HStack gap={2} wrap="wrap" className={styles.entryLine}>
-              <Text type="supporting" color="secondary">{t('features.requirementDesigns')}</Text>
-              {explained.map(d => <Link key={d.id} to="/features/$featureId" params={{ featureId: selected.id }} search={{ ...search, tab: 'design', selected: d.id }}>{d.title}</Link>)}
-            </HStack>}
-            <Link to="/activity" search={{ feature: selected.id, q: r.id }}>{t('features.requirementHistory')}</Link>
-          </HStack>
+            {!!explained.length && <RelatedList label={t('features.requirementDesigns')}>
+              {explained.map(d => <RelatedItem key={d.id} title={<Link to="/features/$featureId" params={{ featureId: selected.id }} search={{ ...search, tab: 'design', selected: d.id }}>{d.title}</Link>} description={d.description}/>)}
+            </RelatedList>}
+            <RelatedList label={t('features.requirementHistoryLabel')}>
+              <RelatedItem title={<Link to="/activity" search={{ feature: selected.id, q: r.id }}>{t('features.requirementHistory')}</Link>}/>
+            </RelatedList>
+          </VStack>
         </VStack>;
       })}
       {!selected.requirements.length && <Text>{t('features.noRequirements')}</Text>}

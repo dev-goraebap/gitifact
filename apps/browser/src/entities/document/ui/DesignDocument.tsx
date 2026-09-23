@@ -1,29 +1,27 @@
 import type { DesignSource, SpecFeature } from '@gitifact/contracts';
 import { DocumentBody, DocumentLink, resolveDocumentLink, useDocumentIndex } from '../../../shared/ui/document';
+import { RelatedList, RelatedItem } from '../../../shared/ui/related-list';
 import { Heading } from '@astryxdesign/core/Heading';
 import { Text } from '@astryxdesign/core/Text';
 import { VStack } from '@astryxdesign/core/VStack';
 import { HStack } from '@astryxdesign/core/HStack';
-import { List, ListItem } from '@astryxdesign/core/List';
 import { Link } from '@tanstack/react-router';
 import styles from './document.module.css';
 import { t, useLanguage } from '../../../shared/i18n';
 
-/** Rows, not cards, for the documents a design drew on: each is a link (a document in the app, a URL in a new tab) with its note beneath. */
+/** The documents a design drew on, one per row: a link (a document in the app, a URL in a new tab) with its note beneath. */
 function DesignSources({ sources, path }: { sources: DesignSource[]; path: string }) {
   useLanguage();
   const index = useDocumentIndex();
-  return <VStack as="section" gap={2} aria-label={t('design.sources')} className={styles.designSources}>
-    <Text type="supporting" color="secondary">{t('design.sources')}</Text>
-    <List density="compact">
-      {sources.map((source, i) => {
-        // A source names a document by ID; the server resolved its path when the document exists.
-        const link = source.url ? resolveDocumentLink(source.url, path, index) : source.path ? resolveDocumentLink(relativeTo(path, source.path), path, index) : { kind: 'missing' as const, path: source.id ?? '' };
-        const where = link.kind === 'external' ? hostOf(link.href) : link.kind === 'wiki' ? link.path.replace(/^\.gitifact\/wiki\//, '') : link.kind === 'missing' ? t('link.missing', { path: link.path }) : link.kind === 'outside' ? link.path : '';
-        return <ListItem key={i} label={<DocumentLink link={link}>{source.title ?? source.id}</DocumentLink>} description={<HStack gap={2} wrap="wrap">{source.note && <Text type="supporting" color="secondary">{source.note}</Text>}{where && <Text type="supporting" color="secondary">{where}</Text>}</HStack>}/>;
-      })}
-    </List>
-  </VStack>;
+  return <RelatedList label={t('design.sources')}>
+    {sources.map((source, i) => {
+      // A source names a document by ID; the server resolved its path when the document exists.
+      const link = source.url ? resolveDocumentLink(source.url, path, index) : source.path ? resolveDocumentLink(relativeTo(path, source.path), path, index) : { kind: 'missing' as const, path: source.id ?? '' };
+      const where = link.kind === 'external' ? hostOf(link.href) : link.kind === 'wiki' ? link.path.replace(/^\.gitifact\/wiki\//, '') : link.kind === 'missing' ? t('link.missing', { path: link.path }) : link.kind === 'outside' ? link.path : '';
+      return <RelatedItem key={i} title={<DocumentLink link={link}>{source.title ?? source.id}</DocumentLink>}
+        description={(source.note || where) && <HStack gap={2} wrap="wrap">{source.note && <Text type="supporting" color="secondary">{source.note}</Text>}{where && <Text type="supporting" color="secondary">{where}</Text>}</HStack>}/>;
+    })}
+  </RelatedList>;
 }
 const hostOf = (href: string) => { try { return new URL(href).hostname; } catch { return href; } };
 /** A repository path written relative to the folder of `from`, the form links in documents take. */
@@ -44,17 +42,19 @@ export function DesignDocument({design, path, features}: {design: {title: string
   return <VStack gap={4}>
     <Heading level={3}><mark className={styles.titleMark}>{design.title}</mark></Heading>
     {design.description && <Text type="supporting" color="secondary">{design.description}</Text>}
-    {!!requirements.length && <HStack gap={2} wrap="wrap">
-      <Text type="supporting" color="secondary">{t('design.relatedRequirements')}:</Text>
-      {requirements.map(id => {
-        const feature = features.find(f => f.requirements.some(r => r.id === id));
-        const title = feature?.requirements.find(r => r.id === id)?.title;
-        return feature
-          ? <Link key={id} to="/features/$featureId" params={{ featureId: feature.id }} search={{ selected: id, tab: 'requirements' }} hash={id}>{title ?? id}</Link>
-          : <Text key={id} type="supporting" color="secondary">{t('design.missingRequirement', { id })}</Text>;
-      })}
-    </HStack>}
-    {!!design.sources?.length && <DesignSources sources={design.sources} path={path}/>}
+    {/* The frontmatter's relations, each kind in its own block with the documents one per row, above the prose. */}
+    {(!!requirements.length || !!design.sources?.length) && <VStack gap={4} className={styles.relations}>
+      {!!requirements.length && <RelatedList label={t('design.relatedRequirements')}>
+        {requirements.map(id => {
+          const feature = features.find(f => f.requirements.some(r => r.id === id));
+          const requirement = feature?.requirements.find(r => r.id === id);
+          return feature && requirement
+            ? <RelatedItem key={id} title={<Link to="/features/$featureId" params={{ featureId: feature.id }} search={{ selected: id, tab: 'requirements' }} hash={id}>{requirement.title}</Link>} description={requirement.description}/>
+            : <RelatedItem key={id} title={<Text color="secondary">{t('design.missingRequirement', { id })}</Text>}/>;
+        })}
+      </RelatedList>}
+      {!!design.sources?.length && <DesignSources sources={design.sources} path={path}/>}
+    </VStack>}
     <DocumentBody headingLevelStart={4} path={path}>{design.body}</DocumentBody>
   </VStack>;
 }

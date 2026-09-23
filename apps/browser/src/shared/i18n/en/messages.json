@@ -257,7 +257,7 @@
   "kind.feature": "Feature overview",
   "features.designIndex": "Design index",
   "features.designIndexTitle": "Designs of this feature",
-  "features.requirementDesigns": "Designs for this requirement:",
+  "features.requirementDesigns": "Designs for this requirement",
   "document.history": "Changes to this document",
   "document.historyNone": "No committed changes.",
   "document.historyFailed": "Could not load the change history.",
@@ -293,5 +293,6 @@
   "event.currentDocument": "Open the current document →",
   "event.currentFeature": "Open the current feature →",
   "header.trail": "Breadcrumb",
-  "commit.back": "← Activity"
+  "commit.back": "← Activity",
+  "features.requirementHistoryLabel": "History"
 }

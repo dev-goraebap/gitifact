@@ -151,7 +151,7 @@ test('the design tab reads one document at a time, and each requirement links to
   const designsOf = (id: string) => page.locator('#' + id).getByRole('link').filter({ hasNotText: '이력' });
   await expect(designsOf('R-bbbbbbbbbc')).toHaveText(['표시 방식', '끄기']);
   await expect(designsOf('R-bbbbbbbbbb')).toHaveText(['표시 방식']);
-  await expect(page.locator('#R-bbbbbbbbbd').getByText('이 요구사항의 설계:')).toHaveCount(0);
+  await expect(page.locator('#R-bbbbbbbbbd').getByText('이 요구사항의 설계')).toHaveCount(0);
   await designsOf('R-bbbbbbbbbc').filter({ hasText: '끄기' }).click();
   await expect(page).toHaveURL(new RegExp('tab=design.*selected=' + off + '|selected=' + off + '.*tab=design'));
   // Only the chosen document is on the page, and the index marks it among the feature's designs in order.

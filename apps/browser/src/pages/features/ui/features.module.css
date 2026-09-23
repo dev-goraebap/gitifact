@@ -41,7 +41,8 @@
 .requirementSection[aria-current] { background-image:repeating-linear-gradient(-45deg, var(--color-background-muted) 0 1px, transparent 1px 7px);
   margin-inline:calc(-1 * var(--spacing-4)); padding-inline:var(--spacing-4); }
 .requirementSection p,.requirementSection li { line-height:1.9; }
-.requirementSection a,.documentHeading a { font-size:.8125rem; }
+.documentHeading a { font-size:.8125rem; }
+.requirementRelations { padding-block-start:var(--spacing-2); }
 @media(width<64rem) {
   .documentHeading h1 {font-size:1.5rem}
 }
