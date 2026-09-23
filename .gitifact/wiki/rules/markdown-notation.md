@@ -20,7 +20,7 @@ description: 문서에 쓸 수 있는 Markdown 표기와 브라우저가 그리�
 
 ## 다이어그램
 
-쓰는 자리와 빈도는 `gitifact guide show writing`을 따른다. 아래는 브라우저가 그리는 것을 확인한 예다.
+종류 고르기와 작성 규칙은 `gitifact guide show writing`의 "다이어그램" 절을 따른다. 아래는 브라우저가 그리는 것을 확인한 예다. 갈라지고 합쳐지는 흐름은 `flowchart`로 그린다.
 
 ```mermaid
 flowchart LR
@@ -31,7 +31,7 @@ flowchart LR
   G --> B
 ```
 
-순서가 중요한 대화는 순서도로 적는다.
+여러 구성 요소가 차례로 주고받는 요청·응답은 `sequenceDiagram`으로 그린다.
 
 ```mermaid
 sequenceDiagram
@@ -50,19 +50,19 @@ sequenceDiagram
 
 ## 알림
 
-다섯 종류의 뜻과 쓰는 기준은 `gitifact guide show writing`에 있다. 브라우저에서는 이렇게 보인다.
+다섯 종류의 쓰는 자리와 파일당 개수 기준은 `gitifact guide show writing`의 "인용과 Alert" 절에 있다. 브라우저에서는 이렇게 보인다(`NOTE`는 위 다이어그램 절의 상자).
 
 > [!TIP]
-> 알아 두면 편하지만 몰라도 되는 것.
+> 작업에 도움이 되는 선택적 요령.
 
 > [!IMPORTANT]
-> 읽는 사람이 놓치면 결과가 달라지는 것.
+> 깨면 안 되는 불변 조건, 작업 전에 알아야 할 필수 조건.
 
 > [!WARNING]
-> 하면 문제가 생기는 것.
+> 어기면 보안 문제나 잘못된 동작으로 이어지는 조건.
 
 > [!CAUTION]
-> 되돌리기 어려운 것.
+> 데이터 손실처럼 되돌리기 어려운 위험.
 
 표지 없는 인용문은 인용 그대로 남는다.
 

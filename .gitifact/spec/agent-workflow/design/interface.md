@@ -10,26 +10,60 @@ requirements:
   - R-uywsfp34va
 ---
 
-## 사용자 스토리 작성과 배포
+## 지침의 구성과 전달
 
-`gitifact guide show spec`의 작성 규칙과 요구사항 파일 예시가 사용자 역할·목표·이유를 담은 스토리를 안내한다. 수용 조건은 조건·기대 동작 형식을 유지한다. 새 요구사항과 요청받은 개정 범위에 적용하며 기존 ID·확정 제약을 보존하고 모르는 동기는 만들지 않는다. 별도 제약은 범위와 제약 절에, 내부 구현 방식은 설계에 둔다.
+CLI 패키지가 지침 Markdown을 담고, `init`·`update`가 쓰는 블록과 `guide` 명령으로 사용자 프로젝트에 전달한다. 이 저장소의 AGENTS.md나 명세를 사용자에게 배포하는 방식에 의존하지 않는다.
 
-CLI 패키지가 지침 Markdown을 포함하고 init이 쓰는 블록과 `guide` 명령으로 사용자 프로젝트에 전달한다. 우리 저장소의 AGENTS.md나 명세를 사용자에게 배포하는 방식에 의존하지 않는다. 패키지 설치·블록 갱신과 사용자 문단 보존 검사는 전달 경로를 검증하며, 독립 에이전트의 실제 작성 행동은 별도 검증 대상이다. 특정 문형을 CLI 파서로 강제하지 않는다.
+```mermaid
+flowchart LR
+  subgraph pkg["CLI 패키지"]
+    B["블록 원본"]
+    T["주제별 지침"]
+    D["기본 위키 방침"]
+  end
+  subgraph proj["사용자 프로젝트"]
+    A["지침 파일"]
+    R["위키 README"]
+  end
+  B -->|init| A
+  D -->|처음 도입| R
+  T --> G["guide show"]
+  R -->|wiki만| G
+  D -->|README 없음| G
+  A --> E["에이전트"]
+  G --> E
+```
 
-## 기록 보기 요청
+| 대상 | 원본 | 비고 |
+| :--- | :--- | :--- |
+| 블록 원본 | `apps/cli/src/shared/i18n/<lang>/block.md` | AGENTS.md·CLAUDE.md 등의 마커 사이에 쓴다 |
+| 주제별 지침 | `apps/cli/src/shared/i18n/<lang>/docs/<topic>.md` | topic은 workflow·spec·design·wiki·writing·commit·migrate. 파일 이름이 곧 topic이다 |
+| 기본 위키 방침 | 같은 폴더의 `wiki.default.md` | README가 없을 때 싣는 방침이자 `init`이 README를 만드는 템플릿 |
 
-블록 규칙과 workflow 문서에 "요구사항·프로젝트 현황·변경 이력·패치노트를 보여 달라"는 요청을 `browser` 실행과 연결하는 문장을 둔다. 명령 목록의 한 줄만으로는 에이전트가 이 말을 명령과 연결하지 못했다. `browser`는 URL을 출력한 뒤 종료하지 않으므로 백그라운드 실행을 명시한다. 이미 띄운 서버가 있으면 URL을 다시 알린다. 기본 브라우저를 자동으로 여는 `--open`은 논의만 하고 범위에서 뺐다.
+지침 파일마다 프론트매터에 `title`·`description`을 두고 `guide list`가 그것으로 목록을 만든다. 빌드는 이 파일들을 `dist/i18n/<lang>/docs/<topic>.md`로 번들한다. 패키지 설치·블록 갱신과 사용자 문단 보존 검사는 전달 경로를 검증할 뿐이며, 독립 에이전트의 실제 작성 행동은 별도 검증 대상이다.
+
+## 사용자 스토리 안내
+
+`guide show spec`의 작성 규칙과 요구사항 파일 예시가 사용자 역할·목표·이유를 담은 스토리를 안내한다. 수용 조건은 조건·기대 동작 형식을 유지한다. 새 요구사항과 요청받은 개정 범위에 적용하며 기존 ID와 확정 제약을 보존하고, 모르는 동기는 만들지 않는다. 별도 제약은 범위와 제약 절에, 내부 구현 방식은 설계에 둔다. 특정 문형을 CLI 파서로 강제하지 않는다.
 
 ## 문서 문체 지침
 
-문체는 `writing.md` 한 파일이며 `guide show writing`으로만 읽는다. spec·design·wiki 지침은 "문체는 `gitifact guide show writing`을 따른다" 한 줄로 가리키고 규칙을 복사하지 않는다. 블록의 규칙 목록에도 같은 한 줄을 둔다.
-
-문체를 세 문서에 나눠 적는 안은 같은 규칙이 세 벌이 되어 이후 수정 때 어긋나므로 기각했다. 위키 형식 문서(`wiki.md`) 안의 한 절로 두는 안은 요구사항만 쓰는 세션이 위키 문서를 읽어야 전문을 보게 되고, 위키 형식 문서가 전 문서의 문체까지 안게 되어 기각했다. 기본 위키 방침(`wiki.default.md`)에 두는 안은 프로젝트가 고칠 수 있다는 장점이 있으나, README가 이미 있는 기존 프로젝트에는 영영 닿지 않고 운영 방침은 wiki topic 출력에만 실려 요구사항·설계 작성에 닿지 않으므로 기각했다.
-
-CLI는 문체를 검사하지 않는다. 사용자에게 보이는 문구와 인용·코드는 문체 교정 대상이 아니므로 지침 본문에 그 예외를 적는다.
+문체는 `writing.md` 한 파일이며 `guide show writing`으로만 읽는다. spec·design·wiki 지침은 "문체는 `gitifact guide show writing`을 따른다" 한 줄로 가리키고 규칙을 복사하지 않는다. 블록의 규칙 목록에도 같은 한 줄을 둔다. CLI는 문체를 검사하지 않는다. 화면 문구와 인용·코드는 문체 교정 대상이 아니라는 예외를 지침 본문에 적는다.
 
 ## 위키 운영 방침
 
-지침 topic은 workflow·spec·design·wiki·writing·commit·migrate이며 각각 `<topic>.md` 하나로 번들된다. 파일 이름이 곧 topic이고, 파일마다 프론트매터에 `title`·`description`을 두어 `guide list`가 그것으로 목록을 만든다. `wiki.default.md`는 기본 위키 방침으로, README가 없을 때 싣는 내용이자 `init`이 README를 만드는 템플릿이다. `guide.ts`의 `renderGuide`는 wiki topic에서만 프로젝트 루트(`.gitifact/config.json`이 있는 가장 가까운 상위 폴더)의 README를 읽어 frontmatter와 제목을 떼고, 코드 블록 밖의 제목을 한 단계 낮춰 "운영 방침" 제목 아래에 붙인다. 1MiB를 넘거나 비어 있으면 기본 방침을 쓰고 제목에 기본값임을 밝힌다. `init`은 새 설정을 만든 뒤 `.gitifact/wiki/`가 없을 때만 README를 `wx`로 쓴다. 이때 W- ID와 `title`·`description` 프론트매터를 붙인 위키 문서로 쓴다. 블록은 "요구사항·설계·코드를 바꾸기 전에 `guide show wiki`를 확인한다"와 "위키 운영 방식을 바꾸려면 README를 고친다"를 안내한다.
+`guide.ts`의 `renderGuide`는 wiki topic에서만 형식 뒤에 "운영 방침" 절을 붙인다. 프로젝트 루트는 `.gitifact/config.json`이 있는 가장 가까운 상위 폴더다.
 
-처음에는 모든 topic을 형식/운영 두 파일로 나누고 `.gitifact/overrides/<topic>.md`로 대체하게 했으나(`--eject`), 프로젝트마다 달라야 하는 것은 위키 방식뿐이어서 사용자 결정으로 README 방식으로 바꿨다(2026-09-18). README를 일반 페이지로 두고 에이전트가 직접 읽게 하는 안은 읽기를 빠뜨릴 수 있고 README가 없을 때의 기본이 없어 기각했다. `changes commit`은 `.gitifact` 안에서 문서·이유 파일·설정·에셋만 커밋하므로 옛 `.gitifact/overrides/` 파일은 이 명령으로 커밋할 수 없다.
+| README(`.gitifact/wiki/README.md`) | 운영 방침 절에 싣는 것 |
+| :--- | :--- |
+| 1 MiB 이하 일반 파일이고 본문이 있음 | README 본문. 프론트매터와 첫 `# ` 제목을 떼고, 코드 블록 밖의 제목을 한 단계 낮춘다 |
+| 없음, 비어 있음, 1 MiB 초과, 프로젝트 밖 | 내장 `wiki.default.md`. 절 제목에 기본값임을 밝힌다 |
+
+`init`은 새 설정을 만든 뒤 `.gitifact/wiki/` 폴더가 없을 때만 README를 `wx`로 쓴다. W- ID와 `title`·`description` 프론트매터를 붙인 위키 문서로 쓰며, 다시 실행해도 지워진 README를 되살리지 않는다. 블록은 "요구사항·설계·코드를 바꾸기 전에 `guide show wiki`를 확인한다"와 "위키 운영 방식을 바꾸려면 README를 고친다"를 안내한다.
+
+> [!NOTE]
+> `changes commit`은 `.gitifact` 안에서 문서·이유 파일·설정·에셋만 커밋한다. 남아 있는 `.gitifact/overrides/` 파일은 이 명령으로 커밋할 수 없다.
+
+## 기록 보기 요청
+
+블록 규칙은 요구사항·프로젝트 현황·변경 이력을, workflow 지침은 여기에 패치노트까지 더해 보여 달라는 요청을 `browser` 실행과 연결한다. `browser`는 URL을 출력한 뒤 종료하지 않으므로 백그라운드 실행을 명시한다. 이미 띄운 서버가 있으면 새로 띄우지 않고 URL을 다시 알린다. 기본 브라우저를 자동으로 여는 옵션(`--open`)은 두지 않는다.

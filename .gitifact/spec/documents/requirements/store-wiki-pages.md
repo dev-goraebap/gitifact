@@ -9,7 +9,9 @@ order: 10
 
 ### 범위와 제약
 
-위키는 `.gitifact/wiki/` 아래 Markdown 페이지이며 하위 폴더를 자유롭게 둔다. 폴더·파일 이름은 소문자·숫자·하이픈이고, 루트 페이지만 `README.md`·`ARCHITECTURE.md`처럼 대문자 이름을 쓸 수 있다. `README.md`가 진입 페이지다. 각 페이지는 frontmatter의 `id`(CLI가 발급한 `W-난수`), 최상위 제목, 본문으로 구성한다. ID는 경로·제목과 독립적이다. 이전의 product·guides 폴더와 `P-`·`G-` ID는 읽지도 쓰지도 않으며 정식 버전 전 규약이라 전환 도구를 두지 않는다.
+위키는 `.gitifact/wiki/` 아래 Markdown 페이지이며 하위 폴더를 자유롭게 둔다. 폴더·파일 이름은 소문자·숫자·하이픈이고, 루트 페이지만 `README.md`·`ARCHITECTURE.md`처럼 대문자 이름을 쓸 수 있다. `README.md`가 진입 페이지다.
+
+각 페이지는 frontmatter의 `id`(CLI가 발급한 `W-난수`)·`title`·`description`과 본문으로 구성한다. ID는 경로·제목과 독립적이다. product·guides 폴더와 `P-`·`G-` ID는 읽지도 쓰지도 않으며 전환 도구를 두지 않는다.
 
 무엇을 어떤 페이지로 나눌지는 `README.md`의 운영 방침이 정한다. `init`이 기본 방침(아키텍처 결정 기록을 쌓는다)으로 만들어 두고 프로젝트가 고친다. CLI는 형식만 검증한다.
 

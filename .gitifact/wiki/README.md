@@ -43,12 +43,13 @@ description: 무엇을 정했는지 한 줄
 | 페이지 | 다루는 것 |
 | :--- | :--- |
 | [CLI와 공통 코드](rules/cli.md) | 코드 책임, 계약과 오류, 문구(i18n), 저장 규약, 조회·커밋 흐름, 로컬 서버, 빌드·테스트 |
-| [브라우저](rules/browser.md) | 화면과 경로, FSD 구성, 데이터 흐름, 레이아웃, 차트, 서버 계약, 문서 링크 |
-| [프론트엔드 개발 환경](rules/frontend/development.md) | 실행·빌드·테스트 |
-| [프론트엔드 코드 스타일](rules/frontend/code-style.md) | 파일·컴포넌트·상태 규칙 |
+| [브라우저](rules/browser.md) | 경로와 URL 상태, 슬라이스 구성, 데이터 흐름, 레이아웃, 목록 표, 차트, 서버 계약, 문서 렌더링, 표시 언어 |
+| [프론트엔드 개발 환경](rules/frontend/development.md) | 의존성, 개발 실행, 빌드와 화면 테스트 |
+| [프론트엔드 코드 스타일](rules/frontend/code-style.md) | 파일·컴포넌트·상태 규칙, FSD 계층과 의존 방향 |
 | [프론트엔드 디자인 시스템](rules/frontend/design-system.md) | Astryx 사용 규칙 |
 | [기능 설계 문서](rules/design-documents.md) | 설계 형식을 정하는 곳과 이 저장소의 설계 파일 구성 |
+| [문서 표기](rules/markdown-notation.md) | 문서에 쓸 수 있는 Markdown 표기와 브라우저가 그리는 범위 |
 | [검증](rules/verification.md) | 통합 검증과 테스트 자료의 기준 |
-| [문서 문체](rules/writing.md) | 위키·명세·지침의 톤앤매너 |
+| [문서 문체](rules/writing.md) | 이 저장소 문서에만 해당하는 문체 규칙 |
 
 규칙이 바뀌면 해당 페이지를 고친다. 그 변경이 여러 기능에 걸치는 구조·기술 선택이면 결정 기록도 함께 남긴다. 표에 없는 주제가 생기면 페이지를 만들고 이 표에 올린다. 제품이 무엇이고 누구를 위한 것인지는 위키가 아니라 저장소 루트의 README.md에 있고 원본은 `packages/intro`다.

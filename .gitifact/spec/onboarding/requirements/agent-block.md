@@ -9,7 +9,11 @@ order: 30
 
 ### 범위와 제약
 
-CLI의 init이 AGENTS.md 등 에이전트 지침 파일에 GITIFACT:START와 GITIFACT:END 마커 사이의 블록을 쓰고, 재실행 시 그 사이만 갱신한다. 마커 바깥의 사용자 내용은 보존한다. 블록은 규칙의 요약이며 상세 형식은 `gitifact docs <topic>`이 제공한다. 별도 스킬 파일은 설치하지 않는다. 블록은 Markdown으로 렌더링해도 제목·목록·표·구분선이 그대로 읽히며, 줄이 한 문단으로 합쳐지지 않는다. 전역 설치는 필수가 아니다. 기본 도입은 npx로 실행하고, 이후에는 블록에 적힌 버전을 사용한다. 프로젝트가 별도의 실행 방법을 지정하면 우선한다. 도구마다 자동으로 읽는 지침 파일이 달라 Claude Code는 CLAUDE.md만 읽고 AGENTS.md는 읽지 않는다. 블록을 AGENTS.md에 쓸 때 Claude용 지침 파일이 없으면 프로젝트가 Claude Code를 쓰는지와 무관하게 AGENTS.md를 가져오는 루트 CLAUDE.md를 함께 만든다. 원본은 AGENTS.md 하나로 유지하고 같은 블록을 두 파일에 복제하지 않는다.
+CLI의 init이 AGENTS.md 등 에이전트 지침 파일에 GITIFACT:START와 GITIFACT:END 마커 사이의 블록을 쓰고, 재실행 시 그 사이만 갱신한다. 마커 바깥의 사용자 내용은 보존한다. 블록은 규칙의 요약이며 상세 형식은 `gitifact guide show <topic>`이 제공한다. 별도 스킬 파일은 설치하지 않는다. 블록은 Markdown으로 렌더링해도 제목·목록·표·구분선이 그대로 읽히며, 줄이 한 문단으로 합쳐지지 않는다.
+
+전역 설치는 필수가 아니다. 기본 도입은 npx로 실행하고, 이후에는 블록에 적힌 버전을 사용한다. 프로젝트가 별도의 실행 방법을 지정하면 우선한다.
+
+도구마다 자동으로 읽는 지침 파일이 달라 Claude Code는 CLAUDE.md만 읽고 AGENTS.md는 읽지 않는다. 블록을 AGENTS.md에 쓸 때 Claude용 지침 파일이 없으면 프로젝트가 Claude Code를 쓰는지와 무관하게 AGENTS.md를 가져오는 루트 CLAUDE.md를 함께 만든다. 원본은 AGENTS.md 하나로 유지하고 같은 블록을 두 파일에 복제하지 않는다.
 
 ### 수용 조건
 

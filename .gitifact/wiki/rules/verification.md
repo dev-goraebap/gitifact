@@ -4,9 +4,28 @@ title: 검증
 description: 변경을 확인하는 검증 명령과 범위
 ---
 
-변경을 어떻게 확인하는지 정한다.
+통합 검증은 저장소 루트의 `pnpm check`다. 커밋 전에 실행하고 결과를 보고한다. 작업 중에는 바뀐 부분의 테스트 파일만 돌리고, 전체 검사는 커밋 묶음마다 한 번 한다.
 
-통합 검증은 `pnpm check`다. 타입 검사, 전체 빌드, core·contracts·intro·CLI·브라우저 테스트, 패키지 오프라인 설치 검사를 한 번에 실행한다. 커밋 전에 실행하고 결과를 보고한다. 패키지 테스트는 하나씩 차례로 돌고(`--workspace-concurrency=1`) 브라우저 테스트는 Chromium 워커 4개를 쓴다. 전에는 CLI 테스트(git 프로세스 수백 개)와 브라우저 테스트(코어 절반인 12개 워커)가 겹쳐 돌아 PC 전체가 느려지고 Git 조회 시간 초과가 났다. 차례로 돌려도 전체는 약 200초이고 CLI 테스트는 겹칠 때보다 빨랐다(162초 → 133초, 2026-09-23 측정). 테스트 저장소는 전역 설정으로 Git 자동 정리(`maintenance.auto`, `gc.auto`)를 꺼 커밋마다 백그라운드 프로세스가 뜨지 않게 한다. 작업 중에는 바뀐 부분의 테스트 파일만 돌리고 전체 검사는 커밋 묶음마다 한 번 한다.
+## pnpm check가 하는 일
+
+루트 package.json의 스크립트가 아래 순서로 실행한다. 전체는 약 200초 걸린다.
+
+1. 타입 검사: core·contracts를 빌드한 뒤 모든 패키지의 `typecheck`
+2. 전체 빌드: core·contracts → browser → cli
+3. 패키지 테스트: core·contracts·intro·CLI·브라우저의 `test:built`를 한 패키지씩 차례로(`--workspace-concurrency=1`)
+4. 패키지 오프라인 설치 검사: `scripts/test-package.mjs`(`pnpm test:package`)
+
+| 테스트 | 동시 실행 |
+| :--- | :--- |
+| CLI (`node --test`) | 테스트 파일 4개(`--test-concurrency=4`) |
+| 브라우저 (Playwright) | Chromium 워커 4개(`apps/browser/playwright.config.ts`) |
+
+> [!WARNING]
+> `pnpm check`를 다른 `pnpm check`·빌드·테스트와 겹쳐 돌리지 않는다. CLI 테스트는 git 프로세스를 수백 개 띄우므로, 브라우저 테스트나 다른 실행과 겹치면 PC 전체가 느려지고 Git 조회가 시간 초과로 실패한다.
+
+CLI 테스트의 임시 저장소는 `apps/cli/test/git-fixture.mjs`가 전역 Git 설정(`GIT_CONFIG_GLOBAL`)을 자체 파일로 바꿔 `maintenance.auto = false`, `gc.auto = 0`으로 둔다. 커밋마다 Git의 백그라운드 정리 프로세스가 뜨지 않게 하기 위해서다.
+
+## 검증 기준
 
 - 파서·상태 전이·부분 staging·형식 호환·복구는 예상 결과가 고정된 자료로 검증한다. gitifact 자신의 check 결과만으로 구현이 맞다고 판단하지 않는다.
 - 실패·복구 시험은 임시 저장소에서만 한다. 실제 프로젝트의 이력과 사용자 설정을 실험 대상으로 삼지 않는다.

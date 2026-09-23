@@ -9,7 +9,7 @@ order: 20
 
 ### 범위와 제약
 
-초기화 재실행은 설정·기준선을 덮어쓰지 않는다. 구형 자료를 신규 프로젝트로 오인하지 않는다. 이전 저장 규약(schemaVersion이 없는 Tryce 형식과 schemaVersion 1)의 설정과 기록은 읽지도 전환하지도 않는다. CLI보다 새로운 규약의 프로젝트는 바꾸지 않는다.
+초기화 재실행은 설정·기준선을 덮어쓰지 않는다. 구형 자료를 신규 프로젝트로 오인하지 않는다. 이전 저장 규약(schemaVersion이 없는 Tryce 형식과 schemaVersion 1)의 설정과 기록은 읽지도 전환하지도 않는다. schemaVersion 2 프로젝트는 읽지 않고 `gitifact guide show migrate`의 전환 절차를 안내한다. CLI보다 새로운 규약의 프로젝트는 바꾸지 않는다.
 
 ### 수용 조건
 
