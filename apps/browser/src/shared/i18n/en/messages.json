@@ -258,11 +258,6 @@
   "features.designIndex": "Design index",
   "features.designIndexTitle": "Designs of this feature",
   "features.requirementDesigns": "Designs for this requirement",
-  "document.history": "Changes to this document",
-  "document.historyNone": "No committed changes.",
-  "document.historyFailed": "Could not load the change history.",
-  "document.historyLoading": "Loading the change history.",
-  "document.historyAll": "See all {count} in the activity →",
   "document.pager": "Previous and next design",
   "document.previous": "← {title}",
   "document.next": "{title} →",
@@ -294,5 +289,6 @@
   "event.currentFeature": "Open the current feature →",
   "header.trail": "Breadcrumb",
   "commit.back": "← Activity",
-  "features.requirementHistoryLabel": "History"
+  "features.requirementHistoryLabel": "History",
+  "features.designHistory": "Design history →"
 }

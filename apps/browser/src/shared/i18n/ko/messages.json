@@ -258,11 +258,6 @@
   "features.designIndex": "설계 목차",
   "features.designIndexTitle": "이 기능의 설계",
   "features.requirementDesigns": "이 요구사항의 설계",
-  "document.history": "이 문서의 변경",
-  "document.historyNone": "커밋된 변경이 없습니다.",
-  "document.historyFailed": "변경 이력을 불러오지 못했습니다.",
-  "document.historyLoading": "변경 이력을 불러오는 중입니다.",
-  "document.historyAll": "활동에서 {count}건 모두 보기 →",
   "document.pager": "이전·다음 설계",
   "document.previous": "← {title}",
   "document.next": "{title} →",
@@ -294,5 +289,6 @@
   "event.currentFeature": "현재 기능 명세 보기 →",
   "header.trail": "이동 경로",
   "commit.back": "← 활동",
-  "features.requirementHistoryLabel": "변경 이력"
+  "features.requirementHistoryLabel": "변경 이력",
+  "features.designHistory": "이 설계의 이력 →"
 }

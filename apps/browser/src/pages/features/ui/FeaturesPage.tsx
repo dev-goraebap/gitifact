@@ -14,6 +14,6 @@ export function FeaturesPage({ featureId, search, change }: { featureId?: string
       <Selector label={t('filters.design')} isLabelHidden value={search.design ?? ''} options={[{ value: '', label: t('filters.allDesigns') }, { value: 'yes', label: t('filters.designWritten') }, { value: 'no', label: t('filters.designMissing') }]} onChange={design => change({ ...search, design: design || undefined })}/>
       <Selector label={t('filters.contributor')} isLabelHidden value={search.author ?? ''} options={[{ value: '', label: t('filters.allContributors') }, ...checkout.contributors.map(p => ({ value: p.email, label: p.name }))]} onChange={author => change({ ...search, author: author || undefined })}/>
     </> })}>
-    {({ checkout, session }) => <FeatureView features={checkout.features} featureId={featureId} search={search} change={change} session={session} head={checkout.head}/>}
+    {({ checkout }) => <FeatureView features={checkout.features} featureId={featureId} search={search} change={change}/>}
   </RecordsPage>;
 }

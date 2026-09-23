@@ -27,7 +27,6 @@
 /* The design being read is marked in its index at every width: unlike the requirements, only that one is on the page. */
 .designSection { scroll-margin-top:calc(var(--gitifact-topbar-height) + var(--spacing-4)); }
 .designIndex a[aria-current] { color:var(--color-text-primary); font-weight:600; }
-.documentHistory { padding-top:var(--spacing-5); border-top:1px solid var(--color-border); }
 .documentPager { padding-block:var(--spacing-5); border-top:1px solid var(--color-border); }
 .pagerNext { margin-inline-start:auto; }
 .featureDetail a:hover { text-decoration:underline; }

@@ -135,15 +135,13 @@ test('a fragment typed from outside lands on its section, and only that one lies
   await expect(page.locator('[aria-current=location]')).toHaveCount(1);
 });
 
-test('the design tab reads one document at a time, and each requirement links to every design that names it', async ({ page }) => {
+test('the design tab reads one document at a time, links to its history, and each requirement links to every design that names it', async ({ page }) => {
   const linked = structuredClone(many);
   linked.features[1]!.design = undefined;
   linked.features[1]!.designs = [{ title: '알림 설계', requirements: [], sources: [], body: '서버가 밀지 않는다.' },
     { title: '표시 방식', requirements: ['R-bbbbbbbbbb', 'R-bbbbbbbbbc'], sources: [], body: '조회로 읽는다.' },
     { title: '끄기', requirements: ['R-bbbbbbbbbc'], sources: [], body: '설정에 둔다.' }];
   const [shown, off] = ['D-bbbbbbbbb1', 'D-bbbbbbbbb2'];
-  // One change of the design "끄기", so the document lists its own history and nothing of the others.
-  linked.events = [{ ...many.events[0]!, key: many.events[0]!.commit + ':' + off, id: off, kind: 'design', types: ['created'], reasons: ['끄기 설계를 더한다.'] }, ...many.events];
   await mockApi(page);
   await serve(page, linked);
   await page.goto('/features/S-bbbbbbbbbb?tab=requirements');
@@ -161,16 +159,16 @@ test('the design tab reads one document at a time, and each requirement links to
   await expect(index.getByRole('link')).toHaveText(['알림 설계', '표시 방식', '끄기']);
   await expect(index.locator('[aria-current=page]')).toHaveText('끄기');
   await expect(panel.getByRole('link', { name: '알림 끄기' })).toHaveCount(1);
-  // Its own changes are beside it and open in the activity.
-  const history = page.getByRole('region', { name: '이 문서의 변경' });
-  await expect(history.getByRole('link', { name: '끄기 설계를 더한다.' })).toHaveAttribute('href', new RegExp('/activity/[a-f0-9]+#' + off));
+  // Like a requirement, its history is one link into the activity, narrowed to this design.
+  const historyLink = () => panel.getByRole('region', { name: '변경 이력' }).getByRole('link', { name: '이 설계의 이력 →' });
+  await expect(historyLink()).toHaveAttribute('href', new RegExp('q=' + off));
   // The last design has only a way back; the first is where the tab opens without a choice.
   const pager = page.getByRole('navigation', { name: '이전·다음 설계' });
   await expect(pager.getByRole('link')).toHaveText(['← 표시 방식']);
   await pager.getByRole('link').click();
   await expect(page).toHaveURL(new RegExp('selected=' + shown));
   await expect(pager.getByRole('link')).toHaveText(['← 알림 설계', '끄기 →']);
-  await expect(page.getByRole('region', { name: '이 문서의 변경' })).toContainText('커밋된 변경이 없습니다.');
+  await expect(historyLink()).toHaveAttribute('href', new RegExp('q=' + shown));
   await page.goto('/features/S-bbbbbbbbbb?tab=design');
   await expect(panel.locator('mark')).toHaveText(['알림 설계']);
   await expect(index.locator('[aria-current=page]')).toHaveText('알림 설계');

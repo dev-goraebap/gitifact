@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { BrowserSessionV3, SpecFeature } from '@gitifact/contracts';
+import type { SpecFeature } from '@gitifact/contracts';
 import { VStack } from '@astryxdesign/core/VStack';
 import { HStack } from '@astryxdesign/core/HStack';
 import { Heading } from '@astryxdesign/core/Heading';
@@ -16,7 +16,6 @@ import { AvatarGroup, AvatarGroupOverflow } from '@astryxdesign/core/AvatarGroup
 import { useMediaQuery } from '@astryxdesign/core/hooks';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { DesignDocument } from '../../../entities/document';
-import { DocumentHistory } from './DocumentHistory';
 import { avatarSource, contributorHref } from '../../../entities/contributor';
 import type { RecordSearch } from '../../../widgets/records-page';
 import { designsByRequirement } from '../model/design-sections';
@@ -27,12 +26,12 @@ import { DocumentBody } from '../../../shared/ui/document';
 import { RelatedList, RelatedItem } from '../../../shared/ui/related-list';
 import { t, useLanguage } from '../../../shared/i18n';
 
-export function FeatureView({ features, featureId, search, change, session, head }: { features: SpecFeature[]; featureId?: string | undefined; search: RecordSearch; change: (s: RecordSearch) => void; session: BrowserSessionV3; head: string | null }) {
+export function FeatureView({ features, featureId, search, change }: { features: SpecFeature[]; featureId?: string | undefined; search: RecordSearch; change: (s: RecordSearch) => void }) {
   useLanguage();
   if (!featureId) return <FeatureList features={features} search={search} change={change}/>;
   const selected = features.find(f => f.id === featureId);
   if (!selected) return <PageState kind="not-found" title={t('features.notFoundTitle')} description={t('features.notFoundDescription', { id: featureId })} actions={<Link to="/features">{t('features.backToList')}</Link>}/>;
-  return <FeatureDetail feature={selected} features={features} search={search} change={change} session={session} head={head}/>;
+  return <FeatureDetail feature={selected} features={features} search={search} change={change}/>;
 }
 
 /** Overlapping author avatars; the fourth and later collapse into a "+N" count. */
@@ -130,7 +129,7 @@ function FeatureList({ features, search, change }: { features: SpecFeature[]; se
   </VStack>;
 }
 
-function FeatureDetail({ feature: selected, features, search, change, session, head }: { feature: SpecFeature; features: SpecFeature[]; search: RecordSearch; change: (s: RecordSearch) => void; session: BrowserSessionV3; head: string | null }) {
+function FeatureDetail({ feature: selected, features, search, change }: { feature: SpecFeature; features: SpecFeature[]; search: RecordSearch; change: (s: RecordSearch) => void }) {
   useLanguage();
   const tab = search.tab === 'design' ? 'design' : 'requirements';
   const designSections = designsByRequirement(selected.designs);
@@ -174,7 +173,10 @@ function FeatureDetail({ feature: selected, features, search, change, session, h
       <VStack gap={0} className={`${styles.requirementList} ${styles.designPanel}`}>
         <VStack key={design.id} id={design.id} gap={6} className={styles.designSection}>
           <DesignDocument design={design} path={design.path} features={features}/>
-          <DocumentHistory session={session} head={head} id={design.id} featureId={selected.id}/>
+          {/* Like a requirement, a design points to its history in the activity rather than listing it here. */}
+          <RelatedList label={t('features.requirementHistoryLabel')}>
+            <RelatedItem title={<Link to="/activity" search={{ feature: selected.id, q: design.id }}>{t('features.designHistory')}</Link>}/>
+          </RelatedList>
         </VStack>
         <HStack as="nav" aria-label={t('document.pager')} gap={4} className={styles.documentPager}>
           {around[0] && <Link to="/features/$featureId" params={{ featureId: selected.id }} search={{ ...search, tab: 'design', selected: around[0].id }}>{t('document.previous', { title: around[0].title })}</Link>}
