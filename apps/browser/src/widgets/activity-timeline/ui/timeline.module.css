@@ -29,17 +29,13 @@
    The kind is a label beside the title, not a peer of it, so it is smaller than the title as well as quieter. */
 .recordType { flex:0 0 auto; min-width:3rem; }
 .recordKind { flex:0 0 auto; min-width:3.75rem; white-space:nowrap; font-size:.6875rem; }
-.recordDot { flex:0 0 auto; }
 .recordTitle { flex:0 1 auto; min-width:0; color:var(--color-text-primary); font-weight:500; text-decoration:none; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.recordTarget { flex:0 1 auto; min-width:0; color:var(--color-text-accent); text-decoration:none; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.recordTitle:hover, .recordTarget:hover { text-decoration:underline; }
+/* Feature / document: the feature is quiet context and gives way first when the line is short. */
+.recordPath { display:flex; align-items:baseline; gap:var(--spacing-1-5); flex:0 1 auto; min-width:0; }
+.recordFeature { flex:0 10 auto; min-width:2em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--color-text-secondary); font-size:.8125rem; }
+.recordSlash { flex:0 0 auto; color:var(--color-text-secondary); opacity:.6; }
+.recordTitle:hover { text-decoration:underline; }
 .record[aria-current=true] .recordTitle { text-decoration:underline; }
-/* Narrow: the change and the title keep one line and the place moves under the title, indented past both columns. */
-@media(width<48rem) {
-  .record { flex-wrap:wrap; }
-  .recordTarget { flex:1 0 100%; padding-inline-start:calc(3rem + 3.75rem + var(--spacing-2) * 2); }
-  .recordDot { display:none; }
-}
 /* Text cut by the browser alone. Astryx Text's maxLines measures each element to decide on a tooltip and forces a
    layout per element, which a long list pays once per row (see ActivityTimeline). */
 .oneLine { display:block; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }

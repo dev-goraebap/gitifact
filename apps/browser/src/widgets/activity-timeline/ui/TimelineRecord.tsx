@@ -11,8 +11,10 @@ const colors={created:'green',modified:'blue',deleted:'red',moved:'purple'} as c
 const kinds=() => ({feature:t('kind.feature'),requirement:t('kind.requirement'),design:t('kind.design'),wiki:t('kind.wiki')});
 
 /**
- * One record a commit changed, on one line: what happened to it, what kind of record it is, its title, and where it
- * now lives. The columns hold a width so the rows under one reason line up and the eye reads down them.
+ * One record a commit changed, on one line: what happened to it, what kind of record it is, and where it sits as a
+ * path, the feature in quiet text before the document the link opens (the record's section of the commit page). A
+ * wiki page and a feature's own introduction are named by their title alone. The columns hold a width so the rows
+ * under one reason line up and the eye reads down them.
  * The title is cut by CSS, not by Text's maxLines: maxLines measures every element to decide on a tooltip, which
  * forces a layout per row, and a list of 334 rows took 2.7 s to draw again when the reader came back to it.
  */
@@ -20,16 +22,14 @@ export function TimelineRecord({event:e,features}: {event:SpecEvent;features:Spe
   useLanguage();
  const spec=e.after??e.before;
  const kind=e.types.includes('deleted')?'deleted':e.types.includes('modified')?'modified':e.types.includes('moved')?'moved':'created';
- const feature=e.kind==='wiki'?undefined:features.find(f=>f.id===spec?.specId);
- const page=e.kind==='wiki'?(e.after??e.before)?.path.replace(/^\.gitifact\/wiki\//,''):undefined;
+ // The feature a requirement or design belongs to now; a feature removed since then leaves the title on its own.
+ const feature=e.kind==='requirement'||e.kind==='design'?features.find(f=>f.id===spec?.specId):undefined;
  return <HStack as="li" gap={2} className={styles.record}>
   <HStack gap={0} className={styles.recordType}><Token label={e.types.map(type=>names()[type]).join(' · ')} color={colors[kind]} size="sm"/></HStack>
   <Text type="supporting" color="secondary" className={styles.recordKind}>{kinds()[e.kind]}</Text>
-  <Link to="/activity/$commit" params={{commit:e.commit}} hash={e.id} className={styles.recordTitle}>{spec?.title??e.id}</Link>
-  {(feature??page)&&<Text type="supporting" color="secondary" className={styles.recordDot}>·</Text>}
-  {feature&&<Link to="/features/$featureId" params={{featureId:feature.id}} className={styles.recordTarget}>{feature.title}</Link>}
-  {page&&e.after&&<Link to="/wiki/$documentId" params={{documentId:e.id}} className={styles.recordTarget}>{page}</Link>}
-  {/* A deleted page has nowhere to go; its last path still says where it was. */}
-  {page&&!e.after&&<Text type="supporting" color="secondary" className={styles.recordTarget}>{page}</Text>}
+  <span className={styles.recordPath}>
+   {feature&&<><span className={styles.recordFeature}>{feature.title}</span><span className={styles.recordSlash} aria-hidden>/</span></>}
+   <Link to="/activity/$commit" params={{commit:e.commit}} hash={e.id} className={styles.recordTitle}>{spec?.title??e.id}</Link>
+  </span>
  </HStack>;
 }

@@ -242,3 +242,14 @@ test('the overview counts all of history, and a contributor page asks for that p
  const person = page.getByRole('article', { name: '참여자 상세' });
  await expect(person.getByRole('link', { name: '검색어 입력' })).toBeVisible();
 });
+
+test('a record reads as its feature and then the document, and only the document is a link', async ({page}) => {
+ await mockApi(page);await page.goto('/activity');
+ const row=page.getByRole('list',{name:'이 이유로 바뀐 기록'}).getByRole('listitem').first();
+ const feature=specs.features.find(f=>f.id===specs.events[0]!.after!.specId)!;
+ await expect(row).toContainText(new RegExp(feature.title+'\s*/\s*검색어 입력'));
+ // The feature is context, not a way out; the document opens its section of the commit page.
+ await expect(row.getByRole('link')).toHaveText(['검색어 입력']);
+ await row.getByRole('link').click();
+ await expect(page).toHaveURL(new RegExp('/activity/'+specs.head+'#R-abcdefghij$'));
+});

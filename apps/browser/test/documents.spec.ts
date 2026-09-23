@@ -63,7 +63,9 @@ test('wiki changes appear in the activity feed with their kind and open the curr
   await page.goto('/activity?document=wiki');
   const rows = page.getByRole('list', { name: '이 이유로 바뀐 기록' }).getByRole('listitem'); await expect(rows).toHaveCount(1);
   await expect(rows.first()).toContainText('위키 페이지');
-  await expect(rows.first()).toContainText('frontend/layout.md');
+  // A wiki page is named by its title alone; no feature stands before it and no path after it.
+  await expect(rows.first()).not.toContainText('frontend/layout.md');
+  await expect(rows.first()).not.toContainText('/');
   await rows.first().getByRole('link', { name: '레이아웃 지침' }).click();
   const pane = page.getByRole('article', { name: '커밋 상세' });
   await expect(pane).toContainText('레이아웃 지침');
