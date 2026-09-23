@@ -48,4 +48,4 @@ Follow the project's commit message convention. If none exists, state briefly wh
 
 ## Reasons
 
-State only facts established in the conversation and decisions. Say why the change was made rather than what changed. Include rejected alternatives when they affect future work. Past text is read from Git with `gitifact docs show <ID> --ref <commit>` and the course of reasons with `gitifact docs history <ID>`, so do not copy text, authors or times into a reason.
+State only facts established in the conversation and decisions. Say why the change was made rather than what changed. Include rejected alternatives when they affect future work. Document bodies hold only what is current (`gitifact guide show writing`), so history left out of the body, such as the old approach, what prompted the change, or measurements, goes here. Each reason is at most 4,000 characters. Past text is read from Git with `gitifact docs show <ID> --ref <commit>` and the course of reasons with `gitifact docs history <ID>`, so do not copy text, authors or times into a reason.

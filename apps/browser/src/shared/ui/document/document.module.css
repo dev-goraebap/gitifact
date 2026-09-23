@@ -21,12 +21,17 @@
 .reading :global(.astryx-markdown-heading[data-level="4"]), .reading :global(.astryx-markdown-heading[data-level="5"]), .reading :global(.astryx-markdown-heading[data-level="6"]) { margin-block-start:1.75em; }
 .reading :global(.astryx-markdown) > :first-child { margin-block-start:0; }
 .reading :global(.astryx-markdown-list) li + li { margin-block-start:.15em; }
-/* Inline code: a quiet chip that stays on the text baseline. */
-.reading :global(.astryx-markdown-paragraph) code, .reading :global(.astryx-markdown-list) code, .reading :global(.astryx-markdown-table) code { font-size:.875em; padding:.125em .375em; border-radius:var(--radius-inner, var(--radius-element)); background:var(--color-background-muted); border:1px solid var(--color-border); }
+/* Inline code: the monospace face, a quieter color and a gray highlighter band under the lower half of the words.
+   Paths and IDs come in most sentences of a design, and a chip around each one broke the line into boxes. The band
+   is gray so it does not read as the yellow mark on requirement and design titles. */
+.reading :global(.astryx-markdown-paragraph) code, .reading :global(.astryx-markdown-list) code, .reading :global(.astryx-markdown-table) code { font-size:.9em; padding:0 .15em; border:0; border-radius:0; background:none; background-image:linear-gradient(transparent 55%, var(--color-background-muted) 55%, var(--color-background-muted) 94%, transparent 94%); box-decoration-break:clone; -webkit-box-decoration-break:clone; color:var(--color-text-secondary); }
 .reading :global(.astryx-markdown-codeblock) { margin-block:var(--spacing-5); }
-/* Tables: one bordered, rounded block with a muted header row; wide tables scroll inside it. */
-.reading :global(.astryx-markdown-table) { margin-block:var(--spacing-5); border:1px solid var(--color-border); border-radius:var(--radius-element); overflow-x:auto; }
+/* Tables: square, open at the sides, closed by a rule above and below, with a muted header row; wide tables scroll
+   inside it. Cells read a step smaller than prose, as lists do. Astryx sets cell sizes through atomic classes
+   weighted as two IDs, so the size repeats that weight. */
+.reading :global(.astryx-markdown-table):not(#\#):not(#\#) { margin-block:var(--spacing-5); border:0; border-block:1px solid var(--color-border); border-radius:0; overflow-x:auto; }
 .reading :global(.astryx-markdown-table) table { width:100%; border-collapse:collapse; font-size:.9375rem; }
+.reading :global(.astryx-markdown-table) th:not(#\#):not(#\#), .reading :global(.astryx-markdown-table) td:not(#\#):not(#\#) { font-size:.9375rem; }
 .reading :global(.astryx-markdown-table) th { background:var(--color-background-muted); font-weight:600; text-align:start; white-space:nowrap; }
 .reading :global(.astryx-markdown-table) th, .reading :global(.astryx-markdown-table) td { padding:var(--spacing-2) var(--spacing-4); border-bottom:1px solid var(--color-border); vertical-align:top; line-height:1.6; }
 .reading :global(.astryx-markdown-table) tr:last-child td { border-bottom:0; }

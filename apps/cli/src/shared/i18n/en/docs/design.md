@@ -9,7 +9,7 @@ A feature's design is the set of files under its `design/` folder. It explains t
 
 | File | Covers |
 | :--- | :--- |
-| `overview.md` (required) | Scope and approach, components and boundaries, key decisions and rejected alternatives, open questions |
+| `overview.md` (required) | Scope and approach, components and boundaries, decision table, open questions |
 | `data.md` | Storage format, data structures and relations, caches, state and lifetime |
 | `interface.md` | Commands, APIs and contracts, inputs and outputs, boundaries with other modules |
 | `ui.md` | Screen layout and routes, display flow, interaction |
@@ -52,9 +52,19 @@ Relative links in the body (such as `../../../assets/flow.png`) are relative to 
 
 ## Writing the body
 
-Follow `gitifact guide show writing` for style. Separate what is decided, what was observed in the implementation, and what is proposed, and add important alternatives with the reasons for the choice. A list of decisions does not replace an explanation of the implementation. Decisions that are hard to reverse and rejected alternatives belong in `overview.md`.
+Follow `gitifact guide show writing` for style. The body describes the current structure and behavior; how it changed, when, and the old approach go into the commit's change reason. Separate what is decided, what was observed in the implementation, and what is proposed. A list of decisions does not replace an explanation of the implementation.
 
-Use a ` ```mermaid ` fence only where a flow, state transition or data relation reads faster as a picture than as text. One or two per feature design is the norm, placed in the file for the axis the diagram explains. Do not state the same thing both in text and in a diagram.
+Decisions that are hard to reverse and rejected alternatives go one per row in a table under `## Decisions` in `overview.md`. Other axis files do not restate the reasons for those decisions.
+
+```markdown
+## Decisions
+
+| Decision | Reason | Rejected |
+| :--- | :--- | :--- |
+| A cleanup job deletes attachments after a post is deleted | The delete request does not slow down with the number of files | Deleting them in the request (times out with many attachments) |
+```
+
+For diagrams, follow `gitifact guide show writing` for choosing the kind and drawing it, and place each in the file for the axis it explains. Each axis has kinds that suit it: `erDiagram` and a `flowchart` of cache or read flows for data, a `sequenceDiagram` of requests between components for interface, a `stateDiagram-v2` of screen states for ui, and failure and recovery flows for errors.
 
 Before writing a design, read the wiki's structure and rules pages and list the pages you followed in `sources`. If the design conflicts with the wiki, agree with the user on which document to change first.
 
@@ -64,6 +74,6 @@ When shaping a new feature, write requirements and design together by default. I
 
 ## Revisions
 
-Before revising, read the feature's design files and the related requirements, and change only the files affected. Do not rewrite everything or keep appending past decisions. Keep the currently valid design; Git keeps the old text. When a requirement changes, review the designs that point to it ("Referenced by" in `gitifact docs show <R-ID>`); when only the design changes, do not force changes to requirements.
+Before revising, read the feature's design files and the related requirements, and change only the files affected. Rewrite the sentences that changed instead of appending “previously we …” sentences. How it changed goes into the change reason, and Git keeps the old text. When a decision changes, edit its row in the decision table. When a requirement changes, review the designs that point to it ("Referenced by" in `gitifact docs show <R-ID>`); when only the design changes, do not force changes to requirements.
 
 When splitting a large file into axes or merging files, only move sentences; do not edit content in the same commit. After moving, check that every sentence of the old file is present in the new files. Keep IDs when moving files, and make sure the `requirements` of a deleted file moved to the remaining files. When committing, list the D- IDs of changed designs in the change reason's `docs` (`gitifact guide show commit`).
