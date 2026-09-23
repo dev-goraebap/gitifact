@@ -247,7 +247,7 @@ test('a record reads as its feature and then the document, and only the document
  await mockApi(page);await page.goto('/activity');
  const row=page.getByRole('list',{name:'이 이유로 바뀐 기록'}).getByRole('listitem').first();
  const feature=specs.features.find(f=>f.id===specs.events[0]!.after!.specId)!;
- await expect(row).toContainText(new RegExp(feature.title+'\s*/\s*검색어 입력'));
+ await expect(row).toContainText(new RegExp(feature.title+'\s*·\s*검색어 입력'));
  // The feature is context, not a way out; the document opens its section of the commit page.
  await expect(row.getByRole('link')).toHaveText(['검색어 입력']);
  await row.getByRole('link').click();

@@ -6,19 +6,18 @@ import { HStack } from '@astryxdesign/core/HStack';
 import { Grid } from '@astryxdesign/core/Grid';
 import { Heading } from '@astryxdesign/core/Heading';
 import { Text } from '@astryxdesign/core/Text';
-import { Token } from '@astryxdesign/core/Token';
 import { Avatar } from '@astryxdesign/core/Avatar';
 import { ClickableCard } from '@astryxdesign/core/ClickableCard';
 import { Timestamp } from '@astryxdesign/core/Timestamp';
 import { Link } from '@tanstack/react-router';
 import { avatarSource, contributorHref } from '../../../entities/contributor';
+import { ChangeBadge } from '../../../entities/document';
 import type { RecordSearch } from '../../../widgets/records-page';
 import styles from './contributors.module.css';
 import { PageState } from '../../../shared/ui/page-state';
 import { t, tNodes, useLanguage } from '../../../shared/i18n';
 
 type Contributor = NonNullable<BrowserSpecsV5['contributors']>[number];
-const names = () => ({created:t('change.created'),modified:t('change.modified'),deleted:t('change.deleted'),moved:t('change.moved')});
 
 export function ContributorsView({session,head,people,features,email,search}: {session:BrowserSessionV3;head:string|null;people:Contributor[];features:SpecFeature[];email?:string|undefined;search:RecordSearch}) {
   useLanguage();
@@ -93,8 +92,7 @@ function ContributorDetail({session,head,person,features}: {session:BrowserSessi
       <Heading level={3}>{t('activity.recent')}</Heading>
       {activities.length ? <VStack gap={0} className={styles.personActivity}>
         {activities.map(e => <HStack key={e.key} gap={3} className={styles.personActivityRow}>
-          <Token label={e.types.map(type => names()[type]).join(' · ')} color={e.types.includes('deleted') ? 'red' : e.types.includes('modified') ? 'blue' : e.types.includes('moved') ? 'purple' : 'green'}/>
-          <Text type="supporting" color="secondary">{({ feature: t('kind.feature'), requirement: t('kind.requirement'), design: t('kind.design'), wiki: t('kind.wiki') })[e.kind]}</Text>
+          <ChangeBadge event={e}/>
           <Link to="/activity/$commit" params={{commit:e.commit}} hash={e.id} className={styles.entryTitle}>{(e.after ?? e.before)?.title ?? e.id}</Link>
           <Timestamp value={e.date} format="relative"/>
         </HStack>)}

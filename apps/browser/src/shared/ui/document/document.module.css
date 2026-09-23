@@ -57,6 +57,9 @@
 .reading .diagram { margin-inline:0; overflow-x:auto; }
 .reading .diagram svg { max-width:100%; height:auto; display:block; }
 /* GitHub alerts: the left rule and the label carry the meaning; the fill stays faint so the text keeps its contrast. */
+/* An alert reads a step smaller than prose, as lists and tables do, through the same body token. */
+.reading .alert { --text-body-size:.9375rem; --text-body-leading:1.65; font-size:var(--text-body-size); }
+.reading .alert :global(.astryx-markdown-paragraph) { line-height:1.65; }
 .reading .alert { padding:var(--spacing-3) var(--spacing-4); border:1px solid var(--color-border); border-inline-start:3px solid var(--color-border); border-radius:var(--radius-element); background:var(--color-background-muted); }
 .reading .alert > :last-child { margin-block-end:0; }
 .reading .alertLabel { color:var(--color-text-primary); }

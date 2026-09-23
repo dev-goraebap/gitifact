@@ -39,7 +39,8 @@ async function choose(page: Page, filter: string, option: string) {
 // The order lives in the column headers, so ordering the list means pressing the one that holds the values.
 const orderBy = (page: Page, column: string) => page.getByRole('button', { name: new RegExp('^' + column + ' 기준 정렬') }).click();
 
-const titles = (rows: ReturnType<Page['locator']>) => rows.locator('a[href^="/features/S-"]').allInnerTexts();
+// The feature's own title link; the row's link to its designs points at the design tab.
+const titles = (rows: ReturnType<Page['locator']>) => rows.locator('a[href^="/features/S-"]:not([href*="tab=design"])').allInnerTexts();
 
 test('the columns that hold comparable values order the list, and the header says which one does', async ({ page }) => {
   const rows = await listing(page);
@@ -65,6 +66,33 @@ test('the columns that hold comparable values order the list, and the header say
   await orderBy(page, '최근 변경');
   await expect(page).not.toHaveURL(/sort=/);
   expect(await titles(rows)).toEqual(['알림 기능', '검색 기능', '보관 기능']);
+});
+
+test('a feature links its designs once, and a requirement row reads its description, criteria and a missing design', async ({ page }) => {
+  const covered = structuredClone(many);
+  const notify = covered.features[1]! as unknown as { design?: unknown; designs: unknown[]; requirements: { id: string; title: string; body: string; description?: string }[] };
+  delete notify.design;
+  notify.designs = [{ title: '알림 설계', body: '알림은 조회로 읽는다.', requirements: ['R-bbbbbbbbbb', 'R-bbbbbbbbbc'], sources: [] }, { title: '표시 방식', body: '목록.', requirements: ['R-bbbbbbbbbb'], sources: [] }];
+  notify.requirements[0] = { id: 'R-bbbbbbbbbb', title: '알림 표시', description: '변경이 생기면 목록 위에 알린다',
+    body: '사용자로서 알림을 보고 싶다.\n\n### 수용 조건\n\n1. 조건: 변경이 생깁니다.\n   기대 동작: 알립니다.\n2. 조건: 알림을 엽니다.\n   기대 동작: 변경을 보입니다.\n\n### 범위와 제약\n\n1. 목록만 다룬다.' };
+  await mockApi(page);
+  await serve(page, covered);
+  await page.goto('/features');
+  const feature = rowsOf(page).filter({ hasText: '알림 기능' });
+  // One link to the feature's designs, with how many there are; the requirement rows carry none.
+  await expect(feature.getByRole('link', { name: '설계 2 →' })).toHaveAttribute('href', /\/features\/S-bbbbbbbbbb\?.*tab=design/);
+  await expect(requirementsOf(page).getByRole('link', { name: /설계/ })).toHaveCount(0);
+  // Title over description, within the height one line took.
+  const [title, description] = await Promise.all([feature.getByRole('link', { name: '알림 기능' }).boundingBox(), feature.getByText(/^변경이 생기면 알리고/).boundingBox()]);
+  expect(description!.y).toBeGreaterThan(title!.y + title!.height - 1);
+  expect((await feature.boundingBox())!.height).toBeLessThanOrEqual(65);
+  const shown = requirementsOf(page).filter({ hasText: '알림 표시' });
+  await expect(shown).toContainText('변경이 생기면 목록 위에 알린다');
+  // Only the numbered items under the acceptance heading count, not those of the next section.
+  await expect(shown).toContainText('수용 조건 2');
+  // A requirement no design names is flagged; one a design names is not.
+  await expect(requirementsOf(page).filter({ hasText: '알림 모아보기' })).toContainText('설계 없음');
+  await expect(shown).not.toContainText('설계 없음');
 });
 
 test('the list narrows by a missing design and by contributor, and says how many of the whole are left', async ({ page }) => {

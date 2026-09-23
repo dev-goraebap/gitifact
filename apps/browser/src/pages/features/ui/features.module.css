@@ -48,8 +48,18 @@
 /* One line per row, and the same height for every row: the title holds its place, a missing design is flagged
    beside it, and the description takes what is left and truncates. */
 .featureTable tbody td { padding-block:var(--spacing-4); }
-/* A feature heads its group, so its title carries the weight; its requirements hang under it, indented and quiet. */
-.featureTitleRow { align-items:baseline; min-width:0; flex-wrap:nowrap; }
+/* A feature heads its group, so its title carries the weight; its requirements hang under it, indented and quiet.
+   Title and description stack in two tight lines; the row trades vertical padding for the second line so it keeps
+   the height one line took. The design link ends the row, centred on both lines. */
+.featureTitleRow { align-items:center; min-width:0; flex-wrap:nowrap; width:100%; }
+.featureHeading { flex:1 1 auto; min-width:0; }
+/* The title line has a fixed height: a "no design" token is a little taller than the title and must not grow the row. */
+.featureNameLine { align-items:center; min-width:0; flex-wrap:nowrap; height:1.3rem; }
+.featureNameLine .featureTitle { line-height:1.35; }
+.featureHeading .featureDescription { font-size:.75rem; line-height:1.35; }
+.featureTable tbody tr[data-row=feature] td { padding-block:var(--spacing-3); }
+.featureDesignLink { flex:0 0 auto; color:var(--color-text-secondary); font-size:.75rem; text-decoration:none; white-space:nowrap; }
+.featureDesignLink:hover { text-decoration:underline; }
 /* Hatching behind a feature row: the requirements under it are plain rows, so the group's head needs a surface of
    its own to be told apart at a glance. It is an image, so the hover wash underneath still shows through. */
 .featureTable tbody tr[data-row=feature] td { background-image:repeating-linear-gradient(-45deg, var(--color-background-muted) 0 1px, transparent 1px 7px); }
@@ -66,9 +76,12 @@
 .requirementRow { align-items:baseline; min-width:0; flex-wrap:nowrap; width:100%; }
 .requirementNumber { flex:0 0 auto; font-variant-numeric:tabular-nums; }
 .requirementLink { flex:0 1 auto; min-width:0; color:var(--color-text-primary); text-decoration:none; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.requirementLink:hover, .requirementMore:hover, .requirementDesignLink:hover { text-decoration:underline; }
-/* An action, not an attribute of the title, so it sits at the end of the cell where the row's actions line up. */
-.requirementDesignLink { flex:0 0 auto; margin-inline-start:auto; padding-inline-start:var(--spacing-4); color:var(--color-text-secondary); font-size:.75rem; text-decoration:none; white-space:nowrap; }
+.requirementLink:hover, .requirementMore:hover { text-decoration:underline; }
+/* The description fills the space the title leaves and truncates; a requirement no design explains is flagged at
+   the end of the cell, and its acceptance criteria count sits in the count column beside it. */
+.requirementDescription { flex:1 1 auto; min-width:0; font-size:.8125rem; }
+.requirementNoDesign { flex:0 0 auto; padding-inline-start:var(--spacing-4); color:var(--color-text-yellow, var(--color-text-secondary)); font-size:.75rem; white-space:nowrap; }
+.acceptanceCount { font-size:.75rem; font-variant-numeric:tabular-nums; white-space:nowrap; }
 .requirementMore { color:var(--color-text-secondary); font-size:.8125rem; text-decoration:none; }
 /* The pager rides the bottom of the card: a page of forty rows is taller than the screen, and the way to the
    next one should not be something the reader has to scroll to the end to find. Sticky alone only holds while
@@ -80,7 +93,6 @@
 .featureTable:has(.featurePager) { flex:1 0 auto; }
 .featurePager { position:sticky; bottom:0; z-index:2; margin-block-start:auto; align-items:center; margin-inline:calc(var(--spacing-4) * -1); margin-bottom:calc(var(--spacing-4) * -1); padding:var(--spacing-2) var(--spacing-4); background:var(--color-background-surface); border-top:1px solid var(--color-border); }
 .featureTitleRow .featureTitle { flex:0 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.featureTitleRow .featureDescription { flex:1 1 auto; min-width:0; }
 .countCell { align-items:center; justify-content:flex-end; }
 .countCell > :last-child { flex:1; min-width:2.5rem; max-width:6rem; }
 /* Text cut by the browser alone. Astryx Text's maxLines measures each element to decide on a tooltip and forces a

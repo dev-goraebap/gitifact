@@ -25,15 +25,13 @@
 /* Columns hold a width so the rows under one reason line up; the title takes what is left and is cut. */
 .record { align-items:center; min-width:0; padding-block:var(--spacing-1); padding-inline:var(--spacing-2); margin-inline-start:calc(var(--spacing-2) * -1); border-radius:var(--radius-inner); }
 .record[aria-current=true] { background:var(--color-background-muted); }
-/* Each column reserves what its widest label needs and no more: the change token 40px, the kind 58px for "위키 페이지".
-   The kind is a label beside the title, not a peer of it, so it is smaller than the title as well as quieter. */
-.recordType { flex:0 0 auto; min-width:3rem; }
-.recordKind { flex:0 0 auto; min-width:3.75rem; white-space:nowrap; font-size:.6875rem; }
+/* The change-and-kind badge takes its own width and the title follows it. Everything in the row is centred on one line. */
+.recordBadge { flex:0 0 auto; }
 .recordTitle { flex:0 1 auto; min-width:0; color:var(--color-text-primary); font-weight:500; text-decoration:none; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-/* Feature / document: the feature is quiet context and gives way first when the line is short. */
-.recordPath { display:flex; align-items:baseline; gap:var(--spacing-1-5); flex:0 1 auto; min-width:0; }
+/* Feature · document: the feature is quiet context and gives way first when the line is short. */
+.recordPath { display:flex; align-items:center; gap:var(--spacing-1-5); flex:0 1 auto; min-width:0; }
 .recordFeature { flex:0 10 auto; min-width:2em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--color-text-secondary); font-size:.8125rem; }
-.recordSlash { flex:0 0 auto; color:var(--color-text-secondary); opacity:.6; }
+.recordDot { flex:0 0 auto; color:var(--color-text-secondary); opacity:.6; }
 .recordTitle:hover { text-decoration:underline; }
 .record[aria-current=true] .recordTitle { text-decoration:underline; }
 /* Text cut by the browser alone. Astryx Text's maxLines measures each element to decide on a tooltip and forces a

@@ -5,13 +5,12 @@ import { VStack } from '@astryxdesign/core/VStack';
 import { HStack } from '@astryxdesign/core/HStack';
 import { Heading } from '@astryxdesign/core/Heading';
 import { Text } from '@astryxdesign/core/Text';
-import { Token } from '@astryxdesign/core/Token';
 import { Timestamp } from '@astryxdesign/core/Timestamp';
 import { Skeleton } from '@astryxdesign/core/Skeleton';
 import { Link } from '@tanstack/react-router';
 import { commitOptions } from '../../../entities/project';
 import { Person } from '../../../entities/contributor';
-import { DesignDocument } from '../../../entities/document';
+import { ChangeBadge, DesignDocument, KindToken } from '../../../entities/document';
 import { groupReasons } from '../../../widgets/activity-timeline';
 import { ChangeDiff } from './ChangeDiff';
 import { CommitSource } from './CommitSource';
@@ -21,10 +20,6 @@ import { PageState } from '../../../shared/ui/page-state';
 import { RequestState } from '../../../shared/ui/request-state';
 import { t, useLanguage } from '../../../shared/i18n';
 
-const colors = { created: 'green', modified: 'blue', deleted: 'red', moved: 'purple' } as const;
-const names = () => ({ created: t('change.created'), modified: t('change.modified'), deleted: t('change.deleted'), moved: t('change.moved') });
-const kinds = () => ({ feature: t('kind.feature'), requirement: t('kind.requirement'), design: t('kind.design'), wiki: t('kind.wiki') });
-const mainType = (e: SpecEvent) => e.types.includes('deleted') ? 'deleted' : e.types.includes('modified') ? 'modified' : e.types.includes('moved') ? 'moved' : 'created';
 
 /**
  * One commit, read as it was made: who wrote it and why, then each document it changed with its differences, then
@@ -63,7 +58,7 @@ export function CommitView({ commit, documentId, session, features, head }: { co
         <HStack gap={2} wrap="wrap" className={styles.reasonRecords}>
           {/* The records this reason explains: each jumps to its section further down the page. */}
           {group.events.map(e => <a key={e.key} href={`#${e.id}`} className={styles.reasonRecord}>
-            <span className={styles.reasonKind}>{kinds()[e.kind]}</span>{(e.after ?? e.before)?.title ?? e.id}
+            <KindToken kind={e.kind}/>{(e.after ?? e.before)?.title ?? e.id}
           </a>)}
         </HStack>
       </VStack>) : <Text color="secondary">{t('event.noReasons')}</Text>}
@@ -73,8 +68,7 @@ export function CommitView({ commit, documentId, session, features, head }: { co
       aria-label={(after ?? before)?.title ?? event.id} className={styles.change} {...(event.id === documentId ? { 'aria-current': 'location' as const } : {})}>
       <VStack gap={2}>
         <HStack gap={2} wrap="wrap" className={styles.changeHead}>
-          <Token label={event.types.map(type => names()[type]).join(' · ')} color={colors[mainType(event)]} size="sm"/>
-          <Text type="supporting" color="secondary">{kinds()[event.kind]}</Text>
+          <ChangeBadge event={event}/>
           <Heading level={2}>{(after ?? before)?.title ?? event.id}</Heading>
         </HStack>
         <HStack gap={3} wrap="wrap" className={styles.changePlace}>

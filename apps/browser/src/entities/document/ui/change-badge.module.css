@@ -1,0 +1,5 @@
+/* Two tokens set edge to edge: the inner corners are squared so the pair reads as one badge in two halves. Astryx
+   sets a token's radius through atomic classes weighted as two IDs, so the override repeats that weight. */
+.badge { display:inline-flex; align-items:center; flex:0 0 auto; }
+.badge > :global(.astryx-token):first-child:not(#\#):not(#\#) { border-start-end-radius:0; border-end-end-radius:0; }
+.badge > :global(.astryx-token):last-child:not(#\#):not(#\#) { border-start-start-radius:0; border-end-start-radius:0; }

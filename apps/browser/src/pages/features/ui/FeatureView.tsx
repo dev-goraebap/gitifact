@@ -20,6 +20,7 @@ import { avatarSource, contributorHref } from '../../../entities/contributor';
 import type { RecordSearch } from '../../../widgets/records-page';
 import { designsByRequirement } from '../model/design-sections';
 import { pagesOf, type FeatureRow } from '../model/feature-rows';
+import { acceptanceCount } from '../model/acceptance';
 import styles from './features.module.css';
 import { PageState } from '../../../shared/ui/page-state';
 import { DocumentBody } from '../../../shared/ui/document';
@@ -79,8 +80,10 @@ function FeatureList({ features, search, change }: { features: SpecFeature[]; se
   const rows = pages[page - 1] ?? [];
   const shown = groups.reduce((sum, g) => sum + g.requirements.length, 0);
   const sections = new Map(groups.map(g => [g.feature.id, designsByRequirement(g.feature.designs)]));
-  // The list row has room for one link: the first design, in `order`, that explains the requirement.
-  const designOf = (row: FeatureRow) => sections.get(row.feature.id)?.get(row.requirement?.id ?? '')?.[0];
+  // Designs are the norm, so a requirement row marks only a requirement no design of its feature explains; a feature
+  // without any design says so once on its own row.
+  const uncovered = (row: FeatureRow) => row.feature.designs.length > 0 && !sections.get(row.feature.id)?.has(row.requirement?.id ?? '');
+  const oneLine = (text: string) => text.replace(/[#*_`]/g, '').replace(/\s+/g, ' ').trim();
   const open = (row: FeatureRow) => {
     const requirement = row.kind === 'requirement' ? row.requirement!.id : undefined;
     void navigate({ to: '/features/$featureId', params: { featureId: row.feature.id },
@@ -88,24 +91,33 @@ function FeatureList({ features, search, change }: { features: SpecFeature[]; se
   };
   const columns: TableColumn<FeatureRow>[] = [
     // One column carries both kinds of row: a feature names the group and its requirements sit under it, indented.
-    // A design is the norm here, so only its absence is marked, beside the feature it belongs to rather than in a
-    // column whose cells would otherwise all be empty.
+    // A feature stacks its title over its description inside the height one line used to take, and ends with one
+    // link to its designs. A requirement reads as number, title and its one-line description.
     { key: 'title', header: t('features.column.feature'), sortable: true, width: proportional(1, { minWidth: 200 }), renderCell: row => row.kind === 'feature'
-      ? <HStack gap={3} className={styles.featureTitleRow}>
-        <Link to="/features/$featureId" params={{ featureId: row.feature.id }} search={carried} className={styles.featureTitle}>{row.feature.title}</Link>
-        {!row.feature.designs.length && <Token label={t('features.noDesignMark')} color="yellow" size="sm"/>}
-        {row.feature.description && <Text type="supporting" color="secondary" className={`${styles.featureDescription} ${styles.oneLine}`}>{row.feature.description.replace(/[#*_`]/g, '').replace(/\s+/g, ' ').trim()}</Text>}
+      ? <HStack gap={4} className={styles.featureTitleRow}>
+        <VStack gap={0} className={styles.featureHeading}>
+          <HStack gap={2} className={styles.featureNameLine}>
+            <Link to="/features/$featureId" params={{ featureId: row.feature.id }} search={carried} className={styles.featureTitle}>{row.feature.title}</Link>
+            {!row.feature.designs.length && <Token label={t('features.noDesignMark')} color="yellow" size="sm"/>}
+          </HStack>
+          {/* The second line is kept even without a description, so every feature row has the same height. */}
+          <Text type="supporting" color="secondary" className={`${styles.featureDescription} ${styles.oneLine}`}>{oneLine(row.feature.description) || ' '}</Text>
+        </VStack>
+        {row.feature.designs.length > 0 && <Link to="/features/$featureId" params={{ featureId: row.feature.id }} search={{ ...carried, tab: 'design' }} className={styles.featureDesignLink}>{t('features.designMark', { count: row.feature.designs.length })}</Link>}
       </HStack>
       : row.kind === 'more'
         ? <Link to="/features/$featureId" params={{ featureId: row.feature.id }} search={carried} className={styles.requirementMore}>{t('features.moreRequirements', { count: row.hidden! })}</Link>
         : <HStack gap={3} className={styles.requirementRow}>
           <Text type="supporting" color="secondary" className={styles.requirementNumber}>{String(row.number!).padStart(2, '0')}</Text>
           <Link to="/features/$featureId" params={{ featureId: row.feature.id }} search={{ ...carried, selected: row.requirement!.id, tab: 'requirements' }} hash={row.requirement!.id} className={styles.requirementLink}>{row.requirement!.title}</Link>
-          {designOf(row) && <Link to="/features/$featureId" params={{ featureId: row.feature.id }} search={{ ...carried, selected: designOf(row)!, tab: 'design' }} className={styles.requirementDesignLink}>{t('features.designMark')}</Link>}
+          {row.requirement!.description && <Text type="supporting" color="secondary" className={`${styles.requirementDescription} ${styles.oneLine}`}>{oneLine(row.requirement!.description)}</Text>}
+          {uncovered(row) && <Text type="supporting" color="secondary" className={styles.requirementNoDesign}>{t('features.noDesignMark')}</Text>}
         </HStack> },
     // The count with a bar of its share of the largest feature: the number answers "how many", the bar "how big is
-    // this one next to the rest" without reading every row.
-    { key: 'requirements', header: t('features.column.requirements'), sortable: true, width: pixel(mobile ? 64 : 128), align: 'end', renderCell: row => row.kind !== 'feature' ? null : <HStack gap={3} className={styles.countCell}>
+    // this one next to the rest" without reading every row. A requirement row puts its acceptance criteria count here.
+    { key: 'requirements', header: t('features.column.requirements'), sortable: true, width: pixel(mobile ? 64 : 128), align: 'end', renderCell: row => row.kind === 'requirement'
+      ? acceptanceCount(row.requirement!.body) === undefined ? null : <Text type="supporting" color="secondary" className={styles.acceptanceCount}>{t('features.acceptanceCount', { count: acceptanceCount(row.requirement!.body)! })}</Text>
+      : row.kind !== 'feature' ? null : <HStack gap={3} className={styles.countCell}>
       <Text>{row.feature.requirements.length}</Text>
       {!mobile && <ProgressBar label={t('features.requirementShare', { title: row.feature.title })} isLabelHidden value={row.feature.requirements.length} max={mostRequirements} variant="accent"/>}
     </HStack> },
