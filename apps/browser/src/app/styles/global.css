@@ -47,7 +47,8 @@ a {
 }
 
 #root h1, #root h2 {
-  font-family: 'Outfit', system-ui, sans-serif;
+  /* Outfit has Latin only; the Hangul of a title falls to Pretendard like the rest of the text. */
+  font-family: 'Outfit', 'Pretendard Variable', system-ui, sans-serif;
   font-weight: 800;
   letter-spacing: -.035em;
 }

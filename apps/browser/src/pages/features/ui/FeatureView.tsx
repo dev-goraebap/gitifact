@@ -222,8 +222,10 @@ function FeatureDetail({ feature: selected, features, search, change, session, h
 }
 
 /**
- * The requirement being read: the first section in the reading band below the top bar, or the first requirement
- * before any has reached it. The index marks it so a reader of a long feature always sees where they are.
+ * The requirement being read: the last section in the reading band below the top bar, which is the one whose heading
+ * most recently came into it, or the first requirement before any has reached it. The index marks it so a reader of a
+ * long feature always sees where they are. Taking the first one in the band left the last requirement unmarked when
+ * the page could not scroll far enough for the end of the one above it to leave the band.
  */
 function useReadingSection(ids: string[]): string | undefined {
   const [reading, setReading] = useState<string>();
@@ -236,8 +238,8 @@ function useReadingSection(ids: string[]): string | undefined {
     const inBand = new Set<string>();
     const observer = new IntersectionObserver(entries => {
       for (const entry of entries) { if (entry.isIntersecting) inBand.add(entry.target.id); else inBand.delete(entry.target.id); }
-      const first = sections.find(section => inBand.has(section.id));
-      if (first) setReading(first.id);
+      const last = sections.findLast(section => inBand.has(section.id));
+      if (last) setReading(last.id);
     }, { rootMargin: '-96px 0px -55% 0px' });
     sections.forEach(section => observer.observe(section));
     return () => observer.disconnect();

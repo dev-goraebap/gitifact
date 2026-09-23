@@ -21,9 +21,9 @@ Astryx의 설치 버전이 API 기준이며 제품별 배치 규칙은 이 문�
 
 ## 글꼴·아이콘·색
 
-제목에는 Outfit 800을 쓰고 한글은 시스템 글꼴로 둔다. Outfit은 public/fonts에 자체 호스팅하며 index.html에서 preload하고 `font-display: optional`로 선언한다. 본문은 시스템 글꼴이며 외부 폰트 네트워크 로딩과 CDN 호출을 추가하지 않는다. OFL 원문은 public/licenses에 둔다.
+큰 제목(h1·h2)의 영문은 Outfit 800이고 그 한글은 Pretendard로 넘어간다. Outfit은 public/fonts에 자체 호스팅하며 index.html에서 preload하고 `font-display: optional`로 선언한다. 외부 폰트 네트워크 로딩과 CDN 호출을 추가하지 않는다. OFL 원문은 public/licenses에 둔다.
 
-코드와 diff는 영문 JetBrains Mono, 한글 Pretendard다. 테마의 `typography.code`(`themes.ts`)가 `"JetBrains Mono Variable", "Pretendard Variable", Consolas, monospace`로 정하고, 글자마다 JetBrains Mono에 없는 한글이 Pretendard로 넘어간다. 두 글꼴은 npm 패키지(`@fontsource-variable/jetbrains-mono`, `pretendard`)의 CSS를 global.css가 가져와 Vite가 번들한다. stone 테마가 JetBrains Mono를 이름만 적고 불러오지 않아, Windows에서는 영문 Consolas에 한글 굴림체로 그려졌다(2026-09-23 측정). Pretendard는 한 파일(2.0MB)을 쓴다. 로컬 서버라 나눠 받는 판(92개 파일, 3.1MB)의 이득이 없고 패키지가 더 커진다. Pretendard의 OFL 원문은 패키지 루트에 없어 `apps/cli/licenses/pretendard-LICENSE`로 고지에 넣는다.
+그 밖의 글자는 두 글꼴로 통일한다. 본문·작은 제목·메뉴는 영문과 한글 모두 Pretendard다(영문 자형은 Inter 기반이라 따로 영문 글꼴을 두지 않는다). 코드와 diff는 영문 JetBrains Mono, 한글 Pretendard다. 테마의 `typography`(`themes.ts`)가 body·heading을 `"Pretendard Variable"`로, code를 `"JetBrains Mono Variable", "Pretendard Variable", Consolas, monospace`로 정하고, 글자마다 JetBrains Mono에 없는 한글이 Pretendard로 넘어간다. 두 글꼴은 npm 패키지(`@fontsource-variable/jetbrains-mono`, `pretendard`)의 CSS를 global.css가 가져와 Vite가 번들한다. stone 테마가 Figtree와 JetBrains Mono를 이름만 적고 불러오지 않아, Windows에서는 본문이 Segoe UI에 한글 맑은 고딕, 코드가 Consolas에 한글 굴림체로 섞여 그려졌다(2026-09-23 측정, 사용자 요청으로 통일). Pretendard는 한 파일(2.0MB)을 쓴다. 로컬 서버라 나눠 받는 판(92개 파일, 3.1MB)의 이득이 없고 패키지가 더 커진다. Pretendard의 OFL 원문은 패키지 루트에 없어 `apps/cli/licenses/pretendard-LICENSE`로 고지에 넣는다.
 
 GITIFACT 워드마크는 public/gitifact-logo.svg를 CSS 마스크에 텍스트 색상 토큰으로 칠해 라이트·다크 모두에서 쓴다. 홈 링크에 접근 가능한 이름을 둔다.
 
