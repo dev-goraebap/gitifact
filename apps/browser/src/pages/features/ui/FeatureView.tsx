@@ -115,14 +115,16 @@ function FeatureList({ features, search, change }: { features: SpecFeature[]; se
         </HStack> },
     // The count with a bar of its share of the largest feature: the number answers "how many", the bar "how big is
     // this one next to the rest" without reading every row. A requirement row puts its acceptance criteria count here.
-    { key: 'requirements', header: t('features.column.requirements'), sortable: true, width: pixel(mobile ? 64 : 128), align: 'end', renderCell: row => row.kind === 'requirement'
+    { key: 'requirements', header: t('features.column.requirements'), sortable: true, width: pixel(128), align: 'end', renderCell: row => row.kind === 'requirement'
       ? acceptanceCount(row.requirement!.body) === undefined ? null : <Text type="supporting" color="secondary" className={styles.acceptanceCount}>{t('features.acceptanceCount', { count: acceptanceCount(row.requirement!.body)! })}</Text>
       : row.kind !== 'feature' ? null : <HStack gap={3} className={styles.countCell}>
       <Text>{row.feature.requirements.length}</Text>
       {!mobile && <ProgressBar label={t('features.requirementShare', { title: row.feature.title })} isLabelHidden value={row.feature.requirements.length} max={mostRequirements} variant="accent"/>}
     </HStack> },
   ];
-  columns.push({ key: 'contributors', header: t('features.column.contributors'), width: pixel(mobile ? 88 : 120), renderCell: row => row.kind !== 'feature' ? null : <Contributors people={row.feature.contributors}/> });
+  // A phone keeps the feature and its count: the people and the last change are on the feature page, and with them the
+  // count column was cut to 64px, which clipped its sortable header and the acceptance counts.
+  if (!mobile) columns.push({ key: 'contributors', header: t('features.column.contributors'), width: pixel(120), renderCell: row => row.kind !== 'feature' ? null : <Contributors people={row.feature.contributors}/> });
   if (!mobile) columns.push({ key: 'updatedAt', header: t('common.recentChange'), sortable: true, width: pixel(110), align: 'end', renderCell: row => row.kind !== 'feature' ? null : row.feature.updatedAt ? <Timestamp value={row.feature.updatedAt} format="relative"/> : <Text type="supporting" color="secondary">{t('common.inProgress')}</Text> });
   const sorting = useTableSortable<FeatureRow, SortKey>({ sort: [{ sortKey: key, direction }], allowUnsortedState: false,
     // A column the reader has just reached opens the way that column is normally read, not always ascending.
