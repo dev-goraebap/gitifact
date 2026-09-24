@@ -3,13 +3,13 @@
 <!-- GITIFACT:START -->
 ## Gitifact Guide
 
-gitifact v0.8.0 · ko · 저장 규약 schemaVersion 3
+gitifact v0.8.1 · ko · 저장 규약 schemaVersion 3
 
-CLI: 전역 명령 `gitifact`(버전 0.8.0)로 실행한다. 아래 `gitifact`는 이 실행 방법을 뜻한다. 프로젝트가 로컬 설치본 등 다른 실행 방법을 지정하면 그것을 우선한다.
+CLI: 전역 명령 `gitifact`(버전 0.8.1)로 실행한다. 아래 `gitifact`는 이 실행 방법을 뜻한다. 프로젝트가 로컬 설치본 등 다른 실행 방법을 지정하면 그것을 우선한다.
 
 ### 시작할 때
 
-- 새 세션에서 `gitifact --version`을 확인한다. 명령이 없거나 0.8.0이 아니면 사용자에게 `npm i -g gitifact@0.8.0` 설치를 제안하고, 설치 전까지와 원하지 않을 때는 `npx --yes gitifact@0.8.0 <cmd>`로 실행한다. 실행·다운로드가 막히면 필요한 승인을 요청하고 원인을 알린다. CLI 실행 없이 문서 ID 발급·검사·커밋을 대신하거나 완료했다고 보고하지 않는다.
+- 새 세션에서 `gitifact --version`을 확인한다. 명령이 없거나 0.8.1이 아니면 사용자에게 `npm i -g gitifact@0.8.1` 설치를 제안하고, 설치 전까지와 원하지 않을 때는 `npx --yes gitifact@0.8.1 <cmd>`로 실행한다. 실행·다운로드가 막히면 필요한 승인을 요청하고 원인을 알린다. CLI 실행 없이 문서 ID 발급·검사·커밋을 대신하거나 완료했다고 보고하지 않는다.
 - 새 세션에서 한 번 `gitifact update --check`로 지정 버전보다 새 버전이 있는지 확인한다. `available`이면 사용자에게 업데이트할지 묻고, 동의한 경우에만 새 버전을 설치(전역은 `npm i -g gitifact@<새 버전>`)하고 `update`를 실행한다. 거절·확인 실패·조회 비활성화 시에는 지정 버전으로 계속하며 같은 세션에서 다시 묻지 않는다. 갱신 후에는 블록을 다시 읽고 새 버전을 사용한다. 커밋·푸시는 별도 권한을 따른다.
 - `gitifact specs list`·`gitifact instructions list`로 명세와 지침 목록을 읽고 git status와 기존 staging을 확인한다. 필요한 문서는 `specs show <ID>`·`instructions show <이름>`으로 읽는다.
 - 이 블록은 요약이다. 상세 형식은 `gitifact guide show <topic>`으로 읽고 기억으로 채우지 않는다. 조회 결과와 지침 출력은 파일로 저장하지 않고 필요할 때 다시 실행한다.
@@ -53,7 +53,7 @@ CLI: 전역 명령 `gitifact`(버전 0.8.0)로 실행한다. 아래 `gitifact`�
 
 이 저장소는 gitifact를 개발하면서 프로젝트 자체에도 적용한다. 제품의 기록 원칙을 따르되, 아직 구현되지 않은 기능은 아래 대체 절차로 수행한다. 이 예외는 gitifact 개발 저장소에만 적용하며 제품의 기본 동작으로 확장하지 않는다.
 
-현재 프로젝트는 `.gitifact/config.json`의 `schemaVersion: 3` 저장 규약이다(0.8.0 문서 형식: 문서 하나가 파일 하나, 구조 정보는 프론트매터, 이유는 `.gitifact/records/`의 결정기록). 2026-09-22 0.7 형식에서 전환했다(`Gitifact-Migration: 0.8.0` 커밋, 과정은 [개발 환경](docs/development.md)). 2026-09-24 이유 파일 `.gitifact/history.jsonl`을 결정기록으로 바꾸고 설계·지침의 결정 표를 결정기록으로 옮겼다(이유 → 맥락, 기각한 안 → 검토한 대안). 결정기록에는 종류가 없다. 그 전 커밋의 이유는 이력에서 맥락 섹션만 있는 기록으로 읽는다. 2026-09-18 product·guides를 위키로, 파일 ID 주석을 frontmatter로 바꾸며 이 저장소의 기록을 일회성 스크립트(DEV-01)로 전환했다. 2026-09-15 제품 이름을 Tryce에서 Gitifact로 바꾸며 저장 경로 `.tryce`와 `tryce-*` 마커를 `.gitifact`와 `gitifact-*`로 전환했다. 2026-09-22 0.8.0 준비에서 `.tryce` 경로·`tryce-*` 마커·구형 JSON·schemaVersion 1 읽기와 `migrate` 명령을 지웠다. 과거 커밋의 옛 기록은 이력에 나타나지 않고 Git에만 남는다. 모드·승인 묶음·note를 새로 작성하지 않는다. 개발 작업에는 이 파일 첫머리의 GITIFACT 블록과 `pnpm cli guide show <topic>`을 읽고 적용한다. 블록의 버전은 배포된 0.8.0이다. 이 저장소에서는 블록 안의 `gitifact`를 `pnpm cli`로 실행하고, 전역 설치와 npx는 다른 프로젝트에서 쓴다. 0.7.1은 이 저장소(schemaVersion 3)를 읽지 못한다. 블록은 `pnpm cli init`이 쓰고 갱신하며 마커 사이를 직접 편집하지 않는다. 블록 안의 `gitifact`는 이 저장소에서 `pnpm cli`를 뜻한다. 지침 원본은 `apps/cli/src/shared/i18n/<lang>/docs/`에만 두고 두 번째 편집본을 만들지 않는다.
+현재 프로젝트는 `.gitifact/config.json`의 `schemaVersion: 3` 저장 규약이다(0.8.0 문서 형식: 문서 하나가 파일 하나, 구조 정보는 프론트매터, 이유는 `.gitifact/records/`의 결정기록). 2026-09-22 0.7 형식에서 전환했다(`Gitifact-Migration: 0.8.0` 커밋, 과정은 [개발 환경](docs/development.md)). 2026-09-24 이유 파일 `.gitifact/history.jsonl`을 결정기록으로 바꾸고 설계·지침의 결정 표를 결정기록으로 옮겼다(이유 → 맥락, 기각한 안 → 검토한 대안). 결정기록에는 종류가 없다. 그 전 커밋의 이유는 이력에서 맥락 섹션만 있는 기록으로 읽는다. 2026-09-18 product·guides를 위키로, 파일 ID 주석을 frontmatter로 바꾸며 이 저장소의 기록을 일회성 스크립트(DEV-01)로 전환했다. 2026-09-15 제품 이름을 Tryce에서 Gitifact로 바꾸며 저장 경로 `.tryce`와 `tryce-*` 마커를 `.gitifact`와 `gitifact-*`로 전환했다. 2026-09-22 0.8.0 준비에서 `.tryce` 경로·`tryce-*` 마커·구형 JSON·schemaVersion 1 읽기와 `migrate` 명령을 지웠다. 과거 커밋의 옛 기록은 이력에 나타나지 않고 Git에만 남는다. 모드·승인 묶음·note를 새로 작성하지 않는다. 개발 작업에는 이 파일 첫머리의 GITIFACT 블록과 `pnpm cli guide show <topic>`을 읽고 적용한다. 블록의 버전은 npm에 배포된 CLI 버전이다. 이 저장소에서는 블록 안의 `gitifact`를 `pnpm cli`로 실행하고, 전역 설치와 npx는 다른 프로젝트에서 쓴다. 0.7.1은 이 저장소(schemaVersion 3)를 읽지 못한다. 블록은 `pnpm cli init`이 쓰고 갱신하며 마커 사이를 직접 편집하지 않는다. 블록 안의 `gitifact`는 이 저장소에서 `pnpm cli`를 뜻한다. 지침 원본은 `apps/cli/src/shared/i18n/<lang>/docs/`에만 두고 두 번째 편집본을 만들지 않는다.
 
 프로젝트 사용 빌드와 해시는 [개발 환경](docs/development.md)의 최신 지정을 따른다. 시작할 때 `pnpm cli specs list`·`pnpm cli instructions list`와 Git 상태를 읽고 필요한 명세·지침 문서를 `pnpm cli specs show <ID>`·`pnpm cli instructions show <이름>`으로 원문 확인한다. browser는 요구사항 이력·제품 기능·기여자를 읽기 전용으로 제공한다. 구형 req·note·mode·brief·commit 명령은 개발 빌드에서 제거했다.
 

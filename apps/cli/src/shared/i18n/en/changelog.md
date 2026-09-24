@@ -1,3 +1,8 @@
+## 0.8.1 - 2026-09-25
+### Fixed
+- A migration commit for a 0.7 project hit the 128-path limit and could not finish as one commit. A commit with `migration: true` now takes up to 5,000 paths, and a long selection no longer runs into the command-line length limit.
+- The migration notice `update` shows in a 0.7 project named the removed `docs` command.
+
 ## 0.8.0 - 2026-09-25
 ### Added
 - Project instructions: ways of working that span features, such as architecture rules or verification steps, live as instructions under `.gitifact/instructions/<name>/`, and the AGENTS.md index says which one to read for which work. The browser's project instructions page shows AGENTS.md, the instructions and the files in their folders.
