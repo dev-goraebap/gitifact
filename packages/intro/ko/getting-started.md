@@ -84,7 +84,7 @@ npx gitifact browser
 
 `browser`가 출력한 로컬 주소를 열면 됩니다. 서버는 터미널에서 Ctrl+C로 종료합니다.
 
-에이전트는 GITIFACT 블록에 적힌 버전을 사용합니다.
+에이전트는 GITIFACT 블록에 적힌 버전의 전역 `gitifact`를 씁니다. 명령이 없거나 버전이 다르면 `npm install -g gitifact@<버전>` 설치를 제안하고, 설치 전에는 npx로 실행합니다.
 
 ### 프로젝트에 설치하기
 

@@ -27,7 +27,8 @@ test('rendered block is versioned, marker-delimited, Markdown-structured and sho
     if (!line || /^(#{2,3} |- |\| |---$|<!--)/.test(line)) continue;
     assert.ok(!lines[index + 1] || /^\| /.test(line), 'plain line runs into the next: ' + line);
   }
-  assert.ok(block.includes('npx --yes gitifact@1.2.3 <cmd>'), 'invocation pins the block version');
+  // The global command is checked against the block version, and npx at that version stands in until it is installed.
+  for (const pinned of ['gitifact --version', 'npm i -g gitifact@1.2.3', 'npx --yes gitifact@1.2.3 <cmd>']) assert.ok(block.includes(pinned), pinned);
   assert.ok(lines.length >= 25 && lines.length <= 50, String(lines.length));
   assert.deepEqual(parseAgentBlock(block), { version: '1.2.3', language: 'ko', schemaVersion: 3 });
   assert.equal(parseAgentBlock('no block'), null);
@@ -70,7 +71,7 @@ test('inject creates, appends, replaces idempotently and keeps CRLF', async () =
   const crlf = injectBlock('# Win\r\n\r\nText\r\n', block, agents);
   assert.equal(crlf, '# Win\r\n\r\nText\r\n\r\n' + block.split('\n').join('\r\n') + '\r\n');
   assert.equal(crlf.includes('\n\n'), false);
-  assert.equal(injectBlock(crlf, newer, agents), crlf.replace('v1.2.3', 'v2.0.0').replace('gitifact@1.2.3', 'gitifact@2.0.0'));
+  assert.equal(injectBlock(crlf, newer, agents), crlf.replaceAll('1.2.3', '2.0.0'));
 });
 
 test('malformed markers are refused and remove restores or deletes', () => {

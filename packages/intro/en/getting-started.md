@@ -86,7 +86,7 @@ npx gitifact browser
 
 Open the local URL printed by `browser`. Press Ctrl+C in the terminal to stop the server.
 
-Agents use the version recorded in the GITIFACT block.
+Agents use the global `gitifact` at the version recorded in the GITIFACT block. If it is missing or another version, they suggest `npm install -g gitifact@<version>` and run npx until it is installed.
 
 ### Install in a project
 
