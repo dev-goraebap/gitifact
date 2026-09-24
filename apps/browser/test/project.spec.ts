@@ -178,7 +178,8 @@ test('a reason is written once over the records it explains, and each day is mar
  const event=specs.events[0]!;
  const shared='한 번만 적히는 이유입니다.';
  const record=(commit:string,date:string,id:string,title:string,reason:string)=>
-  ({...event,commit,date,key:commit+':'+id,id,after:{...event.after!,id,title},records:[{id:reason===shared?'H-aaaaaaaaaa':'H-bbbbbbbbbb',title:reason===shared?'공유된 기록':'다른 날의 기록',sections:[{key:'context' as const,body:reason}]}]});
+  ({...event,commit,date,key:commit+':'+id,id,after:{...event.after!,id,title},// 0.7 stored a reason once per document, so the same text comes under a different ID for each.
+  records:[{id:reason===shared?'H-a'+id.slice(2):'H-bbbbbbbbbb',title:reason===shared?'공유된 기록':'다른 날의 기록',sections:[{key:'context' as const,body:reason}]}]});
  const older='d'.repeat(40);
  const data={...structuredClone(specs),events:[
   record(specs.head!,'2026-09-14T00:00:00Z','R-1111111111','첫 기록',shared),
@@ -197,6 +198,11 @@ test('a reason is written once over the records it explains, and each day is mar
  await expect(commits.first()).toContainText('2026년 9월 14일');
  await expect(commits.nth(1)).toContainText('2026년 9월 12일');
  await expect(commits.nth(1)).not.toContainText('문서 1건');
+ // The record page, opened by any of those IDs, shows the reason once over all three documents.
+ await commits.first().getByRole('link',{name:'공유된 기록'}).click();
+ const detail=page.getByRole('article',{name:'결정기록 상세'});
+ for (const title of ['첫 기록','둘째 기록','셋째 기록']) await expect(detail.getByText(title,{exact:true}).first()).toBeVisible();
+ await expect(detail.getByRole('region',{name:'같은 커밋의 다른 기록'})).toHaveCount(0);
 });
 
 test('a list row carries no body; the commit is read once and shows the text of its documents', async ({page}) => {

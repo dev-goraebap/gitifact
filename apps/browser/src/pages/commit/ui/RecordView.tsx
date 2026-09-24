@@ -34,11 +34,11 @@ export function RecordView({ recordId, documentId, session, features, head }: { 
   if (error) return <RequestState error={error} retry={() => { void (found.error ? found.refetch() : query.refetch()); }}/>;
   if (!data || !commit) return <CommitSkeleton label={t('record.loading')}/>;
   const groups = groupRecords(data.changes.map(c => c.event));
-  const group = groups.find(g => g.key === recordId);
+  const group = groups.find(g => g.ids.includes(recordId));
   if (!group?.record) return <PageState isCompact title={t('record.missing')}/>;
   const record = group.record;
   const explained = data.changes.filter(c => group.events.includes(c.event));
-  const others = groups.filter(g => g.record && g.key !== recordId);
+  const others = groups.filter(g => g.record && g !== group);
   return <VStack gap={0} as="article" aria-label={t('record.title')} className={styles.commitPage}>
     <Link to="/records" className={styles.commitBack}>{t('commit.back')}</Link>
     <CommitHeading title={record.title} commit={data}
