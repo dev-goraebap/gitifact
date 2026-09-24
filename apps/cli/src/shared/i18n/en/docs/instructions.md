@@ -14,7 +14,7 @@ An instruction is a folder, `.gitifact/instructions/<name>/`. Names use lowercas
   cli-architecture/
     index.md                 instruction document (I-)
     references/
-      decisions.md           decision table
+      checklist.md           a long list
   verification/
     index.md
 ```
@@ -60,15 +60,9 @@ Write links between instructions and to assets relative to the file, for example
 
 ## Decisions
 
-Structure and technology choices that span features go one per row in a table in `references/decisions.md` of the instruction for that area. A choice that holds only within one feature goes in that feature design's decision table (`gitifact guide show design`).
+An instruction keeps no decision table or decision log file of its own. Structure and technology choices that span features are written in the instruction body as rules; their context and the alternatives considered go into records that name the instruction (`gitifact guide show records`). Before changing an instruction, read how its decisions went with `gitifact docs history <I-ID>`. When a decision changes, change the rule in the body and write a new record.
 
-```markdown
-| Decision | Reason | Rejected alternative |
-| :--- | :--- | :--- |
-| Only the adapter layer touches storage | Commands need not know the file format | Reading directly in commands (a format change touches every command) |
-```
-
-When a decision changes, edit its row. The old decision and why it changed go in the commit's change reason.
+When an instruction is created or widened, find the same content in designs with `gitifact docs search` and remove it there. Add the instruction to those designs' `sources`, and record the move in one record (`docs` naming the instruction and the designs changed).
 
 ## Assets
 
@@ -76,7 +70,7 @@ Keep images, PDFs and other non-Markdown files inside the instruction folder or 
 
 ## Commits
 
-A change to an instruction is a change to its `index.md`. Write its change reason as for other documents, `{docs: [actual I-ID], reason}`. Other files of the folder may be listed in `paths` and committed along with it; they need no reason (`gitifact guide show commit`).
+A change to an instruction is a change to its `index.md`; a record names it by its I- ID in `docs`. Other files of the folder may be listed in `paths` and committed along with it; a change to them alone needs no record (`gitifact guide show commit`).
 
 ## Agents
 

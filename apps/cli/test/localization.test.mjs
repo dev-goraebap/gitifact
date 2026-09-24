@@ -44,7 +44,7 @@ test('CLI help, documentation and errors follow language without changing contra
   assert.match(success(f, ['--help']), /Output language/);
   assert.match(success(f, ['--lang', 'ko', '--help']), /출력 언어/);
   for (const lang of ['ko', 'en']) {
-    for (const topic of ['workflow', 'spec', 'design', 'instructions', 'writing', 'commit']) {
+    for (const topic of ['workflow', 'spec', 'design', 'instructions', 'records', 'writing', 'commit']) {
       assert.equal(success(f, ['--lang', lang, 'guide', 'show', topic]), readFileSync(join(root, 'apps/cli/src/shared/i18n', lang, 'docs', topic + '.md'), 'utf8'));
     }
   }

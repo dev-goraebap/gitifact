@@ -32,7 +32,7 @@ requirements:
 
 ## 이력
 
-지침의 변경은 `index.md`의 변경이다. 커밋 전후 비교(core `compareDocumentSets`)는 ID로 짝을 짓고, 경로가 바뀌면 이동, 내용이 바뀌면 변경이다. 캐시는 `.gitifact/instructions/*/index.md`를 기록 경로로 읽는다. 변경 이유는 `{docs: [I-…], reason}`이고 트레일러는 `Gitifact-Doc`이다. 폴더 안 다른 파일은 커밋에서 선택할 수 있지만 이유를 요구하지 않는다. 폴더 안 파일만 바뀐 커밋을 지침의 변경으로 읽는 것은 계획이다.
+지침의 변경은 `index.md`의 변경이다. 커밋 전후 비교(core `compareDocumentSets`)는 ID로 짝을 짓고, 경로가 바뀌면 이동, 내용이 바뀌면 변경이다. 캐시는 `.gitifact/instructions/*/index.md`를 기록 경로로 읽는다. 지침을 설명하는 결정기록은 `docs`에 I- ID를 적고, 트레일러는 `Gitifact-Doc`이다. 폴더 안 다른 파일은 커밋에서 선택할 수 있지만 결정기록을 요구하지 않는다. 폴더 안 파일만 바뀐 커밋을 지침의 변경으로 읽는 것은 계획이다.
 
 ## 관계
 

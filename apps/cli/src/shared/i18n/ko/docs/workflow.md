@@ -17,7 +17,7 @@ description: 시작할 때 확인할 것, 요구사항으로 남길 요청의 �
 
 설정과 실제 파일, CLI 도움말을 함께 확인해 다음 중 하나의 흐름을 선택한다. 명령이 존재한다는 사실만으로 프로젝트 사용이나 전환이 허용되지는 않는다.
 
-- **현재 형식:** config.json의 `schemaVersion: 3`은 기능 폴더(`.gitifact/spec/<기능>/`의 `index.md`, `requirements/`, `design/`), 지침 폴더 `.gitifact/instructions/`, `.gitifact/assets/`와 이유 파일 `.gitifact/history.jsonl` 하나를 쓴다. 형식은 `gitifact guide show spec`·`design`·`instructions`를 따른다. 0.7의 위키 `.gitifact/wiki/`는 쓰지 않으며, 남은 페이지는 `docs check`가 `WIKI_REMOVED`로 알린다.
+- **현재 형식:** config.json의 `schemaVersion: 3`은 기능 폴더(`.gitifact/spec/<기능>/`의 `index.md`, `requirements/`, `design/`), 지침 폴더 `.gitifact/instructions/`, `.gitifact/assets/`와 결정기록 `.gitifact/records/`를 쓴다. 형식은 `gitifact guide show spec`·`design`·`instructions`·`records`를 따른다. 0.8.0 개발판의 이유 파일 `.gitifact/history.jsonl`이 남아 있으면 `docs check`가 `REASONS_FILE_REMOVED`로 알린다. 0.7의 위키 `.gitifact/wiki/`는 쓰지 않으며, 남은 페이지는 `docs check`가 `WIKI_REMOVED`로 알린다.
 - **0.7 형식:** `schemaVersion: 2`(기능마다 `requirements.md`와 `design.md` 한 파일)는 `docs`·`changes` 명령이 읽지 않고 전환을 안내한다. 사용자가 전환에 동의하면 `gitifact guide show migrate`의 절차를 따른다. 동의 전에 파일을 옮기거나 새 형식으로 가장하지 않는다.
 - **더 이전 형식:** `schemaVersion: 1`(0.4.x)과 workflow-1·prototype-1·init-1 설정은 현재 CLI가 조회·기록하지 않는다. 기존 기록을 삭제하거나 새 형식으로 가장하지 않고, 정식 버전 전 규약이라 전환 도구가 없다고 알린다. 사용자가 원하면 기록을 보존한 채 새로 도입한다.
 - **미도입:** 도입이 허용됐으면 Git 상태와 지침을 확인하고 `init --dry-run`, `init`으로 연결한다. Git 저장소가 없으면 Git 생성 권한을 확인한다. 기존 변경과 staging을 보존한다.

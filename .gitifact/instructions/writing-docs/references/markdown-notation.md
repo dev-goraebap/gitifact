@@ -66,4 +66,4 @@ sequenceDiagram
 
 ## 제한
 
-문법이 틀린 다이어그램은 그 자리에 원문과 이유가 보이고 나머지 문서는 그대로 열린다. 수식(KaTeX)과 각주는 그리지 않는다. 번들 결정은 [브라우저 결정 표](../../browser-architecture/references/decisions.md)에 있다.
+문법이 틀린 다이어그램은 그 자리에 원문과 이유가 보이고 나머지 문서는 그대로 열린다. 수식(KaTeX)과 각주는 그리지 않는다. 번들 규칙은 [브라우저 아키텍처](../../browser-architecture/index.md)에 있다.

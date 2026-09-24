@@ -1,4 +1,4 @@
-import { browserCommitQueryV1, browserCommitV2, browserCommitFileQueryV1, browserCommitFileV1, browserCommitFilesQueryV1, browserCommitFilesV1, browserHistoryQueryV3, browserHistorySummaryQueryV1, browserHistorySummaryV3, browserHistoryV4, browserSearchQueryV1, browserSearchV2, browserInstructionFileQueryV1, browserInstructionFileV1 } from '@gitifact/contracts';
+import { browserCommitQueryV1, browserCommitV3, browserCommitFileQueryV1, browserCommitFileV1, browserCommitFilesQueryV1, browserCommitFilesV1, browserHistoryQueryV3, browserHistorySummaryQueryV1, browserHistorySummaryV4, browserHistoryV5, browserSearchQueryV1, browserSearchV2, browserInstructionFileQueryV1, browserInstructionFileV1, browserRecordQueryV1, browserRecordV1 } from '@gitifact/contracts';
 import { storeReader } from '../../adapters/git/store-reader.js';
 import { openCache } from '../../adapters/cache/index.js';
 import { createCheckoutReader } from '../checkout/checkout-reader.js';
@@ -28,10 +28,10 @@ export function recordRoutes(root: string, sessionId: string, env?: NodeJS.Proce
     route({ method: 'GET', path: '/api/v1/history', session: true, query: browserHistoryQueryV3, unreadable, handle: async ({ query }) => {
       const offset = query.offset ?? 0;
       const page = await cache.history.page(query.head, { kind: query.kind, document: query.document, feature: query.feature, author: query.author, q: query.q }, offset, query.limit ?? PAGE);
-      return ok(browserHistoryV4.parse({ contract: 'browser-history', version: 4, sessionId, head: query.head, offset, ...page }));
+      return ok(browserHistoryV5.parse({ contract: 'browser-history', version: 5, sessionId, head: query.head, offset, ...page }));
     } }),
     route({ method: 'GET', path: '/api/v1/history/summary', session: true, query: browserHistorySummaryQueryV1, unreadable, handle: async ({ query }) =>
-      ok(browserHistorySummaryV3.parse({ contract: 'browser-history-summary', version: 3, sessionId, head: query.head, ...await cache.history.summary(query.head) })) }),
+      ok(browserHistorySummaryV4.parse({ contract: 'browser-history-summary', version: 4, sessionId, head: query.head, ...await cache.history.summary(query.head) })) }),
     // One commit as its page reads it: its documents with both sides, and who made it even when it changed none.
     route({ method: 'GET', path: '/api/v1/commit', session: true, query: browserCommitQueryV1, unreadable, handle: async ({ query }) => {
       const changes = await cache.history.ofCommit(query.commit);
@@ -42,10 +42,16 @@ export function recordRoutes(root: string, sessionId: string, env?: NodeJS.Proce
       const [author, email, committer, date, message] = first
         ? [first.author, first.email, first.committer, first.date, first.message]
         : [line[0] ?? '', line[1] ?? '', line[2] ?? '', line[3] ?? '', (line[4] ?? '').replace(/\n$/, '')];
-      return ok(browserCommitV2.parse({ contract: 'browser-commit', version: 2, sessionId, commit: query.commit, author, email, committer, date, message, changes }));
+      return ok(browserCommitV3.parse({ contract: 'browser-commit', version: 3, sessionId, commit: query.commit, author, email, committer, date, message, changes }));
+    } }),
+    // A record's page names the record; which commit added it is read from the history of the HEAD the reader is on.
+    route({ method: 'GET', path: '/api/v1/record', session: true, query: browserRecordQueryV1, unreadable, handle: async ({ query }) => {
+      const commit = await cache.history.commitOfRecord(query.head, query.id);
+      if (!commit) throw new HttpError(404, 'NOT_FOUND', t('server.recordNotFound'));
+      return ok(browserRecordV1.parse({ contract: 'browser-record', version: 1, sessionId, head: query.head, id: query.id, commit }));
     } }),
 
-    // The source a commit changed beside its documents, read from Git when the activity detail asks for it.
+    // The source a commit changed beside its documents, read from Git when the commit or record page asks for it.
     route({ method: 'GET', path: '/api/v1/commit/files', session: true, query: browserCommitFilesQueryV1, unreadable, handle: async ({ query }) => {
       const found = await commitFiles.files(query.commit);
       if (!found) throw new HttpError(404, 'NOT_FOUND', t('server.commitNotFound'));

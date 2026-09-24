@@ -75,21 +75,25 @@ try {
   assert.ok(inputs.commit.startsWith(systemTemp), 'The commit input must default to the system temporary folder.');
   const feature = gitifact(['docs', 'new', 'feature', 'package', '--title', '패키지 기능', '--description', '설치한 CLI로 쓰는 기능']);
   const requirement = gitifact(['docs', 'new', 'requirement', 'package/install', '--title', '설치 확인', '--description', '설치한 CLI로 명세와 코드를 커밋한다']);
-  // docs new marks both files as drafts; the author finishes them by removing the mark.
-  for (const created of [feature, requirement]) {
+  // A record of the choice made, written as a draft by the installed CLI.
+  const record = gitifact(['records', 'new', '--title', '패키지 검증', '--docs', requirement.id]);
+  // docs new and records new mark their files as drafts; the author fills them in and removes the mark.
+  const recordFile = join(temporaryRoot, ...record.path.split('/'));
+  await writeFile(recordFile, (await readFile(recordFile, 'utf8')).replace('(내용)', '설치본의 동작을 확인해야 한다.').replace('(내용)', '설치본으로 확인한다.'));
+  for (const created of [feature, requirement, record]) {
     const file = join(temporaryRoot, ...created.path.split('/'));
     await writeFile(file, (await readFile(file, 'utf8')).replace('draft: true\n', ''));
   }
   await writeFile(join(temporaryRoot, 'feature.txt'), 'packaged feature\n');
-  await writeFile(inputs.commit, JSON.stringify({ reasons: [{ docs: [requirement.id, feature.id], reason: '패키지 검증' }],
-    // A commit selects every pending document.
-    paths: ['.gitifact/config.json', feature.path, requirement.path, '.gitifact/history.jsonl', 'feature.txt'],
+  await writeFile(inputs.commit, JSON.stringify({
+    paths: ['.gitifact/config.json', feature.path, requirement.path, record.path, 'feature.txt'],
     message: 'Package fixture commit', authorization: { basis: 'user-request', evidence: 'Package verification fixture' } }));
   const committed = gitifact(['changes', 'commit', '--file', inputs.commit]);
   assert.equal(committed.outcome, 'committed');
   assert.equal(committed.inputRemoved, true, 'A successful commit removes its input file.');
   assert.equal(gitifact(['docs', 'show', requirement.id, '--ref', 'HEAD']).documents[0].path, requirement.path);
-  assert.equal(gitifact(['docs', 'history', requirement.id]).events[0].reasons[0], '패키지 검증');
+  assert.deepEqual(gitifact(['docs', 'history', requirement.id]).events[0].records.map(r => [r.id, r.title, r.sections.map(s => s.body)]),
+    [[record.id, '패키지 검증', ['설치본의 동작을 확인해야 한다.', '설치본으로 확인한다.']]]);
   assert.match(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', 'guide', 'list'], temporaryRoot), /^workflow /m);
   assert.equal(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', 'guide', 'show', 'spec'], temporaryRoot),
     await readFile(join(workspace, 'apps/cli/src/shared/i18n/ko/docs/spec.md'), 'utf8'), 'Bundled guides must match the asset source.');

@@ -5,11 +5,15 @@ import { t } from '../shared/i18n/index.js';
 
 export type DocKind = 'feature' | 'requirement' | 'design' | 'wiki' | 'instruction';
 
-/** ID prefix per kind. `H-` names a reason line in history.jsonl. IDs are issued by the CLI and never change. */
+/** ID prefix per kind. IDs are issued by the CLI and never change. */
 export const DOC_ID_PREFIX = { feature: 'S', requirement: 'R', design: 'D', wiki: 'W', instruction: 'I' } as const satisfies Record<DocKind, string>;
+/** A decision record's ID: `DR-`, two letters because `D-` and `R-` name designs and requirements. */
+export const RECORD_ID_PREFIX = 'DR';
+/** `H-` named a reason before decision records (a history.jsonl line, a 0.7 reason); it is read from past commits only and goes with the 0.7 parser at 1.0.0. */
 export const REASON_ID_PREFIX = 'H';
 const token = '[a-z2-7]{10}';
 export const docIdPattern = new RegExp(`^[SRDWI]-${token}$`);
+export const recordIdPattern = new RegExp(`^DR-${token}$`);
 export const reasonIdPattern = new RegExp(`^H-${token}$`);
 export const idPatternOf = (kind: DocKind) => new RegExp(`^${DOC_ID_PREFIX[kind]}-${token}$`);
 export const kindOfId = (id: string): DocKind | undefined =>
@@ -32,7 +36,7 @@ export interface WikiDoc extends DocBase { kind: 'wiki' }
 export interface InstructionDoc extends DocBase { kind: 'instruction'; name: string }
 export type Doc = FeatureDoc | RequirementDoc | DesignDoc | WikiDoc | InstructionDoc;
 
-/** One line of history.jsonl: why the listed documents changed. Author and time are read from the commit. */
+/** One line of history.jsonl, the reason file before records: read from past commits for the history only. */
 export interface DocReason { id: string; docs: string[]; reason: string }
 
 export const docProblemCodes = [
@@ -40,9 +44,10 @@ export const docProblemCodes = [
   'PATH_UNSUPPORTED', 'FRONTMATTER_REQUIRED', 'FRONTMATTER_UNCLOSED', 'FRONTMATTER_LINE', 'FRONTMATTER_VALUE',
   'FRONTMATTER_UNKNOWN_KEY', 'FRONTMATTER_MISSING_KEY', 'ID_FORMAT', 'SOURCE_INVALID', 'BODY_REQUIRED', 'BODY_HEADING',
   'BODY_MARKER', 'BODY_UNCLOSED_FENCE', 'INVALID_CHARACTERS', 'FILE_TOO_LARGE', 'REASON_INVALID',
-  'INSTRUCTION_INDEX_REQUIRED', 'INSTRUCTION_SPEC_LINK', 'WIKI_REMOVED',
+  'INSTRUCTION_INDEX_REQUIRED', 'INSTRUCTION_SPEC_LINK', 'WIKI_REMOVED', 'REASONS_FILE_REMOVED',
+  'RECORD_PATH', 'RECORD_SECTION_UNKNOWN', 'RECORD_SECTION_MISSING', 'RECORD_SECTION_TOO_LONG', 'RECORD_ALTERED',
   // Across files
-  'DOC_DRAFT', 'DUPLICATE_ID', 'DUPLICATE_REASON_ID', 'DUPLICATE_ORDER', 'MISSING_REFERENCE', 'FEATURE_INDEX_REQUIRED', 'DESIGN_OVERVIEW_REQUIRED',
+  'DOC_DRAFT', 'DUPLICATE_ID', 'DUPLICATE_RECORD_ID', 'DUPLICATE_ORDER', 'MISSING_REFERENCE', 'FEATURE_INDEX_REQUIRED', 'DESIGN_OVERVIEW_REQUIRED',
 ] as const;
 export type DocProblemCode = typeof docProblemCodes[number];
 export interface DocProblem { code: DocProblemCode; path: string; message: string }

@@ -3,7 +3,7 @@ title: 요구사항 형식
 description: 기능과 요구사항 파일의 구조, 프론트매터, 사용자 스토리와 수용 조건, 만들기·고치기·옮기기
 ---
 
-기능 하나는 `.gitifact/spec/<기능>/` 폴더 하나다. 기능 소개는 `index.md`, 요구사항은 `requirements/<slug>.md`에 하나씩, 설계는 `design/` 아래 파일들(`gitifact guide show design`)이다. 모든 문서의 변경 이유는 `.gitifact/history.jsonl` 한 파일에 쌓이며 커밋할 때 CLI가 쓴다(`gitifact guide show commit`).
+기능 하나는 `.gitifact/spec/<기능>/` 폴더 하나다. 기능 소개는 `index.md`, 요구사항은 `requirements/<slug>.md`에 하나씩, 설계는 `design/` 아래 파일들(`gitifact guide show design`)이다. 문서가 왜 바뀌었는지는 결정기록(`.gitifact/records/`)이 남긴다(`gitifact guide show records`).
 
 ```text
 .gitifact/spec/posts/
@@ -62,7 +62,7 @@ order: 10
 | `gitifact docs list [--feature <기능>]` | 기능·요구사항·설계·지침의 ID·제목·설명을 본문 없이 본다 |
 | `gitifact docs search <검색어>` | 제목이나 설명에 없는 내용을 본문에서 찾는다 |
 | `gitifact docs show <ID…>` | 고른 문서의 원문과 그 문서를 가리키는 설계를 본다. `--ref <커밋>`은 그 시점의 원문이다 |
-| `gitifact docs history <ID>` | 그 문서가 왜 바뀌어 왔는지 이유와 커밋을 본다 |
+| `gitifact docs history <ID>` | 그 문서가 왜 바뀌어 왔는지 결정기록과 커밋을 본다 |
 
 목록과 검색으로 고른 뒤 필요한 문서만 `show`로 읽는다. 전체 파일을 grep하거나 모두 여는 것보다 적게 읽는다.
 
@@ -94,4 +94,4 @@ order: 10
 
 본문의 문체는 `gitifact guide show writing`을 따른다. 그 문서의 문체 규칙은 위 사용자 스토리 문형과 `조건: / 기대 동작:` 형식을 대체하지 않는다.
 
-대화 중에는 파일을 다듬는다. 매 수정마다 이유를 쌓지 않는다. 이유는 커밋할 때 최종 변경을 보고 한 번 쓴다. 코드와 테스트를 고치는 동안 달라진 요구사항은 마지막 합의 내용으로 맞춘다.
+대화 중에는 파일을 다듬는다. 기존 요구사항을 바꾸거나 여러 안 중 하나를 고르면 그때 결정기록 초안을 쓴다(`gitifact guide show records`). 새 요구사항을 추가하기만 하면 기록은 필요 없다. 코드와 테스트를 고치는 동안 달라진 요구사항은 마지막 합의 내용으로 맞춘다.

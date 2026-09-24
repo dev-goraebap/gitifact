@@ -3,7 +3,7 @@ title: Requirement format
 description: Feature and requirement files, frontmatter, user stories and acceptance criteria, creating, editing and moving
 ---
 
-A feature is one folder, `.gitifact/spec/<feature>/`. The feature introduction is `index.md`, each requirement is its own `requirements/<slug>.md`, and the design is the files under `design/` (`gitifact guide show design`). Reasons for changes to every document accumulate in one file, `.gitifact/history.jsonl`, which the CLI writes at commit time (`gitifact guide show commit`).
+A feature is one folder, `.gitifact/spec/<feature>/`. The feature introduction is `index.md`, each requirement is its own `requirements/<slug>.md`, and the design is the files under `design/` (`gitifact guide show design`). Why a document changed is kept in records (`.gitifact/records/`, `gitifact guide show records`).
 
 ```text
 .gitifact/spec/posts/
@@ -62,7 +62,7 @@ Links to other documents are relative to this file (from a requirement to an ass
 | `gitifact docs list [--feature <feature>]` | IDs, titles and descriptions of features, requirements, designs and instructions, without bodies |
 | `gitifact docs search <query>` | Finding text in bodies that titles and descriptions do not mention |
 | `gitifact docs show <ID…>` | The source of the chosen documents and the designs that point to them. `--ref <commit>` shows them as of that commit |
-| `gitifact docs history <ID>` | Why a document changed over time, with reasons and commits |
+| `gitifact docs history <ID>` | Why a document changed over time, with its records and commits |
 
 Choose with the list and search, then `show` only the documents you need. This reads far less than grepping or opening every file.
 
@@ -94,4 +94,4 @@ Apply this to new requirements and those being revised for the current request. 
 
 Follow `gitifact guide show writing` for prose. Its style rules do not replace the user-story pattern and the condition/expected format above. Write project content in the project's language; the language of these instructions does not change it.
 
-Refine the files during the conversation. Do not record a reason for every intermediate edit; write reasons once at commit time from the final change. While changing code and tests, bring requirements into line with the final agreement.
+Refine the files during the conversation. When an existing requirement changes or one of several options is chosen, write a draft record then (`gitifact guide show records`). Simply adding a requirement needs no record. While changing code and tests, bring requirements into line with the final agreement.

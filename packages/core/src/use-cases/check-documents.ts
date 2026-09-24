@@ -1,16 +1,18 @@
-import { DocumentError, docProblem, type Doc, type DocProblem, type DocProblemCode, type DocReason } from '../domain/document.js';
-import { classifyDocPath, isWikiPage, parseDocumentFile, parseReasonLines, INSTRUCTIONS_ROOT, INSTRUCTION_FILE, SPEC_ROOT } from '../formats/document-file.js';
+import { DocumentError, docProblem, type Doc, type DocProblem, type DocProblemCode } from '../domain/document.js';
+import { classifyDocPath, isWikiPage, parseDocumentFile, INSTRUCTIONS_ROOT, INSTRUCTION_FILE, SPEC_ROOT } from '../formats/document-file.js';
 import { extractLinks, resolveLink } from '../formats/links.js';
+import { parseRecordFile } from '../formats/record-file.js';
+import type { DecisionRecord } from '../domain/record.js';
 
-export interface DocumentSet { documents: Doc[]; reasons: (DocReason & { path: string })[]; problems: DocProblem[] }
+export interface DocumentSet { documents: Doc[]; records: DecisionRecord[]; problems: DocProblem[] }
 
 /**
- * Reads every document and reason file and reports all problems instead of stopping at the first: a broken file is
+ * Reads every document and record file and reports all problems instead of stopping at the first: a broken file is
  * reported and left out, and the rest is still checked against each other. The check covers the whole set because a
  * problem can sit in a file nobody changed — deleting an instruction leaves a design's `sources` pointing nowhere.
  */
 export function checkDocuments(files: ReadonlyMap<string, string>): DocumentSet {
-  const documents: Doc[] = []; const reasons: DocumentSet['reasons'] = []; const problems: DocProblem[] = [];
+  const documents: Doc[] = []; const records: DecisionRecord[] = []; const problems: DocProblem[] = [];
   const report = (code: DocProblemCode, path: string, values: Record<string, unknown> = {}) => problems.push(docProblem(code, path, values));
   const features = new Set<string>(); const designFolders = new Map<string, boolean>();
   // Instruction folders, and whether each has its index.md; the other files of a folder only show that it exists.
@@ -26,7 +28,9 @@ export function checkDocuments(files: ReadonlyMap<string, string>): DocumentSet 
     try {
       const where = classifyDocPath(path);
       if (where.type === 'ignored') continue;
-      if (where.type === 'reasons') { reasons.push(...parseReasonLines(path, source).map(r => ({ ...r, path }))); continue; }
+      // Records replaced the reason file; one left in the tree would hold reasons nothing reads.
+      if (where.type === 'reasons') { report('REASONS_FILE_REMOVED', path); continue; }
+      if (where.type === 'record') { records.push(parseRecordFile(path, source)); continue; }
       if (where.type === 'instruction-file') {
         instructionFolders.set(where.name, instructionFolders.get(where.name) === true);
         if (path.endsWith('.md')) specLinks(path, source);
@@ -49,10 +53,12 @@ export function checkDocuments(files: ReadonlyMap<string, string>): DocumentSet 
     const seen = byId.get(doc.id);
     if (seen) report('DUPLICATE_ID', doc.path, { id: doc.id, other: seen.path }); else byId.set(doc.id, doc);
   }
-  const reasonIds = new Map<string, string>();
-  for (const r of reasons) {
-    const seen = reasonIds.get(r.id);
-    if (seen) report('DUPLICATE_REASON_ID', r.path, { id: r.id, other: seen }); else reasonIds.set(r.id, r.path);
+  for (const r of records) if (r.draft) report('DOC_DRAFT', r.path);
+  // The file name is the ID, so the same ID can only repeat across day folders.
+  const recordIds = new Map<string, string>();
+  for (const r of records) {
+    const seen = recordIds.get(r.id);
+    if (seen) report('DUPLICATE_RECORD_ID', r.path, { id: r.id, other: seen }); else recordIds.set(r.id, r.path);
   }
   // Order sorts documents within one folder; two with the same number would have no defined order.
   const orders = new Map<string, Doc>();
@@ -72,5 +78,5 @@ export function checkDocuments(files: ReadonlyMap<string, string>): DocumentSet 
   for (const feature of features) if (!indexed.has(feature) && !hasIndexFile.has(feature)) report('FEATURE_INDEX_REQUIRED', `.gitifact/spec/${feature}/index.md`, { feature });
   for (const [feature, overview] of designFolders) if (!overview) report('DESIGN_OVERVIEW_REQUIRED', `.gitifact/spec/${feature}/design/overview.md`, { feature });
   for (const [name, hasFile] of instructionFolders) if (!hasFile) report('INSTRUCTION_INDEX_REQUIRED', `${INSTRUCTIONS_ROOT}/${name}/${INSTRUCTION_FILE}`);
-  return { documents, reasons, problems };
+  return { documents, records, problems };
 }

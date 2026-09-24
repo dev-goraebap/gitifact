@@ -26,10 +26,10 @@ CLI: 기본 실행은 `npx --yes gitifact@{version} <cmd>`다. 아래 `gitifact`
 
 - 문서를 만들기 전에 `gitifact guide show spec`을 읽는다. 새 문서는 `gitifact docs new`로 만들어 ID를 발급받고, 파일을 직접 고친 뒤 `gitifact docs check`로 확인한다.
 - 새 기능은 요구사항과 설계를 함께 정리한다(`gitifact guide show design`). 요구사항만 요청받으면 따른다.
-- 요구사항·설계·코드를 바꾸기 전에 이 파일의 블록 밖 색인에서 작업에 맞는 프로젝트 지침(`.gitifact/instructions/`)을 찾아 읽고 따른다.
-- 여러 기능에 걸친 규칙과 결정은 프로젝트 지침에 둔다. 지침과 색인을 만들거나 고치기 전에 `gitifact guide show instructions`를 읽는다. 색인은 블록 밖에 쓴다.
+- 기존 요구사항·설계·지침을 바꾸거나 여러 안 중 하나를 고르면 그때 `gitifact records new`로 결정기록을 쓴다(`gitifact guide show records`). 문서를 바꾸기 전에 `gitifact docs history <ID>`로 그 문서의 결정 흐름을 읽는다.
+- 요구사항·설계·코드를 바꾸기 전에 이 파일의 블록 밖 색인에서 작업에 맞는 프로젝트 지침(`.gitifact/instructions/`)을 찾아 읽고 따른다. 여러 기능에 걸친 규칙은 지침에 두며, 지침과 블록 밖 색인을 고치기 전에 `gitifact guide show instructions`를 읽는다.
 - 지침·요구사항·설계 본문을 쓰기 전에 `gitifact guide show writing`의 문체를 따른다. 문서는 CLI 표시 언어와 무관하게 프로젝트의 언어로 쓴다.
-- 커밋 요청을 받으면 `gitifact guide show commit`을 읽고 명세·이유·코드·테스트를 함께 커밋한다.
+- 커밋 요청을 받으면 `gitifact guide show commit`을 읽는다. 결정 하나를 그 결정기록·문서·코드·테스트와 함께 커밋하는 것이 기본이다.
 - 자동 기록은 커밋 권한이 아니다. 사용자 요청이나 명시적 프로젝트 정책이 있을 때만 커밋하고 푸시는 별도 요청을 따른다.
 - 불명확한 제품 동작만 질문하고 독립적인 작업은 진행한다. 기존 기능 전체 도출은 요청받았을 때 한다.
 - SELF-CHECK: 문서나 커밋 입력을 만들기 전에 해당 지침을 다시 읽고 형식을 대조한다. 확실하지 않으면 추측하지 말고 `gitifact guide show <topic>`을 실행한다.
@@ -38,9 +38,9 @@ CLI: 기본 실행은 `npx --yes gitifact@{version} <cmd>`다. 아래 `gitifact`
 ### 명령
 
 - `guide list`, `guide show <topic>`: 작성 지침 ({topics})
-- `docs list`·`search`·`show <ID…>`·`new <종류> <경로>`·`check`·`history <ID>`: 본문 없는 목록, 검색, 원문과 참조, ID 발급과 뼈대 생성(`draft: true`), 전체 검사, 변경 이유 (옵션은 `--help`)
-- `changes list`: HEAD 대비 바뀐 문서, 이유 없는 문서, 커밋 입력 파일 경로
-- `changes commit --file <json|-> [--dry-run]`: 문서 검사 뒤 변경 이유 기록과 커밋을 한 번에
+- `docs list`·`search`·`show <ID…>`·`new <종류> <경로>`·`check`·`history <ID>`: 본문 없는 목록, 검색, 원문과 참조, ID 발급과 뼈대 생성(`draft: true`), 전체 검사, 결정기록과 커밋 (옵션은 `--help`)
+- `changes list`: HEAD 대비 바뀐 문서, 커밋하지 않은 결정기록, 기록 없는 변경, 커밋 입력 파일 경로
+- `changes commit --file <json|-> [--dry-run]`: 문서 검사 뒤 고른 파일과 결정기록을 커밋
 - `browser`: 읽기 전용 브라우저 서버 실행, URL 출력 후 계속 실행
 - `update [--check | --commit]`: `--check`는 읽기 전용 버전 확인. 옵션 없이는 이 블록을 실행 버전으로 갱신하며 `--commit`은 블록만 바뀐 파일을 고정 메시지로 커밋한다
 - `init`: 처음 도입할 때 설정과 이 블록을 만든다

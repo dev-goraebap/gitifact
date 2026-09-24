@@ -6,6 +6,8 @@ export * from './formats/spec-project.js';
 export * from './formats/store.js';
 export * from './formats/links.js';
 export * from './domain/document.js';
+export * from './domain/record.js';
+export * from './formats/record-file.js';
 export * from './formats/frontmatter.js';
 export * from './formats/document-file.js';
 export * from './use-cases/check-documents.js';

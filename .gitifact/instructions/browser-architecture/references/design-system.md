@@ -49,5 +49,3 @@ GITIFACT 워드마크는 public/gitifact-logo.svg를 CSS 마스크에 텍스트 
 ## 검증
 
 아이콘 버튼과 손잡이에 접근 가능한 이름을 주고 한국어·긴 콘텐츠·라이트/다크·모바일·키보드에서 확인한다. Markdown은 Astryx의 안전한 렌더링만 쓰고 원문의 HTML 실행을 허용하지 않는다. 문서 다이어그램의 SVG는 mermaid가 strict 모드로 만든 결과만 그 자리에 넣는다. 편집기·업로더를 설치하지 않는다.
-
-되돌리면 안 되는 결정은 [결정 표](decisions.md)에 있다.

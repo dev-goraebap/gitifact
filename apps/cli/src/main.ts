@@ -3,6 +3,7 @@ import { runBrowser, parsePort } from './commands/browser.js';
 import { runInit } from './commands/init.js';
 import { newKinds, runDocsCheck, runDocsHistory, runDocsList, runDocsNew, runDocsSearch, runDocsShow } from './commands/docs.js';
 import { runChangesCommit, runChangesList } from './commands/changes.js';
+import { runRecordsNew, runRecordsShow } from './commands/records.js';
 import { runGuideList, runGuideShow } from './commands/guide.js';
 import { formats } from './commands/output.js';
 import { runUpdate } from './commands/update.js';
@@ -74,6 +75,13 @@ docs.command('new').description(t('help.docsNew')).allowExcessArguments(false)
 docs.command('check').description(t('help.docsCheck')).allowExcessArguments(false).addOption(format()).action(o => runDocsCheck(o));
 docs.command('history').description(t('help.docsHistory')).argument('<id>', t('help.docsHistoryId')).allowExcessArguments(false)
   .addOption(format()).action((id: string, o) => runDocsHistory(id, o));
+
+const records = program.command('records').description(t('help.records'));
+records.command('new').description(t('help.recordsNew')).allowExcessArguments(false)
+  .requiredOption('--title <title>', t('help.recordsTitle')).requiredOption('--docs <ids...>', t('help.recordsDocs'))
+  .addOption(format()).action(o => runRecordsNew(o));
+records.command('show').description(t('help.recordsShow')).argument('<ids...>', t('help.recordsShowId'))
+  .addOption(format()).action((ids: string[], o) => runRecordsShow(ids, o));
 
 const changes = program.command('changes').description(t('help.changes'));
 changes.command('list').description(t('help.changesList')).allowExcessArguments(false).addOption(format()).action(o => runChangesList(o));

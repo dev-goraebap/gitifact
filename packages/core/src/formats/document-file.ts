@@ -1,6 +1,7 @@
 import { DocumentError, docIdPattern, idPatternOf, reasonIdPattern, type Doc, type DocKind, type DocReason, type DocSource } from '../domain/document.js';
 import { parseFrontmatterBlock, renderFrontmatterBlock, type FrontFields } from './frontmatter.js';
 import { t } from '../shared/i18n/index.js';
+import { isRecordPath, RECORDS_ROOT } from './record-file.js';
 
 // Where each kind of 0.8.0 document lives, and how one file reads and renders.
 //   .gitifact/spec/<feature>/index.md                 feature overview (S-)
@@ -8,14 +9,15 @@ import { t } from '../shared/i18n/index.js';
 //   .gitifact/spec/<feature>/design/<slug>.md         one design axis (D-); design/overview.md is required once a design exists
 //   .gitifact/wiki/**/*.md                            wiki pages (W-), read from commits before 0.8.0; the check refuses them
 //   .gitifact/instructions/<name>/index.md            one instruction (I-); other files in the folder belong to it
-//   .gitifact/history.jsonl                           reasons for every document, one file for the whole store
+//   .gitifact/records/<yyyymmdd>/<DR-ID>.md            one record (formats/record-file.ts)
+//   .gitifact/history.jsonl                           reasons before records: read from past commits, refused in a tree being checked
 
 export const SPEC_ROOT = '.gitifact/spec';
 export const WIKI_ROOT = '.gitifact/wiki';
 export const INSTRUCTIONS_ROOT = '.gitifact/instructions';
 /** The file of an instruction folder that is the instruction; every other file there is one of its references. */
 export const INSTRUCTION_FILE = 'index.md';
-/** The one reason file. Git merges it with `merge=union`, so lines added on two branches are both kept. */
+/** The reason file records replaced; past commits still hold it. */
 export const HISTORY_PATH = '.gitifact/history.jsonl';
 const name = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 /** Root wiki pages may carry the conventional upper-case names (README.md, ARCHITECTURE.md, ...). */
@@ -35,6 +37,8 @@ export type DocPath =
   /** A file of an instruction folder other than its index.md: part of the instruction, never parsed as a document. */
   | { type: 'instruction-file'; name: string }
   | { type: 'reasons' }
+  /** A record file (formats/record-file.ts): not a document, but read and committed with them. */
+  | { type: 'record' }
   | { type: 'ignored' };
 
 /**
@@ -44,6 +48,7 @@ export type DocPath =
 export function classifyDocPath(path: string): DocPath {
   const unsupported = () => new DocumentError('PATH_UNSUPPORTED', path, t('doc.PATH_UNSUPPORTED', { path }));
   if (path === HISTORY_PATH) return { type: 'reasons' };
+  if (path.startsWith(RECORDS_ROOT + '/')) { if (isRecordPath(path)) return { type: 'record' }; throw unsupported(); }
   if (path.startsWith(SPEC_ROOT + '/')) {
     const parts = path.slice(SPEC_ROOT.length + 1).split('/');
     const feature = parts[0]!;

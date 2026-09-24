@@ -2,7 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { parseDocumentFile, renderDocumentFile, parseReasonLines, renderReasonLine, classifyDocPath, checkDocuments, arrangeDocuments, compareDocumentSets } from '../dist/index.js';
 
-const S = 'S-aaaaaaaaaa', R1 = 'R-bbbbbbbbbb', R2 = 'R-cccccccccc', D1 = 'D-dddddddddd', D2 = 'D-eeeeeeeeee', W = 'W-ffffffffff', H = 'H-gggggggggg', I = 'I-iiiiiiiiii';
+const record = (id, docs, day = '20260924') => [`.gitifact/records/${day}/${id}.md`, `---\nid: ${id}\ntitle: 결제 취소 첫 정리\ndocs:\n${docs.map(d => '  - ' + d + '\n').join('')}---\n\n## 맥락\n\n결제 취소를 처음 정리했다.\n\n## 결정\n\n취소 요구사항을 둔다.\n`];
+
+const S = 'S-aaaaaaaaaa', R1 = 'R-bbbbbbbbbb', R2 = 'R-cccccccccc', D1 = 'D-dddddddddd', D2 = 'D-eeeeeeeeee', W = 'W-ffffffffff', H = 'H-gggggggggg', DR = 'DR-gggggggggg', I = 'I-iiiiiiiiii';
 const feature = `---\nid: ${S}\ntitle: 결제\ndescription: 결제 승인·취소·환불 흐름\n---\n\n결제 기능의 범위.\n`;
 const requirement = (id = R1, order = 10, title = '결제 취소') => `---\nid: ${id}\ntitle: ${title}\ndescription: 승인된 결제를 전액 취소한다\norder: ${order}\n---\n\n구매자로서, 잘못 산 물건을 돌려받기 위해 결제를 취소하고 싶다.\n\n### 수용 조건\n\n1. 조건: 승인된 결제를 취소합니다.\n   기대 동작: 전액을 환불합니다.\n`;
 const overview = `---\nid: ${D1}\ntitle: 개요\ndescription: 승인·취소 처리 흐름\norder: 10\nrequirements:\n  - ${R1}\nsources:\n  - id: ${I}\n    note: 모듈 경계\n  - title: PG사 취소 API\n    url: https://example.test/cancel\n---\n\n취소는 승인 기록을 찾아 PG사에 요청한다.\n`;
@@ -107,11 +109,11 @@ test('reason lines carry only id, docs and reason', () => {
 
 test('the whole-set check reports every problem and keeps checking the readable files', () => {
   const good = new Map([[paths.feature, feature], [paths.r1, requirement()], [paths.overview, overview], [paths.instruction, instruction],
-    [paths.reasons, renderReasonLine({ id: H, docs: [R1], reason: '처음 작성' }) + '\n'], ['.gitifact/wiki/diagram.png', 'binary']]);
+    record(DR, [R1]), ['.gitifact/wiki/diagram.png', 'binary']]);
   const ok = checkDocuments(good);
   assert.deepEqual(ok.problems, []);
   assert.deepEqual(ok.documents.map(d => d.id).sort(), [D1, I, R1, S].sort());
-  assert.deepEqual(ok.reasons, [{ id: H, docs: [R1], reason: '처음 작성', path: paths.reasons }]);
+  assert.deepEqual(ok.records.map(r => [r.id, r.title, r.docs]), [[DR, '결제 취소 첫 정리', [R1]]]);
 
   const broken = new Map([
     // A second feature with a requirement and a design but neither index.md nor overview.md.
@@ -121,7 +123,8 @@ test('the whole-set check reports every problem and keeps checking the readable 
     // A page left from the wiki is refused, not read; reasons may still name its W-.
     [paths.wiki, wiki], [paths.feature, feature], [paths.r1, requirement()], [paths.r2, requirement(R1, 10, '환불')],
     [paths.overview, overview], [paths.api, '# no frontmatter\n'],
-    [paths.reasons, renderReasonLine({ id: H, docs: [W], reason: 'a' }) + '\n' + renderReasonLine({ id: H, docs: [R1], reason: 'b' }) + '\n'],
+    // The reason file records replaced, and one record ID used in two years' folders.
+    [paths.reasons, renderReasonLine({ id: H, docs: [W], reason: 'a' }) + '\n'], record(DR, [W], '20250101'), record(DR, [R1]),
   ]);
   const result = checkDocuments(broken);
   const found = result.problems.map(p => [p.code, p.path]).sort();
@@ -129,12 +132,13 @@ test('the whole-set check reports every problem and keeps checking the readable 
     ['DESIGN_OVERVIEW_REQUIRED', '.gitifact/spec/refund/design/overview.md'],
     ['DUPLICATE_ID', paths.r2],
     ['DUPLICATE_ORDER', paths.r2],
-    ['DUPLICATE_REASON_ID', paths.reasons],
+    ['DUPLICATE_RECORD_ID', `.gitifact/records/20260924/${DR}.md`],
     ['FEATURE_INDEX_REQUIRED', '.gitifact/spec/refund/index.md'],
     ['FRONTMATTER_REQUIRED', paths.api],
     ['MISSING_REFERENCE', '.gitifact/spec/refund/design/api.md'],
     ['MISSING_REFERENCE', '.gitifact/spec/refund/design/api.md'],
     ['MISSING_REFERENCE', paths.overview],
+    ['REASONS_FILE_REMOVED', paths.reasons],
     ['WIKI_REMOVED', paths.wiki],
   ].sort());
   assert.ok(result.problems.every(p => p.message.includes(p.path) || p.code.endsWith('_REQUIRED')));
@@ -153,31 +157,17 @@ test('arranged documents follow folder names, then order; a folder without index
   assert.deepEqual(arranged.orphans, ['refund']);
 });
 
-test('comparing two sets names created, modified, moved and deleted documents, and the reasons only the newer set has', () => {
-  const old = renderReasonLine({ id: H, docs: [R1], reason: '처음 작성' });
-  const added = renderReasonLine({ id: 'H-hhhhhhhhhh', docs: [R1, W], reason: '다시 씀' });
-  const before = new Map([[paths.feature, feature], [paths.r1, requirement()], [paths.wiki, wiki], [paths.reasons, old + '\n']]);
+test('comparing two sets names created, modified, moved and deleted documents', () => {
+  const before = new Map([[paths.feature, feature], [paths.r1, requirement()], [paths.wiki, wiki], record(DR, [R1])]);
   const after = new Map([
-    // A CRLF checkout of the same text is no change; a broken file is not a change by ID.
+    // A CRLF checkout of the same text is no change; a broken file is not a change by ID; records are not documents.
     [paths.feature, feature.replaceAll('\n', '\r\n')], [paths.api, '# broken\n'],
-    [paths.r2, requirement(R1, 10, '결제 취소 요청')], [paths.overview, overview], [paths.reasons, old + '\n' + added + '\n'],
+    [paths.r2, requirement(R1, 10, '결제 취소 요청')], [paths.overview, overview], record('DR-hhhhhhhhhh', [R1, W]),
   ]);
-  const { changes, reasons, altered } = compareDocumentSets(before, after);
+  const { changes } = compareDocumentSets(before, after);
   assert.deepEqual(changes.map(c => [c.id, c.types, c.path, c.previousPath]), [
     [D1, ['created'], paths.overview, undefined],
     [R1, ['moved', 'modified'], paths.r2, paths.r1],
     [W, ['deleted'], paths.wiki, undefined],
   ]);
-  assert.deepEqual([reasons.map(r => r.id), altered], [['H-hhhhhhhhhh'], []]);
-});
-
-test('a committed reason that the newer set rewrites or drops is named as altered', () => {
-  const kept = renderReasonLine({ id: 'H-kkkkkkkkkk', docs: [R1], reason: '그대로 둠' });
-  const before = new Map([[paths.reasons, renderReasonLine({ id: H, docs: [R1], reason: '처음 작성' }) + '\n' + kept + '\n']]);
-  const rewritten = new Map([[paths.reasons, renderReasonLine({ id: H, docs: [R1], reason: '고쳐 씀' }) + '\n' + kept + '\n']]);
-  assert.deepEqual(compareDocumentSets(before, rewritten).altered, [H]);
-  assert.deepEqual(compareDocumentSets(before, new Map([[paths.reasons, kept + '\n']])).altered, [H]);
-  assert.deepEqual(compareDocumentSets(before, new Map()).altered, ['H-kkkkkkkkkk', H].sort());
-  // A reason file that does not parse is the check's problem, not every reason removed.
-  assert.deepEqual(compareDocumentSets(before, new Map([[paths.reasons, 'not json\n']])).altered, []);
 });

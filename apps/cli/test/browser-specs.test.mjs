@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
 import { classifyDocPath, parseDocumentFile, parseReasonLines } from '@gitifact/core';
 import { fixture, fingerprint } from './git-fixture.mjs';
-import { openRecords, docs } from './browser-records.mjs';
+import { openRecords, docs, reasonsOf } from './browser-records.mjs';
 import { initializeSpecProject } from '../.test-build/commands/spec-init.js';
 import { startBrowserServer } from '../.test-build/server/browser-server.js';
 
@@ -251,14 +251,14 @@ test('reading only changed files reports the same changes, texts and reasons as 
   assert.ok(expected.length >= 9, String(expected.length));
   assert.deepEqual(listed.map(e => e.key), expected.map(e => e.key));
   for (const [i, e] of listed.entries()) {
-    const want = expected[i]; assert.deepEqual([e.types, e.reasons], [want.types, want.reasons], e.key);
+    const want = expected[i]; assert.deepEqual([e.types, reasonsOf(e)], [want.types, want.reasons], e.key);
     const change = await read.change(e.key);
     const pick = s => s && { title: s.title, body: s.body, path: s.path, specId: s.specId };
     assert.deepEqual([pick(change.before), pick(change.after)], [want.before ?? null, want.after ?? null], e.key);
   }
   // The moved requirement and the moved page read as moves, with their reasons; the move changes the feature.
   const moved = listed.find(e => e.id === R2 && e.types.includes('moved'));
-  assert.deepEqual([moved.reasons, moved.before.specId, moved.after.specId], [['삭제는 프로필 기능이다.'], S, 'S-bbbbbbbbbb']);
+  assert.deepEqual([reasonsOf(moved), moved.before.specId, moved.after.specId], [['삭제는 프로필 기능이다.'], S, 'S-bbbbbbbbbb']);
   assert.deepEqual(listed.find(e => e.id === W && e.types.includes('moved')).types, ['moved', 'modified']);
 });
 
@@ -293,11 +293,16 @@ test('a commit answers with every document it changed, and with its author when 
   assert.deepEqual([commit.contract, commit.message, commit.author], ['browser-commit', 'Refine', 'Tryce fixture']);
   // Both documents of the commit come with the text on both sides, in the order the timeline lists them.
   assert.deepEqual(commit.changes.map(c => [c.event.id, c.event.types, c.before?.body ?? null, c.after?.body ?? null]), [[R, ['modified'], 'First', 'Second'], [W, ['created'], null, 'Guide 본문']]);
-  assert.deepEqual(commit.changes[0].event.reasons, ['정리했다']);
+  assert.deepEqual(reasonsOf(commit.changes[0].event), ['정리했다']);
   // A commit that changed no document is still a page: Git names its author and the source list carries the rest.
   const source = (await get('/api/v1/commit?commit=' + sourceOnly)).body;
   assert.deepEqual([source.changes.length, source.message], [0, 'Source only']);
   assert.equal((await get('/api/v1/commit?commit=' + '0'.repeat(sourceOnly.length))).status, 404);
+  // A record's page finds the commit that added it through the history of the HEAD it is on.
+  const found = (await get(`/api/v1/record?head=${sourceOnly}&id=H-aaaaaaaaaa`)).body;
+  assert.deepEqual([found.contract, found.commit], ['browser-record', withDocuments]);
+  assert.equal((await get(`/api/v1/record?head=${sourceOnly}&id=H-zzzzzzzzzz`)).status, 404);
+  assert.equal((await get(`/api/v1/record?head=${sourceOnly}&id=R-aaaaaaaaaa`)).status, 400);
   assert.equal((await get('/api/v1/commit?commit=nope')).status, 400);
 });
 
@@ -312,15 +317,14 @@ test('a commit lists the source files it changed beside its documents, and one f
   const second = f.git(['rev-parse', 'HEAD']).stdout.trim();
   const server = await startBrowserServer({ cwd: f.repo, env: f.env, assetsDirectory: fileURLToPath(new URL('../../browser/dist/', import.meta.url)) }); t.after(() => server.close());
   const get = async path => { const response = await fetch(server.url + path, { headers: { 'X-Gitifact-Session': server.session.sessionId } }); return { status: response.status, body: await response.json() }; };
-  // Documents are records and stay out; a rename keeps its old path, a binary file has no line counts. The first
-  // commit also carries the .gitattributes rule init wrote.
+  // Documents are records and stay out; a rename keeps its old path, a binary file has no line counts.
   const listed = (await get('/api/v1/commit/files?commit=' + second)).body;
   assert.deepEqual([listed.contract, listed.total], ['browser-commit-files', 2]);
   assert.deepEqual(listed.files, [
     { path: 'logo.bin', status: 'deleted', additions: null, deletions: null },
     { path: 'src/b.ts', previousPath: 'src/a.ts', status: 'renamed', additions: 1, deletions: 1 },
   ]);
-  assert.deepEqual((await get('/api/v1/commit/files?commit=' + first)).body.files.map(x => [x.path, x.status, x.additions]), [['.gitattributes', 'added', 1], ['logo.bin', 'added', null], ['src/a.ts', 'added', 5]]);
+  assert.deepEqual((await get('/api/v1/commit/files?commit=' + first)).body.files.map(x => [x.path, x.status, x.additions]), [['logo.bin', 'added', null], ['src/a.ts', 'added', 5]]);
   const moved = (await get('/api/v1/commit/file?commit=' + second + '&path=src/b.ts')).body;
   assert.deepEqual([moved.before, moved.after, moved.binary, moved.tooLarge], ['one\ntwo\nthree\nfour\nfive\n', 'one\ntwo\nthree\nfour\nsix\n', false, false]);
   const logo = (await get('/api/v1/commit/file?commit=' + first + '&path=logo.bin')).body;
@@ -348,9 +352,9 @@ test('instructions and AGENTS.md come in the checkout, instructions in history, 
     [['I-aaaaaaaaaa', 'cli-rules', 'CLI rules', [{ path: 'assets/logo.png', size: 4 }, { path: 'references/decisions.md', size: 22 }], false, true]]);
   assert.deepEqual([specs.agents.path, specs.agents.body, !!specs.agents.updatedAt], ['AGENTS.md', '# Agents\n\nRead the CLI rules first.\n', true]);
   const history = await get('/api/v1/history?head=' + head + '&document=instruction');
-  assert.deepEqual([history.status, history.body.version, history.body.events.map(e => [e.id, e.kind])], [200, 4, [['I-aaaaaaaaaa', 'instruction']]]);
+  assert.deepEqual([history.status, history.body.version, history.body.events.map(e => [e.id, e.kind])], [200, 5, [['I-aaaaaaaaaa', 'instruction']]]);
   const commit = await get('/api/v1/commit?commit=' + head);
-  assert.deepEqual([commit.body.version, commit.body.changes.map(c => [c.event.kind, c.after.body])], [2, [['instruction', 'Rules about layers']]]);
+  assert.deepEqual([commit.body.version, commit.body.changes.map(c => [c.event.kind, c.after.body])], [3, [['instruction', 'Rules about layers']]]);
   const search = await get('/api/v1/search?q=layers&head=' + head);
   assert.deepEqual(search.body.hits.filter(h => h.kind === 'instruction').map(h => h.id), ['I-aaaaaaaaaa']);
   // A file of the folder is read on its own; a binary file comes without text, and nothing outside the folder is served.

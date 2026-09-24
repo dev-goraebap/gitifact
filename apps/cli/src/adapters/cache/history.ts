@@ -43,7 +43,7 @@ export function createHistory(database: CacheDatabase, git: GitAccess) {
           change.run(e.key, e.commit, ord, e.id, e.kind, e.types.join(','), e.email, e.date, e.before?.specId ?? null, e.after?.specId ?? null,
             [e.id, e.before?.title ?? '', e.after?.title ?? ''].join(' ').toLowerCase(), JSON.stringify(listed(e)), JSON.stringify({ before: e.before, after: e.after }));
           // A change is found by its title and by why and how it was made.
-          const line = e.reasons.length ? e.reasons.join(' · ') : e.message;
+          const line = e.records.length ? e.records.map(r => [r.title, ...r.sections.map(s => s.body)].join(' ')).join(' · ') : e.message;
           const where = e.commit.slice(0, 7) + ' · ' + e.author;
           search.run('history', 'history', e.key, e.commit, JSON.stringify({ title: titleOf(e), where, line }),
             titleOf(e).toLowerCase(), where.toLowerCase(), [line, e.message, e.id].join(' ').toLowerCase());
@@ -138,6 +138,12 @@ export function createHistory(database: CacheDatabase, git: GitAccess) {
           events: (db.prepare('SELECT row FROM changes WHERE oid = ? ORDER BY ord LIMIT ?').all(c.oid, RECENT_CHANGES) as { row: string }[]).map(r => JSON.parse(r.row) as ListedEvent) }));
         return { total, byType: { created: count('created'), modified: count('modified'), moved: count('moved'), deleted: count('deleted') }, pulse, recent };
       });
+    },
+    /** The commit of `head`'s history that added a record, found through the records its changes carry. */
+    async commitOfRecord(head: string, id: string): Promise<string | undefined> {
+      await ensure(head);
+      return database.with(db => (db.prepare(`SELECT l.oid AS oid FROM lineage l JOIN changes c ON c.oid = l.oid, json_each(c.row, '$.records') r
+        WHERE l.head = ? AND json_extract(r.value, '$.id') = ? ORDER BY l.pos LIMIT 1`).get(head, id) as { oid: string } | undefined)?.oid);
     },
     /** Every change of one commit with the text on both sides: what the commit page reads. */
     async ofCommit(commit: string): Promise<{ event: ListedEvent; before: HistoryEvent['before']; after: HistoryEvent['after'] }[]> {

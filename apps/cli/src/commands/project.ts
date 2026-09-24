@@ -2,6 +2,7 @@ import { join } from 'node:path';
 import { InitError, parseManagedConfig, parseDocumentFile, classifyDocPath, type Doc } from '@gitifact/core';
 import { storeReader } from '../adapters/git/store-reader.js';
 import { openCache } from '../adapters/cache/index.js';
+import { readPendingRecords } from '../adapters/git/pending-records.js';
 import { fileInfo, readConfigFile } from '../adapters/filesystem/config-file.js';
 import { CommandError } from './output.js';
 import { t } from '../shared/i18n/index.js';
@@ -26,6 +27,8 @@ export async function openProject(cwd: string, options: { writing?: boolean } = 
   const cache = openCache(location.root, { run: (args, input) => reader.run(args, input), decode: reader.decode, legacyBundles: oids => reader.readBundles(oids) });
   return {
     ...location, reader, config, cache,
+    /** Records written but not committed, from Git's status (`adapters/git/pending-records.ts`). */
+    pendingRecords: () => readPendingRecords(location.root, args => reader.run(args)),
     /** The commit HEAD points at, or null in a repository without commits. */
     async head(): Promise<string | null> { return (await reader.baseline()).head; },
   };

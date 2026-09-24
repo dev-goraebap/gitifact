@@ -8,18 +8,18 @@ import { discardAgentInput, prepareAgentInputs } from '../.test-build/adapters/f
 
 const authorization = { basis: 'user-request', evidence: 'Fixture explicitly requests this test commit' };
 const R = 'R-bbbbbbbbbb';
-const paths = ['.gitifact/history.jsonl', '.gitifact/spec/posts/index.md', '.gitifact/spec/posts/requirements/save.md', 'app.js'];
+const paths = ['.gitifact/spec/posts/index.md', '.gitifact/spec/posts/requirements/save.md', 'app.js'];
 
 function setup(t) {
   const f = projectFixture(t);
   for (const doc of [
-    { kind: 'feature', path: paths[1], id: 'S-aaaaaaaaaa', feature: 'posts', title: '게시물', description: '게시물 작성', body: '게시물 기능.' },
-    { kind: 'requirement', path: paths[2], id: R, feature: 'posts', order: 10, title: '저장', description: '제목을 입력해 저장한다', body: '작성자로서 저장하고 싶다.' },
+    { kind: 'feature', path: paths[0], id: 'S-aaaaaaaaaa', feature: 'posts', title: '게시물', description: '게시물 작성', body: '게시물 기능.' },
+    { kind: 'requirement', path: paths[1], id: R, feature: 'posts', order: 10, title: '저장', description: '제목을 입력해 저장한다', body: '작성자로서 저장하고 싶다.' },
   ]) { mkdirSync(dirname(join(f.repo, doc.path)), { recursive: true }); writeFileSync(join(f.repo, doc.path), renderDocumentFile(doc)); }
   f.write('app.js', 'export const save = title => !!title;\n');
   return f;
 }
-const input = () => ({ reasons: [{ docs: [R], reason: '제목 없는 저장을 방지' }], paths, message: 'Add post saving', authorization });
+const input = () => ({ paths, message: 'Add post saving', authorization });
 const clean = f => assert.equal(f.git(['status', '--porcelain', '--untracked-files=all']).stdout, '');
 
 test('changes list reports the input path under the system temporary folder', t => {

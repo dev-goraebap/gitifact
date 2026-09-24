@@ -1,6 +1,6 @@
 ---
 title: Document style
-description: Shared style for instructions, requirements and designs, body versus change reasons, quotations, alerts and diagrams, removing AI slop
+description: Shared style for instructions, requirements, designs and records, body versus records, quotations, alerts and diagrams, removing AI slop
 ---
 
 Apply this to project instructions, requirements, and designs. Use the project's language, independently of the CLI display language. Write direct, declarative prose and descriptive headings. Preserve UI text, quotations, and code.
@@ -22,9 +22,9 @@ Apply this to project instructions, requirements, and designs. Use the project's
 
 ## What is current and how it got there
 
-The body states only the behavior and rules that hold now. “We used to … but changed it because …”, the date and trigger of a change, the old approach, and the measurements behind a choice stay out of the body and go into the commit's change reason (`gitifact guide show commit`). Readers find reasons with `gitifact docs history <ID>` and old text with `gitifact docs show <ID> --ref <commit>`.
+The body states only the behavior and rules that hold now. “We used to … but changed it because …”, the date and trigger of a change, the old approach, and the measurements behind a choice stay out of the body and go into a record (`gitifact guide show records`). Readers find reasons with `gitifact docs history <ID>` and old text with `gitifact docs show <ID> --ref <commit>`.
 
-When revising, rewrite the sentences that changed instead of appending sentences about the old behavior. Decisions that must not be reversed and rejected alternatives are current constraints, not history. In a design they go one per row in the decision table of `overview.md` (`gitifact guide show design`); when they span features, they go in the decision table of that area's instruction (`gitifact guide show instructions`).
+When revising, rewrite the sentences that changed instead of appending sentences about the old behavior. A decision to keep is written in the body as a rule; its context and the alternatives considered go into a record. Designs and instructions keep no decision tables of their own.
 
 ## Quotations and alerts
 
@@ -72,7 +72,7 @@ Some content does not fit a picture: a sequence that runs in one line is a numbe
 - Remove stock introductions and conclusions, repetitive summaries, and sentences that merely address the reader.
 - Use emphasis and contrasts such as “What matters is…” or “Not just X, but Y” only when they make a necessary distinction.
 - Remove unsupported adjectives such as “systematic,” “efficient,” “powerful,” and “seamless,” or replace them with specific behavior.
-- Keep obvious explanations, narration of the writing process, and task-completion reports out of the document body. Put how something changed in the commit's change reason.
+- Keep obvious explanations, narration of the writing process, and task-completion reports out of the document body. Put how something changed in a record.
 - Avoid repeated bold text and warnings. Emphasize only where “Quotations and alerts” calls for it.
 - After editing, check whether each sentence conveys a rule, fact, reason, or procedure. Delete sentences that add no information.
 

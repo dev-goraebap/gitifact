@@ -41,7 +41,11 @@ export function docs(f) {
     wiki: (path, id, fields) => doc('wiki', `.gitifact/wiki/${path}`, id, fields),
     /** An instruction folder's index.md; `name` is the folder. */
     instruction: (name, id, fields) => doc('instruction', `.gitifact/instructions/${name}/index.md`, id, { name, ...fields }),
-    /** Appends reason lines to the one reason file, `.gitifact/history.jsonl`. */
+    /** Writes a record file: `record({ id, docs, reason })`, with the reason as its context and the title as its decision. */
+    record: ({ id, docs, reason, title = reason, day = '20260924' }) => put(`.gitifact/records/${day}/${id}.md`,
+      `---\nid: ${id}\ntitle: ${title}\ndocs:\n${docs.map(d => '  - ' + d + '\n').join('')}---\n\n`
+      + `## 맥락\n\n${reason}\n\n## 결정\n\n${title}\n`),
+    /** Appends lines to the reason file records replaced, `.gitifact/history.jsonl`, as commits before records did. */
     reasons: (...lines) => {
       const path = '.gitifact/history.jsonl';
       let text = ''; try { text = readFileSync(join(f.repo, path), 'utf8'); } catch { /* new file */ }
@@ -49,3 +53,6 @@ export function docs(f) {
     },
   };
 }
+
+/** The reason text of each record on an event: what a reason line or a record's context section says. */
+export const reasonsOf = event => event.records.map(r => r.sections.find(s => s.key === 'context')?.body);

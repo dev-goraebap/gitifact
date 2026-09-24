@@ -1,5 +1,6 @@
 import { compareStoreBundles, emptyBundle, type StoreBundle, type StoreChange } from '@gitifact/core';
 import type { DocSnapshot, HistoryEvent } from './events.js';
+import { reasonRecord } from './record-events.js';
 
 /**
  * History before the 0.8.0 migration, read with the 0.7 parser. Kept read-only until 1.0.0, so the activity people
@@ -34,8 +35,7 @@ export async function legacyChanges(c: LegacyCommit, read: (oid: string) => Prom
   return selected.map(change => ({
     key: c.commit + ':' + change.id, commit: c.commit, date: c.date, author: c.author, email: c.email, committer: c.committer, message: c.message,
     id: change.id, kind: change.kind, types: change.types, before: snapshot(change.kind, change.before), after: snapshot(change.kind, change.after),
-    reasons: parents.length > 1
-      ? added.filter(r => [...r.requirements, ...(r.designs ?? []), ...(r.documents ?? [])].includes(change.id)).map(r => r.reason)
-      : change.reasons.map(r => r.reason),
+    records: (parents.length > 1 ? added.filter(r => [...r.requirements, ...(r.designs ?? []), ...(r.documents ?? [])].includes(change.id)) : change.reasons)
+      .map(r => reasonRecord(r.id, [change.id], r.reason)).map(({ docs: _docs, ...record }) => record),
   }));
 }

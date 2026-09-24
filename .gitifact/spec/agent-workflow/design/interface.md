@@ -34,7 +34,7 @@ flowchart LR
 | 대상 | 원본 | 비고 |
 | :--- | :--- | :--- |
 | 블록 원본 | `apps/cli/src/shared/i18n/<lang>/block.md` | AGENTS.md·CLAUDE.md 등의 마커 사이에 쓴다 |
-| 주제별 지침 | `apps/cli/src/shared/i18n/<lang>/docs/<topic>.md` | topic은 workflow·spec·design·instructions·writing·commit·migrate. 파일 이름이 곧 topic이고 폴더에 다른 파일은 없다 |
+| 주제별 지침 | `apps/cli/src/shared/i18n/<lang>/docs/<topic>.md` | topic은 workflow·spec·design·instructions·records·writing·commit·migrate. 파일 이름이 곧 topic이고 폴더에 다른 파일은 없다 |
 
 지침 파일마다 프론트매터에 `title`·`description`을 두고 `guide list`가 그것으로 목록을 만든다. 빌드는 이 파일들을 `dist/i18n/<lang>/docs/<topic>.md`로 번들한다. 패키지 설치·블록 갱신과 사용자 문단 보존 검사는 전달 경로를 검증할 뿐이며, 독립 에이전트의 실제 작성 행동은 별도 검증 대상이다.
 
@@ -50,10 +50,10 @@ flowchart LR
 
 `guide show`는 모든 topic에서 CLI가 담은 파일을 그대로 출력한다. 프로젝트 파일로 바뀌는 topic은 없다. 이 프로젝트에서 어떻게 일하는지는 프로젝트가 쓰는 지침(`.gitifact/instructions/`)이 담고, 어떤 작업 때 어느 지침을 읽을지는 AGENTS.md의 블록 밖 색인이 알린다. `init`은 지침이나 색인을 만들지 않는다.
 
-블록은 "요구사항·설계·코드를 바꾸기 전에 블록 밖 색인에서 작업에 맞는 지침을 읽는다"와 "지침과 색인을 만들거나 고치기 전에 `guide show instructions`를 읽는다"를 안내한다. `instructions` topic은 지침 폴더 형식, 색인 쓰는 법, 명세와의 관계, 결정 표를 둘 곳, 커밋을 다룬다.
+블록은 "요구사항·설계·코드를 바꾸기 전에 블록 밖 색인에서 작업에 맞는 지침을 읽는다"와 "지침과 색인을 만들거나 고치기 전에 `guide show instructions`를 읽는다"를 안내한다. `instructions` topic은 지침 폴더 형식, 색인 쓰는 법, 명세와의 관계, 결정을 남기는 곳, 커밋을 다룬다.
 
 > [!NOTE]
-> `changes commit`은 `.gitifact` 안에서 문서·이유 파일·설정·에셋만 커밋한다. 남아 있는 `.gitifact/overrides/` 파일은 이 명령으로 커밋할 수 없다.
+> `changes commit`은 `.gitifact` 안에서 문서·결정기록·설정·에셋만 커밋한다. 남아 있는 `.gitifact/overrides/` 파일은 이 명령으로 커밋할 수 없다.
 
 ## 기록 보기 요청
 

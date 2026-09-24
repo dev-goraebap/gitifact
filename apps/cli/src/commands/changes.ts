@@ -1,12 +1,11 @@
 import { randomUUID } from 'node:crypto';
 import { mkdir, open, readFile, rename, rmdir, stat, unlink, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { checkDocuments, compareDocumentSets, docIdPattern, kindOfId, parseReasonLines, renderReasonLine, HISTORY_PATH, SPEC_ROOT, WIKI_ROOT,
-  type DocChange, type DocProblem, type DocReason } from '@gitifact/core';
+import { checkDocuments, compareDocumentSets, kindOfId, HISTORY_PATH, SPEC_ROOT, WIKI_ROOT,
+  type DecisionRecord, type DocChange, type DocProblem } from '@gitifact/core';
 import { createGitRunner } from '../adapters/git/run-git.js';
 import { initRepository } from '../adapters/git/init-repository.js';
 import { discardAgentInput, prepareAgentInputs, type AgentInputControls } from '../adapters/filesystem/agent-inputs.js';
-import { generateId } from '../adapters/filesystem/document-file.js';
 import { readDocumentWarnings } from '../adapters/filesystem/document-warnings.js';
 import { MIGRATION_TRAILER } from '../adapters/cache/index.js';
 import { checkStoreSelection, fail, fingerprint, hash, info, object, optional, paths, policyPaths, record, text as bounded } from './commit-files.js';
@@ -14,50 +13,69 @@ import { CommandError, runCommand, section, text, type Format } from './output.j
 import { documentsOf, openProject, type Project } from './project.js';
 import { t } from '../shared/i18n/index.js';
 
-const fields = ['reasons', 'paths', 'message', 'authorization', 'migration'];
+const fields = ['paths', 'message', 'authorization', 'migration'];
 const integration = ['MERGE_HEAD', 'CHERRY_PICK_HEAD', 'REVERT_HEAD', 'rebase-merge', 'rebase-apply'];
 /** The format version a migration commit moves to; `changes commit` puts it in the migration trailer. */
 const MIGRATION_TARGET = '0.8.0';
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 const problemLines = (problems: DocProblem[]) => problems.map(p => '  ' + p.code + ' ' + p.message);
-const reasonsOf = (source: string | undefined) => { try { return source ? parseReasonLines(HISTORY_PATH, source) : []; } catch { return []; } };
-/** Old files a migration removes (0.7 requirements.md, design.md, per-folder history.jsonl): deletions there may be committed. */
-const underDocuments = (path: string) => path.startsWith(SPEC_ROOT + '/') || path.startsWith(WIKI_ROOT + '/');
+/** Old files a migration removes (0.7 requirements.md, design.md, per-folder history.jsonl, the wiki, the reason file): deletions there may be committed. */
+const underDocuments = (path: string) => path.startsWith(SPEC_ROOT + '/') || path.startsWith(WIKI_ROOT + '/') || path === HISTORY_PATH;
 
-/** The documents that differ from HEAD and the reasons written for them but not yet committed. */
+/** The documents that differ from HEAD, and the records written but not yet committed. */
 async function pendingChanges(project: Project, head: string | null) {
   const headFiles = head ? await project.cache.history.filesAt(head) : new Map<string, string>();
-  const working = await project.cache.documents.files();
-  return { headFiles, working, ...compareDocumentSets(headFiles, working.files) };
+  const [working, records] = await Promise.all([project.cache.documents.files(), project.pendingRecords()]);
+  return { headFiles, working, records, ...compareDocumentSets(headFiles, working.files) };
 }
-const uncovered = (changes: DocChange[], reasons: DocReason[]) => { const covered = new Set(reasons.flatMap(r => r.docs)); return changes.filter(c => !covered.has(c.id)).map(c => c.id); };
+/**
+ * The changes a record should explain and no record does. A new document carries its own why (a requirement's user
+ * story), so only changing, moving or deleting what was there calls for one.
+ */
+const uncovered = (changes: DocChange[], records: DecisionRecord[]) => {
+  const covered = new Set(records.flatMap(r => r.docs));
+  return changes.filter(c => c.types.some(type => type !== 'created') && !covered.has(c.id)).map(c => c.id);
+};
+/** Changed documents two records explain: those records go into one commit, since a file cannot be split between two. */
+const shared = (changes: DocChange[], records: DecisionRecord[]) =>
+  changes.map(c => c.id).filter(id => records.filter(r => r.docs.includes(id)).length > 1);
 const changeLine = (c: DocChange) => `${c.types.join(',').padEnd(9)} ${c.id} ${c.title} — ${c.path}${c.previousPath ? ' (← ' + c.previousPath + ')' : ''}`;
-const reasonLine = (r: DocReason) => `${r.id} ${r.docs.join(', ')}: ${r.reason.replace(/\s+/g, ' ')}`;
+const recordLine = (r: DecisionRecord, changes: DocChange[]) => {
+  const changed = new Set(changes.map(c => c.id));
+  return `${r.id} ${r.title}${r.draft ? ' (' + t('docs.draft') + ')' : ''} — ${r.docs.map(d => changed.has(d) ? d : d + '*').join(', ')}`;
+};
+const recordSummary = (r: DecisionRecord) => ({ id: r.id, title: r.title, docs: r.docs, path: r.path, ...(r.draft ? { draft: true } : {}) });
 
-/** `changes list`: what the next commit has to explain, and where to write its input. */
+/**
+ * `changes list`: what changed since HEAD, the records written for it, and where to write the commit input. Records
+ * name their documents, so the list shows which changes each record explains: one commit per record is the default,
+ * and records that share a changed document go into one commit together.
+ */
 export const runChangesList = (options: { format: Format }, controls: AgentInputControls = {}) => runCommand('changes', options.format, async () => {
   const project = await openProject(process.cwd());
   const head = await project.head();
-  const { changes, reasons, altered, working } = await pendingChanges(project, head);
-  const withoutReason = uncovered(changes, reasons);
+  const { changes, working, records: pending } = await pendingChanges(project, head);
   // The files are already read, so the commit's own check costs nothing here and a draft shows up before the commit fails.
-  const checked = checkDocuments(working.files);
-  const problems = [...working.problems, ...checked.problems];
+  const checked = checkDocuments(new Map([...working.files, ...pending.files]));
+  const records = checked.records;
+  const withoutRecord = uncovered(changes, records); const sharedDocuments = shared(changes, records);
+  const problems = [...working.problems, ...pending.problems, ...checked.problems];
   // Warnings do not stop the commit; they are counted here so a broken link shows up before it is committed.
   const warnings = await readDocumentWarnings(project.root, checked.documents);
   // The input folder rides on the read an agent runs before committing; a failure only leaves it out.
   const inputs = await prepareAgentInputs(project.root, controls).catch(() => undefined);
   const out = changes.length ? [t('changes.changed', { count: changes.length }), ...changes.map(c => '  ' + changeLine(c))] : [t('changes.none')];
-  out.push(...section(t('changes.pendingReasons', { count: reasons.length }), reasons.map(reasonLine)));
-  if (withoutReason.length) out.push(t('changes.withoutReason', { ids: withoutReason.join(', ') }));
-  if (altered.length) out.push(t('changes.reasonAltered', { ids: altered.join(', ') }));
+  out.push(...section(t('changes.pendingRecords', { count: records.length }), records.map(r => recordLine(r, changes))));
+  if (withoutRecord.length) out.push(t('changes.withoutRecord', { ids: withoutRecord.join(', ') }));
+  if (sharedDocuments.length) out.push(t('changes.sharedDocuments', { ids: sharedDocuments.join(', ') }));
+  if (pending.altered.length) out.push(t('changes.recordAltered', { paths: pending.altered.join(', ') }));
   out.push(problems.length ? t('changes.problems', { count: problems.length }) : t('changes.clean'));
   if (warnings.length) out.push(t('changes.warnings', { count: warnings.length }));
   if (inputs) out.push(t('changes.input', { path: inputs.commit }));
-  return { json: { head, changes, pendingReasons: reasons, withoutReason, alteredReasons: altered, problems, warnings, inputs: inputs ?? null }, text: text(out) };
+  return { json: { head, changes, pendingRecords: records.map(recordSummary), withoutRecord, sharedDocuments, alteredRecords: pending.altered, problems, warnings, inputs: inputs ?? null }, text: text(out) };
 });
 
-/** `changes commit`: reads the input, records the reasons and commits, then removes an input file it consumed. */
+/** `changes commit`: reads the input, checks and commits the selected files, then removes an input file it consumed. */
 export const runChangesCommit = (options: { format: Format; file: string; dryRun?: boolean }, controls: AgentInputControls & { stdin?: AsyncIterable<Uint8Array> } = {}) =>
   runCommand('changes', options.format, async () => {
     const bytes = options.file === '-' ? await readStdin(controls.stdin ?? process.stdin) : await readInputFile(options.file);
@@ -69,9 +87,10 @@ export const runChangesCommit = (options: { format: Format; file: string; dryRun
     const inputRemoved = result.outcome === 'committed' && options.file !== '-' ? await discardAgentInput(result.root, options.file, controls) : undefined;
     const { root: _root, ...json } = result;
     const out = [result.outcome === 'committed' ? t('changes.committed', { commit: result.commit!.slice(0, 7), message: result.message.split('\n')[0]! }) : t('changes.dryRun'),
-      t('changes.summary', { paths: result.paths.length, changes: result.changes.length, reasons: result.reasons.length }),
+      t('changes.summary', { paths: result.paths.length, changes: result.changes.length, records: result.records.length }),
       ...result.changes.map(c => '  ' + changeLine(c)),
-      ...(result.withoutReason.length ? [t('changes.withoutReason', { ids: result.withoutReason.join(', ') })] : []),
+      ...result.records.map(r => '  ' + r.id + ' ' + r.title),
+      ...(result.withoutRecord.length ? [t('changes.withoutRecord', { ids: result.withoutRecord.join(', ') })] : []),
       ...result.trailers];
     return { json: { ...json, ...(inputRemoved === undefined ? {} : { inputRemoved }) }, text: text(out) };
   });
@@ -91,22 +110,11 @@ async function readStdin(stream: AsyncIterable<Uint8Array>) {
   return Buffer.concat(chunks);
 }
 
-function parseReasons(value: unknown): { docs: string[]; reason: string }[] {
-  if (value === undefined) return [];
-  if (!Array.isArray(value) || value.length > 1000) return fail(t('commit.invalidReasons'));
-  return value.map(item => {
-    const r = object(item);
-    if (Object.keys(r).sort().join(',') !== 'docs,reason' || !Array.isArray(r.docs) || !r.docs.length || r.docs.length > 1000
-      || r.docs.some(d => typeof d !== 'string' || !docIdPattern.test(d)) || new Set(r.docs).size !== r.docs.length) return fail(t('commit.invalidReasons'));
-    return { docs: r.docs as string[], reason: bounded(r.reason, 4000) };
-  });
-}
-
 /**
- * Checks the documents, records the reasons and commits the selected files in one process.
+ * Checks the documents and commits the selected files in one process. Records are files the agent wrote; the ones
+ * selected go into the commit and the others stay for a later one, so a commit can hold one decision.
  * State is read once; rechecks remain where another process could interfere: under the commit lock before staging,
- * before `git commit`, and after it. A rejected commit restores the reason file; a commit whose result cannot be
- * verified keeps every file and the recovery data.
+ * before `git commit`, and after it. A commit whose result cannot be verified keeps every file and the recovery data.
  */
 export async function commitChanges(cwd: string, input: unknown, dryRun: boolean) {
   const request = object(input);
@@ -116,7 +124,6 @@ export async function commitChanges(cwd: string, input: unknown, dryRun: boolean
   bounded(authorization.evidence, 2000);
   const message = bounded(request.message, 4000); if (/^\s*Gitifact-/im.test(message)) fail(t('commit.trailerInMessage'));
   if (request.migration !== undefined && request.migration !== true) fail(t('commit.migrationFlag'));
-  const requested = parseReasons(request.reasons);
 
   const project = await openProject(cwd, { writing: true });
   const { root, gitDir, indexPath, objectFormat } = project;
@@ -133,66 +140,51 @@ export async function commitChanges(cwd: string, input: unknown, dryRun: boolean
   if ((await staged()).length) fail(t('commit.existingStaging'));
   const indexHash = hash(await optional(indexPath) ?? Buffer.alloc(0));
 
-  const { headFiles, working } = await pendingChanges(project, base.head);
-  // New reasons go at the end of the one reason file, in the line endings it already has.
-  const previous = working.files.get(HISTORY_PATH);
-  const taken = new Set([...reasonsOf(previous), ...reasonsOf(headFiles.get(HISTORY_PATH))].map(r => r.id));
-  const lines: DocReason[] = requested.map(r => { let id: string; do id = generateId('H'); while (taken.has(id)); taken.add(id); return { id, ...r }; });
-  const eol = previous?.includes('\r\n') ? '\r\n' : '\n';
-  const next = lines.length ? (previous ?? '') + (previous && !previous.endsWith('\n') ? eol : '') + lines.map(renderReasonLine).join(eol) + eol : undefined;
-  const finalFiles = new Map(working.files); if (next !== undefined) finalFiles.set(HISTORY_PATH, next);
+  const { headFiles, working, records: pending, changes: all } = await pendingChanges(project, base.head);
+  // Committed records are the record of why; a new decision is a new record.
+  if (pending.altered.length) fail(t('commit.recordAltered', { paths: pending.altered.join(', ') }));
+  const chosen = new Map([...pending.files].filter(([path]) => selected.includes(path)));
 
-  // The same check as `docs check`, on the files as they will be committed.
-  const checked = checkDocuments(finalFiles);
-  const problems = [...working.problems, ...checked.problems];
+  // The same check as `docs check`, with the records this commit carries; records left for later commits may still be drafts.
+  const checked = checkDocuments(new Map([...working.files, ...chosen]));
+  const problems = [...working.problems, ...pending.problems.filter(p => chosen.has(p.path)), ...checked.problems];
   if (problems.length) throw new CommandError('DOCS_CHECK_FAILED', t('commit.checkFailed', { count: problems.length }), { problems }, problemLines(problems));
-  // A reason may name a document this commit deletes, but not one that never existed.
+  const records = checked.records;
+  // A record may name a document this commit deletes, but not one that never existed.
   const existing = new Set([...checked.documents, ...documentsOf(headFiles)].map(d => d.id));
-  const unknown = [...new Set(lines.flatMap(r => r.docs))].filter(id => !existing.has(id));
+  const unknown = [...new Set(records.flatMap(r => r.docs))].filter(id => !existing.has(id));
   if (unknown.length) fail(t('commit.unknownDocument', { ids: unknown.join(', ') }));
-  const { changes, reasons: pendingReasons, altered } = compareDocumentSets(headFiles, finalFiles);
-  // Committed reasons are the record of why; new ones are only ever appended.
-  if (altered.length) fail(t('commit.reasonAltered', { ids: altered.join(', ') }));
-  const withoutReason = uncovered(changes, pendingReasons);
+  // The changed documents this commit takes. A moved document is its old and new path together, or not at all.
+  const changes = all.filter(c => selected.includes(c.path) || (c.previousPath !== undefined && selected.includes(c.previousPath)));
+  const split = changes.filter(c => c.previousPath !== undefined && !(selected.includes(c.path) && selected.includes(c.previousPath)));
+  if (split.length) fail(t('commit.selectMove', { ids: split.map(c => c.id).join(', ') }));
+  const withoutRecord = uncovered(changes, records);
 
-  // Every changed document file and the reason file go into this commit; Git decides what changed, line endings included.
+  // Deleted files under the document folders are committed as deletions; everything else in .gitifact must be a store file.
   const status = (await git(['status', '--porcelain=v1', '-z', '--untracked-files=all', '--no-renames', '--', '.gitifact'])).toString('utf8').split('\0').filter(Boolean);
-  const removed = new Set<string>(); const pending = new Set<string>();
-  for (const entry of status) {
-    const path = entry.slice(3);
-    if (entry.slice(0, 2).includes('D')) removed.add(path);
-    if (record(path) || (underDocuments(path) && removed.has(path))) pending.add(path);
-  }
-  if (next !== undefined) pending.add(HISTORY_PATH);
-  if ([...pending].some(p => !selected.includes(p))) fail(t('commit.selectPending'));
+  const removed = new Set(status.filter(entry => entry.slice(0, 2).includes('D')).map(entry => entry.slice(3)));
   checkStoreSelection(selected.filter(p => !(underDocuments(p) && removed.has(p))));
-  // A selected reason file with nothing to record is skipped instead of failing `git add`.
-  const stageable = selected.filter(p => p !== HISTORY_PATH || finalFiles.has(p) || headFiles.has(p));
+  const stageable = selected;
 
-  const ids = [...new Set([...changes.map(c => c.id), ...lines.flatMap(r => r.docs)])].sort();
+  const ids = [...new Set([...changes.map(c => c.id), ...records.flatMap(r => r.docs)])].sort();
   const trailer = (name: string, kinds: string[]) => ids.filter(id => kinds.includes(kindOfId(id)!)).map(id => name + ': ' + id);
   const trailers = [...trailer('Gitifact-Req', ['requirement']), ...trailer('Gitifact-Design', ['design']), ...trailer('Gitifact-Doc', ['feature', 'wiki', 'instruction']),
+    ...records.map(r => 'Gitifact-Record: ' + r.id).sort(),
     ...(request.migration ? [MIGRATION_TRAILER + ': ' + MIGRATION_TARGET] : [])];
   const contextPaths = policyPaths(selected);
   const hashes = async (list: string[]) => new Map(await Promise.all(list.map(async p => [p, await fingerprint(root, p)] as const)));
-  // Policies and files read by the agent are bound now; the reason file is bound after it is written.
-  const started = await hashes([...new Set([...selected.filter(p => p !== HISTORY_PATH || next === undefined), ...contextPaths])]);
-  const summary = { root, head: base.head, message, paths: selected, changes, reasons: lines, pendingReasons, withoutReason, trailers };
+  // Policies and the selected files are bound now and compared again under the lock and before the commit.
+  const started = await hashes([...new Set([...selected, ...contextPaths])]);
+  const summary = { root, head: base.head, message, paths: selected, changes, records: records.map(recordSummary), withoutRecord, trailers };
   if (dryRun) {
     if (!same(base, await project.reader.baseline())) fail(t('commit.headChanged'));
     return { outcome: 'dry-run' as const, committed: false, ...summary, commit: undefined };
   }
 
-  const historyFile = join(root, ...HISTORY_PATH.split('/'));
   const temporary = join(gitDir, 'gitifact-commit-index-' + randomUUID());
-  let owned = false; let uncertain = false; let keep = false; let wrote = false; let commitStarted = false;
+  let owned = false; let uncertain = false; let commitStarted = false;
   let indexLock: Awaited<ReturnType<typeof open>> | undefined;
   let committed: { commit: string; paths: string[] } | undefined;
-  const publish = async (text: string) => {
-    const temp = join(root, '.gitifact', '.history-' + randomUUID() + '.tmp');
-    await writeFile(temp, text, { flag: 'wx' });
-    try { await rename(temp, historyFile); } catch (error) { await unlink(temp).catch(() => {}); throw error; }
-  };
   try {
     try { await mkdir(busy); owned = true; } catch (e) { if ((e as NodeJS.ErrnoException).code === 'EEXIST') fail(t('commit.busy', { path: busy })); throw e; }
     const lock = indexLock = await open(indexPath + '.lock', 'wx', 0o600);
@@ -200,22 +192,17 @@ export async function commitChanges(cwd: string, input: unknown, dryRun: boolean
     if (hash(original ?? Buffer.alloc(0)) !== indexHash || (await staged()).length) fail(t('commit.indexChanged'));
     const before = await hashes([...started.keys()]);
     for (const [path, value] of started) if (before.get(path) !== value) fail(t('commit.fileChangedRunning', { path }));
-    await writeFile(join(busy, 'recovery.json'), JSON.stringify({ before: base, originalIndex: original?.toString('base64') ?? null, temporary, paths: selected, message,
-      history: next === undefined ? undefined : previous ?? null }));
-    if (next !== undefined) {
-      if ((await optional(historyFile))?.toString('utf8') !== previous) fail(t('commit.fileChangedRunning', { path: HISTORY_PATH }));
-      await publish(next); wrote = true;
-    }
+    await writeFile(join(busy, 'recovery.json'), JSON.stringify({ before: base, originalIndex: original?.toString('base64') ?? null, temporary, paths: selected, message }));
     const locked = await hashes([...new Set([...selected, ...contextPaths])]);
     if (original) await writeFile(temporary, original, { flag: 'wx' }); else await git(['read-tree', '--empty'], temporary);
     await git(['add', '--', ...stageable], temporary);
     const actual = await staged(temporary);
     if (!actual.length || actual.some(p => !selected.includes(p))) fail(t('commit.unexpectedFiles'));
-    const records = selected.filter(p => record(p) && locked.get(p) !== null);
-    if (records.length) {
-      // One batch reads the staged document and reason bytes to reject Git filters that change them.
-      const output = await git(['cat-file', '--batch'], temporary, Buffer.from(records.map(p => ':' + p).join('\n') + '\n')); let offset = 0;
-      for (const path of records) {
+    const storeFiles = selected.filter(p => record(p) && locked.get(p) !== null);
+    if (storeFiles.length) {
+      // One batch reads the staged document and record bytes to reject Git filters that change them.
+      const output = await git(['cat-file', '--batch'], temporary, Buffer.from(storeFiles.map(p => ':' + p).join('\n') + '\n')); let offset = 0;
+      for (const path of storeFiles) {
         const end = output.indexOf(10, offset); const header = output.subarray(offset, end).toString('utf8').split(' '); const size = Number(header[2]);
         if (end < 0 || header[1] !== 'blob' || !Number.isSafeInteger(size) || output[end + 1 + size] !== 10) fail(t('commit.stagedUnreadable', { path }));
         // Line-ending normalization (core.autocrlf, eol attributes) is allowed; any other rewrite by a filter is not.
@@ -248,21 +235,13 @@ export async function commitChanges(cwd: string, input: unknown, dryRun: boolean
   } catch (error) {
     if (commitStarted) { try { uncertain = !same(base, await project.reader.baseline()); } catch { uncertain = true; } }
     if (uncertain) throw new CommandError('COMMIT_UNCERTAIN', t('commit.uncertain', { path: busy }));
-    // The reason file goes back to what it was, unless someone else has changed it since it was written.
-    if (wrote) {
-      try {
-        if ((await optional(historyFile))?.toString('utf8') !== next) keep = true;
-        else if (previous === undefined) await unlink(historyFile); else await publish(previous);
-      } catch { keep = true; }
-    }
-    if (keep) throw new CommandError('COMMIT_RECOVERY', t('commit.recoveryKept', { path: busy }));
     throw error;
   } finally {
     await indexLock?.close().catch(() => {});
     if (!uncertain) {
       if (indexLock) await unlink(indexPath + '.lock').catch(() => {});
       await unlink(temporary).catch(() => {});
-      if (owned && !keep) { await unlink(join(busy, 'recovery.json')).catch(() => {}); await rmdir(busy); }
+      if (owned) { await unlink(join(busy, 'recovery.json')).catch(() => {}); await rmdir(busy); }
     }
   }
   return { outcome: 'committed' as const, committed: true, ...summary, commit: committed!.commit, paths: committed!.paths, pushed: false };

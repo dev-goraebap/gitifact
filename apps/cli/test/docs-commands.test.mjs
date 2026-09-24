@@ -164,20 +164,46 @@ test('docs check and changes list warn about broken links and assets without fai
   assert.equal(f.ok(['changes', 'list']).warnings.length, 4);
 });
 
-test('docs history lists why and when a document changed, newest first', t => {
+test('records new writes a draft; docs history reads the records behind a document, newest first; records show prints one', t => {
   const f = projectFixture(t); payment(f);
   const commit = (value, file) => { writeFileSync(file, JSON.stringify(value)); return f.run(['changes', 'commit', '--file', file]); };
   const input = join(f.root, 'input.json');
-  const all = ['.gitifact/history.jsonl', paths.feature, paths.cancel, paths.list, paths.overview, paths.instruction];
-  assert.equal(commit({ reasons: [{ docs: [R1, R2, D1], reason: '결제 취소 도입' }], paths: all, message: 'Add payment', authorization }, input).status, 0);
+  const made = f.ok(['records', 'new', '--title', '결제 취소 도입', '--docs', `${R1},${R2}`, D1]);
+  assert.match(made.id, /^DR-[a-z2-7]{10}$/); const today = new Date(); const folder = String(today.getFullYear()) + String(today.getMonth() + 1).padStart(2, '0') + String(today.getDate()).padStart(2, '0');
+  assert.equal(made.path, `.gitifact/records/${folder}/${made.id}.md`);
+  const file = join(f.repo, made.path); const draft = readFileSync(file, 'utf8');
+  // The required sections, headed in the CLI language, and the draft mark the check refuses until it goes.
+  assert.equal(draft, `---\nid: ${made.id}\ntitle: 결제 취소 도입\ndocs:\n  - ${R1}\n  - ${R2}\n  - ${D1}\ndraft: true\n---\n\n## 맥락\n\n(내용)\n\n## 결정\n\n(내용)\n`);
+  assert.deepEqual(JSON.parse(f.run(['docs', 'check', '--format', 'json']).stdout).problems.map(p => p.code), ['DOC_DRAFT']);
+  writeFileSync(file, draft.replace('draft: true\n', '').replace('## 맥락\n\n(내용)', '## 맥락\n\nPG사 정산 주기가 7일이다.')
+    .replace('## 결정\n\n(내용)\n', '## 결정\n\n승인 후 7일 안에만 취소를 받는다.\n\n## 검토한 대안\n\n- 기간 없이 받기(정산 뒤 취소는 수작업)\n'));
+  const all = [made.path, paths.feature, paths.cancel, paths.list, paths.overview, paths.instruction];
+  assert.equal(commit({ paths: all, message: 'Add payment', authorization }, input).status, 0);
   writeFileSync(join(f.repo, paths.cancel), readFileSync(join(f.repo, paths.cancel), 'utf8').replace('7일', '14일'));
-  assert.equal(commit({ reasons: [{ docs: [R1], reason: '취소 기간을 늘림' }], paths: ['.gitifact/history.jsonl', paths.cancel], message: 'Extend cancel window', authorization }, input).status, 0);
+  const extend = f.ok(['records', 'new', '--title', '취소 기간 14일로 연장', '--docs', R1]);
+  writeFileSync(join(f.repo, extend.path), readFileSync(join(f.repo, extend.path), 'utf8').replace('draft: true\n', '').replace('(내용)', '기간이 짧다는 문의가\n매주 들어온다.').replace('(내용)', '취소 기간을 14일로 늘린다.'));
+  assert.equal(commit({ paths: [extend.path, paths.cancel], message: 'Extend cancel window', authorization }, input).status, 0);
   const shown = f.run(['docs', 'history', R1]);
   assert.equal(shown.status, 0, shown.stderr);
-  assert.match(shown.stdout, new RegExp(`^${R1} 결제 취소\\n\\n\\d{4}-\\d\\d-\\d\\d [a-f0-9]{7} modified — Fixture\\n  이유: 취소 기간을 늘림\\n  커밋: Extend cancel window\\n\\n\\d{4}-\\d\\d-\\d\\d [a-f0-9]{7} created — Fixture\\n  이유: 결제 취소 도입\\n  커밋: Add payment\\n$`));
+  const day = '\\d{4}-\\d\\d-\\d\\d [a-f0-9]{7}';
+  assert.match(shown.stdout, new RegExp(`^${R1} 결제 취소\\n\\n${day} modified — Fixture\\n  ${extend.id} 취소 기간 14일로 연장\\n    맥락: 기간이 짧다는 문의가 매주 들어온다\\.\\n    결정: 취소 기간을 14일로 늘린다\\.\\n  커밋: Extend cancel window\\n\\n`
+    + `${day} created — Fixture\\n  ${made.id} 결제 취소 도입\\n    맥락: PG사 정산 주기가 7일이다\\.\\n    결정: 승인 후 7일 안에만 취소를 받는다\\.\\n    검토한 대안: - 기간 없이 받기\\(정산 뒤 취소는 수작업\\)\\n  커밋: Add payment\\n$`));
   const json = f.ok(['docs', 'history', R2]);
-  assert.deepEqual(json.events.map(e => [e.types, e.reasons]), [[['created'], ['결제 취소 도입']]]);
+  assert.deepEqual(json.events.map(e => [e.types, e.records.map(r => [r.id, r.title, r.sections.map(s => s.key)])]), [[['created'], [[made.id, '결제 취소 도입', ['context', 'decision', 'alternatives']]]]]);
+  // A change with no record says so; an added document without one does not.
+  writeFileSync(join(f.repo, paths.list), readFileSync(join(f.repo, paths.list), 'utf8').replace('보고 싶다', '찾고 싶다'));
+  assert.equal(commit({ paths: [paths.list], message: 'Reword list', authorization }, input).status, 0);
+  assert.match(f.run(['docs', 'history', R2]).stdout, /modified — Fixture\n  결정기록 없음\n  커밋: Reword list\n/);
+  assert.doesNotMatch(f.run(['docs', 'history', D1]).stdout, /결정기록 없음/);
   assert.equal(f.run(['docs', 'history', 'R-zzzzzzzzzz']).status, 1);
+  // records show: the file as written and the commit that added it.
+  const record = f.ok(['records', 'show', made.id]).records[0];
+  assert.deepEqual([record.path, record.text, record.commit.author], [made.path, readFileSync(file, 'utf8'), 'Fixture']);
+  assert.match(f.run(['records', 'show', made.id]).stdout, new RegExp(`^== ${made.id} ${made.path.replace(/\./g, '\\.')} \\([a-f0-9]{7} · Fixture · \\d{4}-\\d\\d-\\d\\d\\)\\n---\\n`));
+  assert.equal(JSON.parse(f.run(['records', 'show', 'DR-zzzzzzzzzz', '--format', 'json']).stderr).error.code, 'UNKNOWN_RECORD');
+  for (const args of [['--title', 'x', '--docs', 'X-aaaaaaaaaa'], ['--title', 'x'], ['--docs', R1], ['--title', '가'.repeat(81), '--docs', R1]]) {
+    assert.notEqual(f.run(['records', 'new', ...args]).status, 0, args.join(' '));
+  }
 });
 
 test('docs commands refuse an uninitialized project and the 0.7 format with the migration guide', t => {

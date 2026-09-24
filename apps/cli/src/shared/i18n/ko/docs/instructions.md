@@ -14,7 +14,7 @@ description: 작업별 지침 폴더의 형식, AGENTS.md 색인, 명세와의 �
   cli-architecture/
     index.md                 지침 문서 (I-)
     references/
-      decisions.md           결정 표
+      checklist.md           긴 목록
   verification/
     index.md
 ```
@@ -60,15 +60,9 @@ description: 리뷰에서 확인할 것과 보고 형식. 변경을 리뷰할 �
 
 ## 결정
 
-여러 기능에 걸친 구조·기술 선택은 그 영역 지침의 `references/decisions.md`에 표로 한 줄씩 둔다. 한 기능 안에서만 유효한 선택은 그 기능 설계의 결정 표에 둔다(`gitifact guide show design`).
+지침은 결정 표나 결정 기록 파일을 스스로 두지 않는다. 여러 기능에 걸친 구조·기술 선택은 지침 본문에 규칙으로 쓰고, 그 맥락과 검토한 대안은 그 지침을 가리키는 결정기록으로 남긴다(`gitifact guide show records`). 지침을 고치기 전에 `gitifact docs history <I-ID>`로 결정 흐름을 읽는다. 결정이 바뀌면 본문의 규칙을 고치고 새 결정기록을 쓴다.
 
-```markdown
-| 결정 | 이유 | 기각한 안 |
-| :--- | :--- | :--- |
-| 저장소 접근은 어댑터 계층에만 둔다 | 명령이 파일 형식을 몰라도 된다 | 명령에서 직접 읽기(형식이 바뀌면 명령 전부를 고침) |
-```
-
-결정이 바뀌면 그 줄을 고친다. 옛 결정과 바뀐 경위는 커밋의 변경 이유에 쓴다.
+지침을 새로 만들거나 넓히면 설계들에서 같은 내용을 `gitifact docs search`로 찾아 지운다. 지운 설계의 `sources`에 그 지침을 더하고, 옮긴 사실을 결정기록 하나로 남긴다(`docs`에 지침과 고친 설계들).
 
 ## 에셋
 
@@ -76,7 +70,7 @@ description: 리뷰에서 확인할 것과 보고 형식. 변경을 리뷰할 �
 
 ## 커밋
 
-지침의 변경은 `index.md`의 변경이다. 변경 이유는 다른 문서와 같은 방식으로 `{docs: [실제 I-ID], reason}`에 적는다. 폴더 안 다른 파일도 `paths`에 담아 함께 커밋할 수 있고, 그 파일에는 이유를 요구하지 않는다(`gitifact guide show commit`).
+지침의 변경은 `index.md`의 변경이다. 결정기록의 `docs`에 지침의 I- ID를 적는다. 폴더 안 다른 파일도 `paths`에 담아 함께 커밋할 수 있고, 그 파일만 바뀐 것에는 기록을 요구하지 않는다(`gitifact guide show commit`).
 
 ## 에이전트
 

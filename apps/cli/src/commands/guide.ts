@@ -4,7 +4,7 @@ import { getLanguage, t, type Language } from '../shared/i18n/index.js';
 import { CommandError, runCommand, text, type Format } from './output.js';
 
 // `migrate` moves a 0.7 project to the 0.8.0 documents; it goes with the 0.7 history reader at 1.0.0.
-export const guideTopics = ['workflow', 'spec', 'design', 'instructions', 'writing', 'commit', 'migrate'] as const;
+export const guideTopics = ['workflow', 'spec', 'design', 'instructions', 'records', 'writing', 'commit', 'migrate'] as const;
 export type GuideTopic = typeof guideTopics[number];
 // Every topic ships as `<topic>.md` with a `title` and `description` in its frontmatter; the file name is the topic.
 export interface GuideControls { readGuide?: (name: string, lang: Language) => Promise<string> }

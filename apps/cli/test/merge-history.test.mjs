@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { renderDocumentFile, renderReasonLine } from '@gitifact/core';
 import { specFixture, fingerprint } from './git-fixture.mjs';
-import { openRecords, docs } from './browser-records.mjs';
+import { openRecords, docs, reasonsOf } from './browser-records.mjs';
 
 const save = '.gitifact/spec/posts/requirements/save.md';
 const read = '.gitifact/spec/posts/requirements/read.md';
@@ -51,8 +51,8 @@ for (const format of ['sha1', 'sha256']) test(`merged wiki, design and requireme
   const edits = result.events.filter(e => e.commit === original);
   assert.deepEqual(edits.map(e => e.id).sort(), [did, rid, wid].sort());
   assert.ok(edits.every(e => e.author === 'Sujeong' && e.email === 'Sujeong@example.invalid'));
-  assert.deepEqual(edits.find(e => e.id === wid).reasons, ['Guide reason']);
-  assert.deepEqual(edits.find(e => e.id === rid).reasons, ['Original reason']);
+  assert.deepEqual(reasonsOf(edits.find(e => e.id === wid)), ['Guide reason']);
+  assert.deepEqual(reasonsOf(edits.find(e => e.id === rid)), ['Original reason']);
   assert.equal((await records.history.page(merge, { author: 'Sujeong@example.invalid' }, 0, 50)).total, 3);
   assert.equal((await records.history.summary(merge)).recent[0].commit, original);
   assert.equal((await records.cache.search(merge, 'Guide reason')).find(h => h.kind === 'history').key, original + ':' + wid);
@@ -91,7 +91,7 @@ test('merge conflict resolutions keep the merger but do not steal clean changes 
   const records = openRecords(f.repo, f.env); const result = await records();
   const resolutions = result.events.filter(e => e.commit === merge);
   assert.deepEqual(resolutions.map(e => e.id), [rid]);
-  assert.equal(resolutions[0].author, 'Maintainer'); assert.deepEqual(resolutions[0].reasons, ['Resolve different policies']);
+  assert.equal(resolutions[0].author, 'Maintainer'); assert.deepEqual(reasonsOf(resolutions[0]), ['Resolve different policies']);
   const change = await records.change(merge + ':' + rid);
   assert.equal(change.before.body, 'Main value'); assert.equal(change.after.body, 'Resolved value');
   assert.equal(result.events.find(e => e.commit === work && e.id === wid).author, 'Sujeong');
@@ -137,7 +137,7 @@ test('a merged branch that undoes its own change retains both original commits a
   f.git(['switch', 'main']); const merge = f.merge('work');
   const result = await openRecords(f.repo, f.env)();
   assert.equal(result.events.some(e => e.commit === merge), false);
-  assert.deepEqual(result.events.filter(e => [first, second].includes(e.commit)).map(e => [e.author, e.reasons]),
+  assert.deepEqual(result.events.filter(e => [first, second].includes(e.commit)).map(e => [e.author, reasonsOf(e)]),
     [['Bob', ['Restore the policy']], ['Ann', ['Try a policy']]]);
 });
 
@@ -182,6 +182,29 @@ test('reasons added on two branches merge without conflict under the union rule 
   assert.equal(f.git(['show', 'HEAD:' + history]).stdout.trim().split('\n').length, 3);
   const result = await openRecords(f.repo, f.env)();
   assert.equal(result.events.some(e => e.commit === merge), false);
-  assert.deepEqual(result.events.find(e => e.commit === work && e.id === wid).reasons, ['Guide on the branch']);
-  assert.deepEqual(result.events.find(e => e.commit === main && e.id === rid).reasons, ['Save on main']);
+  assert.deepEqual(reasonsOf(result.events.find(e => e.commit === work && e.id === wid)), ['Guide on the branch']);
+  assert.deepEqual(reasonsOf(result.events.find(e => e.commit === main && e.id === rid)), ['Save on main']);
+});
+
+test('records added on branches stay with their commits; a record the merge itself adds belongs to the merge', async t => {
+  const f = setup(t); const d = docs(f);
+  f.git(['switch', '-c', 'work']); f.put(save, saveText('Branch value'));
+  d.record({ id: 'DR-aaaaaaaaaa', docs: [rid], title: 'Keep drafts on the server', reason: 'Drafts must survive a reload.' });
+  const work = f.commit('Ann', 'Branch');
+  f.git(['switch', 'main']); f.put(read, readText('Main reader'));
+  d.record({ id: 'DR-bbbbbbbbbb', docs: [other], reason: 'Readers wanted the unread count.' });
+  const main = f.commit('Bob', 'Main');
+  // The merge resolves nothing by itself but edits the requirement and writes why.
+  f.git(['merge', '--no-ff', '--no-commit', 'work']); f.put(save, saveText('Merged value'));
+  d.record({ id: 'DR-cccccccccc', docs: [rid], reason: 'Both policies apply after the merge.' });
+  f.git(['add', '-A']); f.git(['commit', '-m', 'Merge work', '--author', 'Maintainer <Maintainer@example.invalid>']); const merge = f.head();
+  const result = await openRecords(f.repo, f.env)();
+  const on = (commit, id) => result.events.find(e => e.commit === commit && e.id === id).records;
+  assert.deepEqual(on(work, rid).map(r => [r.id, r.title, r.sections]), [['DR-aaaaaaaaaa', 'Keep drafts on the server',
+    [{ key: 'context', body: 'Drafts must survive a reload.' }, { key: 'decision', body: 'Keep drafts on the server' }]]]);
+  assert.deepEqual(on(main, other).map(r => r.id), ['DR-bbbbbbbbbb']);
+  assert.deepEqual(on(merge, rid).map(r => r.id), ['DR-cccccccccc']);
+  // A record is found by what it says.
+  const records = openRecords(f.repo, f.env);
+  assert.equal((await records.cache.search(merge, 'survive a reload')).find(h => h.kind === 'history').key, work + ':' + rid);
 });

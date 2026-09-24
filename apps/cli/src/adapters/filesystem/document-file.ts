@@ -3,7 +3,7 @@ import { lstat, mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 /** A new ID: the kind's prefix and ten base32 characters. IDs are issued here only and never change. */
-export const generateId = (prefix: 'S' | 'R' | 'D' | 'W' | 'I' | 'H') => prefix + '-' + [...randomBytes(10)].map(n => 'abcdefghijklmnopqrstuvwxyz234567'[n & 31]).join('');
+export const generateId = (prefix: 'S' | 'R' | 'D' | 'W' | 'I' | 'DR') => prefix + '-' + [...randomBytes(10)].map(n => 'abcdefghijklmnopqrstuvwxyz234567'[n & 31]).join('');
 
 /**
  * Writes a new document file. The file must not exist yet; its folders are made as needed, but never through a link,

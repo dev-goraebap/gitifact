@@ -55,7 +55,7 @@ test('unknown topics and removed forms fail on stderr without output', async t =
   assert.equal(failure.status, 1); assert.equal(failure.stdout, '');
   const dto = JSON.parse(failure.stderr);
   assert.deepEqual([dto.contract, dto.version, dto.ok, dto.error.code], ['guide', 1, false, 'UNKNOWN_TOPIC']);
-  assert.match(dto.error.message, /workflow, spec, design, instructions, writing, commit, migrate/);
+  assert.match(dto.error.message, /workflow, spec, design, instructions, records, writing, commit, migrate/);
   // Instructions replaced the wiki, and its guide with it.
   assert.match(run(cwd, 'show', 'wiki').stderr, /^UNKNOWN_TOPIC: /);
   const text = run(cwd, 'show', 'nope');

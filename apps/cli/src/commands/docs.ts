@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { checkDocuments, classifyDocPath, arrangeDocuments, parseDocumentFile, renderDocumentFile, INSTRUCTION_FILE, INSTRUCTIONS_ROOT, SPEC_ROOT,
-  type DesignDoc, type Doc, type DocKind, type DocProblem, type DocWarning } from '@gitifact/core';
+import { checkDocuments, classifyDocPath, docProblem, arrangeDocuments, parseDocumentFile, renderDocumentFile, INSTRUCTION_FILE, INSTRUCTIONS_ROOT, SPEC_ROOT,
+  type DesignDoc, type Doc, type DocKind, type DocProblem, type DocWarning, type RecordSectionKey } from '@gitifact/core';
 import { createDocumentFile, generateId } from '../adapters/filesystem/document-file.js';
 import { readDocumentWarnings } from '../adapters/filesystem/document-warnings.js';
 import { listInstructionFiles } from '../adapters/filesystem/instruction-folder.js';
@@ -188,9 +188,10 @@ export const runDocsNew = (kind: typeof newKinds[number], path: string, options:
  */
 export const runDocsCheck = (options: Options) => runCommand('docs', options.format, async (): Promise<CommandResult> => {
   const project = await openProject(process.cwd());
-  const { files, problems: unreadable } = await project.cache.documents.files();
-  const result = checkDocuments(files);
-  const problems = [...unreadable, ...result.problems];
+  const [{ files, problems: unreadable }, pending] = await Promise.all([project.cache.documents.files(), project.pendingRecords()]);
+  // Uncommitted records are checked with the documents; committed ones never change, so they are not read again.
+  const result = checkDocuments(new Map([...files, ...pending.files]));
+  const problems = [...unreadable, ...pending.problems, ...pending.altered.map(path => docProblem('RECORD_ALTERED', path)), ...result.problems];
   const warnings = await readDocumentWarnings(project.root, result.documents);
   return { json: { documents: result.documents.length, problems, warnings }, failed: problems.length > 0,
     text: text([...(problems.length ? [t('docs.problems', { count: problems.length }), ...problemLines(problems).map(l => '  ' + l)]
@@ -198,7 +199,12 @@ export const runDocsCheck = (options: Options) => runCommand('docs', options.for
       ...section(t('docs.warnings', { count: warnings.length }), problemLines(warnings))]) };
 });
 
-/** `docs history`: why and when one document changed, newest first, from the commits of HEAD. */
+/** Record sections named in the CLI language, whatever language their headings were written in. */
+const sectionLabel: Record<RecordSectionKey, () => string> = {
+  context: () => t('records.section.context'), decision: () => t('records.section.decision'), alternatives: () => t('records.section.alternatives'),
+};
+
+/** `docs history`: the records behind one document and its commits, newest first, from the commits of HEAD. */
 export const runDocsHistory = (id: string, options: Options) => runCommand('docs', options.format, async () => {
   const project = await openProject(process.cwd());
   const head = await project.head();
@@ -207,11 +213,18 @@ export const runDocsHistory = (id: string, options: Options) => runCommand('docs
   const title = documents.find(d => d.id === id)?.title ?? events.map(e => (e.after ?? e.before)?.title).find(Boolean) ?? null;
   if (!title && !events.length) throw new CommandError('UNKNOWN_DOCUMENT', t('docs.unknownDocument', { ids: id }));
   const json = { id, title, events: events.map(e => ({ commit: e.commit, date: e.date, author: e.author, email: e.email, message: e.message, types: e.types,
-    path: (e.after ?? e.before)?.path ?? null, reasons: e.reasons })) };
+    path: (e.after ?? e.before)?.path ?? null, records: e.records })) };
+  // Each record by its title and sections, so the decisions behind the document read in order; a change a record
+  // should have explained says it has none.
   const out = [`${id} ${title ?? ''}`.trimEnd()];
   for (const e of json.events) {
     out.push('', `${e.date.slice(0, 10)} ${e.commit.slice(0, 7)} ${e.types.join(',')} — ${e.author}`);
-    out.push(...e.reasons.map(r => '  ' + t('docs.reason') + ': ' + r), '  ' + t('docs.commit') + ': ' + e.message);
+    for (const r of e.records) {
+      out.push(`  ${r.id} ${r.title}`);
+      out.push(...r.sections.map(s => '    ' + sectionLabel[s.key]() + ': ' + s.body.replace(/\s*\n\s*/g, ' ')));
+    }
+    if (!e.records.length && e.types.some(type => type !== 'created')) out.push('  ' + t('docs.noRecord'));
+    out.push('  ' + t('docs.commit') + ': ' + e.message);
   }
   if (!events.length) out.push(t('docs.noHistory'));
   return { json, text: text(out) };

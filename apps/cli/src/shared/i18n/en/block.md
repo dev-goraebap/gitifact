@@ -26,10 +26,10 @@ Record product behavior and constraints that must be maintained.
 
 - Read `gitifact guide show spec` before creating documents. Create each new document with `gitifact docs new` to get its ID, edit the file directly, and verify with `gitifact docs check`.
 - For a new feature, prepare requirements and designs together (`gitifact guide show design`). Follow a request for requirements only.
-- Before changing requirements, designs, or code, find the project instructions (`.gitifact/instructions/`) for the work in the index outside this block, read them and follow them.
-- Keep rules and decisions that span features in project instructions. Read `gitifact guide show instructions` before creating or changing instructions or the index. Write the index outside this block.
+- When an existing requirement, design or instruction changes, or one of several options is chosen, write a record then with `gitifact records new` (`gitifact guide show records`). Before changing a document, read how its decisions went with `gitifact docs history <ID>`.
+- Before changing requirements, designs, or code, find the project instructions (`.gitifact/instructions/`) for the work in the index outside this block, read them and follow them. Rules that span features belong in instructions; read `gitifact guide show instructions` before changing instructions or the index outside this block.
 - Before writing instruction, requirement, or design content, follow `gitifact guide show writing`. Use the project's language for its documents, independently of the CLI display language.
-- When asked to commit, read `gitifact guide show commit` and commit related specifications, reasons, code, and tests together.
+- When asked to commit, read `gitifact guide show commit`. By default, one decision is committed with its record, documents, code, and tests.
 - Automatic recording does not authorize commits. Commit only on user request or under an explicit project policy. Pushing requires separate authorization.
 - Ask only about unclear product behavior and continue independent work. Derive all existing features only when asked.
 - SELF-CHECK: before preparing documents or commit input, reread the relevant guide and compare formats. If unsure, run `gitifact guide show <topic>` instead of guessing.
@@ -38,9 +38,9 @@ Record product behavior and constraints that must be maintained.
 ### Commands
 
 - `guide list`, `guide show <topic>`: writing guides ({topics})
-- `docs list`·`search`·`show <ID…>`·`new <kind> <path>`·`check`·`history <ID>`: list without bodies, search, a document with its references, ID and skeleton (`draft: true`), whole-set check, reasons (options in `--help`)
-- `changes list`: documents changed since HEAD, documents without a reason, and the commit input path
-- `changes commit --file <json|-> [--dry-run]`: check documents, then record reasons and commit in one operation
+- `docs list`·`search`·`show <ID…>`·`new <kind> <path>`·`check`·`history <ID>`: list without bodies, search, a document with its references, ID and skeleton (`draft: true`), whole-set check, records and commits (options in `--help`)
+- `changes list`: documents changed since HEAD, uncommitted records, changes without a record, and the commit input path
+- `changes commit --file <json|-> [--dry-run]`: check documents, then commit the selected files and records
 - `browser`: run the read-only browser server; prints a URL and keeps running
 - `update [--check | --commit]`: `--check` only checks versions. Without it, refresh this block to the running version; `--commit` commits block-only changes with a fixed message
 - `init`: create configuration and this block when adopting Gitifact

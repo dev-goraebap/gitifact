@@ -5,7 +5,6 @@ import { dirname, join } from 'node:path';
 import { projectFixture } from './git-fixture.mjs';
 
 const I = 'I-aaaaaaaaaa';
-const history = '.gitifact/history.jsonl';
 const authorization = { basis: 'user-request', evidence: 'Fixture explicitly requests this test commit' };
 const instruction = (id = I, body = '계층을 지킨다.') => `---\nid: ${id}\ntitle: CLI 규칙\ndescription: CLI 계층 규칙. apps/cli를 고칠 때 읽는다\n---\n\n${body}\n`;
 function put(f, path, content) {
@@ -63,15 +62,16 @@ test('an instruction commits with its folder and reason, carries a Doc trailer, 
   put(f, '.gitifact/instructions/cli-rules/index.md', instruction());
   put(f, '.gitifact/instructions/cli-rules/references/decisions.md', '결정\n');
   assert.deepEqual(f.ok(['changes', 'list']).changes.map(c => [c.id, c.kind, c.types]), [[I, 'instruction', ['created']]]);
-  const first = commit(f, { reasons: [{ docs: [I], reason: 'CLI 규칙을 지침으로 둔다' }], message: 'Add CLI instruction', authorization,
-    paths: [history, '.gitifact/instructions/cli-rules/index.md', '.gitifact/instructions/cli-rules/references/decisions.md'] });
-  assert.deepEqual(first.trailers, ['Gitifact-Doc: ' + I]);
+  const record = (id, reason) => { put(f, `.gitifact/records/20260924/${id}.md`, `---\nid: ${id}\ntitle: ${reason}\ndocs:\n  - ${I}\n---\n\n## 맥락\n\n${reason}\n\n## 결정\n\n${reason}\n`); return `.gitifact/records/20260924/${id}.md`; };
+  const first = commit(f, { message: 'Add CLI instruction', authorization,
+    paths: [record('DR-aaaaaaaaaa', 'CLI 규칙을 지침으로 둔다'), '.gitifact/instructions/cli-rules/index.md', '.gitifact/instructions/cli-rules/references/decisions.md'] });
+  assert.deepEqual(first.trailers, ['Gitifact-Doc: ' + I, 'Gitifact-Record: DR-aaaaaaaaaa']);
   assert.equal(f.git(['status', '--porcelain', '--untracked-files=all']).stdout, '');
   renameSync(join(f.repo, '.gitifact/instructions/cli-rules'), join(f.repo, '.gitifact/instructions/cli-layers'));
-  commit(f, { reasons: [{ docs: [I], reason: '이름을 계층 중심으로' }], message: 'Rename CLI instruction', authorization,
-    paths: [history, '.gitifact/instructions/cli-rules/index.md', '.gitifact/instructions/cli-rules/references/decisions.md',
+  commit(f, { message: 'Rename CLI instruction', authorization,
+    paths: [record('DR-bbbbbbbbbb', '이름을 계층 중심으로'), '.gitifact/instructions/cli-rules/index.md', '.gitifact/instructions/cli-rules/references/decisions.md',
       '.gitifact/instructions/cli-layers/index.md', '.gitifact/instructions/cli-layers/references/decisions.md'] });
-  assert.deepEqual(f.ok(['docs', 'history', I]).events.map(e => [e.types, e.path, e.reasons]), [
+  assert.deepEqual(f.ok(['docs', 'history', I]).events.map(e => [e.types, e.path, e.records.map(r => r.title)]), [
     [['moved'], '.gitifact/instructions/cli-layers/index.md', ['이름을 계층 중심으로']],
     [['created'], '.gitifact/instructions/cli-rules/index.md', ['CLI 규칙을 지침으로 둔다']],
   ]);

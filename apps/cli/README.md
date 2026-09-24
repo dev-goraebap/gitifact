@@ -51,11 +51,11 @@ The browser viewer includes:
 | Product overview | Project size and recent activity |
 | Features | Current requirements and designs by feature |
 | Project instructions | AGENTS.md and per-task instructions such as development rules and architecture decisions |
-| Activity | Reasons for committed changes and before/after content |
+| Decision records | Committed decision records and the before/after content of the documents they explain |
 | Contributors | Contributions by Git author |
 | Git status | Changed files in the working directory |
 
-Requirements, designs, and instructions show the working copy. Activity shows committed history.
+Requirements, designs, and instructions show the working copy. Decision records show committed history.
 
 ## Language
 
@@ -113,7 +113,8 @@ The version is recorded in `package.json` and the lockfile. Tell agents to use t
 | `npx gitifact guide show spec` | Requirement file format and writing rules |
 | `npx gitifact guide show design` | Feature design rules |
 | `npx gitifact guide show instructions` | Project instruction format and the AGENTS.md index |
-| `npx gitifact guide show commit` | Commit changes with their reasons and related files |
+| `npx gitifact guide show records` | When to write a decision record and its format |
+| `npx gitifact guide show commit` | Commit changes with their records and related files |
 
 ### Read documents and commit
 
@@ -124,12 +125,12 @@ Requirements, designs and instructions are Markdown files under `.gitifact/` tha
 | `npx gitifact docs list` | Features, requirements, designs and instructions (IDs, titles, descriptions, no bodies) |
 | `npx gitifact docs search <query>` | Search document bodies |
 | `npx gitifact docs show <ID>` | A document's source and the designs pointing to it; `--ref <commit>` for past text |
-| `npx gitifact docs history <ID>` | Reasons and commits for a document |
+| `npx gitifact docs history <ID>` | Decision records and commits for a document |
 | `npx gitifact docs new requirement <feature>/<name>` | Create a document with an issued ID and a skeleton |
 | `npx gitifact docs check` | Check format, IDs and references across all documents |
-| `npx gitifact changes list` | Documents changed since HEAD and those without a reason |
+| `npx gitifact changes list` | Documents changed since HEAD, uncommitted records, and changes without a record |
 | `npx gitifact changes commit --file <input-file> --dry-run` | Preview the commit without changing files |
-| `npx gitifact changes commit --file <input-file>` | Record reasons and commit related files |
+| `npx gitifact changes commit --file <input-file>` | Commit the selected documents, records and related files |
 
 See `npx gitifact guide show commit` for the input format.
 

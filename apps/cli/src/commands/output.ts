@@ -17,7 +17,7 @@ export interface CommandResult { json: Record<string, unknown>; text: string; fa
  * Runs one `docs`, `changes` or `guide` command and prints its result. Text is the default and JSON carries
  * `{contract, version, ok}` like every other command. Errors go to stderr in the same format, with exit code 1.
  */
-export async function runCommand(contract: 'docs' | 'changes' | 'guide', format: Format, run: () => Promise<CommandResult>): Promise<void> {
+export async function runCommand(contract: 'docs' | 'changes' | 'guide' | 'records', format: Format, run: () => Promise<CommandResult>): Promise<void> {
   const envelope = { contract, version: 1 };
   try {
     // One scope per command lets nested reads share the repository location instead of spawning Git again.

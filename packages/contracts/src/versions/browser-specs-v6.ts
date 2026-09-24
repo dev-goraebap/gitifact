@@ -1,8 +1,9 @@
 import { z } from 'zod';
 
 // The browser's records in the 0.8.0 document model: every document is one file with its own ID, and a feature holds
-// its requirements and design documents in `order`. Project instructions joined as a document kind in specs v6,
-// history v4, summary v3, commit v2 and search v2; the versions before them had no consumers outside the CLI and were removed.
+// its requirements and design documents in `order`. Project instructions joined as a document kind in specs v6 and
+// search v2, and records replaced reasons in history v5, summary v4 and commit v3; the versions before them had no
+// consumers outside the CLI and were removed.
 
 const contributor = z.strictObject({ email: z.string(), name: z.string(), commits: z.number().int().nonnegative(), latest: z.string() });
 // A document the design drew on: another document by ID (its title and path resolved when it exists) or an outside page.
@@ -40,19 +41,23 @@ const reference = z.strictObject({ id: z.string(), title: z.string(), specId: z.
 const snapshot = z.strictObject({ id: z.string(), kind, title: z.string(), description: z.string(), body: z.string(), specId: z.string(), path: z.string(),
   order: z.number().int().optional(), requirements: z.array(z.string()).optional(), sources: z.array(source).optional() }).nullable();
 const changeType = z.enum(['created', 'modified', 'moved', 'deleted']);
+// A record that explains the change: its title and sections, keyed so the reader names them in its own language.
+// Reasons from before records arrive as records with only a context, titled by their first sentence.
+const recordSection = z.strictObject({ key: z.enum(['context', 'decision', 'alternatives']), body: z.string() });
+const record = z.strictObject({ id: z.string(), title: z.string(), sections: z.array(recordSection) });
 const event = z.strictObject({ key: z.string(), commit: oid, date: z.string(), author: z.string(), email: z.string(),
   committer: z.string(), message: z.string(), id: z.string(), kind, types: z.array(changeType),
-  before: reference, after: reference, reasons: z.array(z.string()) });
+  before: reference, after: reference, records: z.array(record) });
 
 /** Changes matching the query over the whole history of `head`, newest first, one page of them. */
-export const browserHistoryV4 = z.strictObject({
-  contract: z.literal('browser-history'), version: z.literal(4), sessionId: z.string(), head: oid,
+export const browserHistoryV5 = z.strictObject({
+  contract: z.literal('browser-history'), version: z.literal(5), sessionId: z.string(), head: oid,
   // Matching changes in all of history, not in this page; `offset` is where this page starts among them.
   total: z.number().int().nonnegative(), offset: z.number().int().nonnegative(), events: z.array(event),
 });
 /** What the product overview draws from history: counts over all of it and its newest commits. */
-export const browserHistorySummaryV3 = z.strictObject({
-  contract: z.literal('browser-history-summary'), version: z.literal(3), sessionId: z.string(), head: oid,
+export const browserHistorySummaryV4 = z.strictObject({
+  contract: z.literal('browser-history-summary'), version: z.literal(4), sessionId: z.string(), head: oid,
   total: z.number().int().nonnegative(), byType: z.strictObject({ created: z.number().int().nonnegative(), modified: z.number().int().nonnegative(), moved: z.number().int().nonnegative(), deleted: z.number().int().nonnegative() }),
   // One entry per commit within three weeks of the newest change, so the reader can count by its own calendar day.
   pulse: z.array(z.strictObject({ date: z.string(), count: z.number().int().positive() })),
@@ -70,10 +75,11 @@ export const browserSearchV2 = z.strictObject({
   })),
 });
 export type BrowserSpecsV6 = z.infer<typeof browserSpecsV6>;
-export type BrowserHistoryV4 = z.infer<typeof browserHistoryV4>;
-export type BrowserHistorySummaryV3 = z.infer<typeof browserHistorySummaryV3>;
+export type BrowserHistoryV5 = z.infer<typeof browserHistoryV5>;
+export type BrowserHistorySummaryV4 = z.infer<typeof browserHistorySummaryV4>;
 export type BrowserSearchV2 = z.infer<typeof browserSearchV2>;
 export type SpecEvent = z.infer<typeof event>;
+export type SpecRecord = z.infer<typeof record>;
 export type SpecSnapshot = NonNullable<z.infer<typeof snapshot>>;
 export type SpecFeature = z.infer<typeof feature>;
 export type SpecRequirement = z.infer<typeof requirement>;
@@ -123,13 +129,22 @@ export type BrowserCommitFileV1 = z.infer<typeof browserCommitFileV1>;
 export type CommitFile = z.infer<typeof commitFile>;
 
 /** One commit as its page reads it: who made it, why, and every document it changed with both sides. */
-export const browserCommitV2 = z.strictObject({
-  contract: z.literal('browser-commit'), version: z.literal(2), sessionId: z.string(), commit: oid,
+export const browserCommitV3 = z.strictObject({
+  contract: z.literal('browser-commit'), version: z.literal(3), sessionId: z.string(), commit: oid,
   author: z.string(), email: z.string(), committer: z.string(), date: z.string(), message: z.string(),
   changes: z.array(z.strictObject({ event, before: snapshot, after: snapshot })),
 });
 export const browserCommitQueryV1 = z.strictObject({ commit: oid });
-export type BrowserCommitV2 = z.infer<typeof browserCommitV2>;
+export type BrowserCommitV3 = z.infer<typeof browserCommitV3>;
+
+// A decision record is `DR-`; a reason from before decision records (a reason line, a 0.7 reason) keeps its `H-` ID.
+const recordId = z.string().regex(/^(?:DR|H)-[A-Za-z0-9_-]{1,64}$/);
+/** Which commit of `head`'s history added a record: the record page reads that commit and shows the record's part. */
+export const browserRecordV1 = z.strictObject({
+  contract: z.literal('browser-record'), version: z.literal(1), sessionId: z.string(), head: oid, id: recordId, commit: oid,
+});
+export const browserRecordQueryV1 = z.strictObject({ head: oid, id: recordId });
+export type BrowserRecordV1 = z.infer<typeof browserRecordV1>;
 
 /** One file of an instruction folder from the working tree: its text, or why there is none (binary, over 512 KB). */
 export const browserInstructionFileV1 = z.strictObject({

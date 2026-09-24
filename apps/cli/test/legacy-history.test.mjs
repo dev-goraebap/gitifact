@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { specFixture } from './git-fixture.mjs';
-import { openRecords, docs } from './browser-records.mjs';
+import { openRecords, docs, reasonsOf } from './browser-records.mjs';
 import { storeReader } from '../.test-build/adapters/git/store-reader.js';
 
 const S = 'S-aaaaaaaaaa', R = 'R-aaaaaaaaaa', W = 'W-aaaaaaaaaa';
@@ -41,7 +41,7 @@ test('0.7 activity stays in the history after a migration, the migration itself 
 
   const read = openRecords(f.repo, f.env); const result = await read();
   assert.equal(result.events.some(e => e.commit === migration), false);
-  assert.deepEqual(result.events.map(e => [e.author, e.id, e.types, e.reasons]), [
+  assert.deepEqual(result.events.map(e => [e.author, e.id, e.types, reasonsOf(e)]), [
     ['Carol', R, ['modified'], ['After the move']],
     ['Bob', R, ['modified'], ['Say more']],
     ['Ann', R, ['created'], ['Start posts']],
