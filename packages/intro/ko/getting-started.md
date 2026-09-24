@@ -49,11 +49,11 @@ init이 AGENTS.md 등에 쓴 GITIFACT 블록을 읽고 이번 세션부터 따�
 | 제품 개요 | 프로젝트 규모와 최신 활동 |
 | 기능별 요구사항 | 현재 요구사항과 기능별 설계 |
 | 프로젝트 지침 | AGENTS.md와 개발 규칙·아키텍처 결정 등 작업별 지침 |
-| 활동 | 커밋된 변경의 이유와 변경 전후 내용 |
+| 결정기록 | 커밋된 결정기록과 그 기록이 설명하는 문서의 변경 전후 내용 |
 | 참여자 | Git 작성자별 참여 내역 |
 | Git 상태 | 현재 작업 폴더의 변경 파일 |
 
-요구사항·설계·지침에는 작업 중인 내용이, 활동에는 커밋된 이력이 보입니다.
+요구사항·설계·지침에는 작업 중인 내용이, 결정기록에는 커밋된 이력이 보입니다.
 
 ## 언어 설정
 
@@ -111,7 +111,8 @@ npx gitifact browser
 | `npx gitifact guide show spec` | 요구사항 파일 형식과 작성 규칙 |
 | `npx gitifact guide show design` | 기능 설계 작성 규칙 |
 | `npx gitifact guide show instructions` | 프로젝트 지침 형식과 AGENTS.md 색인 |
-| `npx gitifact guide show commit` | 변경 이유와 관련 파일을 함께 커밋하는 방법 |
+| `npx gitifact guide show records` | 결정기록을 쓰는 때와 형식 |
+| `npx gitifact guide show commit` | 결정기록과 관련 파일을 함께 커밋하는 방법 |
 
 ### 문서 조회와 커밋
 
@@ -122,12 +123,12 @@ npx gitifact browser
 | `npx gitifact docs list` | 기능·요구사항·설계·지침 목록(본문 없이 ID·제목·설명) |
 | `npx gitifact docs search <검색어>` | 문서 본문 검색 |
 | `npx gitifact docs show <ID>` | 문서 원문과 그 문서를 가리키는 설계. `--ref <커밋>`으로 과거 원문 |
-| `npx gitifact docs history <ID>` | 문서의 변경 이유와 커밋 |
+| `npx gitifact docs history <ID>` | 문서의 결정기록과 커밋 |
 | `npx gitifact docs new requirement <기능>/<이름>` | ID를 발급하고 뼈대를 채운 새 문서 생성 |
 | `npx gitifact docs check` | 모든 문서의 형식·ID·참조 검사 |
-| `npx gitifact changes list` | HEAD 이후 바뀐 문서와 아직 이유가 없는 문서 |
+| `npx gitifact changes list` | HEAD 이후 바뀐 문서, 커밋하지 않은 결정기록, 기록 없는 변경 |
 | `npx gitifact changes commit --file <입력 파일> --dry-run` | 파일을 바꾸지 않고 커밋 계획 확인 |
-| `npx gitifact changes commit --file <입력 파일>` | 변경 이유 기록과 관련 파일 커밋 |
+| `npx gitifact changes commit --file <입력 파일>` | 고른 문서·결정기록·관련 파일 커밋 |
 
 커밋 입력 형식은 `npx gitifact guide show commit`에서 확인할 수 있습니다.
 

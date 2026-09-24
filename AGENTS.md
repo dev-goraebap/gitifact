@@ -29,10 +29,10 @@ CLI: 기본 실행은 `npx --yes gitifact@0.7.1 <cmd>`다. 아래 `gitifact`는 
 
 - 문서를 만들기 전에 `gitifact guide show spec`을 읽는다. 새 문서는 `gitifact docs new`로 만들어 ID를 발급받고, 파일을 직접 고친 뒤 `gitifact docs check`로 확인한다.
 - 새 기능은 요구사항과 설계를 함께 정리한다(`gitifact guide show design`). 요구사항만 요청받으면 따른다.
-- 요구사항·설계·코드를 바꾸기 전에 이 파일의 블록 밖 색인에서 작업에 맞는 프로젝트 지침(`.gitifact/instructions/`)을 찾아 읽고 따른다.
-- 여러 기능에 걸친 규칙과 결정은 프로젝트 지침에 둔다. 지침과 색인을 만들거나 고치기 전에 `gitifact guide show instructions`를 읽는다. 색인은 블록 밖에 쓴다.
+- 기존 요구사항·설계·지침을 바꾸거나 여러 안 중 하나를 고르면 그때 `gitifact records new`로 결정기록을 쓴다(`gitifact guide show records`). 문서를 바꾸기 전에 `gitifact docs history <ID>`로 그 문서의 결정 흐름을 읽는다.
+- 요구사항·설계·코드를 바꾸기 전에 이 파일의 블록 밖 색인에서 작업에 맞는 프로젝트 지침(`.gitifact/instructions/`)을 찾아 읽고 따른다. 여러 기능에 걸친 규칙은 지침에 두며, 지침과 블록 밖 색인을 고치기 전에 `gitifact guide show instructions`를 읽는다.
 - 지침·요구사항·설계 본문을 쓰기 전에 `gitifact guide show writing`의 문체를 따른다. 문서는 CLI 표시 언어와 무관하게 프로젝트의 언어로 쓴다.
-- 커밋 요청을 받으면 `gitifact guide show commit`을 읽고 명세·이유·코드·테스트를 함께 커밋한다.
+- 커밋 요청을 받으면 `gitifact guide show commit`을 읽는다. 결정 하나를 그 결정기록·문서·코드·테스트와 함께 커밋하는 것이 기본이다.
 - 자동 기록은 커밋 권한이 아니다. 사용자 요청이나 명시적 프로젝트 정책이 있을 때만 커밋하고 푸시는 별도 요청을 따른다.
 - 불명확한 제품 동작만 질문하고 독립적인 작업은 진행한다. 기존 기능 전체 도출은 요청받았을 때 한다.
 - SELF-CHECK: 문서나 커밋 입력을 만들기 전에 해당 지침을 다시 읽고 형식을 대조한다. 확실하지 않으면 추측하지 말고 `gitifact guide show <topic>`을 실행한다.
@@ -40,10 +40,10 @@ CLI: 기본 실행은 `npx --yes gitifact@0.7.1 <cmd>`다. 아래 `gitifact`는 
 - 사용자가 요구사항·프로젝트 현황·변경 이력을 보여 달라고 하면 `gitifact browser`를 백그라운드로 실행하고 출력된 URL을 알려 준다. 채팅 요약으로 대신하지 않는다.
 ### 명령
 
-- `guide list`, `guide show <topic>`: 작성 지침 (workflow, spec, design, instructions, writing, commit, migrate)
-- `docs list`·`search`·`show <ID…>`·`new <종류> <경로>`·`check`·`history <ID>`: 본문 없는 목록, 검색, 원문과 참조, ID 발급과 뼈대 생성(`draft: true`), 전체 검사, 변경 이유 (옵션은 `--help`)
-- `changes list`: HEAD 대비 바뀐 문서, 이유 없는 문서, 커밋 입력 파일 경로
-- `changes commit --file <json|-> [--dry-run]`: 문서 검사 뒤 변경 이유 기록과 커밋을 한 번에
+- `guide list`, `guide show <topic>`: 작성 지침 (workflow, spec, design, instructions, records, writing, commit, migrate)
+- `docs list`·`search`·`show <ID…>`·`new <종류> <경로>`·`check`·`history <ID>`: 본문 없는 목록, 검색, 원문과 참조, ID 발급과 뼈대 생성(`draft: true`), 전체 검사, 결정기록과 커밋 (옵션은 `--help`)
+- `changes list`: HEAD 대비 바뀐 문서, 커밋하지 않은 결정기록, 기록 없는 변경, 커밋 입력 파일 경로
+- `changes commit --file <json|-> [--dry-run]`: 문서 검사 뒤 고른 파일과 결정기록을 커밋
 - `browser`: 읽기 전용 브라우저 서버 실행, URL 출력 후 계속 실행
 - `update [--check | --commit]`: `--check`는 읽기 전용 버전 확인. 옵션 없이는 이 블록을 실행 버전으로 갱신하며 `--commit`은 블록만 바뀐 파일을 고정 메시지로 커밋한다
 - `init`: 처음 도입할 때 설정과 이 블록을 만든다
@@ -53,7 +53,7 @@ CLI: 기본 실행은 `npx --yes gitifact@0.7.1 <cmd>`다. 아래 `gitifact`는 
 
 이 저장소는 gitifact를 개발하면서 프로젝트 자체에도 적용한다. 제품의 기록 원칙을 따르되, 아직 구현되지 않은 기능은 아래 대체 절차로 수행한다. 이 예외는 gitifact 개발 저장소에만 적용하며 제품의 기본 동작으로 확장하지 않는다.
 
-현재 프로젝트는 `.gitifact/config.json`의 `schemaVersion: 3` 저장 규약이다(0.8.0 문서 형식: 문서 하나가 파일 하나, 구조 정보는 프론트매터, 이유는 `.gitifact/history.jsonl` 하나). 2026-09-22 0.7 형식에서 전환했다(`Gitifact-Migration: 0.8.0` 커밋, 과정은 [개발 환경](docs/development.md)). 2026-09-18 product·guides를 위키로, 파일 ID 주석을 frontmatter로 바꾸며 이 저장소의 기록을 일회성 스크립트(DEV-01)로 전환했다. 2026-09-15 제품 이름을 Tryce에서 Gitifact로 바꾸며 저장 경로 `.tryce`와 `tryce-*` 마커를 `.gitifact`와 `gitifact-*`로 전환했다. 2026-09-22 0.8.0 준비에서 `.tryce` 경로·`tryce-*` 마커·구형 JSON·schemaVersion 1 읽기와 `migrate` 명령을 지웠다. 과거 커밋의 옛 기록은 이력에 나타나지 않고 Git에만 남는다. 모드·승인 묶음·note를 새로 작성하지 않는다. 개발 작업에는 이 파일 첫머리의 GITIFACT 블록과 `pnpm cli guide show <topic>`을 읽고 적용한다. 블록의 `npx --yes gitifact@0.7.1`은 배포 버전이 0.8.0이 되기 전까지의 표기이며, 배포된 0.7.1은 이 저장소(schemaVersion 3)를 읽지 못한다. 블록은 `pnpm cli init`이 쓰고 갱신하며 마커 사이를 직접 편집하지 않는다. 블록 안의 `gitifact`는 이 저장소에서 `pnpm cli`를 뜻한다. 지침 원본은 `apps/cli/src/shared/i18n/<lang>/docs/`에만 두고 두 번째 편집본을 만들지 않는다.
+현재 프로젝트는 `.gitifact/config.json`의 `schemaVersion: 3` 저장 규약이다(0.8.0 문서 형식: 문서 하나가 파일 하나, 구조 정보는 프론트매터, 이유는 `.gitifact/records/`의 결정기록). 2026-09-22 0.7 형식에서 전환했다(`Gitifact-Migration: 0.8.0` 커밋, 과정은 [개발 환경](docs/development.md)). 2026-09-24 이유 파일 `.gitifact/history.jsonl`을 결정기록으로 바꾸고 설계·지침의 결정 표를 결정기록으로 옮겼다(이유 → 맥락, 기각한 안 → 검토한 대안). 결정기록에는 종류가 없다. 그 전 커밋의 이유는 이력에서 맥락 섹션만 있는 기록으로 읽는다. 2026-09-18 product·guides를 위키로, 파일 ID 주석을 frontmatter로 바꾸며 이 저장소의 기록을 일회성 스크립트(DEV-01)로 전환했다. 2026-09-15 제품 이름을 Tryce에서 Gitifact로 바꾸며 저장 경로 `.tryce`와 `tryce-*` 마커를 `.gitifact`와 `gitifact-*`로 전환했다. 2026-09-22 0.8.0 준비에서 `.tryce` 경로·`tryce-*` 마커·구형 JSON·schemaVersion 1 읽기와 `migrate` 명령을 지웠다. 과거 커밋의 옛 기록은 이력에 나타나지 않고 Git에만 남는다. 모드·승인 묶음·note를 새로 작성하지 않는다. 개발 작업에는 이 파일 첫머리의 GITIFACT 블록과 `pnpm cli guide show <topic>`을 읽고 적용한다. 블록의 `npx --yes gitifact@0.7.1`은 배포 버전이 0.8.0이 되기 전까지의 표기이며, 배포된 0.7.1은 이 저장소(schemaVersion 3)를 읽지 못한다. 블록은 `pnpm cli init`이 쓰고 갱신하며 마커 사이를 직접 편집하지 않는다. 블록 안의 `gitifact`는 이 저장소에서 `pnpm cli`를 뜻한다. 지침 원본은 `apps/cli/src/shared/i18n/<lang>/docs/`에만 두고 두 번째 편집본을 만들지 않는다.
 
 프로젝트 사용 빌드와 해시는 [개발 환경](docs/development.md)의 최신 지정을 따른다. 시작할 때 `pnpm cli docs list`와 Git 상태를 읽고 필요한 명세·지침 문서를 `pnpm cli docs show <ID>`로 원문 확인한다. browser는 요구사항 이력·제품 기능·기여자를 읽기 전용으로 제공한다. 구형 req·note·mode·brief·commit 명령은 개발 빌드에서 제거했다.
 
@@ -69,17 +69,17 @@ CLI: 기본 실행은 `npx --yes gitifact@0.7.1 <cmd>`다. 아래 `gitifact`는 
 
 1. `git status`와 현재 브랜치·작업 경로를 확인한다. 기존 변경과 다른 에이전트의 작업을 보존한다.
 2. [README](README.md)의 제품 소개를 읽고 이번 작업이 제품의 목적·원칙·범위 안에 있는지 확인한다. 관련 기능 명세(`.gitifact/spec/`)도 읽는다.
-   구현 규칙과 결정은 프로젝트 지침(`.gitifact/instructions/`)에 있다. CLI 작업은 [CLI 아키텍처](.gitifact/instructions/cli-architecture/index.md), 브라우저 작업은 [브라우저 아키텍처](.gitifact/instructions/browser-architecture/index.md)와 그 references, [apps/browser/AGENTS.md](apps/browser/AGENTS.md)의 Astryx 생성 지침, 문서 작업은 [문서 작성](.gitifact/instructions/writing-docs/index.md), 검증과 커밋 전에는 [검증](.gitifact/instructions/verification/index.md)을 직접 읽는다. 결정 기록은 각 지침의 `references/decisions.md` 결정 표다. 자동 첨부 여부에 의존하지 않고, 사용할 컴포넌트의 설치 버전 API를 Astryx CLI로 확인한다.
+   구현 규칙과 결정은 프로젝트 지침(`.gitifact/instructions/`)에 있다. CLI 작업은 [CLI 아키텍처](.gitifact/instructions/cli-architecture/index.md), 브라우저 작업은 [브라우저 아키텍처](.gitifact/instructions/browser-architecture/index.md)와 그 references, [apps/browser/AGENTS.md](apps/browser/AGENTS.md)의 Astryx 생성 지침, 문서 작업은 [문서 작성](.gitifact/instructions/writing-docs/index.md), 검증과 커밋 전에는 [검증](.gitifact/instructions/verification/index.md)을 직접 읽는다. 규칙을 정한 맥락과 검토한 대안은 결정기록에 있으므로 명세·지침을 바꾸기 전에 `pnpm cli docs history <ID>`로 읽는다. 자동 첨부 여부에 의존하지 않고, 사용할 컴포넌트의 설치 버전 API를 Astryx CLI로 확인한다.
 3. 실제 파일과 실행 가능한 명령을 확인한다. README나 설계 문서에 등장한다는 이유만으로 기능이 구현됐다고 가정하지 않는다.
    실행 방법과 검증 범위는 [개발 환경](docs/development.md)을 확인한다. 현재 통합 검증 명령은 `pnpm check`다.
 4. 이번 작업의 범위, 관련 문서, 검증 방법을 정하고 진행한다.
 
-`.tmp/`는 로컬 조사·논의 자료다. 새 체크아웃에 없어도 작업을 시작할 수 있어야 한다. 구현 규칙과 결정은 `.gitifact/instructions/`의 프로젝트 지침에, 제품의 목적·원칙·범위는 루트 README.md(원본은 packages/intro)에 둔다. 지침은 파일을 직접 고친 뒤 `docs check`로 확인하고, 둘 다 커밋 시 변경 이유를 붙인다. 2026-09-23 이 저장소의 위키를 프로젝트 지침 4개로 옮겼고(2026-09-24 스킬에서 지침으로 이름을 바꿈), 옛 위키 페이지(W-)는 이력에서 읽는다. 날짜별 작업·검증·배포 기록만 `docs/`에 둔다.
+`.tmp/`는 로컬 조사·논의 자료다. 새 체크아웃에 없어도 작업을 시작할 수 있어야 한다. 구현 규칙과 결정은 `.gitifact/instructions/`의 프로젝트 지침에, 제품의 목적·원칙·범위는 루트 README.md(원본은 packages/intro)에 둔다. 지침은 파일을 직접 고친 뒤 `docs check`로 확인하고, 기존 내용을 바꾸거나 여러 안 중 하나를 고르면 그때 `records new`로 결정기록을 쓴다. 2026-09-23 이 저장소의 위키를 프로젝트 지침 4개로 옮겼고(2026-09-24 스킬에서 지침으로 이름을 바꿈), 옛 위키 페이지(W-)는 이력에서 읽는다. 날짜별 작업·검증·배포 기록만 `docs/`에 둔다.
 
 ## 항상 지킬 원칙
 
 - 사용자와 다른 에이전트의 변경을 덮어쓰거나 임의로 되돌리지 않는다. 파일을 수정하기 전에 최신 내용을 확인한다.
-- 변경 이유와 제외한 접근 중 이후 작업에 영향을 주는 내용을 관련 문서에 남긴다. 사소한 편집마다 별도 결정 문서를 만들지는 않는다.
+- 결정의 이유와 기각한 접근 중 이후 작업에 영향을 주는 내용을 결정기록으로 남긴다. 사소한 편집마다 기록을 만들지는 않는다.
 - 구현 중 요구사항이 바뀌면 관련 문서와 코드를 함께 맞춘다. 커밋할 때도 같은 변경으로 묶는다.
 - 확정된 규약을 임의로 바꾸지 않는다. 보류 사항은 기본값으로 확정된 것처럼 구현하지 않는다.
 - 사용자 결정이 필요한 제품 의미·영속 규약과 되돌리기 쉬운 구현 선택을 구분한다. 기존 결정 안에서의 구현·검증·수정은 진행하고, 결정에 의존하지 않는 작업도 계속한다.
@@ -95,10 +95,10 @@ CLI: 기본 실행은 `npx --yes gitifact@0.7.1 <cmd>`다. 아래 `gitifact`는 
 
 | 예외 | 적용 조건 | 대체 절차 | 종료 조건 |
 | :--- | :--- | :--- | :--- |
-| DEV-01 문서 직접 작성 | 필요한 요구사항·설계·기록 명령이 없거나 아직 프로젝트 사용 대상으로 검증되지 않음 | 관련 Markdown과 메타데이터를 직접 작성한다. 확정된 형식이 있으면 준수하고 변경 이유를 남긴다. 아직 정하지 않은 스키마를 영속 규약으로 만들지 않는다. | 해당 쓰기 명령과 형식 검증을 시험하고 프로젝트 사용 대상으로 지정함 |
+| DEV-01 문서 직접 작성 | 필요한 요구사항·설계·기록 명령이 없거나 아직 프로젝트 사용 대상으로 검증되지 않음 | 관련 Markdown과 메타데이터를 직접 작성한다. 확정된 형식이 있으면 준수하고 결정기록을 남긴다. 아직 정하지 않은 스키마를 영속 규약으로 만들지 않는다. | 해당 쓰기 명령과 형식 검증을 시험하고 프로젝트 사용 대상으로 지정함 |
 | DEV-02 수동 브리핑·검사 | 브리핑·검사 명령이 없거나 이번 검사 범위를 지원하지 않음 | Git, 관련 문서, 독립적인 검증 도구로 상태를 확인한다. 검사한 범위와 누락된 범위를 보고한다. | 필요한 범위의 조회·검사가 구현되고 지원 형식에서 검증됨 |
 | DEV-03 기본 Git으로 커밋 | 지원하지 않는 커밋 작업 또는 명시적인 기본 Git 요청에 한정. 일반 기록·구현 커밋에는 적용하지 않음 | 기본 Git 명령으로 staged 변경을 검토하고 커밋한다. 실제 요구사항을 참조할 때는 확정된 트레일러 형식을 따른다. 참조할 요구사항이나 적용된 형식이 없으면 허구의 ID·승인·버전을 만들지 않고 일반 커밋으로 기록한다. | 새 spec commit을 프로젝트에 적용함. 미지원 전체 이력 검사·훅은 별도 범위 |
-| DEV-04 연동 직접 준비 | `init --agent`가 대상 도구의 지침 파일을 지원하지 않음 | 필요한 연동 파일만 직접 작성한다. 경로·출처·변경 이유와 제거 범위를 관련 문서에 남기고 기존 파일을 보존한다. 보류 중인 배포 방식을 제품 기본값으로 확정하지 않는다. AGENTS.md·CLAUDE.md·.cursorrules·hermes 파일의 블록 설치·갱신·제거는 2026-09-16 init에서 검증해 예외 대상이 아니다. | 대상 연동의 설치·갱신·제거와 사용자 변경 보존이 검증됨 |
+| DEV-04 연동 직접 준비 | `init --agent`가 대상 도구의 지침 파일을 지원하지 않음 | 필요한 연동 파일만 직접 작성한다. 경로·출처·제거 범위를 관련 문서에, 이유를 결정기록에 남기고 기존 파일을 보존한다. 보류 중인 배포 방식을 제품 기본값으로 확정하지 않는다. AGENTS.md·CLAUDE.md·.cursorrules·hermes 파일의 블록 설치·갱신·제거는 2026-09-16 init에서 검증해 예외 대상이 아니다. | 대상 연동의 설치·갱신·제거와 사용자 변경 보존이 검증됨 |
 
 대체 절차로 기록한 내용은 프로젝트 기록이다. 정식 기능을 도입할 때 누락되거나 폐기되지 않도록 전환 계획에 포함한다. 명세가 정해지기 전에 가짜 승인이나 형식 버전으로 완성된 이력을 꾸미지 않는다.
 

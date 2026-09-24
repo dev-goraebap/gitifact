@@ -64,9 +64,9 @@ Not every small request in a conversation needs a requirements revision.
 
 I often develop by looking at a screen, asking for a change, trying it, and adjusting it again. Recording every intermediate attempt as a requirements change made it harder to see which behavior I ultimately wanted.
 
-With Gitifact, the agent prepares a requirements draft and refines it as the conversation develops. **At commit time, it records the final requirements changes and their reasons together with the code.**
+With Gitifact, the agent prepares a requirements draft and refines it as the conversation develops. **At commit time, it records the final requirements changes and their decision records together with the code.**
 
-You do not need to write a separate explanation or remember recording commands. The agent uses the conversation to describe why the change happened. When the intended behavior is unclear, it asks for clarification.
+You do not need to write a separate explanation or remember recording commands. When an existing requirement changes or one of several options is chosen, the agent turns the conversation into a decision record: a title and a few short sections (context and decision, plus alternatives considered when there were any). Records gather by document, so you can later read in order why a document looks the way it does. When the intended behavior is unclear, it asks for clarification.
 
 ![Requirement and design changes with their reasons in the activity timeline](https://raw.githubusercontent.com/dev-goraebap/gitifact/main/packages/intro/assets/screenshots/activity.jpg)
 
@@ -84,7 +84,7 @@ Gitifact is designed for a product developed **within one Git repository**, whet
 
 ## Project status
 
-Gitifact connects Markdown requirements, designs, and reasons for changes to Git commits. The browser viewer shows activity, requirements, and contributors. Ask your agent to “Open the Gitifact browser.”
+Gitifact connects Markdown requirements, designs, and decision records to Git commits. The browser viewer shows decision records, requirements, and contributors. Ask your agent to “Open the Gitifact browser.”
 
 Find the latest published version on [npm](https://www.npmjs.com/package/gitifact) and version-by-version changes in the [release notes](https://github.com/dev-goraebap/gitifact/blob/main/apps/cli/src/shared/i18n/en/changelog.md).
 
