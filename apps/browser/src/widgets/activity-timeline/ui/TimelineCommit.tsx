@@ -15,7 +15,7 @@ import { t, useLanguage } from '../../../shared/i18n';
 /** `hidden` counts the commit's records this list leaves out — the overview shows a few of a large commit. */
 type Props = {events:SpecEvent[];day:string|undefined;features:SpecFeature[];hidden:number};
 /** Records a commit lists before the rest are left to its page: a commit may add a hundred. */
-const RECORDS_SHOWN = 5;
+const RECORDS_SHOWN = 3;
 
 /** Names the day a marker stands for when the reader still counts it by name; other days are left to the date. */
 function nearbyDay(iso:string) {
@@ -26,7 +26,7 @@ function nearbyDay(iso:string) {
 
 /**
  * One commit: who made it and when, which commit it was, then a row per record it added — its title opens the record's
- * page — up to five, the rest left to the commit's page. Changes no record explains come last with their documents,
+ * page — up to three, the rest left to the commit's page. Changes no record explains come last with their documents,
  * shown only when one should have had a record (a document changed, moved or deleted).
  * Its props are the event and feature objects the queries keep between renders and are compared by identity, so
  * "load more" draws the new commits and leaves the ones already on screen alone; before the list was grouped every
