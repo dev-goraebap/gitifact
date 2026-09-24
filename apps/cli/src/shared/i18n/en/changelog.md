@@ -1,4 +1,4 @@
-## 0.8.0 - 2026-09-24
+## 0.8.0 - 2026-09-25
 ### Added
 - Project instructions: ways of working that span features, such as architecture rules or verification steps, live as instructions under `.gitifact/instructions/<name>/`, and the AGENTS.md index says which one to read for which work. The browser's project instructions page shows AGENTS.md, the instructions and the files in their folders.
 - Decision records: when an existing document changes or one of several options is chosen, the agent writes the context, decision and alternatives considered under `.gitifact/records/` with `records new` and commits them with the documents. The browser's decision records page reads them by commit and record, and `records list --doc <ID>` shows one document's decisions.
