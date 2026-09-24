@@ -1,5 +1,11 @@
 # 개발 환경
 
+## 2026-09-24 리소스별 명령, 전역 설치, feedback, 0.8.0 준비
+
+`docs` 명령을 없애고 리소스마다 `list`·`show`·`new`를 뒀다(`specs`·`instructions`·`records`, 최상위 `check`). 목록은 `--q`·`--author`·`--sort`·`--limit`·`--fields`·`--format`을 같은 뜻으로 받고, `specs list`는 `--uncovered`·`--without-design`·`--draft`·`--changed-since`로 고른다. `records list --doc`이 `docs history`를 대신한다(`d0d4d11`, DR-r2k3xmn4dp). 블록은 버전을 고정한 채 전역 `gitifact`를 기본으로 하고, 없거나 버전이 다르면 설치를 제안하며 그동안 npx로 실행하게 했다(`223c408`, DR-uj74m5t5ni). `feedback --file`은 로그인된 `gh`로 Gitifact 저장소에 이슈를 만들고 없으면 작성 주소를 출력한다(`9d01c2c`, DR-oo3hbraydm). 블록은 50줄 한도 안(AGENTS.md 기준 50줄)이다. CLI 버전을 0.8.0으로 올리고 한·영 패치노트를 썼다. 배포는 하지 않았다.
+
+검증: 커밋마다 `pnpm check` 통과(마지막: core 41, CLI 149, 브라우저 90, contracts 9, intro 2, 패키지 설치 시험). `check` 문제 없음(문서 93개). 실제 이슈 전송(`feedback`의 `gh issue create`)은 실행하지 않았고 가짜 `gh`로만 시험했다.
+
 ## 2026-09-24 결정기록과 브라우저 정리
 
 변경 이유 파일 `.gitifact/history.jsonl`을 결정기록으로 바꿨다. 결정 하나가 `.gitifact/records/<yyyymmdd>/<DR-ID>.md` 파일 하나이고, 맥락·결정(필수)과 검토한 대안(선택) 섹션을 둔다. 에이전트는 결정한 순간 `records new`로 초안을 쓰고 커밋할 때 `paths`에 담는다. 이력 캐시는 커밋이 더한 기록만 한 번 읽고(캐시 형식 8), 과거 커밋의 이유 줄과 0.7 이유는 맥락 섹션 하나짜리 기록으로 읽는다(`H-`, 1.0.0에서 제거). 설계·지침의 결정 표 99줄은 결정기록으로 옮기고 옛 위키 ADR·이유 줄·설계 본문을 근거로 보강했다. 이름은 "활동"으로 바꾸려다 "결정기록 / decision record"로 되돌렸고, ID 접두어는 `DR-`다.
