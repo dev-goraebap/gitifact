@@ -131,7 +131,7 @@
   "update.text.noBlock": "GITIFACT 블록이 있는 지침 파일이 없습니다. npx --yes gitifact@{version} init으로 설치하세요.",
   "update.text.notInitialized": "초기화된 프로젝트가 아니어서 버전만 확인했습니다.",
   "update.text.missing": "{paths} 파일이 없어 Claude Code가 AGENTS.md의 지침을 읽지 못합니다. npx --yes gitifact@{version} init을 다시 실행하면 AGENTS.md를 가져오는 파일을 만듭니다.",
-  "update.text.migrationRequired": "이 프로젝트의 문서는 아직 0.7 저장 규약(schemaVersion 2)입니다. 지침 블록은 새 명령을 안내하지만 전환 전에는 docs·changes 명령이 동작하지 않습니다. npx --yes gitifact@{version} guide show migrate의 절차로 문서를 전환하세요.",
+  "update.text.migrationRequired": "이 프로젝트의 문서는 아직 0.7 저장 규약(schemaVersion 2)입니다. 지침 블록은 새 명령을 안내하지만 전환 전에는 specs·instructions·records·check·changes 명령이 동작하지 않습니다. npx --yes gitifact@{version} guide show migrate의 절차로 문서를 전환하세요.",
   "update.text.committed": "지침 블록 커밋: {commit} ({paths})",
   "update.text.commitNothing": "커밋할 지침 블록 변경이 없습니다.",
   "update.text.commitSkipped.untracked": "커밋하지 않았습니다. Git이 추적하지 않는 지침 파일입니다: {paths}",
