@@ -26,7 +26,7 @@ Do not copy example paths, IDs or evidence literally. The input holds only these
 
 ## Input rules
 
-- **`reasons`:** each reason is `{docs: [document IDs…], reason}`. List in `docs` the IDs of the requirements (R-), designs (D-), features (S-) and wiki pages (W-) that changed for that reason, whatever their kind. Put the documents one reason explains in one entry; give separate reasons separate entries. IDs of documents this commit deletes may be listed.
+- **`reasons`:** each reason is `{docs: [document IDs…], reason}`. List in `docs` the IDs of the requirements (R-), designs (D-), features (S-) and instructions (I-) that changed for that reason, whatever their kind. Put the documents one reason explains in one entry; give separate reasons separate entries. IDs of documents this commit deletes may be listed.
 - **Reason IDs:** the CLI issues an `H-` ID for each and appends one line per reason to `.gitifact/history.jsonl`. Do not edit that file by hand. If a committed line is changed or removed, `changes list` reports it and `changes commit` refuses; restore the line to HEAD and write the correction as a new reason.
 - **Without reasons:** omit `reasons` to commit without one. Changed documents without a reason are reported in `withoutReason`. Do not invent reasons you do not know.
 - **`paths`:** the changed document files, `.gitifact/history.jsonl` when recording reasons, and related code and tests. Every changed document file must be selected. For a moved document include the old and the new path; for a deleted one, the deleted path. Include new referenced assets (`.gitifact/assets/…`). If unrelated work is mixed in, report the limitation instead of forcing it into the commit.
@@ -44,7 +44,7 @@ Keep related documents, reasons, source and tests in one commit by default. If p
 
 ## Message and trailers
 
-Follow the project's commit message convention. If none exists, state briefly what changed on the first line and why in the body. The CLI adds trailers for the changed documents and the documents reasons name (`Gitifact-Req` for requirements, `Gitifact-Design` for designs, `Gitifact-Doc` for features and wiki pages). A message with a line starting `Gitifact-` is refused.
+Follow the project's commit message convention. If none exists, state briefly what changed on the first line and why in the body. The CLI adds trailers for the changed documents and the documents reasons name (`Gitifact-Req` for requirements, `Gitifact-Design` for designs, `Gitifact-Doc` for features and instructions). A message with a line starting `Gitifact-` is refused.
 
 ## Reasons
 

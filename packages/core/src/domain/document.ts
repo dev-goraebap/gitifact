@@ -23,6 +23,7 @@ interface DocBase { id: string; path: string; title: string; description: string
 export interface FeatureDoc extends DocBase { kind: 'feature'; feature: string }
 export interface RequirementDoc extends DocBase { kind: 'requirement'; feature: string; order: number }
 export interface DesignDoc extends DocBase { kind: 'design'; feature: string; order: number; requirements: string[]; sources: DocSource[] }
+/** A wiki page of a commit before 0.8.0, read for the history only; instructions replaced the wiki. */
 export interface WikiDoc extends DocBase { kind: 'wiki' }
 /**
  * A project instruction: `.gitifact/instructions/<name>/index.md`, what agents read for one kind of work when AGENTS.md
@@ -39,7 +40,7 @@ export const docProblemCodes = [
   'PATH_UNSUPPORTED', 'FRONTMATTER_REQUIRED', 'FRONTMATTER_UNCLOSED', 'FRONTMATTER_LINE', 'FRONTMATTER_VALUE',
   'FRONTMATTER_UNKNOWN_KEY', 'FRONTMATTER_MISSING_KEY', 'ID_FORMAT', 'SOURCE_INVALID', 'BODY_REQUIRED', 'BODY_HEADING',
   'BODY_MARKER', 'BODY_UNCLOSED_FENCE', 'INVALID_CHARACTERS', 'FILE_TOO_LARGE', 'REASON_INVALID',
-  'INSTRUCTION_INDEX_REQUIRED', 'INSTRUCTION_SPEC_LINK',
+  'INSTRUCTION_INDEX_REQUIRED', 'INSTRUCTION_SPEC_LINK', 'WIKI_REMOVED',
   // Across files
   'DOC_DRAFT', 'DUPLICATE_ID', 'DUPLICATE_REASON_ID', 'DUPLICATE_ORDER', 'MISSING_REFERENCE', 'FEATURE_INDEX_REQUIRED', 'DESIGN_OVERVIEW_REQUIRED',
 ] as const;

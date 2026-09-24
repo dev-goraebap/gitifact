@@ -13,7 +13,7 @@ import { startBrowserServer } from '../.test-build/server/browser-server.js';
 const cacheFile = f => join(f.repo, '.gitifact', 'cache', 'index.db');
 // Everything but the cache, which is derived, ignored by Git and not part of the project.
 const project = f => { const all = fingerprint(f.repo); for (const key of Object.keys(all)) if (key.startsWith('.gitifact/cache')) delete all[key]; return all; };
-const S = 'S-aaaaaaaaaa', R = 'R-aaaaaaaaaa', R2 = 'R-bbbbbbbbbb', D = 'D-aaaaaaaaaa', D2 = 'D-bbbbbbbbbb', W = 'W-aaaaaaaaaa';
+const S = 'S-aaaaaaaaaa', R = 'R-aaaaaaaaaa', R2 = 'R-bbbbbbbbbb', D = 'D-aaaaaaaaaa', D2 = 'D-bbbbbbbbbb', W = 'W-aaaaaaaaaa', I = 'I-aaaaaaaaaa';
 async function adopted(t) { const f = fixture(t); await initializeSpecProject(f.repo, false, f.env); return { f, d: docs(f) }; }
 
 test('the browser reads the checkout and history without touching the project, and keeps its cache out of Git', async t => {
@@ -21,9 +21,9 @@ test('the browser reads the checkout and history without touching the project, a
   d.feature('posts', S, { title: 'Posts' });
   d.requirement('posts', 'save', R, { title: 'Save', order: 20, body: 'First' });
   d.requirement('posts', 'list', R2, { title: 'List', order: 10 });
-  d.design('posts', 'overview', D, { title: 'Overview', requirements: [R], sources: [{ id: W, note: 'rules' }, { title: 'Spec', url: 'https://example.test/' }] });
+  d.design('posts', 'overview', D, { title: 'Overview', requirements: [R], sources: [{ id: I, note: 'rules' }, { title: 'Spec', url: 'https://example.test/' }] });
   d.design('posts', 'api', D2, { title: 'API', order: 20 });
-  d.wiki('guide.md', W, { title: 'Guide' });
+  d.instruction('guide', I, { title: 'Guide' });
   f.commit('Create');
   d.requirement('posts', 'save', R, { title: 'Save', order: 20, body: 'Second' }); f.commit('Modify');
   d.requirement('posts', 'save', R, { title: 'Save', order: 20, body: 'Draft' });
@@ -39,9 +39,9 @@ test('the browser reads the checkout and history without touching the project, a
   const [feature] = result.features;
   assert.deepEqual(feature.requirements.map(r => [r.id, r.order, r.body]), [[R2, 10, 'List 본문'], [R, 20, 'Draft']]);
   assert.deepEqual(feature.designs.map(x => x.id), [D, D2]);
-  assert.deepEqual(feature.designs[0].sources, [{ id: W, title: 'Guide', path: '.gitifact/wiki/guide.md', note: 'rules' }, { title: 'Spec', url: 'https://example.test/' }]);
+  assert.deepEqual(feature.designs[0].sources, [{ id: I, title: 'Guide', path: '.gitifact/instructions/guide/index.md', note: 'rules' }, { title: 'Spec', url: 'https://example.test/' }]);
   assert.deepEqual([feature.id, feature.body, result.working, result.contributors[0].commits], [S, 'Posts 본문', true, 2]);
-  // The browser no longer shows the wiki: the checkout carries no wiki pages, though sources still name them by title.
+  // The checkout carries features and instructions; the wiki is gone.
   assert.equal('documents' in result, false);
   // The project is as it was; the cache is in .gitifact/cache with a .gitignore of `*`, so `git status` shows only the edit.
   assert.deepEqual(project(f), original); assert.ok(existsSync(cacheFile(f)));

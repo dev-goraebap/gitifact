@@ -28,6 +28,7 @@ requirements:
 | `INSTRUCTION_INDEX_REQUIRED` | 지침 폴더에 `index.md`가 없음 | 문제 |
 | `INSTRUCTION_SPEC_LINK` | `index.md`나 폴더의 `.md` 파일이 `.gitifact/spec` 아래를 링크함(코드 블록 안은 제외) | 문제 |
 | `MISSING_LINK_TARGET` | 지침 본문의 상대 링크가 가리키는 파일이 없음(폴더 안 파일은 있는 것으로 셈) | 경고 |
+| `WIKI_REMOVED` | 작업 트리의 `.gitifact/wiki/` 아래에 Markdown 파일이 있음. 문서로 읽지 않으므로 목록·검색·`docs show`에 나오지 않고, 그 W-를 가리키는 설계는 `MISSING_REFERENCE`도 받는다 | 문제 |
 
 ## 이력
 

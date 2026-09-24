@@ -60,7 +60,7 @@ program.command('update')
 const docs = program.command('docs').description(t('help.docs'));
 docs.command('list').description(t('help.docsList')).allowExcessArguments(false)
   .option('--feature <name>', t('help.docsListFeature'))
-  .addOption(new Option('--kind <kind>', t('help.docsListKind')).choices(['spec', 'wiki', 'instruction']))
+  .addOption(new Option('--kind <kind>', t('help.docsListKind')).choices(['spec', 'instruction']))
   .addOption(format()).action(o => runDocsList(o));
 docs.command('search').description(t('help.docsSearch')).argument('<words...>', t('help.docsSearchWords'))
   .addOption(format()).action((words: string[], o) => runDocsSearch(words.join(' '), o));

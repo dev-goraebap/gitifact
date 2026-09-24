@@ -6,7 +6,7 @@ import { join } from 'node:path';
  * Bumped whenever what is stored changes meaning — a column, or how a commit's changes are computed. A file written
  * under another number is dropped and rebuilt; everything in it can be read again from the files and from Git.
  */
-export const CACHE_FORMAT = 4;
+export const CACHE_FORMAT = 5;
 export const CACHE_DIR = '.gitifact/cache';
 
 const SCHEMA = `

@@ -53,13 +53,13 @@ order: 10
 
 프론트매터에 다른 키를 두지 않는다. 문서 사이의 관계는 설계의 `requirements`·`sources`로 나타내고, 요구사항이 어느 기능에 속하는지는 폴더가 정한다.
 
-다른 문서로 가는 링크는 이 파일 기준 상대 경로로 쓴다(요구사항에서 위키로는 `../../../wiki/architecture.md`, 에셋으로는 `../../../assets/flow.png`). 브라우저가 해당 페이지로 연결한다. 대상이 없으면 `docs check`와 `changes list`가 `MISSING_LINK_TARGET` 경고로 알린다. 경고는 커밋을 막지 않는다.
+다른 문서로 가는 링크는 이 파일 기준 상대 경로로 쓴다(요구사항에서 에셋으로는 `../../../assets/flow.png`). 브라우저가 해당 페이지로 연결한다. 대상이 없으면 `docs check`와 `changes list`가 `MISSING_LINK_TARGET` 경고로 알린다. 경고는 커밋을 막지 않는다.
 
 ## 읽기
 
 | 명령 | 쓰는 때 |
 | :--- | :--- |
-| `gitifact docs list [--feature <기능>]` | 기능·요구사항·설계·위키의 ID·제목·설명을 본문 없이 본다 |
+| `gitifact docs list [--feature <기능>]` | 기능·요구사항·설계·지침의 ID·제목·설명을 본문 없이 본다 |
 | `gitifact docs search <검색어>` | 제목이나 설명에 없는 내용을 본문에서 찾는다 |
 | `gitifact docs show <ID…>` | 고른 문서의 원문과 그 문서를 가리키는 설계를 본다. `--ref <커밋>`은 그 시점의 원문이다 |
 | `gitifact docs history <ID>` | 그 문서가 왜 바뀌어 왔는지 이유와 커밋을 본다 |

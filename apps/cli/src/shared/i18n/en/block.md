@@ -8,7 +8,7 @@ CLI: use `npx --yes gitifact@{version} <cmd>` by default. Below, `gitifact` stan
 
 - A global installation is optional. Version-pinned npx uses a matching project dependency or downloads the package to the npm cache. If execution or downloading is blocked, request the required approval and explain the cause. Do not issue document IDs, check documents or commit by hand instead of running the CLI, or claim that work is done without it.
 - Once per new session, run `gitifact update --check` with the pinned version. If the result is `available`, ask whether to update; run the suggested new-version `update` command only with consent. If declined, unavailable, or disabled, continue with the pinned version and do not ask again in that session. After updating, reread the block and use its new version. Commit and push only when separately authorized.
-- Run `gitifact docs list` to read the list of features, requirements, designs, and wiki pages. Check git status and existing staging. Read the documents you need with `gitifact docs show <ID>`.
+- Run `gitifact docs list` to read the list of features, requirements, designs, and instructions. Check git status and existing staging. Read the documents you need with `gitifact docs show <ID>`.
 - This block is a summary. Read `gitifact guide show <topic>` for detailed formats instead of relying on memory.
 
 ### What belongs in requirements
@@ -26,9 +26,9 @@ Record product behavior and constraints that must be maintained.
 
 - Read `gitifact guide show spec` before creating documents. Create each new document with `gitifact docs new` to get its ID, edit the file directly, and verify with `gitifact docs check`.
 - For a new feature, prepare requirements and designs together (`gitifact guide show design`). Follow a request for requirements only.
-- Before changing requirements, designs, or code, read `gitifact guide show wiki` and the relevant wiki pages named by its guidelines.
-- To tailor the wiki guidelines, edit `.gitifact/wiki/README.md`. Its contents become the guidelines in `guide show wiki`.
-- Before writing wiki, requirements, or design content, follow `gitifact guide show writing`. Use the project's language for its documents, independently of the CLI display language.
+- Before changing requirements, designs, or code, find the project instructions (`.gitifact/instructions/`) for the work in the index outside this block, read them and follow them.
+- Keep rules and decisions that span features in project instructions. Read `gitifact guide show instructions` before creating or changing instructions or the index. Write the index outside this block.
+- Before writing instruction, requirement, or design content, follow `gitifact guide show writing`. Use the project's language for its documents, independently of the CLI display language.
 - When asked to commit, read `gitifact guide show commit` and commit related specifications, reasons, code, and tests together.
 - Automatic recording does not authorize commits. Commit only on user request or under an explicit project policy. Pushing requires separate authorization.
 - Ask only about unclear product behavior and continue independent work. Derive all existing features only when asked.

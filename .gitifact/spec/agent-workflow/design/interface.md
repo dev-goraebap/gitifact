@@ -1,13 +1,12 @@
 ---
 id: D-jxe47zy5fq
 title: 에이전트 지침 구성
-description: 지침 주제 구성, 사용자 스토리·문체·위키 방침의 배포, 기록 보기 안내
+description: 지침 주제 구성, 사용자 스토리·문체·프로젝트 지침 안내의 배포, 기록 보기 안내
 order: 30
 requirements:
   - R-obomewrs7e
   - R-7fev4w3qb3
   - R-wkp2oca6xx
-  - R-uywsfp34va
 ---
 
 ## 지침의 구성과 전달
@@ -19,26 +18,23 @@ flowchart LR
   subgraph pkg["CLI 패키지"]
     B["블록 원본"]
     T["주제별 지침"]
-    D["기본 위키 방침"]
   end
   subgraph proj["사용자 프로젝트"]
-    A["지침 파일"]
-    R["위키 README"]
+    A["지침 파일(AGENTS.md 등)"]
+    I["프로젝트 지침"]
   end
   B -->|init| A
-  D -->|처음 도입| R
   T --> G["guide show"]
-  R -->|wiki만| G
-  D -->|README 없음| G
+  A -->|"블록 밖 색인"| I
   A --> E["에이전트"]
   G --> E
+  I --> E
 ```
 
 | 대상 | 원본 | 비고 |
 | :--- | :--- | :--- |
 | 블록 원본 | `apps/cli/src/shared/i18n/<lang>/block.md` | AGENTS.md·CLAUDE.md 등의 마커 사이에 쓴다 |
-| 주제별 지침 | `apps/cli/src/shared/i18n/<lang>/docs/<topic>.md` | topic은 workflow·spec·design·wiki·writing·commit·migrate. 파일 이름이 곧 topic이다 |
-| 기본 위키 방침 | 같은 폴더의 `wiki.default.md` | README가 없을 때 싣는 방침이자 `init`이 README를 만드는 템플릿 |
+| 주제별 지침 | `apps/cli/src/shared/i18n/<lang>/docs/<topic>.md` | topic은 workflow·spec·design·instructions·writing·commit·migrate. 파일 이름이 곧 topic이고 폴더에 다른 파일은 없다 |
 
 지침 파일마다 프론트매터에 `title`·`description`을 두고 `guide list`가 그것으로 목록을 만든다. 빌드는 이 파일들을 `dist/i18n/<lang>/docs/<topic>.md`로 번들한다. 패키지 설치·블록 갱신과 사용자 문단 보존 검사는 전달 경로를 검증할 뿐이며, 독립 에이전트의 실제 작성 행동은 별도 검증 대상이다.
 
@@ -48,18 +44,13 @@ flowchart LR
 
 ## 문서 문체 지침
 
-문체는 `writing.md` 한 파일이며 `guide show writing`으로만 읽는다. spec·design·wiki 지침은 "문체는 `gitifact guide show writing`을 따른다" 한 줄로 가리키고 규칙을 복사하지 않는다. 블록의 규칙 목록에도 같은 한 줄을 둔다. CLI는 문체를 검사하지 않는다. 화면 문구와 인용·코드는 문체 교정 대상이 아니라는 예외를 지침 본문에 적는다.
+문체는 `writing.md` 한 파일이며 `guide show writing`으로만 읽는다. spec·design·instructions 지침은 "문체는 `gitifact guide show writing`을 따른다" 한 줄로 가리키고 규칙을 복사하지 않는다. 블록의 규칙 목록에도 같은 한 줄을 둔다. CLI는 문체를 검사하지 않는다. 화면 문구와 인용·코드는 문체 교정 대상이 아니라는 예외를 지침 본문에 적는다.
 
-## 위키 운영 방침
+## 프로젝트 지침 안내
 
-`guide.ts`의 `renderGuide`는 wiki topic에서만 형식 뒤에 "운영 방침" 절을 붙인다. 프로젝트 루트는 `.gitifact/config.json`이 있는 가장 가까운 상위 폴더다.
+`guide show`는 모든 topic에서 CLI가 담은 파일을 그대로 출력한다. 프로젝트 파일로 바뀌는 topic은 없다. 이 프로젝트에서 어떻게 일하는지는 프로젝트가 쓰는 지침(`.gitifact/instructions/`)이 담고, 어떤 작업 때 어느 지침을 읽을지는 AGENTS.md의 블록 밖 색인이 알린다. `init`은 지침이나 색인을 만들지 않는다.
 
-| README(`.gitifact/wiki/README.md`) | 운영 방침 절에 싣는 것 |
-| :--- | :--- |
-| 1 MiB 이하 일반 파일이고 본문이 있음 | README 본문. 프론트매터와 첫 `# ` 제목을 떼고, 코드 블록 밖의 제목을 한 단계 낮춘다 |
-| 없음, 비어 있음, 1 MiB 초과, 프로젝트 밖 | 내장 `wiki.default.md`. 절 제목에 기본값임을 밝힌다 |
-
-`init`은 새 설정을 만든 뒤 `.gitifact/wiki/` 폴더가 없을 때만 README를 `wx`로 쓴다. W- ID와 `title`·`description` 프론트매터를 붙인 위키 문서로 쓰며, 다시 실행해도 지워진 README를 되살리지 않는다. 블록은 "요구사항·설계·코드를 바꾸기 전에 `guide show wiki`를 확인한다"와 "위키 운영 방식을 바꾸려면 README를 고친다"를 안내한다.
+블록은 "요구사항·설계·코드를 바꾸기 전에 블록 밖 색인에서 작업에 맞는 지침을 읽는다"와 "지침과 색인을 만들거나 고치기 전에 `guide show instructions`를 읽는다"를 안내한다. `instructions` topic은 지침 폴더 형식, 색인 쓰는 법, 명세와의 관계, 결정 표를 둘 곳, 커밋을 다룬다.
 
 > [!NOTE]
 > `changes commit`은 `.gitifact` 안에서 문서·이유 파일·설정·에셋만 커밋한다. 남아 있는 `.gitifact/overrides/` 파일은 이 명령으로 커밋할 수 없다.

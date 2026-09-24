@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { checkDocuments, classifyDocPath, arrangeDocuments, parseDocumentFile, renderDocumentFile, INSTRUCTION_FILE, INSTRUCTIONS_ROOT, SPEC_ROOT, WIKI_ROOT,
+import { checkDocuments, classifyDocPath, arrangeDocuments, parseDocumentFile, renderDocumentFile, INSTRUCTION_FILE, INSTRUCTIONS_ROOT, SPEC_ROOT,
   type DesignDoc, type Doc, type DocKind, type DocProblem, type DocWarning } from '@gitifact/core';
 import { createDocumentFile, generateId } from '../adapters/filesystem/document-file.js';
 import { readDocumentWarnings } from '../adapters/filesystem/document-warnings.js';
@@ -9,7 +9,7 @@ import { CommandError, runCommand, section, text, type CommandResult, type Forma
 import { documentsOf, openProject, type Project } from './project.js';
 import { t } from '../shared/i18n/index.js';
 
-export const newKinds = ['feature', 'requirement', 'design', 'wiki', 'instruction'] as const satisfies readonly DocKind[];
+export const newKinds = ['feature', 'requirement', 'design', 'instruction'] as const satisfies readonly DocKind[];
 type Options = { format: Format };
 
 const draftMark = (doc: Doc) => doc.draft ? ' (' + t('docs.draft') + ')' : '';
@@ -19,19 +19,17 @@ const line = (doc: Doc) => `${doc.id} ${doc.title}${draftMark(doc)} — ${doc.de
 const problemLines = (problems: (DocProblem | DocWarning)[]) => problems.map(p => p.code + ' ' + p.message);
 
 /** `docs list`: frontmatter only, with referenced documents named by title, never a body. */
-export const runDocsList = (options: Options & { feature?: string; kind?: 'spec' | 'wiki' | 'instruction' }) => runCommand('docs', options.format, async () => {
+export const runDocsList = (options: Options & { feature?: string; kind?: 'spec' | 'instruction' }) => runCommand('docs', options.format, async () => {
   const project = await openProject(process.cwd());
   const { documents, problems } = await project.cache.documents.list();
   const byId = new Map(documents.map(d => [d.id, d]));
   const arranged = arrangeDocuments(documents);
-  let features = options.kind === 'wiki' || options.kind === 'instruction' ? [] : arranged.features;
+  let features = options.kind === 'instruction' ? [] : arranged.features;
   if (options.feature !== undefined) {
     features = features.filter(f => f.index.feature === options.feature);
     if (!features.length) throw new CommandError('UNKNOWN_FEATURE', t('docs.unknownFeature', { feature: options.feature }));
   }
-  const only = (kind: 'wiki' | 'instruction') => (options.kind === undefined || options.kind === kind) && options.feature === undefined;
-  const wiki = only('wiki') ? arranged.wiki : [];
-  const instructions = only('instruction') ? arranged.instructions : [];
+  const instructions = (options.kind === undefined || options.kind === 'instruction') && options.feature === undefined ? arranged.instructions : [];
   const titled = (id: string) => ({ id, title: byId.get(id)?.title ?? null });
   const sources = (d: DesignDoc) => d.sources.map(s => 'id' in s ? { ...titled(s.id), ...(s.note ? { note: s.note } : {}) } : s);
   const json = {
@@ -41,7 +39,6 @@ export const runDocsList = (options: Options & { feature?: string; kind?: 'spec'
       designs: f.designs.map(d => ({ id: d.id, path: d.path, order: d.order, title: d.title, description: d.description, ...(d.draft ? { draft: true } : {}),
         requirements: d.requirements.map(titled), sources: sources(d) })),
     })),
-    wiki: wiki.map(w => ({ id: w.id, path: w.path, title: w.title, description: w.description, ...(w.draft ? { draft: true } : {}) })),
     instructions: instructions.map(k => ({ id: k.id, name: k.name, path: k.path, title: k.title, description: k.description, ...(k.draft ? { draft: true } : {}) })),
     orphans: options.feature === undefined && (options.kind === undefined || options.kind === 'spec') ? arranged.orphans : [],
     problems,
@@ -58,7 +55,6 @@ export const runDocsList = (options: Options & { feature?: string; kind?: 'spec'
     });
     out.push(...section('  ' + t('docs.designs'), designs, '    '));
   }
-  if (wiki.length) out.push(`[${t('docs.wiki')}]`, ...wiki.map(w => `  ${w.id} ${w.title}${draftMark(w)} (${place(w.path).slice('wiki/'.length)}) — ${w.description}`));
   if (instructions.length) out.push(`[${t('docs.instructions')}]`, ...instructions.map(k => `  ${k.id} ${k.title}${draftMark(k)} (${k.name}) — ${k.description}`));
   if (!out.length) out.push(t('docs.empty'));
   if (json.orphans.length) out.push(t('docs.orphans', { folders: json.orphans.join(', ') }));
@@ -132,20 +128,19 @@ async function committed(project: Project, commit: string) {
 // Per kind: how its path is written, and the body `docs new` starts it with.
 const pathExample: Record<typeof newKinds[number], () => string> = {
   feature: () => t('docs.pathExample.feature'), requirement: () => t('docs.pathExample.requirement'),
-  design: () => t('docs.pathExample.design'), wiki: () => t('docs.pathExample.wiki'), instruction: () => t('docs.pathExample.instruction'),
+  design: () => t('docs.pathExample.design'), instruction: () => t('docs.pathExample.instruction'),
 };
 const skeleton: Record<typeof newKinds[number], () => string> = {
   feature: () => t('docs.skeleton.feature'), requirement: () => t('docs.skeleton.requirement'),
-  design: () => t('docs.skeleton.design'), wiki: () => t('docs.skeleton.wiki'), instruction: () => t('docs.skeleton.instruction'),
+  design: () => t('docs.skeleton.design'), instruction: () => t('docs.skeleton.instruction'),
 };
 
-/** Where `docs new <kind> <path>` puts a document: a feature folder, a requirement or design slug in one, a wiki page or an instruction folder. */
+/** Where `docs new <kind> <path>` puts a document: a feature folder, a requirement or design slug in one, or an instruction folder. */
 function newPath(kind: typeof newKinds[number], path: string): string {
   const target = kind === 'feature' ? `${SPEC_ROOT}/${path}/index.md`
-    : kind === 'wiki' ? `${WIKI_ROOT}/${path.endsWith('.md') ? path : path + '.md'}`
     : kind === 'instruction' ? `${INSTRUCTIONS_ROOT}/${path}/${INSTRUCTION_FILE}`
     : `${SPEC_ROOT}/${path.split('/')[0]}/${kind === 'requirement' ? 'requirements' : 'design'}/${path.split('/').slice(1).join('/')}.md`;
-  const shape = kind === 'feature' || kind === 'instruction' ? /^[^/]+$/ : kind === 'wiki' ? /./ : /^[^/]+\/[^/]+$/;
+  const shape = kind === 'feature' || kind === 'instruction' ? /^[^/]+$/ : /^[^/]+\/[^/]+$/;
   let where; try { where = shape.test(path) ? classifyDocPath(target) : undefined; } catch { where = undefined; }
   if (where?.type !== 'doc' || where.kind !== kind) throw new CommandError('INVALID_PATH', t('docs.invalidPath', { kind, path, example: pathExample[kind]() }));
   return target;
@@ -163,13 +158,13 @@ export const runDocsNew = (kind: typeof newKinds[number], path: string, options:
   const target = newPath(kind, path);
   const { documents } = await project.cache.documents.list();
   const taken = new Set(documents.map(d => d.id));
-  let id: string; do id = generateId(({ feature: 'S', requirement: 'R', design: 'D', wiki: 'W', instruction: 'I' } as const)[kind]); while (taken.has(id));
+  let id: string; do id = generateId(({ feature: 'S', requirement: 'R', design: 'D', instruction: 'I' } as const)[kind]); while (taken.has(id));
   const folder = target.slice(0, target.lastIndexOf('/') + 1);
   const siblings = documents.filter(d => (d.kind === 'requirement' || d.kind === 'design') && d.path.startsWith(folder) && !d.path.slice(folder.length).includes('/'));
   const order = Math.min(999999, Math.max(0, ...siblings.map(d => (d as { order: number }).order)) + 10);
   const base = { id, path: target, title: options.title.trim(), description: options.description.trim(), body: skeleton[kind](), draft: true as const };
   const feature = target.split('/')[2]!;
-  const doc: Doc = kind === 'feature' ? { kind, feature, ...base } : kind === 'wiki' ? { kind, ...base }
+  const doc: Doc = kind === 'feature' ? { kind, feature, ...base }
     : kind === 'instruction' ? { kind, name: path, ...base }
     : kind === 'requirement' ? { kind, feature, order, ...base } : { kind, feature, order, requirements: [], sources: [], ...base };
   const rendered = renderDocumentFile(doc);

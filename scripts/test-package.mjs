@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { execFileSync, spawn } from 'node:child_process';
 import { once } from 'node:events';
+import { existsSync } from 'node:fs';
 import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -81,8 +82,8 @@ try {
   }
   await writeFile(join(temporaryRoot, 'feature.txt'), 'packaged feature\n');
   await writeFile(inputs.commit, JSON.stringify({ reasons: [{ docs: [requirement.id, feature.id], reason: '패키지 검증' }],
-    // init also wrote the wiki policy page; a commit selects every pending document.
-    paths: ['.gitifact/config.json', '.gitifact/wiki/README.md', feature.path, requirement.path, '.gitifact/history.jsonl', 'feature.txt'],
+    // A commit selects every pending document.
+    paths: ['.gitifact/config.json', feature.path, requirement.path, '.gitifact/history.jsonl', 'feature.txt'],
     message: 'Package fixture commit', authorization: { basis: 'user-request', evidence: 'Package verification fixture' } }));
   const committed = gitifact(['changes', 'commit', '--file', inputs.commit]);
   assert.equal(committed.outcome, 'committed');
@@ -96,10 +97,10 @@ try {
     await readFile(join(workspace, 'apps/cli/src/shared/i18n/en/docs/spec.md'), 'utf8'), 'The offline package must include English guides.');
   const [englishNotes] = parseChangelog(await readFile(join(installedRoot, 'dist/i18n/en/changelog.md'), 'utf8'));
   assert.equal(englishNotes.version, version);
-  // A real install writes the wiki policy on first adoption, and docs wiki carries it as the project's policy.
-  const policy = await readFile(join(temporaryRoot, '.gitifact', 'wiki', 'README.md'), 'utf8');
-  assert.match(policy, /^---\nid: W-[a-z2-7]{10}\ntitle: 위키 운영 방침\ndescription: .+\n---\n\n이 위키에는 아키텍처 결정 기록\(ADR\)을 쌓는다\./);
-  assert.match(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', 'guide', 'show', 'wiki'], temporaryRoot), /## 운영 방침 \(\.gitifact\/wiki\/README\.md\)\n\n이 위키에는 아키텍처 결정 기록/);
+  // The instruction guide ships with the package; init writes no wiki.
+  assert.equal(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', 'guide', 'show', 'instructions'], temporaryRoot),
+    await readFile(join(workspace, 'apps/cli/src/shared/i18n/ko/docs/instructions.md'), 'utf8'), 'The instruction guide must match the asset source.');
+  assert.equal(existsSync(join(temporaryRoot, '.gitifact', 'wiki')), false, 'init must not write a wiki.');
   const agentsPath = join(temporaryRoot, 'AGENTS.md');
   const agents = await readFile(agentsPath, 'utf8');
   assert.deepEqual(initialized.agentDocs, { mode: 'install', paths: ['AGENTS.md', 'CLAUDE.md'] });

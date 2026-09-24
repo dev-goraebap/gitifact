@@ -1,5 +1,5 @@
 import { DocumentError, docProblem, type Doc, type DocProblem, type DocProblemCode, type DocReason } from '../domain/document.js';
-import { classifyDocPath, parseDocumentFile, parseReasonLines, INSTRUCTIONS_ROOT, INSTRUCTION_FILE, SPEC_ROOT } from '../formats/document-file.js';
+import { classifyDocPath, isWikiPage, parseDocumentFile, parseReasonLines, INSTRUCTIONS_ROOT, INSTRUCTION_FILE, SPEC_ROOT } from '../formats/document-file.js';
 import { extractLinks, resolveLink } from '../formats/links.js';
 
 export interface DocumentSet { documents: Doc[]; reasons: (DocReason & { path: string })[]; problems: DocProblem[] }
@@ -7,7 +7,7 @@ export interface DocumentSet { documents: Doc[]; reasons: (DocReason & { path: s
 /**
  * Reads every document and reason file and reports all problems instead of stopping at the first: a broken file is
  * reported and left out, and the rest is still checked against each other. The check covers the whole set because a
- * problem can sit in a file nobody changed — deleting a wiki page leaves a design's `sources` pointing nowhere.
+ * problem can sit in a file nobody changed — deleting an instruction leaves a design's `sources` pointing nowhere.
  */
 export function checkDocuments(files: ReadonlyMap<string, string>): DocumentSet {
   const documents: Doc[] = []; const reasons: DocumentSet['reasons'] = []; const problems: DocProblem[] = [];
@@ -21,6 +21,8 @@ export function checkDocuments(files: ReadonlyMap<string, string>): DocumentSet 
     for (const link of extractLinks(body)) if (resolveLink(path, link)?.startsWith(SPEC_ROOT + '/')) report('INSTRUCTION_SPEC_LINK', path, { link });
   };
   for (const [path, source] of [...files].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) {
+    // A page left from the wiki is not read as a document, so a design still naming it also reports the reference.
+    if (isWikiPage(path)) { report('WIKI_REMOVED', path); continue; }
     try {
       const where = classifyDocPath(path);
       if (where.type === 'ignored') continue;

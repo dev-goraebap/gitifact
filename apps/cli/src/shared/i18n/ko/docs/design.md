@@ -32,7 +32,7 @@ order: 20
 requirements:
   - R-관련요구사항의실제값
 sources:
-  - id: W-참고한위키페이지의실제값
+  - id: I-따른지침의실제값
     note: 계층 구조와 의존 방향
   - title: 라이브러리 문서
     url: https://example.test/docs
@@ -66,7 +66,7 @@ sources:
 
 다이어그램은 종류 고르기와 작성 규칙을 `gitifact guide show writing`에서 따르고, 그림이 설명하는 축의 파일에 둔다. 축마다 잘 맞는 종류가 있다. data는 `erDiagram`과 캐시·읽기 흐름의 `flowchart`, interface는 구성 요소 사이 요청의 `sequenceDiagram`, ui는 화면 상태의 `stateDiagram-v2`, errors는 실패와 복구 흐름에 쓴다.
 
-설계를 쓰기 전에 위키의 구조·규칙 페이지를 읽고, 따른 페이지는 `sources`에 올린다. 설계가 위키의 기준과 어긋나면 문서를 먼저 고칠지 사용자와 정한다.
+설계를 쓰기 전에 AGENTS.md 색인에서 작업 영역의 지침을 읽고, 따른 지침은 `sources`에 올린다. 지침은 설계를 가리키지 않으므로 관계는 이 한 방향으로만 적는다. 설계가 지침의 기준과 어긋나면 지침을 먼저 고칠지 사용자와 정한다.
 
 ## 언제 쓰는가
 

@@ -12,7 +12,7 @@ In this guide, `gitifact` means the way to run the CLI that printed it (0.8.0 or
 - `git status` must be clean. If there are uncommitted changes or staged files, stop and tell the user.
 - If an **open branch** changed `.gitifact/` in the old format, tell the user to merge it before the migration and ask whether to merge or continue. Merging an old-format branch after the migration mixes the two formats, and `gitifact docs check` fails.
 - The migration ends in a single commit. Confirm that you may commit. When possible, work on a new branch and merge after verification.
-- Section 3 of this guide describes the whole new format. If a detail is unclear, run `gitifact init` and `gitifact docs new feature|requirement|design|wiki …` in an empty Git repository outside the project to see the skeletons the CLI writes, and check them with `gitifact docs check`.
+- Section 3 of this guide describes the whole new format. If a detail is unclear, run `gitifact init` and `gitifact docs new feature|requirement|design|instruction …` in an empty Git repository outside the project to see the skeletons the CLI writes, and check them with `gitifact docs check`.
 
 ## 2. Reading the old format
 
@@ -52,9 +52,9 @@ Every structural fact lives in frontmatter only. Bodies carry no `#` title and n
 
    (the old body, unchanged)
    ```
-4. **Designs:** for each feature with an old design.md, run `gitifact docs new design <feature>/overview --title "<old design title>" --description "<one line>"` to get a D- ID. Replace the body of the `design/overview.md` it created with the old design body and remove the `draft: true` line. Then:
+4. **Designs:** for each feature with an old design.md, run `gitifact docs new design <feature>/overview --title "<old design title>" --description "<one line>"` to get a D- ID. Replace the body of the `design/overview.md` it created with the old design body (without its first line `# Design title`) and remove the `draft: true` line. Then:
    - Remove the old `<!-- gitifact-ref: … -->` lines and list every R- ID they named, without duplicates, in the frontmatter `requirements`.
-   - Move old `sources`: a `path` becomes `- id: W-…` for the wiki page it points to (with its `note`, if any); a `url` becomes `- title: …` / `url: …`.
+   - Move old `sources`: a `path` becomes `- id: W-…` for the wiki page it points to (with its `note`, if any); a `url` becomes `- title: …` / `url: …`. The W- becomes the I- of the instruction that page moves to in step 5.
    - Leave the rest of the body unchanged. Keep the `order: 10` that `docs new` wrote. Do not split a design into files per concern (data, interface, ui, errors, …) in the migration commit. Move it as one overview so the moved body can be compared, and split it afterwards in a separate commit following `gitifact guide show design`.
    - The frontmatter ends up like this. Sources in the new format have no `title`, so the old title of a wiki source is dropped.
      ```markdown
@@ -67,32 +67,48 @@ Every structural fact lives in frontmatter only. Bodies carry no `#` title and n
        - R-…
        - R-…
      sources:
-       - id: W-…
+       - id: I-…
          note: the old note (if any)
        - title: Outside document title
          url: https://…
      ---
      ```
-5. **Wiki:** pages stay where they are. Move the first body line `# Title` into the frontmatter `title` and add a `description`. Leave the rest of the body unchanged.
-6. **Relative links:** requirements and designs moved, so fix relative links in document bodies that point to the old `requirements.md` or `design.md`, or that break because a file moved (requirement and design bodies are now one folder deeper). Do not edit bodies beyond fixing links.
+5. **Wiki → instructions:** in 0.8.0 the wiki became project instructions (`gitifact guide show instructions`). `docs check` refuses pages left in `.gitifact/wiki/` with `WIKI_REMOVED`, so move every page into an instruction folder. Before moving, show the user a table of which page becomes which file of which instruction and get their confirmation. If the user changes the grouping, follow it.
+
+   | Old location | New location |
+   | :--- | :--- |
+   | `wiki/README.md` (policy and entry page) | If it is still the default policy `init` wrote (decision records collected under `adr/`), delete it without moving. If the project rewrote it, move it like a root page to the `index.md` of instruction `overview`. Whether its wiki rules move to AGENTS.md is decided in section 6 |
+   | Root page `wiki/<name>.md` | `index.md` of instruction `<name>`. Upper-case names become lower case (`ARCHITECTURE.md` → `architecture`) |
+   | Top-level folder `wiki/<folder>/` | Instruction `<folder>`. The folder's `README.md`, if any, becomes `index.md`; the other pages become `references/<path inside the folder>` |
+   | Folder with the same name as a root page | One instruction; the root page is `index.md` |
+
+   - For each instruction, run `gitifact docs new instruction <name> --title "<title>" --description "<one line>"` to get an I- ID. The title is the old title of the page that becomes `index.md`. For a folder without such a page, name the topic the folder holds (for example `handbook` → Team handbook). The description says what the instruction holds and for which work to read it.
+   - For the page that becomes `index.md`, drop the first body line `# Title` and move the rest unchanged: replace the body `docs new` wrote with it and remove the `draft: true` line. If a folder has no page to become `index.md`, write one line per reference file in the body, with its old title and a link.
+   - Pages moved to references keep the old file as it is (including the `# Title` line); remove only the frontmatter and the blank line after it, so the file starts with `# Title`. Reference files are not parsed as documents and have no ID.
+   - Move images and other non-Markdown files from the wiki folder into the instruction folder that uses them.
+   - Instructions cannot point at specs (`INSTRUCTION_SPEC_LINK`). In the moved files, reduce links under `.gitifact/spec/` from `[text](path)` to their text. Other relative links are fixed for the new location in step 6.
+   - Design `sources` that named a wiki page W- in step 4 now name the I- of the instruction that page moved to. If a design ends up naming the same instruction twice, merge the two and join the notes with `; `.
+   - The old W- IDs disappear from documents and stay only in reason lines (step 7). A reason may name a deleted document.
+   - Do not turn decision records (ADRs) into instruction decision tables or regroup instructions in the migration commit. Move bodies unchanged so they can be compared, and polish them in a separate commit after the migration.
+6. **Relative links:** requirements and designs moved, so fix relative links in document bodies that point to the old `requirements.md` or `design.md`, or that break because a file moved (requirement and design bodies are now one folder deeper). Point links to wiki pages at the instruction files the pages moved to, and fix links inside moved instruction files for their new location. Do not edit bodies beyond fixing links.
 7. **Reason file:** move the lines of every old history.jsonl into the single `.gitifact/history.jsonl`.
    - Each line is exactly `{"id":"H-…","docs":[…],"reason":"…"}`. Keep `id` and `reason` **unchanged**.
    - `docs` = the old `requirements` + `documents` + the old `designs`, with each S- replaced by that feature's new design D-. Remove duplicates; it must not be empty.
    - Oldest first is preferred (sort by `author-time` from `git blame --line-porcelain <file>`). For equal times, order by feature folder name, the wiki last, then the order within the file. If you cannot tell, keep each file's order.
    - Keep IDs of documents that were deleted long ago. A reason may name a deleted document.
-8. **Delete the old files:** remove every `.gitifact/spec/<feature>/requirements.md`, `design.md`, `history.jsonl` and `.gitifact/wiki/history.jsonl` with a plain file deletion. Do not use `git rm`: it stages the deletion and the commit in section 5 refuses existing staging. If something is staged, unstage it with `git restore --staged <path>`.
+8. **Delete the old files:** remove every `.gitifact/spec/<feature>/requirements.md`, `design.md`, `history.jsonl` and the whole `.gitifact/wiki/` folder, once step 5 has moved every page, with a plain file deletion. Do not use `git rm`: it stages the deletion and the commit in section 5 refuses existing staging. If something is staged, unstage it with `git restore --staged <path>`.
 9. **Merge rule:** run `gitifact init --skip-agents`. In an initialized project it changes no settings and only adds `/.gitifact/history.jsonl merge=union` to `.gitattributes`.
 
-The mechanical parts (splitting files, converting reason lines) may be done with a one-off script. Keep the script outside the project and never commit it. Write slugs, descriptions and feature bodies yourself after reading the content. Every document needs a description, which makes this the largest part of the migration (82 for a project with 45 requirements and 19 wiki pages). A description should let a reader recognize in one line of a list what the document requires or covers; do not repeat the title, condense the user story or the first paragraph instead.
+The mechanical parts (splitting files, converting reason lines) may be done with a one-off script. Keep the script outside the project and never commit it. Write slugs, descriptions and feature bodies yourself after reading the content. Every feature, requirement and instruction needs a description, which makes this the largest part of the migration (68 for a project with 18 features, 45 requirements and 5 instructions). A description should let a reader recognize in one line of a list what the document requires or covers; do not repeat the title, condense the user story or the first paragraph instead.
 
-**Allowed exceptions:** normally only the CLI issues IDs and committed reasons are never edited. For this migration only, existing S-, R-, W- and H- IDs are copied over and reason lines change format. Never invent IDs (designs get their D- from `docs new`).
+**Allowed exceptions:** normally only the CLI issues IDs and committed reasons are never edited. For this migration only, existing S-, R- and H- IDs are copied over and reason lines change format. Never invent IDs (designs get their D- and instructions their I- from `docs new`).
 
 ## 4. Checks
 
 1. `gitifact docs check` must report no problems. Fix anything it reports.
-2. Compare with the counts from section 2: features = number of `index.md`, requirements, designs (`design/overview.md` per feature), wiki pages, reason lines. Count documents with `gitifact docs list --format json` and reasons as lines of `.gitifact/history.jsonl`.
-3. Check that every old ID is present. Collect old IDs from `git grep -ohE '(S|R|W)-[a-z2-7]{10}' HEAD -- .gitifact` at their definitions (frontmatter `id`, `gitifact-req` comments) and new IDs from `features[].id`, `features[].requirements[].id` and `wiki[].id` of `gitifact docs list --format json`. Every old reason's H- ID must be in `.gitifact/history.jsonl`.
-4. The last lines of `gitifact changes list` must include `Document check: no problems`. Its other output is expected at this point: the old format does not parse as documents, so every document shows as `created`, every moved reason line as an uncommitted reason, and documents no old reason named (usually the features' S-) as documents without a reason. None of this blocks the commit.
+2. Compare with the counts from section 2: features = number of `index.md`, requirements, designs (`design/overview.md` per feature), wiki pages (the `index.md` and reference files in the step 5 table together), reason lines. Count documents with `gitifact docs list --format json` and reasons as lines of `.gitifact/history.jsonl`.
+3. Check that every old ID is present. Collect old IDs from `git grep -ohE '(S|R)-[a-z2-7]{10}' HEAD -- .gitifact` at their definitions (frontmatter `id`, `gitifact-req` comments) and new IDs from `features[].id` and `features[].requirements[].id` of `gitifact docs list --format json`. No `.gitifact/wiki/` may remain and no design `sources` may name a W-. Every old reason's H- ID must be in `.gitifact/history.jsonl`.
+4. The last lines of `gitifact changes list` must include `Document check: no problems`. Its other output is expected at this point: the old format does not parse as documents, so every document shows as `created`, every moved reason line as an uncommitted reason, and documents no old reason named (usually the features' S- and the new instructions' I-) as documents without a reason. None of this blocks the commit.
 
 ## 5. Commit
 
@@ -116,11 +132,13 @@ Write JSON to the input path that `gitifact changes list` reports and run `gitif
 - Refresh the GITIFACT block in the agent instruction files with `gitifact update`. If project instructions outside the block (AGENTS.md, CLAUDE.md, …) mention old commands such as `spec working`, `spec save`, `spec commit` or `docs <topic>`, ask the user whether to replace them with the new ones (`docs list`·`show`·`new`·`check`, `changes list`·`commit`, `guide show`) in a separate commit.
 - If the old index of the 0.7.x browser exists at `<git common dir>/gitifact/` (usually `.git/gitifact/`), tell the user it can be deleted. 0.8.0 does not use it; leave the deletion to the user.
 - The 0.8.0 cache lives in `.gitifact/cache/` and keeps itself out of Git. The first query reads the history from the start and may take a few seconds.
-- The migration commit leaves bodies as they were, so wiki rules or specification bodies may still describe the old format (`requirements.md`, `spec save`, …). Report where, and agree with the user on fixing them in a separate commit.
+- If the wiki README moved to instruction `overview` holds rules for running the wiki (what goes where), agree with the user whether to move them to AGENTS.md or another instruction. Then write the instruction index outside the GITIFACT block of AGENTS.md: one line per instruction saying for which work to read it ("The AGENTS.md index" in `gitifact guide show instructions`). Ask the user whether to record this in a commit separate from the migration.
+- Turning decision records into instruction decision tables and regrouping instructions is agreed with the user and done in a separate commit.
+- The migration commit leaves bodies as they were, so instructions or specification bodies may still describe the old format (`requirements.md`, `spec save`, …) or refer to the wiki. Report where, and agree with the user on fixing them in a separate commit.
 
 ## 7. Report
 
-- Moved counts: features, requirements, designs, wiki pages, reasons (with the old counts)
+- Moved counts: features, requirements, designs, wiki pages, reasons (with the old counts), and the table of instructions the wiki pages moved to
 - The `docs check` result and the comparison result
 - Relative links fixed, anything not moved or that needed a judgment call
 - The commit hash (if committed) and what remains (old commands in instructions, the old index)

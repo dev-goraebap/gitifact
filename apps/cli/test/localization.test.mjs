@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { spawnSync } from 'node:child_process';
-import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { fixture, fingerprint } from './git-fixture.mjs';
@@ -44,12 +44,12 @@ test('CLI help, documentation and errors follow language without changing contra
   assert.match(success(f, ['--help']), /Output language/);
   assert.match(success(f, ['--lang', 'ko', '--help']), /출력 언어/);
   for (const lang of ['ko', 'en']) {
-    for (const topic of ['workflow', 'spec', 'design', 'writing', 'commit']) {
+    for (const topic of ['workflow', 'spec', 'design', 'instructions', 'writing', 'commit']) {
       assert.equal(success(f, ['--lang', lang, 'guide', 'show', topic]), readFileSync(join(root, 'apps/cli/src/shared/i18n', lang, 'docs', topic + '.md'), 'utf8'));
     }
   }
   assert.match(success(f, ['guide', 'show', 'spec', '--lang=ko']), /title: 요구사항 형식/);
-  assert.match(success(f, ['--lang=en', 'guide', 'show', 'wiki'], 'ko'), /title: Project wiki format/);
+  assert.match(success(f, ['--lang=en', 'guide', 'show', 'instructions'], 'ko'), /title: Project instruction format/);
   assert.match(success(f, ['guide', 'show', 'spec'], '', { LC_ALL: 'ja_JP.UTF-8' }), /title: Requirement format/);
   assert.match(success(f, ['--lang', 'ko', 'guide', 'list']), /^spec +요구사항 형식 — /m);
   for (const args of [['--lang', 'ja', 'guide', 'list'], ['--lang'], ['--lang=']]) assert.notEqual(run(f, args).status, 0);
@@ -74,14 +74,13 @@ test('updates preserve Korean blocks and records; explicit language changes only
   assert.ok(readFileSync(agents, 'utf8').includes(`v${version} · en · storage schemaVersion 3`));
   assert.ok(readFileSync(agents, 'utf8').endsWith('User instructions outside the block.\n'));
   assert.deepEqual(fingerprint(join(f.repo, '.gitifact')), records);
-  assert.match(success(f, ['--lang', 'en', 'guide', 'show', 'wiki']), /이 위키에는 아키텍처 결정 기록/);
+  assert.match(success(f, ['--lang', 'en', 'guide', 'show', 'instructions']), /title: Project instruction format/);
 });
 test('English setup ships complete assets and preserves user text', t => {
   const f = fixture(t);
   success(f, ['init']);
   assert.match(readFileSync(join(f.repo, 'AGENTS.md'), 'utf8'), /· en ·/);
-  assert.match(readFileSync(join(f.repo, '.gitifact/wiki/README.md'), 'utf8'), /This wiki holds architecture decision records/);
-  assert.match(readFileSync(join(f.repo, '.gitifact/wiki/README.md'), 'utf8'), /\ndescription: What this wiki collects and how it is organized\n/);
+  assert.equal(existsSync(join(f.repo, '.gitifact/wiki')), false);
   // The CLI language changes labels and skeletons, never what the user wrote.
   success(f, ['docs', 'new', 'feature', 'original', '--title', '원래 기능', '--description', '사용자가 쓴 기능'], 'en');
   const created = JSON.parse(success(f, ['docs', 'new', 'requirement', 'original/first', '--title', '원래 요구사항', '--description', '사용자가 쓴 설명', '--format', 'json'], 'en'));

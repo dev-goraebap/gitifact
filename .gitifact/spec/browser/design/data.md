@@ -33,7 +33,7 @@ flowchart LR
 | 양쪽 문서 원문 | `git cat-file --batch`: 커밋과 첫 부모 양쪽의 바뀐 문서와 그 기능의 `index.md`를 `<커밋>:<경로>`로 |
 | 더한 이유 줄 | `git log -p -U0 -- .gitifact/history.jsonl`: 묶음이 이유 파일에 더한 줄 |
 
-기록 파일은 기능 `index.md`, `requirements/*.md`, `design/*.md`, 위키 `*.md`, `.gitifact/history.jsonl`이다. 기능 `index.md`는 기능 S-ID를 알려고 함께 읽으며, 그 커밋에서 바뀌지 않았으면 변경에 넣지 않는다.
+기록 파일은 기능 `index.md`, `requirements/*.md`, `design/*.md`, 지침 `index.md`, 0.8.0 이전 커밋의 위키 `*.md`, `.gitifact/history.jsonl`이다. 기능 `index.md`는 기능 S-ID를 알려고 함께 읽으며, 그 커밋에서 바뀌지 않았으면 변경에 넣지 않는다.
 
 | 양쪽 비교 | 결과 |
 | :--- | :--- |
@@ -133,7 +133,7 @@ pull 뒤에는 새 커밋만 읽고, 브랜치를 오가면 대개 아무것도 
 
 ### 작업 폴더 문서
 
-에이전트가 파일을 직접 고치므로, 읽을 때마다 `.gitifact/spec`·`.gitifact/wiki` 아래 파일의 수정 시각·크기를 캐시가 마지막에 본 값과 견주어 달라진 파일만 다시 파싱한다(`documents.ts`). 1MB를 넘는 문서 파일은 읽지 않고 문제로 알리며, 파일 2만 개에서 훑기를 멈춘다.
+에이전트가 파일을 직접 고치므로, 읽을 때마다 `.gitifact/spec`·`.gitifact/instructions`·`.gitifact/wiki` 아래 파일의 수정 시각·크기를 캐시가 마지막에 본 값과 견주어 달라진 파일만 다시 파싱한다(`documents.ts`). 1MB를 넘는 문서 파일은 읽지 않고 문제로 알리며, 파일 2만 개에서 훑기를 멈춘다. 위키 아래 Markdown은 문서로 읽지 않고 `WIKI_REMOVED` 문제로만 남긴다.
 
 ### 표
 

@@ -19,7 +19,7 @@ After setup, ask your agent to work as usual.
 Let users delete their posts.
 ```
 
-The agent organizes requirements and designs according to the project guidelines. When the work is ready, ask it to “Commit the changes.” It will include the relevant specifications and reasons along with the code.
+The agent organizes requirements and designs as the GITIFACT block instructs. When the work is ready, ask it to “Commit the changes.” It will include the relevant specifications and reasons along with the code.
 
 For an existing project, you can start with the features you work on next. To document the whole product first, ask:
 
@@ -27,12 +27,12 @@ For an existing project, you can start with the features you work on next. To do
 Document this project's requirements and designs.
 ```
 
-## Tailor the wiki
+## Write project instructions
 
-Use the wiki for development rules and architecture decisions. You can adjust its structure and guidelines with your agent.
+Keep development rules and architecture decisions as project instructions, one per kind of task. Decide with your agent which instructions to keep and when each should be read.
 
 ```text
-Add our project's development rules to the wiki.
+Write our project's development rules as project instructions.
 ```
 
 ## View documents and history
@@ -50,12 +50,12 @@ The browser viewer includes:
 | :--- | :--- |
 | Product overview | Project size and recent activity |
 | Features | Current requirements and designs by feature |
-| Project wiki | Development rules, architecture decisions, and other project documents |
+| Project instructions | AGENTS.md and per-task instructions such as development rules and architecture decisions |
 | Activity | Reasons for committed changes and before/after content |
 | Contributors | Contributions by Git author |
 | Git status | Changed files in the working directory |
 
-Requirements, designs, and wiki pages show the working copy. Activity shows committed history.
+Requirements, designs, and instructions show the working copy. Activity shows committed history.
 
 ## Language
 
@@ -71,7 +71,7 @@ At the start of a new session, your agent checks for a newer version and asks wh
 Update Gitifact.
 ```
 
-For npx, run `npx gitifact@latest update` to refresh the project instructions. If you use a project dependency or global installation, update it using that method and run `update` with the updated installation. Restart the browser server with the new version.
+For npx, run `npx gitifact@latest update` to refresh the GITIFACT block in your agent instruction files. If you use a project dependency or global installation, update it using that method and run `update` with the updated installation. Restart the browser server with the new version.
 
 Projects recorded with 0.7 (storage schemaVersion 2) need a one-time move, because the document layout changed in 0.8.0. After an update your agent tells you so, and if you agree it moves the documents following `npx gitifact guide show migrate`, keeping their IDs and reasons.
 
@@ -86,7 +86,7 @@ npx gitifact browser
 
 Open the local URL printed by `browser`. Press Ctrl+C in the terminal to stop the server.
 
-Agents use the version recorded in the project instructions.
+Agents use the version recorded in the GITIFACT block.
 
 ### Install in a project
 
@@ -98,7 +98,7 @@ npx gitifact init
 npx gitifact browser
 ```
 
-The version is recorded in `package.json` and the lockfile. Tell agents to use the project installation in your project instructions. If you prefer a global command, you can still install it with `npm install -g gitifact@latest`.
+The version is recorded in `package.json` and the lockfile. Tell agents to use the project installation in AGENTS.md, outside the GITIFACT block. If you prefer a global command, you can still install it with `npm install -g gitifact@latest`.
 
 ### Common commands
 
@@ -108,20 +108,20 @@ The version is recorded in `package.json` and the lockfile. Tell agents to use t
 | `npx gitifact init` | Set up Gitifact and install or refresh agent instructions |
 | `npx gitifact browser` | Start the browser viewer |
 | `npx gitifact update --check` | Check for a newer version without changing files |
-| `npx gitifact@latest update` | Refresh project instructions with the latest version |
+| `npx gitifact@latest update` | Refresh the GITIFACT block in agent instruction files with the latest version |
 | `npx gitifact guide list` | List agent guide topics |
 | `npx gitifact guide show spec` | Requirement file format and writing rules |
 | `npx gitifact guide show design` | Feature design rules |
-| `npx gitifact guide show wiki` | Wiki format and this project's guidelines |
+| `npx gitifact guide show instructions` | Project instruction format and the AGENTS.md index |
 | `npx gitifact guide show commit` | Commit changes with their reasons and related files |
 
 ### Read documents and commit
 
-Requirements, designs and wiki pages are Markdown files under `.gitifact/` that you edit directly. New documents are created through the CLI, which issues their IDs.
+Requirements, designs and instructions are Markdown files under `.gitifact/` that you edit directly. New documents are created through the CLI, which issues their IDs.
 
 | Command | Purpose |
 | :--- | :--- |
-| `npx gitifact docs list` | Features, requirements, designs and wiki pages (IDs, titles, descriptions, no bodies) |
+| `npx gitifact docs list` | Features, requirements, designs and instructions (IDs, titles, descriptions, no bodies) |
 | `npx gitifact docs search <query>` | Search document bodies |
 | `npx gitifact docs show <ID>` | A document's source and the designs pointing to it; `--ref <commit>` for past text |
 | `npx gitifact docs history <ID>` | Reasons and commits for a document |

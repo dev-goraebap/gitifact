@@ -11,7 +11,7 @@ requirements:
 
 ## 개요
 
-`init`은 하나의 Git 저장소에 설정(`.gitifact/config.json`)과 도입 기준선, 위키 운영 방침(`.gitifact/wiki/README.md`)을 만들고 에이전트 지침 파일에 GITIFACT 블록을 설치한다. 이유 파일(`.gitifact/history.jsonl`)의 `merge=union` 규칙이 `.gitattributes`에 없으면 더한다. init은 커밋하지 않고, 명세 작성은 별도 작업이다.
+`init`은 하나의 Git 저장소에 설정(`.gitifact/config.json`)과 도입 기준선을 만들고 에이전트 지침 파일에 GITIFACT 블록을 설치한다. 이유 파일(`.gitifact/history.jsonl`)의 `merge=union` 규칙이 `.gitattributes`에 없으면 더한다. init은 커밋하지 않고, 명세 작성은 별도 작업이다.
 
 init은 작은 명시적 작업이다. 기존 프로젝트를 추정해 일괄 전환하지 않고, CLI에는 구형 기록을 변환하는 코드가 없다. 멀티 레포 통합과 전역 설정 관리는 지원하지 않는다. 설치된 블록을 실행 중인 버전으로 갱신하는 일은 `update`가 맡는다(D-yrow77r5pf).
 
@@ -59,7 +59,7 @@ flowchart TD
   B -- 예 --> C{설정 있음}
   C -- 아니오 --> F[기록·무시 규칙 재확인]
   F --> H[설정 게시]
-  H --> I[블록·병합 규칙·위키 README]
+  H --> I[블록·병합 규칙]
   C -- 예 --> D[형식·기준선 검증]
   D --> E[블록·병합 규칙 갱신]
   B -- 아니오 --> X[거부]
@@ -74,8 +74,7 @@ flowchart TD
 
 - **기존 설정:** 형식·기준선을 검증하고 HEAD·index·설정이 조회 중에 바뀌지 않았는지 대조한 뒤 쓴다(`INPUT_CHANGED`). 설정 없는 기존 기록이나 구형 형식은 자동 채택하지 않는다.
 - **새 설정:** 추적 중인 설정이 삭제된 상태면 거부한다(`CONFIG_DELETED`). `.gitifact`에 임시 파일 말고 다른 항목이 있으면 거부한다(`EXISTING_RECORDS`). 게시 직전에 기록·무시 규칙·HEAD·index·설정 부재를 다시 대조한다.
-- **게시 뒤:** 관측 상태가 게시 때와 같은지 확인하고(`INPUT_CHANGED_AFTER_WRITE`) 블록, 병합 규칙, 위키 README 순으로 쓴다. 게시가 동시 init과 겹치면 먼저 생긴 설정을 기존 설정으로 다룬다.
-- **위키 README:** 처음 도입할 때 `.gitifact/wiki` 폴더가 없을 때만 내장 기본 방침으로 쓴다. 재실행은 쓰지 않으므로 사용자가 지우거나 고친 README는 그대로 남는다.
+- **게시 뒤:** 관측 상태가 게시 때와 같은지 확인하고(`INPUT_CHANGED_AFTER_WRITE`) 블록, 병합 규칙 순으로 쓴다. 문서는 만들지 않는다. 게시가 동시 init과 겹치면 먼저 생긴 설정을 기존 설정으로 다룬다.
 
 ## 새 버전 확인
 

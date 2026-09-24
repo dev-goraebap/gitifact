@@ -5,7 +5,7 @@
 | 파일 | 화면 |
 | --- | --- |
 | `feature-requirements.jpg` | 기능별 요구사항과 설계 연결 |
-| `project-wiki.jpg` | 위키 폴더 트리와 Fieldnotes 제품 개요 |
+| `project-instructions.jpg` | AGENTS.md와 작업별 지침 3개가 있는 프로젝트 지침 목록 |
 | `activity.jpg` | 명세 변경, 작성자, 변경 이유 |
 
 ## 촬영 자료
@@ -17,6 +17,10 @@ Fieldnotes는 고객 피드백을 제품 로드맵과 연결하는 가상의 서
 데모 생성 스크립트와 저장소는 `.tmp/`의 로컬 촬영 자료다. 새 체크아웃에서 빌드할 때는 추적된 이미지 세 장만 필요하다. 다시 촬영할 때는 별도 데모 저장소를 열고 언어를 English로, 화면 모드를 Dark로 선택한다. 화면 데이터를 바꾸거나 합성하지 않고 실제 브라우저를 캡처한다.
 
 최종 캡처는 사용자가 제시한 화면 비율에 맞춰 1368×1242 크기를 사용했다. 사이드바와 하단 GitHub 링크가 보이도록 다크 모드에서 세 화면을 다시 촬영했다. 브라우저가 반환한 JPEG 원본을 재압축하지 않고 저장했다.
+
+## 2026-09-24 프로젝트 지침 화면
+
+위키가 프로젝트 지침으로 바뀌어 `project-wiki.jpg`를 `project-instructions.jpg`로 바꿨다. 원본 데모는 그대로 두고, 사본 `.tmp/readme-showcase/fieldnotes-0.8`을 개발 빌드의 `guide show migrate` 절차로 0.8.0 형식에 옮겼다(전환 커밋과 AGENTS.md 색인 커밋). 위키 폴더 셋이 지침 `architecture`·`handbook`·`product`가 됐다. 촬영은 같은 조건(English, Dark, 1368×1242)으로 Playwright chromium이 반환한 JPEG(품질 90)를 그대로 저장했다. 사이드바의 버전 표시는 촬영 때 빌드 버전인 v0.7.1이다. 이 전환에서 찾은 migrate 지침의 빈틈(고친 위키 README의 처리, 제목 없는 폴더, 설계의 `# 제목` 줄)은 지침에 반영했다. 데모의 README는 그 반영 전에 옮겨 지침이 되지 않았다.
 
 ## 검증
 

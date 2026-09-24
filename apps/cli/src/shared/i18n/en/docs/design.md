@@ -32,7 +32,7 @@ order: 20
 requirements:
   - R-actual-related-requirement
 sources:
-  - id: W-actual-wiki-page-consulted
+  - id: I-actual-instruction-followed
     note: Layers and dependency direction
   - title: Library docs
     url: https://example.test/docs
@@ -66,7 +66,7 @@ Decisions that are hard to reverse and rejected alternatives go one per row in a
 
 For diagrams, follow `gitifact guide show writing` for choosing the kind and drawing it, and place each in the file for the axis it explains. Each axis has kinds that suit it: `erDiagram` and a `flowchart` of cache or read flows for data, a `sequenceDiagram` of requests between components for interface, a `stateDiagram-v2` of screen states for ui, and failure and recovery flows for errors.
 
-Before writing a design, read the wiki's structure and rules pages and list the pages you followed in `sources`. If the design conflicts with the wiki, agree with the user on which document to change first.
+Before writing a design, read the instructions for the area of work from the AGENTS.md index and list the ones you followed in `sources`. Instructions do not point at designs, so the relation is written in this one direction only. If the design conflicts with an instruction, agree with the user on whether to change the instruction first.
 
 ## When to write one
 

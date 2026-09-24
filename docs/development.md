@@ -1,5 +1,11 @@
 # 개발 환경
 
+## 2026-09-24 CLI의 위키 제거
+
+위키를 프로젝트 지침으로 바꾼 작업의 CLI 쪽이다. `docs new wiki`·`docs list --kind wiki`·`guide show wiki`·`init`의 위키 README를 지우고 `guide show instructions`를 더했다. 작업 트리의 `.gitifact/wiki/*.md`는 `WIKI_REMOVED` 문제이고 과거 커밋의 위키는 이력에서 읽는다. 캐시 형식은 5로 올렸다(옛 캐시의 위키 행을 버린다). `migrate` 지침은 위키를 전환 커밋에서 지침으로 옮긴다. README 데모 사본(`.tmp/readme-showcase/fieldnotes-0.8`)을 이 지침으로 옮겨 보며 찾은 빈틈을 지침에 반영했다.
+
+검증: `pnpm check` 통과(CLI 144, 브라우저 90, core 39, contracts 9, intro 2, 패키지 설치 시험). `docs check` 문제 없음(문서 80개).
+
 ## 2026-09-22 0.8.0 형식 전환과 사용 빌드
 
 이 저장소의 기록을 0.7 형식(schemaVersion 2)에서 0.8.0 문서 형식(schemaVersion 3)으로 옮겼다. 사용자 결정에 따라 main이 아닌 브랜치 `migrate-0.8.0`(worktree)에서 전환하고 검증한 뒤 합쳤다. 기능 9개·요구사항 45개·설계 9개·위키 19쪽을 문서 하나당 파일 하나로 나누고, 폴더별 이유 121줄을 `.gitifact/history.jsonl` 하나로 합쳤다. S-·R-·W-·H- ID와 제목·본문·이유 문장은 그대로이고, 모든 문서에 한 줄 설명을 새로 썼다. 설계는 기능마다 `design/overview.md` 하나로 옮기고 `docs new`로 D- ID를 받았으며, 절마다 있던 `gitifact-ref` 주석은 프론트매터 `requirements`로 대신했다. 위키 본문의 깨지는 링크 하나(`../../spec/browser/design.md`)를 새 경로로 고쳤다.

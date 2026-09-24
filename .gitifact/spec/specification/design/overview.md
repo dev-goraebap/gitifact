@@ -38,12 +38,12 @@ erDiagram
   FEATURE["기능 index"]
   REQUIREMENT["요구사항"]
   DESIGN["설계"]
-  WIKI["위키 페이지"]
+  INSTRUCTION["지침"]
   REASON["이유 줄"]
   FEATURE ||--o{ REQUIREMENT : "폴더"
   FEATURE ||--o{ DESIGN : "폴더"
   DESIGN }o--o{ REQUIREMENT : "requirements"
-  DESIGN }o--o{ WIKI : "sources"
+  DESIGN }o--o{ INSTRUCTION : "sources"
   REASON }o--o{ REQUIREMENT : "docs"
   REASON }o--o{ DESIGN : "docs"
 ```
@@ -55,7 +55,7 @@ erDiagram
 | 설계 | `<기능>/design/<slug>.md` | D- | 위 셋과 `order` | `requirements`·`sources`·`draft` |
 | 이유 | `.gitifact/history.jsonl` | 줄마다 H- | 줄마다 `id`·`docs`·`reason` | — |
 
-`sources`는 위키 페이지뿐 아니라 자기 자신이 아닌 모든 문서를 ID로 가리킬 수 있고, 외부 자료를 가리킬 수도 있다. 이유 줄의 `docs`도 모든 종류의 문서 ID를 담는다. 위키 페이지의 경로 규칙은 프로젝트 위키 기능이 다룬다.
+`sources`는 지침뿐 아니라 자기 자신이 아닌 모든 문서를 ID로 가리킬 수 있고, 외부 자료를 가리킬 수도 있다. 이유 줄의 `docs`도 모든 종류의 문서 ID를 담으며, 지워진 문서(과거 위키 페이지의 W- 포함)도 가리킬 수 있다. 지침의 경로 규칙은 프로젝트 지침 기능이 다룬다.
 
 기능 폴더와 slug 이름은 소문자·숫자·하이픈 80자 이하다. 설계가 하나라도 있으면 `design/overview.md`가 있어야 한다. 기능 폴더에 이 밖의 파일(0.7의 `requirements.md`·`design.md`·폴더별 `history.jsonl` 포함)이 있으면 검사가 문제로 알린다. 설계는 파일 하나 전체가 비교 단위이며 파일 안의 문단에는 ID가 없다. 그래서 설계와 요구사항도 절이 아니라 파일 단위(`requirements` 목록)로 이어진다.
 
@@ -165,6 +165,6 @@ core `documentWarnings`(`use-cases/document-warnings.ts`)가 모든 문서 본�
 | 구조 정보는 모두 프론트매터에 두고 본문 주석을 금지한다 | 참고 문서 목록처럼 구조가 있는 메타를 주석 한 줄에 담기 어렵고, GitHub가 프론트매터를 표로 보여 준다 | 절 단위 본문 주석(`gitifact-req`·`gitifact-ref`) |
 | 이유는 `.gitifact/history.jsonl` 한 파일에 두고 `merge=union`으로 병합한다 | 요구사항을 다른 기능으로 옮기거나 여러 폴더에 걸친 이유를 남길 때 둘 곳이 모호하지 않고, 두 브랜치가 더한 줄이 모두 남는다 | 기능 폴더·위키마다 `history.jsonl` |
 | 현재 문서만 저장하고 과거 원문은 Git에서 읽는다 | 중복 스냅샷을 줄인다 | 문서의 과거 스냅샷 저장 |
-| `docs check`는 바뀐 파일이 아니라 문서 전체를 검사한다 | 문제가 아무도 고치지 않은 파일에 생길 수 있다. 위키 페이지를 지우면 설계의 `sources`가 없는 문서를 가리킨다 | 바뀐 파일만 검사 |
+| `docs check`는 바뀐 파일이 아니라 문서 전체를 검사한다 | 문제가 아무도 고치지 않은 파일에 생길 수 있다. 지침을 지우면 설계의 `sources`가 없는 문서를 가리킨다 | 바뀐 파일만 검사 |
 | 에셋에 ID를 두지 않는다 | ID 참조는 에디터·GitHub에서 이미지로 보이지 않아 상대 링크 방식과 충돌한다. 대신 깨진 링크를 경고한다 | ID로 에셋 참조 |
 | 에셋 크기·확장자 제한은 경고로만 한다 | Git 저장소에 큰 파일을 두는 것은 사용자의 선택이며 커밋을 막으면 우회하게 된다 | 한도 초과 시 커밋 거부 |

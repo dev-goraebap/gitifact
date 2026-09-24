@@ -6,7 +6,7 @@ import { t } from '../shared/i18n/index.js';
 //   .gitifact/spec/<feature>/index.md                 feature overview (S-)
 //   .gitifact/spec/<feature>/requirements/<slug>.md   one requirement (R-)
 //   .gitifact/spec/<feature>/design/<slug>.md         one design axis (D-); design/overview.md is required once a design exists
-//   .gitifact/wiki/**/*.md                            wiki pages (W-)
+//   .gitifact/wiki/**/*.md                            wiki pages (W-), read from commits before 0.8.0; the check refuses them
 //   .gitifact/instructions/<name>/index.md            one instruction (I-); other files in the folder belong to it
 //   .gitifact/history.jsonl                           reasons for every document, one file for the whole store
 
@@ -20,6 +20,12 @@ export const HISTORY_PATH = '.gitifact/history.jsonl';
 const name = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 /** Root wiki pages may carry the conventional upper-case names (README.md, ARCHITECTURE.md, ...). */
 const rootUpperName = /^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*\.md$/;
+
+/**
+ * A wiki page in a tree being checked. Instructions replaced the wiki in 0.8.0: past commits still read their pages
+ * for the history, but a page left in the working tree is a problem until it is moved to an instruction.
+ */
+export const isWikiPage = (path: string) => path.startsWith(WIKI_ROOT + '/') && path.endsWith('.md');
 
 export type DocPath =
   | { type: 'doc'; kind: 'feature'; feature: string }

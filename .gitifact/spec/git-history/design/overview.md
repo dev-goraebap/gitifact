@@ -23,7 +23,8 @@ requirements:
 | 기능 개요(`index.md`) | `S-` | `Gitifact-Doc` |
 | 요구사항(파일마다) | `R-` | `Gitifact-Req` |
 | 설계(축 파일마다) | `D-` | `Gitifact-Design` |
-| 위키 페이지 | `W-` | `Gitifact-Doc` |
+| 지침(`index.md`) | `I-` | `Gitifact-Doc` |
+| 위키 페이지(0.8.0 이전 커밋) | `W-` | `Gitifact-Doc` |
 
 변경 이유는 `.gitifact/history.jsonl` 한 파일에 한 줄씩 `{id, docs, reason}`으로 둔다. `id`는 CLI가 발급하는 `H-` ID이고 `docs`는 대상 문서 ID다. 원문·작성자·시각은 이유 파일에 두지 않고 Git에서 읽는다. 두 브랜치가 함께 줄을 더해도 합쳐지도록 `init`이 `.gitattributes`에 `/.gitifact/history.jsonl merge=union`을 더한다(`commands/history-attributes.ts`).
 

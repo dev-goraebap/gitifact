@@ -15,7 +15,7 @@ export async function runInit(options: InitOptions, version: string) {
   const update = updateCheckDisabled(process.env) ? disabledUpdate : resolveUpdate(version, fetchLatestVersion, cancel.signal);
   try {
     const dto = await initializeSpecProject(process.cwd(), options.dryRun, process.env, undefined,
-      { version, agent: options.agent, remove: options.removeAgents, skip: options.skipAgents }, undefined, update);
+      { version, agent: options.agent, remove: options.removeAgents, skip: options.skipAgents }, update);
     if (!dto.ok) throw new Error('unreachable');
     const docs = dto.agentDocs.mode === 'skip' ? t('init.text.skipped')
       : dto.agentDocs.paths.join(', ') + (dto.agentDocs.mode === 'remove' ? ' (' + t('init.text.blockRemoved') + ')' : dto.outcome === 'planned' ? ' (' + t('init.text.blockPlanned') + ')' : ' (' + t('init.text.blockUpdated') + ')');

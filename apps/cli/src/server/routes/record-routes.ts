@@ -8,8 +8,6 @@ import { HttpError } from '../http/respond.js';
 import { ok, route } from '../http/router.js';
 import { t } from '../../shared/i18n/index.js';
 
-/** The browser does not show wiki pages; the CLI's `docs search` still finds them. */
-const isShown = (hit: { kind: string }) => hit.kind !== 'document';
 /** A page of history unless the reader asks for another size. */
 const PAGE = 50;
 
@@ -66,6 +64,6 @@ export function recordRoutes(root: string, sessionId: string, env?: NodeJS.Proce
       return ok(browserInstructionFileV1.parse({ contract: 'browser-instruction-file', version: 1, sessionId, id: query.id, path: query.path, ...found }));
     } }),
     route({ method: 'GET', path: '/api/v1/search', session: true, query: browserSearchQueryV1, unreadable, handle: async ({ query }) =>
-      ok(browserSearchV2.parse({ contract: 'browser-search', version: 2, sessionId, query: query.q, hits: (await cache.search(query.head ?? null, query.q)).filter(isShown) })) }),
+      ok(browserSearchV2.parse({ contract: 'browser-search', version: 2, sessionId, query: query.q, hits: await cache.search(query.head ?? null, query.q) })) }),
   ];
 }

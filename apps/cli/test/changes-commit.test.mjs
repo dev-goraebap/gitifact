@@ -220,21 +220,30 @@ test('a hook changing the commit keeps written reasons and recovery evidence and
   const head = f.git(['rev-parse', 'HEAD']).stdout; assert.equal(f.commit(request()).status, 1); assert.equal(f.git(['rev-parse', 'HEAD']).stdout, head);
 });
 
-test('a migration commit removes the 0.7 files, carries the migration trailer and stays out of the history', t => {
+test('a migration commit removes the 0.7 files, moves the wiki to an instruction, carries the migration trailer and stays out of the history', t => {
   const f = setup(t);
   // The 0.7 layout at HEAD: one requirements.md per feature and a reason file in its folder.
   for (const p of docPaths) unlinkSync(join(f.repo, p));
   f.write('.gitifact/spec/posts/requirements.md', '---\nid: S-aaaaaaaaaa\n---\n\n# 게시물\n');
   f.write('.gitifact/spec/posts/history.jsonl', '{}\n');
+  mkdirSync(join(f.repo, '.gitifact/wiki'));
+  f.write('.gitifact/wiki/guide.md', '---\nid: W-dddddddddd\n---\n\n# 안내\n\n규칙.\n'); f.write('.gitifact/wiki/history.jsonl', '{}\n');
   f.git(['add', '-A']); f.git(['commit', '-m', '0.7 records']);
   assert.equal(f.run(['docs', 'check']).status, 1);
   unlinkSync(join(f.repo, '.gitifact/spec/posts/requirements.md')); unlinkSync(join(f.repo, '.gitifact/spec/posts/history.jsonl'));
   put(f, { kind: 'feature', path: docPaths[0], id: S, feature: 'posts', title: '게시물', description: '게시물 작성과 조회', body: '게시물 기능.' });
   put(f, { kind: 'requirement', path: docPaths[1], id: R, feature: 'posts', order: 10, title: '저장', description: '제목을 입력해 저장한다', body: '작성자로서 게시물을 저장하고 싶다.' });
-  const migration = { reasons: [{ docs: [S, R], reason: '0.8.0 형식으로 옮김' }], paths: [history, ...docPaths], message: 'Migrate to 0.8.0', authorization, migration: true };
+  const instruction = '.gitifact/instructions/guide/index.md';
+  const old = ['.gitifact/spec/posts/requirements.md', '.gitifact/spec/posts/history.jsonl', '.gitifact/wiki/guide.md', '.gitifact/wiki/history.jsonl'];
+  const migration = { reasons: [{ docs: [S, R], reason: '0.8.0 형식으로 옮김' }], paths: [history, ...docPaths, ...old], message: 'Migrate to 0.8.0', authorization, migration: true };
+  // A wiki page left in place fails the check, even in a migration commit.
+  const refused = f.commit(migration);
+  assert.equal(JSON.parse(refused.stderr).error.code, 'DOCS_CHECK_FAILED'); assert.match(refused.stderr, /WIKI_REMOVED/);
+  unlinkSync(join(f.repo, '.gitifact/wiki/guide.md')); unlinkSync(join(f.repo, '.gitifact/wiki/history.jsonl'));
+  put(f, { kind: 'instruction', path: instruction, id: 'I-dddddddddd', name: 'guide', title: '안내', description: '작업 규칙. 코드를 바꿀 때 읽는다.', body: '규칙.' });
   // The old files' deletions belong to the same commit.
-  assert.equal(JSON.parse(f.commit(migration).stderr).error.code, 'INVALID_COMMIT');
-  const result = f.done(f.commit({ ...migration, paths: [...migration.paths, '.gitifact/spec/posts/requirements.md', '.gitifact/spec/posts/history.jsonl'] }));
+  assert.equal(JSON.parse(f.commit({ ...migration, paths: [history, ...docPaths, instruction] }).stderr).error.code, 'INVALID_COMMIT');
+  const result = f.done(f.commit({ ...migration, paths: [...migration.paths, instruction] }));
   assert.ok(result.trailers.includes('Gitifact-Migration: 0.8.0'));
   assert.match(f.git(['log', '-1', '--format=%B']).stdout, /\nGitifact-Migration: 0\.8\.0\n/);
   assert.equal(f.git(['status', '--porcelain']).stdout, '');

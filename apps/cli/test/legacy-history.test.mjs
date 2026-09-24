@@ -30,9 +30,10 @@ test('0.7 activity stays in the history after a migration, the migration itself 
   const early = openRecords(f.repo, f.env);
   assert.equal((await early.history.page(bob, {}, 0, 50)).total, 0);
 
-  // The migration: the old files go, the new ones keep the IDs, and the commit carries the trailer.
-  for (const path of ['.gitifact/spec/posts/requirements.md', '.gitifact/spec/posts/history.jsonl', '.gitifact/wiki/history.jsonl']) rmSync(join(f.repo, path));
-  d.feature('posts', S, { title: 'Posts' }); d.requirement('posts', 'save', R, { title: 'Save', body: 'Second' }); d.wiki('guide.md', W, { title: 'Guide', body: 'Read me' });
+  // The migration: the old files go, the new ones keep the IDs, the wiki page becomes an instruction, and the commit carries the trailer.
+  rmSync(join(f.repo, '.gitifact/wiki'), { recursive: true });
+  for (const path of ['.gitifact/spec/posts/requirements.md', '.gitifact/spec/posts/history.jsonl']) rmSync(join(f.repo, path));
+  d.feature('posts', S, { title: 'Posts' }); d.requirement('posts', 'save', R, { title: 'Save', body: 'Second' }); d.instruction('guide', 'I-aaaaaaaaaa', { title: 'Guide', body: 'Read me' });
   f.git(['add', '-A']); f.git(['commit', '-m', 'Move records to 0.8.0\n\nGitifact-Migration: 0.8.0', '--author', 'Maintainer <maintainer@example.invalid>']);
   const migration = f.git(['rev-parse', 'HEAD']).stdout.trim();
   d.requirement('posts', 'save', R, { title: 'Save', body: 'Third' }); d.reasons({ id: 'H-dddddddddd', docs: [R], reason: 'After the move' });

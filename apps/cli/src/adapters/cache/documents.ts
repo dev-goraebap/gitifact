@@ -1,6 +1,6 @@
 import { lstat, readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { DocumentError, classifyDocPath, docProblem, parseDocumentFile, HISTORY_PATH, INSTRUCTIONS_ROOT, SPEC_ROOT, WIKI_ROOT, type Doc, type DocProblem } from '@gitifact/core';
+import { DocumentError, classifyDocPath, docProblem, isWikiPage, parseDocumentFile, HISTORY_PATH, INSTRUCTIONS_ROOT, SPEC_ROOT, WIKI_ROOT, type Doc, type DocProblem } from '@gitifact/core';
 import { transaction, type CacheDatabase } from './database.js';
 import { plain } from './search-text.js';
 
@@ -12,7 +12,6 @@ const decode = (bytes: Buffer) => new TextDecoder('utf-8', { fatal: true, ignore
 interface Seen { mtime: number; size: number; link: boolean }
 /** The search row of one document: what the box matches on and what a hit shows. */
 const place = (doc: Doc) => doc.path.replace(/^\.gitifact\//, '');
-const searchKind = (doc: Doc) => doc.kind === 'wiki' ? 'document' : doc.kind;
 
 /**
  * The working tree's documents in the cache. Agents edit the files directly, so every read first compares each file's
@@ -40,6 +39,8 @@ export function createDocumentCache(root: string, database: CacheDatabase) {
 
   async function read(path: string, seen: Seen): Promise<{ doc?: Doc; problem?: DocProblem }> {
     try {
+      // Pages left from the wiki are named by the check and listed as unreadable until they are moved.
+      if (isWikiPage(path)) return { problem: docProblem('WIKI_REMOVED', path) };
       if (classifyDocPath(path).type !== 'doc') return {};
       if (seen.link) return { problem: docProblem('PATH_UNSUPPORTED', path) };
       if (seen.size > FILE_LIMIT) return { problem: docProblem('FILE_TOO_LARGE', path) };
@@ -84,7 +85,7 @@ export function createDocumentCache(root: string, database: CacheDatabase) {
         }
         // Search rows are keyed by path so a moved or deleted file takes its row with it.
         const body = plain(doc.body);
-        search.run('checkout', searchKind(doc), doc.path, null, JSON.stringify({ id: doc.id, title: doc.title, where: place(doc), body, feature }),
+        search.run('checkout', doc.kind, doc.path, null, JSON.stringify({ id: doc.id, title: doc.title, where: place(doc), body, feature }),
           doc.title.toLowerCase(), place(doc).toLowerCase(), (doc.description + ' ' + body).toLowerCase());
       }
     }));

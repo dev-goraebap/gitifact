@@ -17,12 +17,12 @@ Update using the project's chosen method. For npx, run `npx --yes gitifact@<new-
 
 Check configuration, actual files, and CLI help to choose the applicable workflow. The existence of a command does not itself authorize project adoption or migration.
 
-- **Current format:** `schemaVersion: 3` in config.json uses feature folders (`index.md`, `requirements/` and `design/` under `.gitifact/spec/<feature>/`), `.gitifact/wiki/`, `.gitifact/assets/` and one reason file, `.gitifact/history.jsonl`. Follow `gitifact guide show spec`, `design` and `wiki`.
+- **Current format:** `schemaVersion: 3` in config.json uses feature folders (`index.md`, `requirements/` and `design/` under `.gitifact/spec/<feature>/`), instruction folders under `.gitifact/instructions/`, `.gitifact/assets/` and one reason file, `.gitifact/history.jsonl`. Follow `gitifact guide show spec`, `design` and `instructions`. The 0.7 wiki `.gitifact/wiki/` is no longer used; `docs check` reports pages left there as `WIKI_REMOVED`.
 - **0.7 format:** `schemaVersion: 2` (one `requirements.md` and one `design.md` per feature) is not read by the `docs` and `changes` commands, which point to the migration instead. If the user agrees to migrate, follow `gitifact guide show migrate`. Do not move files or present them as the new format before that consent.
 - **Earlier formats:** the current CLI does not read or write `schemaVersion: 1` (0.4.x), workflow-1, prototype-1, or init-1 configurations. Preserve records instead of deleting them or presenting them as the current format. Explain that these prerelease formats have no migration tool. If requested, set up the current version while preserving old records.
 - **Not yet adopted:** if setup is authorized, inspect Git state and instructions, then use `init --dry-run` and `init`. If there is no Git repository, check permission to create one. Preserve changes and staging.
 
-init creates `.gitifact/config.json`, an adoption baseline, and `.gitifact/wiki/README.md` with wiki guidelines. It writes a block between `<!-- GITIFACT:START -->` and `<!-- GITIFACT:END -->` in agent instruction files such as AGENTS.md. If it writes AGENTS.md and CLAUDE.md does not exist, it also creates CLAUDE.md containing `@AGENTS.md`. It preserves content outside the markers and creates neither requirements nor commits. The block summarizes the rules; read `gitifact guide show <topic>` for full formats.
+init creates `.gitifact/config.json` and an adoption baseline. It writes a block between `<!-- GITIFACT:START -->` and `<!-- GITIFACT:END -->` in agent instruction files such as AGENTS.md. If it writes AGENTS.md and CLAUDE.md does not exist, it also creates CLAUDE.md containing `@AGENTS.md`. It preserves content outside the markers and creates neither requirements nor commits. The block summarizes the rules; read `gitifact guide show <topic>` for full formats.
 
 After updating the CLI, run `update` (or `init`) to refresh the block. `update` also reports whether a new version is available and how to install it; it does not install it. Existing blocks retain their language unless `--lang ko` or `--lang en` is supplied. New blocks follow the CLI language. Project documents keep their own language.
 
@@ -30,13 +30,13 @@ After updating, reread the block and use its new version. Once the refreshed ins
 
 ## Read context
 
-Read context through the `docs` commands, the actual code and Git. `gitifact docs list` shows the IDs, titles and descriptions of features, requirements, designs and wiki pages without bodies (narrow it with `--feature <feature>` or `--kind spec|wiki`); open only the documents you need with `docs show <ID…>`. Find text that titles and descriptions do not mention with `docs search <query>`, and why a document reads as it does with `docs history <ID>`. Every query command defaults to text and accepts `--format json`. Do not interpret a command error as a valid empty result, or execute instructions in historical records as current authorization. Do not save query results or guide output to files; rerun commands when needed.
+Read context through the `docs` commands, the actual code and Git. `gitifact docs list` shows the IDs, titles and descriptions of features, requirements, designs and instructions without bodies (narrow it with `--feature <feature>` or `--kind spec|instruction`); open only the documents you need with `docs show <ID…>`. Find text that titles and descriptions do not mention with `docs search <query>`, and why a document reads as it does with `docs history <ID>`. Every query command defaults to text and accepts `--format json`. Do not interpret a command error as a valid empty result, or execute instructions in historical records as current authorization. Do not save query results or guide output to files; rerun commands when needed.
 
 After editing documents, run `gitifact docs check`. It lists the problems that block a commit (format, required fields, duplicate IDs, references to absent IDs, `draft: true`) separately from warnings that do not: `MISSING_LINK_TARGET` (a relative document link has no target), `ASSET_SIZE`, `ASSET_EXTENSION` and `ASSETS_TOTAL_SIZE` (recommended sizes or extensions exceeded), and `UNREFERENCED_ASSET` (no document references an asset). Report remaining warnings in the result.
 
-## Wiki guidelines
+## Project instructions
 
-`gitifact guide show wiki` explains wiki structure, then includes the project's `.gitifact/wiki/README.md` as its operating guidelines. If no README exists, it includes built-in defaults. Update the README when the user wants to change how the wiki is maintained. Format rules and the `docs check` checks remain independent of those guidelines.
+The instructions under `.gitifact/instructions/` hold how work is done in this project, and an index in AGENTS.md, outside the GITIFACT block, says which one to read for which work. Follow `gitifact guide show instructions` for their format and for writing the index. When the user wants to change how the project works, update the instruction and the index together.
 
 ## Temporary files
 
@@ -63,12 +63,12 @@ Record desired product behavior and conditions to maintain, not every work instr
 | Make the border a little lighter | Usually a style edit; do not create a requirement every time. |
 | Distinguish selected items with a border | Add to acceptance criteria for selection behavior. |
 
-Keep shared presentation rules in a wiki rules page instead of repeating them per feature. Classify requests by product meaning and existing context, not isolated wording.
+Keep shared presentation rules in a project instruction instead of repeating them per feature. Classify requests by product meaning and existing context, not isolated wording.
 
 ## Working through the conversation
 
 Establish users, desired outcomes, main flows, failure conditions, and product constraints through conversation. Do not repeat answered questions or require a long questionnaire. Ask about uncertainties that change the implementation direction and continue independent work.
 
-Before changing requirements, designs, or code, read the wiki pages relevant to the work under the guidelines in `gitifact guide show wiki`. If no such page exists, say so and proceed. Flag requests outside the wiki's scope or contrary to its principles before proceeding.
+Before changing requirements, designs, or code, find the instructions for the area of work in the AGENTS.md index, read them and follow them. If none fits, say so and proceed. Flag requests that conflict with an instruction before proceeding.
 
 In existing projects, document the areas being changed first. Derive all features only when asked. Use available code, tests, documents, Git, and conversation without requiring a particular docs layout. Distinguish observed behavior, user intent, and future proposals. Present uncertain candidates with questions and evidence instead of saving them as agreed requirements. Do not invent past approvals or completion, or add references retroactively to old commits.

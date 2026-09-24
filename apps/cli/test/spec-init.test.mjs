@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { spawnSync } from 'node:child_process';
-import { existsSync, readFileSync, mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { fixture, fingerprint } from './git-fixture.mjs';
@@ -42,12 +42,11 @@ test('init refuses legacy records and malformed config without mutation', async 
   const before = fingerprint(f.repo); assert.match(call(f, ['init'], false).stderr, /UNSUPPORTED_FORMAT/); assert.deepEqual(fingerprint(f.repo), before);
   f.write('.gitifact/config.json', '{}'); const invalid = fingerprint(f.repo); call(f, ['init'], false); assert.deepEqual(fingerprint(f.repo), invalid);
 });
-test('init writes the wiki policy page in the current document format and the documents check accepts it', async t => {
+test('init writes no document, and the documents check accepts the new project', async t => {
   const f = fixture(t); call(f, ['init', '--skip-agents']);
-  const readme = readFileSync(join(f.repo, '.gitifact/wiki/README.md'), 'utf8');
-  assert.match(readme, /^---\nid: W-[a-z2-7]{10}\ntitle: 위키 운영 방침\ndescription: .+\n---\n\n이 위키에는 아키텍처 결정 기록/);
+  assert.deepEqual(readdirSync(join(f.repo, '.gitifact')).sort(), ['config.json']);
   const check = spawnSync(process.execPath, [cli, 'docs', 'check'], { cwd: f.repo, env: { ...f.env, GITIFACT_LANG: 'ko' }, encoding: 'utf8' });
-  assert.equal(check.status, 0, check.stdout + check.stderr); assert.equal(check.stdout, '문제 없음 (문서 1개)\n');
+  assert.equal(check.status, 0, check.stdout + check.stderr); assert.equal(check.stdout, '문제 없음 (문서 0개)\n');
 });
 test('interrupted init before publication cleans temp and can retry', async t => {
   const f = fixture(t);

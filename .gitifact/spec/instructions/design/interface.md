@@ -20,7 +20,7 @@ requirements:
 | `docs search` | 지침도 다른 문서와 함께 찾는다 |
 | `docs check`·`docs history <I-ID>` | data 설계의 검사와 이력 |
 
-AGENTS.md는 gitifact 문서가 아니다. 프로젝트가 블록 밖에 지침 색인을 쓰고, gitifact는 블록만 관리한다.
+AGENTS.md는 gitifact 문서가 아니다. 프로젝트가 블록 밖에 지침 색인을 쓰고, gitifact는 블록만 관리한다. 지침 형식과 색인 쓰는 법은 `guide show instructions`가 안내하며, 블록은 작업 전에 색인의 지침을 읽고 지침을 고치기 전에 이 안내를 읽으라고 알린다.
 
 ## 브라우저 API
 

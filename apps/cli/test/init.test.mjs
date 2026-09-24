@@ -144,7 +144,7 @@ test('an earlier or a newer convention is refused and left as it is', async t =>
 
 test('init reports the registry check it was given and how to install a newer release', async t => {
   const f = fixture(t);
-  const newer = await initializeSpecProject(f.repo, true, f.env, undefined, undefined, undefined, Promise.resolve({ status: 'available', latestVersion: '9.9.9' }));
+  const newer = await initializeSpecProject(f.repo, true, f.env, undefined, undefined, Promise.resolve({ status: 'available', latestVersion: '9.9.9' }));
   assert.deepEqual([newer.update, newer.install], [{ status: 'available', latestVersion: '9.9.9' }, { npx: 'npx --yes gitifact@9.9.9 update', npmGlobal: 'npm install -g gitifact@9.9.9' }]);
   const plain = await init(f);
   assert.deepEqual([plain.update, plain.install], [{ status: 'disabled', latestVersion: null }, null]);

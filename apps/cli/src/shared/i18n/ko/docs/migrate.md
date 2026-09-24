@@ -12,7 +12,7 @@ description: schemaVersion 2 프로젝트를 0.8.0 문서 형식으로 옮기는
 - `git status`가 깨끗해야 한다. 커밋되지 않은 변경이나 staging이 있으면 멈추고 사용자에게 알린다.
 - 옛 형식으로 `.gitifact/`를 고친 **열린 브랜치**가 있으면 전환 전에 합치라고 사용자에게 알리고, 합칠지 계속할지 확인받는다. 전환 뒤에 옛 형식 브랜치를 합치면 두 형식이 섞이고 `gitifact docs check`가 실패한다.
 - 전환은 마지막에 한 커밋으로 남긴다. 커밋 권한이 있는지 사용자에게 확인한다. 가능하면 새 브랜치에서 작업하고 검증 뒤 합친다.
-- 새 형식은 이 지침의 3절이 전부 설명한다. 형식이 헷갈리면 프로젝트 밖의 빈 Git 저장소에서 `gitifact init`과 `gitifact docs new feature|requirement|design|wiki …`를 실행해 CLI가 만드는 뼈대를 보고, `gitifact docs check`로 맞는지 확인한다.
+- 새 형식은 이 지침의 3절이 전부 설명한다. 형식이 헷갈리면 프로젝트 밖의 빈 Git 저장소에서 `gitifact init`과 `gitifact docs new feature|requirement|design|instruction …`를 실행해 CLI가 만드는 뼈대를 보고, `gitifact docs check`로 맞는지 확인한다.
 
 ## 2. 옛 형식 읽기
 
@@ -52,9 +52,9 @@ description: schemaVersion 2 프로젝트를 0.8.0 문서 형식으로 옮기는
 
    (옛 본문 그대로)
    ```
-4. **설계:** 옛 design.md가 있는 기능마다 `gitifact docs new design <기능>/overview --title "<옛 설계 제목>" --description "<한 줄>"`을 실행해 D- ID를 받는다. 이 명령이 만든 `design/overview.md`의 본문을 옛 설계 본문으로 바꾸고 `draft: true` 줄을 지운다. 이어서:
+4. **설계:** 옛 design.md가 있는 기능마다 `gitifact docs new design <기능>/overview --title "<옛 설계 제목>" --description "<한 줄>"`을 실행해 D- ID를 받는다. 이 명령이 만든 `design/overview.md`의 본문을 옛 설계 본문(첫 줄 `# 설계 제목`은 뺀다)으로 바꾸고 `draft: true` 줄을 지운다. 이어서:
    - 옛 본문의 `<!-- gitifact-ref: … -->` 줄은 지우고, 거기 적힌 R- ID를 모두 모아 중복 없이 프론트매터 `requirements`에 적는다.
-   - 옛 `sources`는 `path`면 그 경로가 가리키는 위키 페이지의 W- ID로 `- id: W-…`(`note`가 있으면 함께), `url`이면 `- title: …` / `url: …`로 옮긴다.
+   - 옛 `sources`는 `path`면 그 경로가 가리키는 위키 페이지의 W- ID로 `- id: W-…`(`note`가 있으면 함께), `url`이면 `- title: …` / `url: …`로 옮긴다. W-는 5단계에서 그 페이지를 옮긴 지침의 I-로 바뀐다.
    - 본문의 나머지는 바꾸지 않는다. `docs new`가 넣은 `order: 10`은 그대로 둔다. 설계를 관점별 파일(data, interface, ui, errors 등)로 나누는 것은 전환 커밋에서 하지 않는다. 옮긴 본문을 대조할 수 있게 overview 하나로 옮기고, 나누기는 전환 뒤 별도 커밋으로 `gitifact guide show design`에 따라 한다.
    - 결과의 프론트매터는 이 모양이다. 새 형식의 참고 문서에는 `title`이 없으므로, 위키 페이지를 가리키던 옛 `title`은 사라진다.
      ```markdown
@@ -67,32 +67,48 @@ description: schemaVersion 2 프로젝트를 0.8.0 문서 형식으로 옮기는
        - R-…
        - R-…
      sources:
-       - id: W-…
+       - id: I-…
          note: 옛 note (있을 때)
        - title: 외부 문서 제목
          url: https://…
      ---
      ```
-5. **위키:** 페이지는 제자리에 둔다. 본문 첫 줄 `# 제목`을 프론트매터 `title`로 옮기고 `description`을 더한다. 나머지 본문은 바꾸지 않는다.
-6. **상대 링크:** 요구사항·설계가 새 경로로 옮겨졌으므로, 문서 본문의 상대 링크 중 옛 `requirements.md`·`design.md`를 가리키거나 파일 위치가 바뀌어 깨지는 것을 새 경로로 고친다(요구사항·설계 본문은 한 단계 깊어졌다). 링크를 고치는 것 외에 본문을 다듬지 않는다.
+5. **위키 → 지침:** 0.8.0에서 위키는 프로젝트 지침으로 바뀌었다(`gitifact guide show instructions`). 위키 페이지가 `.gitifact/wiki/`에 남아 있으면 `docs check`가 `WIKI_REMOVED`로 막으므로 모든 페이지를 지침 폴더로 옮긴다. 옮기기 전에 어느 페이지가 어느 지침의 어느 파일이 되는지 표로 사용자에게 보여 주고 확인받는다. 사용자가 묶음을 바꾸면 그대로 따른다.
+
+   | 옛 위치 | 새 위치 |
+   | :--- | :--- |
+   | `wiki/README.md`(운영 방침·진입 페이지) | `init`이 만든 기본 방침(결정 기록을 `adr/`에 쌓는다는 내용) 그대로면 옮기지 않고 지운다. 프로젝트가 고쳤으면 루트 페이지처럼 지침 `overview`의 `index.md`로 옮긴다. 그 안의 위키 운영 규칙을 AGENTS.md로 옮길지는 6절에서 정한다 |
+   | 루트 페이지 `wiki/<이름>.md` | 지침 `<이름>`의 `index.md`. 대문자 이름은 소문자로 바꾼다(`ARCHITECTURE.md` → `architecture`) |
+   | 최상위 폴더 `wiki/<폴더>/` | 지침 `<폴더>`. 폴더의 `README.md`가 있으면 그것이 `index.md`, 나머지 페이지는 `references/<폴더 안 경로>` |
+   | 루트 페이지와 같은 이름의 폴더 | 한 지침으로 합친다. 루트 페이지가 `index.md`다 |
+
+   - 지침마다 `gitifact docs new instruction <이름> --title "<제목>" --description "<한 줄>"`을 실행해 I- ID를 받는다. 제목은 `index.md`가 될 페이지의 옛 제목이다. 그런 페이지가 없는 폴더는 폴더가 담은 주제로 제목을 짓는다(예: `handbook` → 작업 안내서). description에는 무엇을 담는지와 어떤 작업 때 읽는지를 쓴다.
+   - `index.md`가 될 페이지는 옛 본문의 첫 줄 `# 제목`을 빼고 나머지를 바꾸지 않고 옮긴다. `docs new`가 만든 본문을 이것으로 바꾸고 `draft: true` 줄을 지운다. 폴더에 `index.md`가 될 페이지가 없으면 본문에 references 파일마다 옛 제목과 링크를 한 줄씩 적는다.
+   - references로 옮기는 페이지는 옛 파일을 그대로(`# 제목` 줄 포함) 옮기고 프론트매터와 그 뒤 빈 줄만 지운다. 파일은 `# 제목`으로 시작한다. references 파일은 문서로 파싱하지 않으므로 ID가 없다.
+   - 위키 폴더에 있던 이미지 등 Markdown이 아닌 파일은 그것을 쓰는 지침 폴더로 옮긴다.
+   - 지침은 명세를 가리킬 수 없다(`INSTRUCTION_SPEC_LINK`). 옮긴 파일에서 `.gitifact/spec/` 아래로 가는 링크는 `[글자](경로)`를 링크 글자만 남긴다. 다른 상대 링크는 6단계에서 새 위치에 맞게 고친다.
+   - 4단계에서 위키 페이지 W-를 가리킨 설계 `sources`는 그 페이지가 옮겨 간 지침의 I-로 바꾼다. 한 설계가 같은 지침을 두 번 가리키게 되면 하나로 합치고 note를 `; `로 잇는다.
+   - 옛 W- ID는 문서에서 사라지고 이유 줄(7단계)에만 남는다. 이유는 지워진 문서도 가리킬 수 있다.
+   - 결정 기록(ADR)을 지침의 결정 표로 바꾸거나 지침을 다시 묶는 일은 전환 커밋에서 하지 않는다. 옮긴 본문을 대조할 수 있게 그대로 옮기고, 다듬기는 전환 뒤 별도 커밋으로 한다.
+6. **상대 링크:** 요구사항·설계가 새 경로로 옮겨졌으므로, 문서 본문의 상대 링크 중 옛 `requirements.md`·`design.md`를 가리키거나 파일 위치가 바뀌어 깨지는 것을 새 경로로 고친다(요구사항·설계 본문은 한 단계 깊어졌다). 위키 페이지로 가던 링크는 그 페이지가 옮겨 간 지침 파일로, 옮긴 지침 파일 안의 링크는 새 위치 기준으로 고친다. 링크를 고치는 것 외에 본문을 다듬지 않는다.
 7. **이유 파일:** 모든 옛 history.jsonl의 줄을 `.gitifact/history.jsonl` 하나로 옮긴다.
    - 한 줄은 정확히 `{"id":"H-…","docs":[…],"reason":"…"}`다. `id`와 `reason`은 **그대로** 둔다.
    - `docs` = 옛 `requirements` + `documents` + 옛 `designs`의 S-를 그 기능의 새 설계 D-로 바꾼 것. 중복을 빼고, 비어 있으면 안 된다.
    - 순서는 오래된 것부터가 좋다(`git blame --line-porcelain <파일>`의 `author-time`으로 정렬). 시각이 같으면 기능 폴더 이름순, 위키는 마지막, 파일 안의 순서를 따른다. 알 수 없으면 파일별 순서를 유지한다.
    - 이미 지워진 문서를 가리키는 ID도 그대로 둔다. 이유는 삭제된 문서도 가리킬 수 있다.
-8. **옛 파일 삭제:** 모든 `.gitifact/spec/<기능>/requirements.md`, `design.md`, `history.jsonl`과 `.gitifact/wiki/history.jsonl`을 일반 파일 삭제로 지운다. `git rm`은 staging을 만들어 5절의 커밋이 거부되므로 쓰지 않는다. 이미 staging됐다면 `git restore --staged <경로>`로 푼다.
+8. **옛 파일 삭제:** 모든 `.gitifact/spec/<기능>/requirements.md`, `design.md`, `history.jsonl`과, 5단계에서 페이지를 모두 옮긴 `.gitifact/wiki/` 폴더 전체를 일반 파일 삭제로 지운다. `git rm`은 staging을 만들어 5절의 커밋이 거부되므로 쓰지 않는다. 이미 staging됐다면 `git restore --staged <경로>`로 푼다.
 9. **병합 규칙:** `gitifact init --skip-agents`를 실행한다. 이미 초기화된 프로젝트에서는 설정을 바꾸지 않고 `.gitattributes`에 `/.gitifact/history.jsonl merge=union`만 더한다.
 
-기계적인 부분(파일 나누기, 이유 줄 변환)은 일회성 스크립트로 해도 된다. 스크립트는 프로젝트 밖에 두고 커밋하지 않는다. slug·description·기능 본문은 내용을 읽고 직접 쓴다. 문서마다 description이 하나씩 필요하므로 전환에서 가장 큰 일이다(요구사항 45개·위키 19쪽이면 82개). description은 그 문서가 무엇을 요구하거나 다루는지를 목록에서 한 줄로 알아볼 수 있게 쓴다. 제목을 되풀이하지 말고 사용자 스토리나 첫 문단의 핵심을 줄인다.
+기계적인 부분(파일 나누기, 이유 줄 변환)은 일회성 스크립트로 해도 된다. 스크립트는 프로젝트 밖에 두고 커밋하지 않는다. slug·description·기능 본문은 내용을 읽고 직접 쓴다. 기능·요구사항·지침마다 description이 하나씩 필요하므로 전환에서 가장 큰 일이다(기능 18개·요구사항 45개·지침 5개면 68개). description은 그 문서가 무엇을 요구하거나 다루는지를 목록에서 한 줄로 알아볼 수 있게 쓴다. 제목을 되풀이하지 말고 사용자 스토리나 첫 문단의 핵심을 줄인다.
 
-**예외로 허용되는 것:** 평소에는 ID를 CLI만 발급하고 커밋된 이유를 고치지 않는다. 이번 전환에서만 기존 S-·R-·W-·H- ID를 옮겨 적고 이유 줄의 형식을 바꾼다. 새 ID를 지어내지 않는다(설계 D-는 `docs new`로 받는다).
+**예외로 허용되는 것:** 평소에는 ID를 CLI만 발급하고 커밋된 이유를 고치지 않는다. 이번 전환에서만 기존 S-·R-·H- ID를 옮겨 적고 이유 줄의 형식을 바꾼다. 새 ID를 지어내지 않는다(설계 D-와 지침 I-는 `docs new`로 받는다).
 
 ## 4. 검증
 
 1. `gitifact docs check`가 `문제 없음`이어야 한다. 문제가 있으면 고친다.
-2. 2절에서 센 개수와 대조한다: 기능 수 = `index.md` 수, 요구사항 수, 설계 수(기능별 `design/overview.md`), 위키 페이지 수, 이유 줄 수. 문서는 `gitifact docs list --format json`으로, 이유는 `.gitifact/history.jsonl`의 줄 수로 센다.
-3. 옛 ID가 모두 새 문서에 있는지 확인한다. 옛 ID는 `git grep -ohE '(S|R|W)-[a-z2-7]{10}' HEAD -- .gitifact`의 정의 위치(프론트매터 `id`, `gitifact-req` 주석)에서, 새 ID는 `gitifact docs list --format json`의 `features[].id`, `features[].requirements[].id`, `wiki[].id`에서 모은다. 옛 이유의 H- ID도 모두 `.gitifact/history.jsonl`에 있어야 한다.
-4. `gitifact changes list`의 마지막에 `문서 검사: 문제 없음`이 나와야 한다. 이 시점의 다른 출력은 전환에서 정상이다: 옛 형식은 새 파서로 읽히지 않으므로 모든 문서가 `created`로, 옮긴 이유 줄은 모두 "커밋하지 않은 이유"로 나오고, 옛 이유가 가리킨 적 없는 문서(대개 기능 S-)는 "이유가 없는 문서"로 나온다. 커밋을 막지 않는다.
+2. 2절에서 센 개수와 대조한다: 기능 수 = `index.md` 수, 요구사항 수, 설계 수(기능별 `design/overview.md`), 위키 페이지 수(5단계 표의 `index.md`와 references 파일 수의 합), 이유 줄 수. 문서는 `gitifact docs list --format json`으로, 이유는 `.gitifact/history.jsonl`의 줄 수로 센다.
+3. 옛 ID가 모두 새 문서에 있는지 확인한다. 옛 ID는 `git grep -ohE '(S|R)-[a-z2-7]{10}' HEAD -- .gitifact`의 정의 위치(프론트매터 `id`, `gitifact-req` 주석)에서, 새 ID는 `gitifact docs list --format json`의 `features[].id`, `features[].requirements[].id`에서 모은다. `.gitifact/wiki/`가 남지 않았고 설계 `sources`에 W-가 없어야 한다. 옛 이유의 H- ID도 모두 `.gitifact/history.jsonl`에 있어야 한다.
+4. `gitifact changes list`의 마지막에 `문서 검사: 문제 없음`이 나와야 한다. 이 시점의 다른 출력은 전환에서 정상이다: 옛 형식은 새 파서로 읽히지 않으므로 모든 문서가 `created`로, 옮긴 이유 줄은 모두 "커밋하지 않은 이유"로 나오고, 옛 이유가 가리킨 적 없는 문서(대개 기능 S-와 새 지침 I-)는 "이유가 없는 문서"로 나온다. 커밋을 막지 않는다.
 
 ## 5. 커밋
 
@@ -116,11 +132,13 @@ description: schemaVersion 2 프로젝트를 0.8.0 문서 형식으로 옮기는
 - 에이전트 지침 파일의 GITIFACT 블록을 `gitifact update`로 새 버전에 맞춘다. 블록 밖의 프로젝트 지침(AGENTS.md, CLAUDE.md 등)에 `spec working`, `spec save`, `spec commit`, `docs <topic>` 같은 옛 명령이 있으면 새 명령(`docs list`·`show`·`new`·`check`, `changes list`·`commit`, `guide show`)으로 바꿔 별도 커밋으로 남길지 사용자에게 묻는다.
 - 0.7.x 브라우저가 만든 옛 색인 `<git 공용 폴더>/gitifact/`(보통 `.git/gitifact/`)가 있으면 지워도 된다고 알린다. 0.8.0은 쓰지 않으며, 지우는 것은 사용자에게 맡긴다.
 - 0.8.0의 캐시는 `.gitifact/cache/`에 생기고 스스로 Git에서 제외된다. 첫 조회는 이력을 처음부터 읽어 몇 초 걸릴 수 있다.
-- 전환 커밋에서는 본문을 다듬지 않았으므로, 위키 규칙이나 명세 본문에 `requirements.md`·`spec save` 같은 옛 형식 서술이 남아 있을 수 있다. 찾은 위치를 보고하고, 고치는 것은 사용자와 정해 별도 커밋으로 한다.
+- 지침 `overview`로 옮긴 위키 README에 위키 운영 규칙(무엇을 어디에 쌓는지)이 있으면, 그 규칙을 AGENTS.md나 해당 지침으로 옮길지 사용자와 정한다. 이어서 AGENTS.md의 GITIFACT 블록 밖에 지침 색인을 적는다: 지침마다 어떤 작업 때 읽는지 한 줄(`gitifact guide show instructions`의 "AGENTS.md 색인"). 전환 커밋과 별도 커밋으로 남길지 사용자에게 묻는다.
+- 결정 기록을 지침의 결정 표로 바꾸거나 지침을 다시 묶는 정리는 사용자와 정해 별도 커밋으로 한다.
+- 전환 커밋에서는 본문을 다듬지 않았으므로, 지침이나 명세 본문에 `requirements.md`·`spec save` 같은 옛 형식 서술이나 위키를 가리키는 문장이 남아 있을 수 있다. 찾은 위치를 보고하고, 고치는 것은 사용자와 정해 별도 커밋으로 한다.
 
 ## 7. 보고
 
-- 옮긴 개수: 기능·요구사항·설계·위키·이유(옛 개수와 함께)
+- 옮긴 개수: 기능·요구사항·설계·위키 페이지·이유(옛 개수와 함께), 위키 페이지가 옮겨 간 지침 표
 - `docs check` 결과와 대조 결과
 - 고친 상대 링크, 옮기지 못했거나 판단이 필요했던 것
 - 커밋 해시(했다면), 남은 정리(지침의 옛 명령, 옛 색인)

@@ -1,9 +1,9 @@
 ---
 title: Document style
-description: Shared style for wiki pages, requirements and designs, body versus change reasons, quotations, alerts and diagrams, removing AI slop
+description: Shared style for instructions, requirements and designs, body versus change reasons, quotations, alerts and diagrams, removing AI slop
 ---
 
-Apply this to wiki pages, requirements, and designs. Use the project's language, independently of the CLI display language. Write direct, declarative prose and descriptive headings. Preserve UI text, quotations, and code.
+Apply this to project instructions, requirements, and designs. Use the project's language, independently of the CLI display language. Write direct, declarative prose and descriptive headings. Preserve UI text, quotations, and code.
 
 ## Prose and structure
 
@@ -24,13 +24,13 @@ Apply this to wiki pages, requirements, and designs. Use the project's language,
 
 The body states only the behavior and rules that hold now. “We used to … but changed it because …”, the date and trigger of a change, the old approach, and the measurements behind a choice stay out of the body and go into the commit's change reason (`gitifact guide show commit`). Readers find reasons with `gitifact docs history <ID>` and old text with `gitifact docs show <ID> --ref <commit>`.
 
-When revising, rewrite the sentences that changed instead of appending sentences about the old behavior. Decisions that must not be reversed and rejected alternatives are current constraints, not history. In a design they go one per row in the decision table of `overview.md` (`gitifact guide show design`); when they span features, they go where the wiki policy says. Documents whose body is the context and alternatives, such as decision records (ADRs), follow their own format.
+When revising, rewrite the sentences that changed instead of appending sentences about the old behavior. Decisions that must not be reversed and rejected alternatives are current constraints, not history. In a design they go one per row in the decision table of `overview.md` (`gitifact guide show design`); when they span features, they go in the decision table of that area's instruction (`gitifact guide show instructions`).
 
 ## Quotations and alerts
 
 Use ordinary blockquotes for quotations from documents or people. Put what the next person would easily miss inside a sentence in [GitHub alert syntax](https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax#alerts).
 
-| Kind | Where it goes | Examples in designs and wiki pages |
+| Kind | Where it goes | Examples in designs and instructions |
 | :--- | :--- | :--- |
 | `IMPORTANT` | Invariants that must not be broken, prerequisites to know before starting | Source files are never modified; failures are never swallowed |
 | `WARNING` | Conditions whose breach causes a security problem or wrong behavior | Do not widen a route that is open without authentication |

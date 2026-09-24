@@ -4,7 +4,7 @@ import { transaction, type CacheDatabase } from './database.js';
 import { containing, snippet } from './search-text.js';
 
 export interface HistoryFilter { kind?: ChangeType | undefined; document?: HistoryEvent['kind'] | undefined; feature?: string | undefined; author?: string | undefined; q?: string | undefined }
-export interface SearchHit { id: string; kind: 'feature' | 'requirement' | 'design' | 'document' | 'instruction' | 'history'; title: string; where: string; line: string; featureId?: string; documentId?: string; key?: string }
+export interface SearchHit { id: string; kind: 'feature' | 'requirement' | 'design' | 'instruction' | 'history'; title: string; where: string; line: string; featureId?: string; key?: string }
 
 /** The list row of a change: the document's name and place, without the text on either side. */
 const listed = (e: HistoryEvent) => {
@@ -175,7 +175,7 @@ export function createHistory(database: CacheDatabase, git: GitAccess) {
           const p = JSON.parse(r.payload) as { id: string; title: string; where: string; body: string; feature: string | null };
           const featureId = p.feature ? features.get(p.feature) : undefined;
           const hit: SearchHit = { id: p.id, kind: r.kind, title: p.title, where: p.where, line: snippet(p.body, query),
-            ...(featureId ? { featureId } : {}), ...(r.kind === 'document' ? { documentId: p.id } : {}) };
+            ...(featureId ? { featureId } : {}) };
           return { rank, hit };
         }).sort((a, b) => a.rank - b.rank || a.hit.title.localeCompare(b.hit.title)).slice(0, 24).map(r => r.hit);
         const past = !head ? [] : (db.prepare(`SELECT s.ref AS ref, s.payload AS payload FROM search s JOIN lineage l ON l.head = ? AND l.oid = s.oid

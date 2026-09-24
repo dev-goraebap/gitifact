@@ -53,13 +53,13 @@ These IDs and sentences illustrate the structure and are not valid input.
 
 Put no other keys in the frontmatter. Relations between documents are expressed by a design's `requirements` and `sources`; the folder decides which feature a requirement belongs to.
 
-Links to other documents are relative to this file (from a requirement to the wiki: `../../../wiki/architecture.md`; to an asset: `../../../assets/flow.png`). The browser opens their destinations. `docs check` and `changes list` report a missing target as a `MISSING_LINK_TARGET` warning. Warnings do not block a commit.
+Links to other documents are relative to this file (from a requirement to an asset: `../../../assets/flow.png`). The browser opens their destinations. `docs check` and `changes list` report a missing target as a `MISSING_LINK_TARGET` warning. Warnings do not block a commit.
 
 ## Reading
 
 | Command | When |
 | :--- | :--- |
-| `gitifact docs list [--feature <feature>]` | IDs, titles and descriptions of features, requirements, designs and wiki pages, without bodies |
+| `gitifact docs list [--feature <feature>]` | IDs, titles and descriptions of features, requirements, designs and instructions, without bodies |
 | `gitifact docs search <query>` | Finding text in bodies that titles and descriptions do not mention |
 | `gitifact docs show <ID…>` | The source of the chosen documents and the designs that point to them. `--ref <commit>` shows them as of that commit |
 | `gitifact docs history <ID>` | Why a document changed over time, with reasons and commits |

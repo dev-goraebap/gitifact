@@ -98,6 +98,7 @@
   "doc.FILE_TOO_LARGE": "문서 파일이 1MB를 넘어 읽지 않았습니다: {path}",
   "doc.DOC_DRAFT": "docs new가 만든 초안 표시가 남아 있습니다. 본문을 다 쓴 뒤 draft: true 줄을 지우세요: {path}",
   "doc.INSTRUCTION_INDEX_REQUIRED": "지침 폴더에 index.md가 필요합니다: {path}",
+  "doc.WIKI_REMOVED": "위키는 0.8.0에서 프로젝트 지침으로 바뀌었습니다. 이 페이지를 .gitifact/instructions/로 옮기세요(gitifact guide show migrate): {path}",
   "doc.INSTRUCTION_SPEC_LINK": "지침은 명세를 가리키지 않습니다. 설계가 sources로 지침을 가리킵니다: {path}: {link}",
   "warn.MISSING_LINK_TARGET": "링크 대상이 없습니다: {path}: {link}",
   "warn.ASSET_SIZE": "에셋이 권장 크기(1MB)를 넘습니다: {path} ({bytes}바이트)",
