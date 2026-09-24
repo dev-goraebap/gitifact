@@ -5,14 +5,17 @@ import { HStack } from '@astryxdesign/core/HStack';
 import { Text } from '@astryxdesign/core/Text';
 import { Timestamp } from '@astryxdesign/core/Timestamp';
 import { Link } from '@tanstack/react-router';
-import { groupReasons } from '../model/activity-groups';
+import { groupRecords } from '../model/activity-groups';
 import { Person } from '../../../entities/contributor';
 import { TimelineRecord } from './TimelineRecord';
+import { RecordRow } from './RecordRow';
 import styles from './timeline.module.css';
 import { t, useLanguage } from '../../../shared/i18n';
 
 /** `hidden` counts the commit's records this list leaves out — the overview shows a few of a large commit. */
 type Props = {events:SpecEvent[];day:string|undefined;features:SpecFeature[];hidden:number};
+/** Records a commit lists before the rest are left to its page: a commit may add a hundred. */
+const RECORDS_SHOWN = 5;
 
 /** Names the day a marker stands for when the reader still counts it by name; other days are left to the date. */
 function nearbyDay(iso:string) {
@@ -22,7 +25,9 @@ function nearbyDay(iso:string) {
 }
 
 /**
- * One commit: who made it and when, which commit it was, then each recorded reason over the records it changed.
+ * One commit: who made it and when, which commit it was, then a row per record it added — its title opens the record's
+ * page — up to five, the rest left to the commit's page. Changes no record explains come last with their documents,
+ * shown only when one should have had a record (a document changed, moved or deleted).
  * Its props are the event and feature objects the queries keep between renders and are compared by identity, so
  * "load more" draws the new commits and leaves the ones already on screen alone; before the list was grouped every
  * press drew the whole list again and took longer the more had been loaded.
@@ -30,6 +35,9 @@ function nearbyDay(iso:string) {
 export const TimelineCommit = memo(function TimelineCommit({events,day,features,hidden}: Props) {
   useLanguage();
  const first=events[0]!;
+ const groups=groupRecords(events);
+ const recorded=groups.filter(group=>group.record);
+ const bare=groups.find(group=>!group.record);
  return <VStack as="li" gap={0} className={styles.commit}>
   {day&&<HStack gap={2} className={styles.day}>
    <Text type="supporting" weight="semibold">{nearbyDay(day)}</Text>
@@ -42,6 +50,7 @@ export const TimelineCommit = memo(function TimelineCommit({events,day,features,
      <HStack gap={3} className={styles.commitWho}>
       <Link to="/contributors/$email" params={{email:first.email}} className={styles.commitAuthor}>{first.author}</Link>
       <HStack gap={3} className={styles.commitWhen}>
+       {!!recorded.length&&<Text type="supporting" color="secondary">{t('activity.commitRecords', { count: recorded.length })}</Text>}
        {events.length+hidden>1&&<Text type="supporting" color="secondary">{t('activity.recordCount', { count: events.length+hidden })}</Text>}
        <Timestamp value={first.date} format="relative"/>
       </HStack>
@@ -51,15 +60,17 @@ export const TimelineCommit = memo(function TimelineCommit({events,day,features,
       <Text type="supporting" color="secondary" className={styles.oneLine}>{first.message}</Text>
      </HStack>
     </VStack>
-    {groupReasons(events).map(group=><VStack key={group.key} gap={2} className={styles.reasonGroup}>
-     {group.reasons.length
-      ? group.reasons.map((reason,index)=><Text key={index} className={styles.reasonText}>{reason}</Text>)
-      : <Text color="secondary">{t('activity.noReason')}</Text>}
+    {!!recorded.length&&<VStack as="ul" gap={0} className={styles.recordRows} aria-label={t('event.records')}>
+     {recorded.slice(0,RECORDS_SHOWN).map(group=><RecordRow key={group.key} record={group.record!} events={group.events} features={features}/>)}
+    </VStack>}
+    {recorded.length>RECORDS_SHOWN&&<Link to="/records/commits/$commit" params={{commit:first.commit}} className={styles.commitMore}>{t('activity.moreCommitRecords', { count: recorded.length-RECORDS_SHOWN })}</Link>}
+    {bare&&<VStack gap={2} className={styles.reasonGroup}>
+     {bare.missing&&<Text color="secondary">{t('activity.noRecord')}</Text>}
      <VStack as="ul" gap={0} className={styles.records} aria-label={t('activity.changedRecords')}>
-      {group.events.map(event=><TimelineRecord key={event.key} event={event} features={features}/>)}
+      {bare.events.map(event=><TimelineRecord key={event.key} event={event} features={features}/>)}
      </VStack>
-    </VStack>)}
-    {hidden>0&&<Link to="/activity/$commit" params={{commit:events[0]!.commit}} className={styles.commitMore}>{t('activity.moreRecords', { count: hidden })}</Link>}
+    </VStack>}
+    {hidden>0&&<Link to="/records/commits/$commit" params={{commit:first.commit}} className={styles.commitMore}>{t('activity.moreRecords', { count: hidden })}</Link>}
    </VStack>
   </HStack>
  </VStack>;

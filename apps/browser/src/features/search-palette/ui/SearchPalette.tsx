@@ -32,7 +32,7 @@ const groupNames: () => Record<Kind, string> = () => ({
 function targetOf(hit: BrowserSearchV2['hits'][number]): Target {
   if (hit.kind === 'instruction') return { to: '/instructions/$instructionId', params: { instructionId: hit.id } };
   // A past change is keyed `<commit>:<document>`, which is the commit's page and the section of that document.
-  if (hit.kind === 'history') { const [commit, id] = (hit.key ?? '').split(':'); return { to: '/activity/$commit', params: { commit: commit ?? '' }, hash: id ?? '' }; }
+  if (hit.kind === 'history') { const [commit, id] = (hit.key ?? '').split(':'); return { to: '/records/commits/$commit', params: { commit: commit ?? '' }, hash: id ?? '' }; }
   const params = { featureId: hit.featureId ?? '' };
   if (hit.kind === 'requirement') return { to: '/features/$featureId', params, search: { tab: 'requirements' }, hash: hit.id };
   if (hit.kind === 'design') return { to: '/features/$featureId', params, search: { tab: 'design' } };

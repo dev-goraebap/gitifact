@@ -73,7 +73,7 @@ function ContributorDetail({session,head,person,features}: {session:BrowserSessi
         <HStack gap={4} wrap="wrap">
           <Text type="supporting" color="secondary">{t('contributors.gitCommits', { count: person.commits })}</Text>
           <Text type="supporting" color="secondary">{tNodes('contributors.latest', { time: <Timestamp value={person.latest} format="relative" type="inherit" color="inherit"/> })}</Text>
-          <Link to="/activity" search={{author:person.email}}>{t('contributors.activity')}</Link>
+          <Link to="/records" search={{author:person.email}}>{t('contributors.activity')}</Link>
         </HStack>
       </VStack>
     </HStack>
@@ -93,7 +93,7 @@ function ContributorDetail({session,head,person,features}: {session:BrowserSessi
       {activities.length ? <VStack gap={0} className={styles.personActivity}>
         {activities.map(e => <HStack key={e.key} gap={3} className={styles.personActivityRow}>
           <ChangeBadge event={e}/>
-          <Link to="/activity/$commit" params={{commit:e.commit}} hash={e.id} className={styles.entryTitle}>{(e.after ?? e.before)?.title ?? e.id}</Link>
+          <Link to="/records/commits/$commit" params={{commit:e.commit}} hash={e.id} className={styles.entryTitle}>{(e.after ?? e.before)?.title ?? e.id}</Link>
           <Timestamp value={e.date} format="relative"/>
         </HStack>)}
       </VStack> : <Text color="secondary">{t('contributors.noRecentActivity')}</Text>}

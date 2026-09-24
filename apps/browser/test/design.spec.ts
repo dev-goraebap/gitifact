@@ -6,7 +6,7 @@ const designKey=specs.head+':S-abcdefghij';
 const designSide={id:'S-abcdefghij',specId:'S-abcdefghij',path:'.gitifact/spec/search/design.md',title:design.title};
 changeBodies[designKey]={before:{...designSide,body:'이전 설계'},after:{...designSide,body:design.body}};
 function data(): Fixture {return {...structuredClone(specs), features:specs.features.map(f=>({...f,design})), events:[
- {...specs.events[0]!,key:designKey,id:'S-abcdefghij',kind:'design' as const,types:['modified' as const],before:designSide,after:designSide,reasons:['검색 부하를 줄입니다.']},...specs.events]};}
+ {...specs.events[0]!,key:designKey,id:'S-abcdefghij',kind:'design' as const,types:['modified' as const],before:designSide,after:designSide,records:[{id:'H-dddddddddd',title:'검색 부하를 줄입니다.',sections:[{key:'context' as const,body:'검색 부하를 줄입니다.'}]}]},...specs.events]};}
 test('design tab, explicit references and URL restoration',async({page})=>{
  await mockApi(page);await serve(page, data());
  await page.goto('/features/S-abcdefghij');await page.getByRole('tab',{name:'설계',exact:true}).click();
@@ -18,16 +18,16 @@ test('design tab, explicit references and URL restoration',async({page})=>{
  await page.screenshot({path:'../../.tmp/design-development/features-design.png',fullPage:true});
 });
 test('mixed commit history, design filter and before/after panel',async({page})=>{
- await mockApi(page);await serve(page, data());await page.goto('/activity');
+ await mockApi(page);await serve(page, data());await page.goto('/records');
  await expect(page.getByText('ccccccc',{exact:true})).toHaveCount(1);
- await expect(page.getByRole('list',{name:'이 이유로 바뀐 기록'})).toHaveCount(2);
+ await expect(page.getByRole('list',{name:'이 기록이 설명하는 문서'})).toHaveCount(2);
  await page.getByRole('link',{name:'검색 구현 설계',exact:true}).click();
- const detail=page.getByRole('article',{name:'커밋 상세'});await expect(detail).toContainText('검색 부하를 줄입니다.');
+ const detail=page.getByRole('article',{name:'결정기록 상세'});await expect(detail).toContainText('검색 부하를 줄입니다.');
  await expect(detail.getByRole('table',{name:'본문 변경'})).toContainText('이전 설계');
- await detail.getByRole('region',{name:'검색 구현 설계'}).getByRole('link',{name:'현재 기능 명세 보기 →'}).click();await expect(page.getByRole('tab',{name:'설계',exact:true})).toHaveAttribute('aria-selected','true');
- const rows=page.getByRole('list',{name:'이 이유로 바뀐 기록'}).getByRole('listitem');
- await page.goto('/activity?document=design');await expect(rows).toHaveCount(1);await expect(rows.first()).toContainText('설계');await expect(page.getByRole('link',{name:'검색 구현 설계',exact:true})).toBeVisible();
- await page.goto('/activity?document=requirement');await expect(rows).toHaveCount(1);await expect(page.getByText('검색어 입력',{exact:true})).toBeVisible();
+ await detail.getByRole('link',{name:'현재 기능 명세 보기 →'}).click();await expect(page.getByRole('tab',{name:'설계',exact:true})).toHaveAttribute('aria-selected','true');
+ const rows=page.getByRole('list',{name:'이 기록이 설명하는 문서'}).getByRole('listitem');
+ await page.goto('/records?document=design');await expect(rows).toHaveCount(1);await expect(rows.first()).toContainText('설계');await expect(page.getByRole('link',{name:'검색 구현 설계',exact:true})).toBeVisible();
+ await page.goto('/records?document=requirement');await expect(rows).toHaveCount(1);await expect(page.getByText('검색어 입력',{exact:true})).toBeVisible();
 });
 test('optional design empty state and mobile safe Markdown',async({page})=>{
  await mockApi(page);await page.goto('/features/S-abcdefghij?tab=design');await expect(page.getByRole('heading',{name:'아직 작성된 설계가 없습니다.'})).toBeVisible();

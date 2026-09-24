@@ -6,10 +6,9 @@ import styles from './timeline.module.css';
 import { t, useLanguage } from '../../../shared/i18n';
 
 /**
- * Vertical timeline: one rail on the left, a marker where the date turns over, and one node per commit.
- * The commit is the entry, not the record. A reason is recorded against every record the commit changed, so a list
- * of records printed the same paragraph once per record — 209 times over this repository's 81 reasons. Here the
- * reason is written once and the records it explains sit under it.
+ * Vertical timeline: one rail on the left, a marker where the date turns over, and one node per commit who made it.
+ * Under it each record is written once with the documents it explains beneath, rather than repeated under every
+ * document it names — a reason repeated per document printed the same paragraph 209 times over 81 reasons here.
  */
 export function ActivityTimeline({events,features,hidden}: {events:SpecEvent[];features:SpecFeature[];hidden?:Record<string,number>}) {
   useLanguage();

@@ -84,12 +84,12 @@ export async function serve(page: Page, data: Fixture) {
       && (!q.get('feature') || e.before?.specId === q.get('feature') || e.after?.specId === q.get('feature')) && (!q.get('author') || e.email === q.get('author')) && (!q.get('id') || e.id === q.get('id'))
       && (!q.get('q') || lower([e.id, e.before?.title, e.after?.title].join(' ')).includes(lower(q.get('q')!))));
     const offset = Number(q.get('offset') ?? 0); const limit = Number(q.get('limit') ?? 50);
-    return route.fulfill({ json: { contract: 'browser-history', version: 4, sessionId: session.sessionId, head: data.head, total: matching.length, offset, events: matching.slice(offset, offset + limit) } });
+    return route.fulfill({ json: { contract: 'browser-history', version: 5, sessionId: session.sessionId, head: data.head, total: matching.length, offset, events: matching.slice(offset, offset + limit) } });
   });
   await page.route('**/api/v1/history/summary*', route => {
     const commits = [...new Set(events.map(e => e.commit))];
     const count = (type: string) => events.filter(e => e.types.includes(type as never)).length;
-    return route.fulfill({ json: { contract: 'browser-history-summary', version: 3, sessionId: session.sessionId, head: data.head, total: events.length,
+    return route.fulfill({ json: { contract: 'browser-history-summary', version: 4, sessionId: session.sessionId, head: data.head, total: events.length,
       byType: { created: count('created'), modified: count('modified'), moved: count('moved'), deleted: count('deleted') },
       pulse: commits.map(c => ({ date: events.find(e => e.commit === c)!.date, count: events.filter(e => e.commit === c).length })),
       recent: commits.slice(0, 3).map(c => ({ commit: c, count: events.filter(e => e.commit === c).length, events: events.filter(e => e.commit === c).slice(0, 12) })) } });
@@ -101,13 +101,21 @@ export async function serve(page: Page, data: Fixture) {
     const first = own[0];
     if (!first) return route.fulfill({ status: 404, json: notFound });
     const side = (s: Side, event: SpecEvent) => s && { kind: event.kind, description: '', ...s };
-    return route.fulfill({ json: { contract: 'browser-commit', version: 2, sessionId: session.sessionId, commit,
+    return route.fulfill({ json: { contract: 'browser-commit', version: 3, sessionId: session.sessionId, commit,
       author: first.author, email: first.email, committer: first.committer, date: first.date, message: first.message,
       changes: own.map(event => ({
         event,
         before: side(changeBodies[event.key]?.before ?? (event.before && { ...event.before, body: '' }), event),
         after: side(changeBodies[event.key]?.after ?? (event.after && { ...event.after, body: '' }), event),
       })) } });
+  });
+
+  // Which commit added a record: the first event that carries it.
+  await page.route(url => url.pathname === '/api/v1/record', route => {
+    const q = new URL(route.request().url()).searchParams; const id = q.get('id') ?? '';
+    const found = events.find(e => e.records.some(r => r.id === id));
+    return found ? route.fulfill({ json: { contract: 'browser-record', version: 1, sessionId: session.sessionId, head: q.get('head'), id, commit: found.commit } })
+      : route.fulfill({ status: 404, json: notFound });
   });
 
   // The source a commit changed: none unless a test lists some in commitSources.
@@ -129,8 +137,8 @@ export async function serve(page: Page, data: Fixture) {
         ...f.requirements.map(r => ({ id: r.id, kind: 'requirement', title: r.title, where: f.title, body: r.body, featureId: f.id }))]),
       ...checkout.instructions.map(k => ({ id: k.id, kind: 'instruction', title: k.title, where: k.name, body: k.description + ' ' + k.body })),
     ].map(r => ({ ...r, body: plainText(r.body) })).filter(r => [r.title, r.where, r.body].some(text => lower(text).includes(query)));
-    const past = events.filter(e => lower([(e.after ?? e.before)?.title ?? '', ...e.reasons].join(' ')).includes(query))
-      .map(e => ({ id: e.key, kind: 'history', title: (e.after ?? e.before)?.title ?? e.id, where: e.commit.slice(0, 7) + ' · ' + e.author, line: e.reasons.join(' · '), key: e.key }));
+    const past = events.filter(e => lower([(e.after ?? e.before)?.title ?? '', ...e.records.flatMap(r => [r.title, ...r.sections.map(s => s.body)])].join(' ')).includes(query))
+      .map(e => ({ id: e.key, kind: 'history', title: (e.after ?? e.before)?.title ?? e.id, where: e.commit.slice(0, 7) + ' · ' + e.author, line: e.records.map(r => r.title).join(' · '), key: e.key }));
     return route.fulfill({ json: { contract: 'browser-search', version: 2, sessionId: session.sessionId, query,
       hits: [...records.map(({ body, ...r }) => ({ ...r, line: line(body, query) })), ...past] } });
   });
@@ -148,7 +156,7 @@ export const instructionFiles: Record<string, { text: string | null; binary?: bo
 export const specs: Fixture = {
  contract:'browser-specs',version:6,sessionId:session.sessionId,head:'c'.repeat(40),observedAt:'2026-09-14T00:00:00Z',working:false,
  features:[{id:'S-abcdefghij',path:'.gitifact/spec/search/requirements.md',title:'검색 기능',description:'',contributors:[{name:'Fixture',email:'fixture@example.test',commits:2,latest:'2026-09-14T00:00:00Z'},{name:'Second',email:'second@example.test',commits:1,latest:'2026-09-13T00:00:00Z'}],updatedAt:'2026-09-14T00:00:00Z',requirements:[{id:'R-abcdefghij',title:'검색어 입력',body:'**검색어**를 입력합니다.\n\n조건: 검색어를 입력합니다.\n기대 동작: 결과를 보여줍니다.'}]}],
- events:[{key:'c'.repeat(40)+':R-abcdefghij',commit:'c'.repeat(40),id:'R-abcdefghij',date:'2026-09-14T00:00:00Z',author:'Fixture',email:'fixture@example.test',committer:'Fixture',message:'검색 도입',types:['created'],before:null,after:{id:'R-abcdefghij',title:'검색어 입력',specId:'S-abcdefghij',path:'.gitifact/spec/search/requirements.md'},kind:'requirement',reasons:['사용자가 검색을 요청했습니다.']}],
+ events:[{key:'c'.repeat(40)+':R-abcdefghij',commit:'c'.repeat(40),id:'R-abcdefghij',date:'2026-09-14T00:00:00Z',author:'Fixture',email:'fixture@example.test',committer:'Fixture',message:'검색 도입',types:['created'],before:null,after:{id:'R-abcdefghij',title:'검색어 입력',specId:'S-abcdefghij',path:'.gitifact/spec/search/requirements.md'},kind:'requirement',records:[{id:'H-aaaaaaaaaa',title:'사용자가 검색을 요청했습니다.',sections:[{key:'context',body:'사용자가 검색을 요청했습니다.'}]}]}],
  instructions:[{id:'I-bbbbbbbbbb',name:'layout',title:'레이아웃 지침',description:'열과 폭',body:'중앙 컬럼은 64rem입니다.',updatedAt:'2026-09-14T00:00:00Z'},{id:'I-cccccccccc',name:'naming',title:'이름 규칙',description:'이름 짓기',body:'소문자와 하이픈을 씁니다.'}],
  contributors:[{name:'Fixture',email:'fixture@example.test',commits:3,latest:'2026-09-14T00:00:00Z'},{name:'Second',email:'second@example.test',commits:1,latest:'2026-09-13T00:00:00Z'}],contributorsLimited:false,
 };

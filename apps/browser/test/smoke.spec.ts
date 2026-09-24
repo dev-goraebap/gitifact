@@ -48,7 +48,7 @@ test('built app loads Astryx and supports navigation, reload, and history', asyn
 
 test('the search field keeps Korean text composed through an input method', async ({ page, browserName }) => {
   test.skip(browserName !== 'chromium', 'Input method events are driven through the Chrome DevTools Protocol.');
-  await page.goto('/activity');
+  await page.goto('/records');
   const field = page.getByRole('textbox', { name: '검색', exact: true });
   await field.click();
   const cdp = await page.context().newCDPSession(page);

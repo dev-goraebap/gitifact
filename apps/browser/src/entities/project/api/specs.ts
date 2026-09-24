@@ -1,5 +1,5 @@
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
-import { browserSpecsV6, browserHistoryV4, browserHistorySummaryV3, browserSearchV2, browserCommitFilesV1, browserCommitFileV1, browserCommitV2, browserInstructionFileV1, type BrowserSessionV3 } from '@gitifact/contracts';
+import { browserSpecsV6, browserHistoryV5, browserHistorySummaryV4, browserSearchV2, browserCommitFilesV1, browserCommitFileV1, browserCommitV3, browserInstructionFileV1, browserRecordV1, type BrowserSessionV3 } from '@gitifact/contracts';
 import { requestJson, ApiError } from '../../../shared/api/client';
 import { httpFailure } from './repository';
 import { t } from '../../../shared/i18n';
@@ -39,7 +39,7 @@ export const historyOptions = (session: BrowserSessionV3, head: string, filter: 
   queryFn: ({ signal, pageParam }) => {
     const query = new URLSearchParams({ head, offset: String(pageParam), limit: String(limit) });
     for (const [key, value] of Object.entries(filter)) if (value) query.set(key, value);
-    return read(session, '/api/v1/history?' + query, browserHistoryV4, signal);
+    return read(session, '/api/v1/history?' + query, browserHistoryV5, signal);
   },
   getNextPageParam: last => last.offset + last.events.length < last.total ? last.offset + last.events.length : undefined,
 });
@@ -48,14 +48,21 @@ export const historyOptions = (session: BrowserSessionV3, head: string, filter: 
 export const summaryOptions = (session: BrowserSessionV3, head: string) => queryOptions({
   queryKey: ['browser-history-summary', 3, ...scope(session), head],
   staleTime: Infinity, retry: false,
-  queryFn: ({ signal }) => read(session, '/api/v1/history/summary?head=' + head, browserHistorySummaryV3, signal),
+  queryFn: ({ signal }) => read(session, '/api/v1/history/summary?head=' + head, browserHistorySummaryV4, signal),
 });
 
 /** One commit with every document it changed and the text on both sides: what its page reads. A commit never changes. */
 export const commitOptions = (session: BrowserSessionV3, commit: string) => queryOptions({
   queryKey: ['browser-commit', 2, ...scope(session), commit],
   staleTime: Infinity, retry: false,
-  queryFn: ({ signal }) => read(session, '/api/v1/commit?commit=' + commit, browserCommitV2, signal),
+  queryFn: ({ signal }) => read(session, '/api/v1/commit?commit=' + commit, browserCommitV3, signal),
+});
+
+/** Which commit of `head` added a record. History of one HEAD never changes, so the answer is kept. */
+export const recordOptions = (session: BrowserSessionV3, head: string, id: string) => queryOptions({
+  queryKey: ['browser-record', 1, ...scope(session), head, id],
+  staleTime: Infinity, retry: false,
+  queryFn: ({ signal }) => read(session, '/api/v1/record?head=' + head + '&id=' + encodeURIComponent(id), browserRecordV1, signal),
 });
 
 /** The source files a commit changed beside its documents. A commit never changes, so the answer is kept. */

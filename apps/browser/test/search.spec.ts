@@ -76,8 +76,8 @@ test('a query that matches nothing shows the search state rather than an empty b
 });
 
 test('a search field waits for a pause in typing before it searches', async ({ page }) => {
-  await mockApi(page); await page.goto('/activity');
-  await page.getByRole('list', { name: '활동 목록' }).waitFor();
+  await mockApi(page); await page.goto('/records');
+  await page.getByRole('list', { name: '결정기록 목록' }).waitFor();
   await page.getByRole('textbox', { name: '검색', exact: true }).click();
   await page.keyboard.type('검색');
   // Straight after the keystrokes the query is not in the URL yet; it lands once typing stops.
@@ -91,7 +91,7 @@ test('past changes are found by their reason and open in the activity', async ({
   const dialog = page.getByRole('dialog', palette);
   await expect(dialog).toContainText('변경 이력');
   await page.getByRole('option').filter({ hasText: '사용자가 검색을 요청했습니다.' }).first().click();
-  await expect(page).toHaveURL(/\/activity\/[a-f0-9]+#R-/);
+  await expect(page).toHaveURL(/\/records\/commits\/[a-f0-9]+#R-/);
   await expect(page.getByRole('article', { name: '커밋 상세' })).toContainText('검색어를 입력합니다.');
 });
 

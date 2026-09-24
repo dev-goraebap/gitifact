@@ -165,7 +165,7 @@ function FeatureDetail({ feature: selected, features, search, change }: { featur
         <Text type="supporting" color="secondary">{t('features.requirementCount', { count: selected.requirements.length })}</Text>
         <Contributors people={selected.contributors}/>
         {selected.updatedAt && <Timestamp value={selected.updatedAt} format="relative"/>}
-        <Link to="/activity" search={{ feature: selected.id }}>{t('features.history')}</Link>
+        <Link to="/records" search={{ feature: selected.id }}>{t('features.history')}</Link>
       </HStack>
     </VStack>
     <TabList role="tablist" value={tab} onChange={tab => change({ ...search, tab, selected: undefined })} hasDivider>
@@ -179,7 +179,7 @@ function FeatureDetail({ feature: selected, features, search, change }: { featur
           <DesignDocument design={d} path={d.path} features={features}
             eyebrow={<NumberLine label={t('features.designNumber', { number: number(index) })} id={d.id}/>}
             footer={<RelatedList label={t('features.requirementHistoryLabel')}>
-              <RelatedItem title={<Link to="/activity" search={{ feature: selected.id, q: d.id }}>{t('features.designHistory')}</Link>}/>
+              <RelatedItem title={<Link to="/records" search={{ feature: selected.id, q: d.id }}>{t('features.designHistory')}</Link>}/>
             </RelatedList>}/>
         </VStack>)}
       </VStack>
@@ -208,7 +208,7 @@ function FeatureDetail({ feature: selected, features, search, change }: { featur
               {explained.map(d => <RelatedItem key={d.id} title={<Link to="/features/$featureId" params={{ featureId: selected.id }} search={{ ...search, tab: 'design', selected: d.id }} hash={d.id}>{d.title}</Link>} description={d.description}/>)}
             </RelatedList>}
             <RelatedList label={t('features.requirementHistoryLabel')}>
-              <RelatedItem title={<Link to="/activity" search={{ feature: selected.id, q: r.id }}>{t('features.requirementHistory')}</Link>}/>
+              <RelatedItem title={<Link to="/records" search={{ feature: selected.id, q: r.id }}>{t('features.requirementHistory')}</Link>}/>
             </RelatedList>
           </VStack>
         </VStack>;

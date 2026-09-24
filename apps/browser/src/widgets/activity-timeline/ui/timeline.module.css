@@ -17,10 +17,16 @@
 /* Where a shortened list stops: the overview shows a few of a large commit and this carries on to the activity. */
 .commitMore { align-self:flex-start; color:var(--color-text-secondary); font-size:.8125rem; text-decoration:none; }
 .commitMore:hover { text-decoration:underline; }
+/* A record: its title leads, the first line of its decision follows cut to one line, then its documents a line each.
+   Spacing alone separates records; the timeline's rail is the only line. */
+.recordRows { list-style:none; margin:0; padding:0; min-width:0; }
+.recordRow { min-width:0; padding-block:var(--spacing-3); }
+.recordRow:first-child { padding-top:0; }
+.recordRowPreview { display:block; max-width:46rem; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 /* The reason, written once, and the records it explains. Spacing groups them; the timeline's own rail is the only line. */
 .reasonGroup { min-width:0; }
-/* Held to a readable measure: the column is wider than prose wants, and the reason is what is read here. */
-.reasonText { max-width:46rem; line-height:1.8; overflow-wrap:anywhere; }
+.recordName { color:var(--color-text-primary); font-weight:600; text-decoration:none; overflow-wrap:anywhere; }
+.recordName:hover { text-decoration:underline; }
 .records { list-style:none; margin:0; padding:0; min-width:0; }
 /* Columns hold a width so the rows under one reason line up; the title takes what is left and is cut. */
 .record { align-items:center; min-width:0; padding-block:var(--spacing-1); padding-inline:var(--spacing-2); margin-inline-start:calc(var(--spacing-2) * -1); border-radius:var(--radius-inner); }

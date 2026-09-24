@@ -1,4 +1,4 @@
-import type { SpecEvent, SpecFeature, BrowserSessionV3, BrowserSpecsV6, BrowserHistorySummaryV3 } from '@gitifact/contracts';
+import type { SpecEvent, SpecFeature, BrowserSessionV3, BrowserSpecsV6, BrowserHistorySummaryV4 } from '@gitifact/contracts';
 import { useQuery } from '@tanstack/react-query';
 import { VStack } from '@astryxdesign/core/VStack';
 import { HStack } from '@astryxdesign/core/HStack';
@@ -58,7 +58,7 @@ function StackedBar({ segments, label }: { segments: Segment[]; label: string })
  * Changes per day across the loaded history, as one column per day. A single series, so it carries no legend; the
  * caption states that it counts the loaded range rather than the whole repository.
  */
-function Pulse({ pulse, total }: { pulse: BrowserHistorySummaryV3['pulse']; total: number }) {
+function Pulse({ pulse, total }: { pulse: BrowserHistorySummaryV4['pulse']; total: number }) {
   useLanguage();
   // The server sends one entry per commit of the last three weeks; they are counted here by the reader's own day.
   const times = pulse.flatMap(c => { const time = Date.parse(c.date); return Number.isFinite(time) ? [{ time, count: c.count }] : []; });
@@ -147,7 +147,7 @@ export function ProductOverview({ session, head, features, instructions, contrib
     <VStack gap={4} className={styles.lead}>
       <HStack gap={3} className={styles.barRowHead}>
         <Heading level={2}>{t('overview.recentActivity')}</Heading>
-        <Link to="/activity">{t('overview.activityLink')}</Link>
+        <Link to="/records">{t('overview.activityLink')}</Link>
       </HStack>
       {counting ? <TimelineSkeleton isPlain/>
         : recent.length

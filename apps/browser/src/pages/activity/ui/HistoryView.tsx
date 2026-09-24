@@ -1,5 +1,3 @@
-import { useEffect } from 'react';
-import { useNavigate } from '@tanstack/react-router';
 import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query';
 import type { BrowserSessionV3, SpecFeature } from '@gitifact/contracts';
 import { VStack } from '@astryxdesign/core/VStack';
@@ -25,10 +23,6 @@ export function HistoryView({features,search,session,head}: {features:SpecFeatur
  const query=useInfiniteQuery({...historyOptions(session,head??'',filter),enabled:!!head,placeholderData:keepPreviousData});
  const events=query.data?.pages.flatMap(p=>p.events)??[];
  const first=query.data?.pages[0];
- // An address from before the commit page (a bookmark, a copied link) still opens that change, now on its page.
- const navigate=useNavigate();
- const legacy=search.selected?.includes(':')?search.selected.split(':'):undefined;
- useEffect(()=>{if(legacy)void navigate({to:'/activity/$commit',params:{commit:legacy[0]!},hash:legacy[1]!,replace:true});},[search.selected]);
  if(!head) return <PageState kind="empty" title={t('history.emptyTitle')} description={t('history.emptyDescription')}/>;
  // No padding of its own: the list it stands in for sits directly in the content, and a gap here shifted the swap.
  if(query.isPending) return <VStack gap={0}><TimelineSkeleton/></VStack>;

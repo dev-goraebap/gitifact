@@ -6,16 +6,16 @@ test('wiki changes from before the wiki left the browser stay in the activity wi
   const event = specs.events[0]!;
   const data = { ...structuredClone(specs), events: [{ ...event, key: specs.head + ':W-bbbbbbbbbb', id: 'W-bbbbbbbbbb', kind: 'wiki' as const, types: ['modified' as const],
     before: { id: 'W-bbbbbbbbbb', title: '레이아웃 지침', specId: 'wiki', path: '.gitifact/wiki/layout.md' },
-    after: { id: 'W-bbbbbbbbbb', title: '레이아웃 지침', specId: 'wiki', path: '.gitifact/wiki/frontend/layout.md' }, reasons: ['폴더를 정리했습니다.'] }] };
+    after: { id: 'W-bbbbbbbbbb', title: '레이아웃 지침', specId: 'wiki', path: '.gitifact/wiki/frontend/layout.md' }, records:[{id:'H-wwwwwwwwww',title:'폴더를 정리했습니다.',sections:[{key:'context' as const,body:'폴더를 정리했습니다.'}]}] }] };
   await serve(page, data);
-  await page.goto('/activity?document=wiki');
-  const rows = page.getByRole('list', { name: '이 이유로 바뀐 기록' }).getByRole('listitem'); await expect(rows).toHaveCount(1);
+  await page.goto('/records?document=wiki');
+  const rows = page.getByRole('list', { name: '이 기록이 설명하는 문서' }).getByRole('listitem'); await expect(rows).toHaveCount(1);
   await expect(rows.first()).toContainText('위키 페이지');
   // A wiki page is named by its title alone; no feature stands before it and no path after it.
   await expect(rows.first()).not.toContainText('frontend/layout.md');
   await expect(rows.first()).not.toContainText('/');
   await rows.first().getByRole('link', { name: '레이아웃 지침' }).click();
-  const pane = page.getByRole('article', { name: '커밋 상세' });
+  const pane = page.getByRole('article', { name: '결정기록 상세' });
   await expect(pane).toContainText('레이아웃 지침');
   // There is no wiki page to open any more.
   await expect(pane.getByRole('link', { name: '현재 문서 보기 →' })).toHaveCount(0);
@@ -39,13 +39,13 @@ test('the product page leads with what changed and why', async ({ page }) => {
   await expect(reasons).toContainText('사용자가 검색을 요청했습니다.');
   await expect(reasons).toContainText('검색어 입력');
   await reasons.getByRole('link', { name: '검색어 입력' }).click();
-  await expect(page).toHaveURL(/\/activity\/[a-f0-9]+#R-/);
+  await expect(page).toHaveURL(/\/records\/H-[a-z0-9]+#R-/);
   await page.goBack();
   // The overview draws the activity screen's own timeline, so its parts are here too.
-  await expect(reasons.getByRole('list', { name: '활동 목록' })).toHaveCount(1);
-  await expect(reasons.getByRole('list', { name: '이 이유로 바뀐 기록' })).toHaveCount(1);
+  await expect(reasons.getByRole('list', { name: '결정기록 목록' })).toHaveCount(1);
+  await expect(reasons.getByRole('list', { name: '이 기록이 설명하는 문서' })).toHaveCount(1);
   // One way into the activity timeline, not two.
-  await expect(article.getByRole('link', { name: '활동 →' })).toHaveCount(1);
+  await expect(article.getByRole('link', { name: '결정기록 →' })).toHaveCount(1);
   await expect(page.getByRole('textbox', { name: '검색', exact: true })).toHaveCount(0);
   await expect(page.locator('header[aria-label="현재 위치"]')).toContainText('조회');
   await expect(page.getByText('로컬 읽기 전용', { exact: false })).toHaveCount(0);
@@ -86,7 +86,7 @@ test('the two overview charts share one height even when one legend wraps', asyn
   expect(heights[0]).toBe(heights[1]);
 });
 
-test('a commit that touched a great many records shows ten of them and carries on to the activity', async ({ page }) => {
+test('a commit that touched a great many documents shows three under its record and carries on to the record and the commit', async ({ page }) => {
   await mockApi(page);
   const event = specs.events[0]!;
   // One introducing commit with 25 records; the server sends the first twelve and the whole count.
@@ -96,14 +96,16 @@ test('a commit that touched a great many records shows ten of them and carries o
   await serve(page, data);
   await page.goto('/product');
   const activity = page.getByRole('article', { name: '제품 개요' }).getByLabel('최신 활동');
-  await expect(activity.getByRole('list', { name: '이 이유로 바뀐 기록' }).getByRole('listitem')).toHaveCount(10);
-  // The count names every record of the commit, and the link accounts for the ones not drawn.
-  await expect(activity).toContainText('기록 25건');
-  const more = activity.getByRole('link', { name: '기록 15건 더 →' });
+  // The record lists three of the ten documents the overview holds and leaves the rest to its page.
+  await expect(activity.getByRole('list', { name: '이 기록이 설명하는 문서' }).getByRole('listitem')).toHaveCount(3);
+  await expect(activity.getByRole('link', { name: '문서 7건 더 →' })).toHaveAttribute('href', /\/records\/H-aaaaaaaaaa$/);
+  // The count names every document of the commit, and the link accounts for the ones the overview did not load.
+  await expect(activity).toContainText('문서 25건');
+  const more = activity.getByRole('link', { name: '문서 15건 더 →' });
   await expect(more).toHaveCount(1);
   await more.click();
   // The rest of that commit is its own page, which carries every record it changed.
-  await expect(page).toHaveURL(new RegExp('/activity/' + specs.head + '$'));
+  await expect(page).toHaveURL(new RegExp('/records/commits/'+ specs.head + '$'));
   await expect(page.getByRole('article', { name: '커밋 상세' }).getByRole('region', { name: /도입 기록/ })).toHaveCount(25);
 });
 
@@ -120,6 +122,6 @@ test('while history is still being counted the overview says nothing about zero 
   await expect(article).not.toContainText('전체 활동 0건');
   await expect(article).not.toContainText('아직 자료가 없습니다.');
   release();
-  await expect(article.getByLabel('최신 활동').getByRole('list', { name: '활동 목록' })).toBeVisible();
+  await expect(article.getByLabel('최신 활동').getByRole('list', { name: '결정기록 목록' })).toBeVisible();
   await expect(article).toContainText('전체 활동 1건');
 });

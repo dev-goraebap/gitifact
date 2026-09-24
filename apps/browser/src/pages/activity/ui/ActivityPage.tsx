@@ -5,10 +5,10 @@ import { HistoryView } from './HistoryView';
 import { PageHeader } from '../../../widgets/page-header';
 import { t, useLanguage } from '../../../shared/i18n';
 
-/** The activity: every committed change of the documents, filtered by the server over all of history. */
+/** The decision records: every committed change of the documents by the record that explains it, filtered by the server over all of history. */
 export function ActivityPage({ search, change }: { search: RecordSearch; change: ChangeSearch }) {
   useLanguage();
-  return <RecordsPage header={PageHeader} title={t('nav.history')} root="/activity" hasTitle
+  return <RecordsPage header={PageHeader} title={t('nav.history')} root="/records" hasTitle
     skeleton={<ListSkeleton selectors={4}><TimelineSkeleton/></ListSkeleton>}
     filters={checkout => <>
       <SearchFilter label={t('filters.search')} placeholder={t('filters.searchEvents')} value={search.q ?? ''} onChange={q => change({ ...search, q: q || undefined }, true)}/>

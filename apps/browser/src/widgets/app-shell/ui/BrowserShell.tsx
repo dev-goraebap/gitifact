@@ -26,7 +26,7 @@ const destinations = () => ([
   ['/product', t('nav.product'), HgiProduct],
   ['/features', t('nav.features'), HgiRequirement],
   ['/instructions', t('nav.instructions'), HgiInstruction],
-  ['/activity', t('nav.history'), HgiHistory],
+  ['/records', t('nav.history'), HgiHistory],
   ['/contributors', t('nav.contributors'), HgiMembers],
   ['/git', t('nav.git'), HgiGit],
   ['/settings', t('nav.settings'), HgiSettings],

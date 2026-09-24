@@ -4,6 +4,7 @@
 .commitHeading h1 { font-size:1.5rem; line-height:1.4; letter-spacing:-.02em; }
 .commitMeta { align-items:center; min-width:0; }
 .commitHash { font-family:var(--font-family-code); }
+.commitHashLink { font-family:var(--font-family-code); font-size:.8125rem; color:var(--color-text-secondary); }
 .commitSection { padding-block:var(--spacing-5); border-top:1px solid var(--color-border); }
 .reason p { line-height:1.9; max-width:46rem; }
 .reasonRecords { align-items:center; }
@@ -14,7 +15,7 @@
 .change { padding-block:var(--spacing-6); border-top:1px solid var(--color-border); scroll-margin-top:calc(var(--gitifact-topbar-height) + var(--spacing-4)); }
 /* The badge and the title share one centre line; a baseline would sit the 20px badge on the 27px title's floor. */
 .changeHead { align-items:center; min-width:0; }
-.changeHead h2 { font-size:1.125rem; line-height:1.5; }
+.changeHead h3 { font-size:1.125rem; line-height:1.5; }
 .changePlace { align-items:baseline; min-width:0; font-size:.8125rem; }
 .changePlace span { font-family:var(--font-family-code); }
 .readingSection { border-top:1px solid var(--color-border); padding-top:var(--spacing-5); }
@@ -22,5 +23,20 @@
 .sourcePath { min-width:0; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-family:var(--font-family-code); font-size:.8125rem; }
 .sourceAdded { color:var(--color-text-green); font-family:var(--font-family-code); }
 .sourceRemoved { color:var(--color-text-red); font-family:var(--font-family-code); }
+/* The records of a commit, or the others beside a record: a title a row with the documents it explains counted. */
+.recordList { list-style:none; margin:0; padding:0; min-width:0; }
+.recordItem { align-items:baseline; justify-content:space-between; min-width:0; padding-block:var(--spacing-2); border-bottom:1px solid var(--color-border); }
+.recordItem:last-child { border-bottom:none; }
+.recordLink { min-width:0; color:var(--color-text-primary); font-weight:500; text-decoration:none; overflow-wrap:anywhere; }
+.recordLink:hover { text-decoration:underline; }
+.recordItemMeta { flex-shrink:0; }
+/* A record page: the ID and commit message under the meta, then the sections at a reading width. */
+.recordCommit { align-items:baseline; min-width:0; }
+.recordCommitMessage { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.recordSections { max-width:46rem; min-width:0; padding-block:var(--spacing-5) var(--spacing-6); border-top:1px solid var(--color-border); }
+.recordSections h2 { font-size:1rem; }
+/* A document a record explains, closed to its badge and title; the row's anchor is the document ID. */
+.documentRow { align-items:center; min-width:0; scroll-margin-top:calc(var(--gitifact-topbar-height) + var(--spacing-4)); }
+.documentTitle { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .commitBack { align-self:flex-start; margin-top:var(--spacing-5); font-size:.8125rem; text-decoration:none; color:var(--color-text-secondary); }
 .commitBack:hover { text-decoration:underline; }

@@ -1,3 +1,4 @@
 export { ActivityTimeline } from './ui/ActivityTimeline';
 export { TimelineSkeleton } from './ui/TimelineSkeleton';
-export { groupReasons } from './model/activity-groups';
+export { groupRecords } from './model/activity-groups';
+export { sectionLabel } from './model/record-labels';

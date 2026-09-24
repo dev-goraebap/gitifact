@@ -30,7 +30,7 @@ requirements:
 | `http/router.ts` | 경로 표 디스패치 |
 | `http/respond.ts` | JSON·오류 응답 |
 | `http/static-files.ts` | 앱 파일 |
-| `routes/` | 경로 표 셋: project(세션·상태·패치노트), record(체크아웃·이력·요약·변경·커밋·검색), asset(저장소 에셋) |
+| `routes/` | 경로 표 셋: project(세션·상태·패치노트), record(체크아웃·이력·요약·변경·커밋·결정기록·검색), asset(저장소 에셋) |
 | `checkout/` | 작업 폴더 체크아웃과 작성자 집계 |
 | `commit/commit-files.ts` | 커밋의 소스 변경 읽기 |
 
@@ -47,9 +47,10 @@ requirements:
 | `POST /api/v1/status/refresh` | repository-status v1 | Git 상태를 다시 관측. 허용된 Origin만(아니면 403) |
 | `GET /api/v1/changelog?lang` | changelog v1 | 패치노트. 그 언어가 없으면 기본 언어로 답하고 `fallback`으로 알림 |
 | `GET /api/v1/specs` | browser-specs v6 | 체크아웃 전체: 현재 기능과 그 요구사항·설계, 프로젝트 지침(폴더 파일 목록 포함)과 AGENTS.md, 참여자, 미커밋 여부, 읽지 못한 파일 |
-| `GET /api/v1/history?head&offset&limit&kind&document&feature&author&q` | browser-history v4 | 조건에 맞는 변경 한 페이지와 전체 건수 |
-| `GET /api/v1/history/summary?head` | browser-history-summary v3 | 종류별 건수, 최근 3주 커밋별 건수, 최신 커밋 셋 |
-| `GET /api/v1/commit?commit` | browser-commit v2 | 커밋 하나의 작성자·시각·메시지와, 바꾼 문서마다 목록 정보와 전후 본문 |
+| `GET /api/v1/history?head&offset&limit&kind&document&feature&author&q` | browser-history v5 | 조건에 맞는 변경 한 페이지와 전체 건수 |
+| `GET /api/v1/history/summary?head` | browser-history-summary v4 | 종류별 건수, 최근 3주 커밋별 건수, 최신 커밋 셋 |
+| `GET /api/v1/commit?commit` | browser-commit v3 | 커밋 하나의 작성자·시각·메시지와, 바꾼 문서마다 목록 정보와 전후 본문 |
+| `GET /api/v1/record?head&id` | browser-record v1 | `head` 이력에서 그 결정기록(`DR-…`, 기록 도입 전 이유는 `H-…`)을 더한 커밋. 캐시의 이력 행에서 찾고, 그 이력에 기록이 없으면 404, 쿼리가 형식에 어긋나면 400 |
 | `GET /api/v1/commit/files?commit` | browser-commit-files v1 | 첫 부모 대비 바뀐 소스 파일(`.gitifact` 밖)의 경로·상태·줄 수. 500개까지와 전체 수 |
 | `GET /api/v1/commit/file?commit&path` | browser-commit-file v1 | 그 목록의 파일 하나의 양쪽 원문. 이진 파일과 512KB 넘는 쪽은 원문 없이 표시만 |
 | `GET /api/v1/search?q&head` | browser-search v2 | 체크아웃과 지난 변경의 검색 결과 |
@@ -65,7 +66,7 @@ requirements:
 
 체크아웃과 이력은 따로 조회한다. 체크아웃은 현재 문서뿐이라(문서 파일 하나 1MB, 파일 2만 개까지 읽는다) 통째로 보내고 화면이 거른다. 이력은 끝이 없으므로 서버가 전체 이력에 조건을 걸어 세고 50건씩 준다.
 
-목록 이벤트의 before·after는 id·title·specId·path만 담고 본문은 커밋 조회로 받는다. 이력 쿼리는 HEAD를 받으므로 같은 HEAD의 답은 바뀌지 않는다.
+목록 이벤트의 before·after는 id·title·specId·path만 담고 본문은 커밋 조회로 받는다. 이벤트의 `records`는 그 문서를 설명하는 결정기록 `{id, title, sections: [{key, body}]}`(`key`는 `context`·`decision`·`alternatives`)의 목록이다. 이력 쿼리는 HEAD를 받으므로 같은 HEAD의 답은 바뀌지 않는다.
 
 ## 커밋과 소스 변경
 
@@ -101,6 +102,6 @@ sequenceDiagram
 
 ## 브라우저의 조회 캐시
 
-TanStack Query 키에는 origin·서버 세션·worktree를 넣는다. 명세 조회의 staleTime은 무한이고, 다시 읽는 것은 헤더의 새로고침 버튼뿐이다. 이력은 HEAD·조건별로, 커밋은 커밋별로 세션 동안 보관한다.
+TanStack Query 키에는 origin·서버 세션·worktree를 넣는다. 명세 조회의 staleTime은 무한이고, 다시 읽는 것은 헤더의 새로고침 버튼뿐이다. 이력은 HEAD·조건별로, 기록을 더한 커밋은 HEAD·기록 ID별로, 커밋은 커밋별로 세션 동안 보관한다. 커밋 조회는 커밋 페이지와 기록 상세가 함께 쓴다.
 
 FSD의 entities는 조회를, 화면별 pages 슬라이스는 화면 구성을, `widgets/records-page`는 명세 화면이 함께 쓰는 틀과 검색 상태를 맡는다.
