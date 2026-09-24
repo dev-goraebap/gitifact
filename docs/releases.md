@@ -378,3 +378,17 @@ Markdown 명세·변경 이유·Git 커밋 연결과 요구사항 이력·제품
 빈 npm 캐시와 새 임시 폴더에서 레지스트리의 0.7.1을 설치했다. dist 176개 파일이 로컬 검증 빌드와 바이트 단위로 일치했고 CLI SHA-256도 5e3cb9cbf8fa301732c809363eb633d7141e26b4359ebbf5186ef2e757a164f2로 같다. version·help, init과 v0.7.1 에이전트 블록, spec working, update --check, 한국어·영어 docs, 브라우저 세션·명세·패치노트 응답을 확인했다. 사용자 프로젝트와 전역 설치는 바꾸지 않았다.
 
 게시 코드 커밋 fccb25d에 주석 태그 v0.7.1을 만들고 origin에 푸시했다. 원격 태그가 해당 커밋을 가리키는 것도 확인했다. 이 게시 결과를 남기는 후속 문서 커밋으로 태그를 옮기지 않는다.
+
+## 0.8.0 배포 준비
+
+2026-09-25, 문서 형식 전환(schemaVersion 3, 문서 하나가 파일 하나), 위키를 대신한 프로젝트 지침, 결정기록, 리소스별 명령(`specs`·`instructions`·`records`, `check`), 블록 버전의 전역 설치 기본, `feedback`, 브라우저 대시보드·결정기록 화면을 0.8.0으로 준비했다. 한국어·영어 패치노트와 AGENTS.md 블록의 버전을 함께 맞췄다.
+
+작업 폴더에 커밋하지 않은 landing 작업이 있어, 릴리스 커밋 6bf29f41b5084bf9877334d3cf1c7c220f2a0fd0만 담은 별도 worktree에서 `pnpm install --frozen-lockfile`과 `pnpm check`를 돌려 통과했다(core 41, contracts 9, intro 2, 브라우저 90, CLI 149, 패키지 오프라인 설치·실행). 모의 게시는 216개 파일, 압축 4,333,951바이트, integrity sha512-v39Wa3ko74Rw1QcBWYMDAPkwmldYkDsmFNM1sgQ0awxZF0YHlqsmy3275ydR/3T14QKtFFEF6eRLe2CjsbzsYw==다. CLI 번들 SHA-256은 d68b1539b53cb377e0330ecaacf1d359756beb2a24a37eb9c643af53d4718a6a다.
+
+## 0.8.0 게시 결과
+
+2026-09-25, main을 6bf29f4까지 푸시하고 worktree에서 게시했다. worktree는 브랜치가 아니라 커밋을 꺼낸 상태라 `--publish-branch` 대신 `--no-git-checks`를 쓰고, 작업 폴더가 깨끗하고 커밋이 main HEAD와 같은지 직접 확인했다. 게시 추가 인증 뒤 npm의 자동 검토(Validating)를 거쳐 공개됐고, 검토 중 재게시는 409로 거부됐다. 레지스트리의 버전과 latest가 0.8.0이고 integrity는 모의 실행과 같으며 shasum은 e28dea008401ab101068e9433f724523b3488e0d다.
+
+새 임시 폴더에 레지스트리의 0.8.0을 설치했다. dist 213개 파일이 검증 빌드와 같고 CLI SHA-256도 같다. version, init과 v0.8.0 블록, `specs new`·`specs list`·`instructions list`·`check`·`records list`, `guide list`, `feedback --help`를 확인했다. 실제 이슈 전송은 하지 않았다. 사용자 프로젝트와 전역 설치는 바꾸지 않았다.
+
+릴리스 커밋 6bf29f4에 주석 태그 v0.8.0을 만들고 origin에 푸시했으며, 원격 태그가 해당 커밋을 가리키는 것을 확인했다. 이 게시 결과를 남기는 후속 문서 커밋으로 태그를 옮기지 않는다.
