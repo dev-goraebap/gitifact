@@ -12,25 +12,25 @@ import { Skeleton } from '@astryxdesign/core/Skeleton';
 import { PageState } from '../../../shared/ui/page-state';
 import { useHotkeys } from '@astryxdesign/core/hooks';
 import type { SearchableItem, SearchSource } from '@astryxdesign/core/Typeahead';
-import type { BrowserSessionV3, BrowserSearchV1 } from '@gitifact/contracts';
+import type { BrowserSessionV3, BrowserSearchV2 } from '@gitifact/contracts';
 import { sessionOptions, specsOptions, searchRecords } from '../../../entities/project';
 import { useSearchOpen, openSearch, setSearchOpen, closeSearch, typingDelay } from '../../../shared/lib/search';
 import { t, useLanguage } from '../../../shared/i18n';
 import styles from './search-palette.module.css';
 
-type Kind = 'feature' | 'requirement' | 'design' | 'document' | 'history';
+type Kind = 'feature' | 'requirement' | 'design' | 'instruction' | 'history';
 type Target = { to: string; params?: Record<string, string>; search?: Record<string, string>; hash?: string };
 // `line` is the matched line the server cut; the opening list shows the start of the body instead.
 type Hit = SearchableItem<{ group: string; kind: Kind; where: string; body: string; line?: string; target: Target; updatedAt: string | null }>;
 
 const groupNames: () => Record<Kind, string> = () => ({
   feature: t('search.group.feature'), requirement: t('search.group.requirement'),
-  design: t('search.group.design'), document: t('search.group.document'), history: t('search.group.history'),
+  design: t('search.group.design'), instruction: t('search.group.instruction'), history: t('search.group.history'),
 });
 
-/** Where a server hit opens: the feature on the right tab, the wiki page, or the change in the activity. */
-function targetOf(hit: BrowserSearchV1['hits'][number]): Target {
-  if (hit.kind === 'document') return { to: '/wiki/$documentId', params: { documentId: hit.documentId ?? '' } };
+/** Where a server hit opens: the feature on the right tab, the instruction, or the change in the activity. */
+function targetOf(hit: BrowserSearchV2['hits'][number]): Target {
+  if (hit.kind === 'instruction') return { to: '/instructions/$instructionId', params: { instructionId: hit.id } };
   // A past change is keyed `<commit>:<document>`, which is the commit's page and the section of that document.
   if (hit.kind === 'history') { const [commit, id] = (hit.key ?? '').split(':'); return { to: '/activity/$commit', params: { commit: commit ?? '' }, hash: id ?? '' }; }
   const params = { featureId: hit.featureId ?? '' };
@@ -138,10 +138,10 @@ function LoadedPalette({ session, isOpen }: { session: BrowserSessionV3; isOpen:
         where: feature.title, body: plain(design.description + ' ' + design.body), updatedAt: feature.updatedAt,
         target: { to: '/features/$featureId', params: { featureId: feature.id }, search: { tab: 'design' }, hash: design.id } } });
     }
-    for (const document of checkout.documents) {
-      out.push({ id: document.id, label: document.title, auxiliaryData: { group: groupNames().document, kind: 'document',
-        where: document.path.replace(/^\.gitifact\/wiki\//, ''), body: plain(document.body), updatedAt: document.updatedAt,
-        target: { to: '/wiki/$documentId', params: { documentId: document.id } } } });
+    for (const instruction of checkout.instructions) {
+      out.push({ id: instruction.id, label: instruction.title, auxiliaryData: { group: groupNames().instruction, kind: 'instruction',
+        where: instruction.name, body: plain(instruction.description + ' ' + instruction.body), updatedAt: instruction.updatedAt,
+        target: { to: '/instructions/$instructionId', params: { instructionId: instruction.id } } } });
     }
     return out;
   }, [checkout, language]);
@@ -150,7 +150,7 @@ function LoadedPalette({ session, isOpen }: { session: BrowserSessionV3; isOpen:
     // Nothing typed yet: the files touched most recently. Requirements and designs carry their feature's timestamp,
     // so including them filled the list with one feature's requirements instead of showing six different documents.
     bootstrap: () => entries
-      .filter(entry => entry.auxiliaryData?.updatedAt && (entry.auxiliaryData.kind === 'feature' || entry.auxiliaryData.kind === 'document'))
+      .filter(entry => entry.auxiliaryData?.updatedAt && (entry.auxiliaryData.kind === 'feature' || entry.auxiliaryData.kind === 'instruction'))
       .sort((a, b) => (b.auxiliaryData?.updatedAt ?? '').localeCompare(a.auxiliaryData?.updatedAt ?? ''))
       .slice(0, 6)
       .map(entry => ({ ...entry, auxiliaryData: { ...entry.auxiliaryData!, group: t('search.group.recent') } })),

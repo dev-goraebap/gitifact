@@ -1,0 +1,47 @@
+/* The instruction mark: a rounded square in the instruction's colour with its first letter, sized to sit beside a list label. */
+.mark { display:inline-flex; align-items:center; justify-content:center; flex:none; width:var(--spacing-7); height:var(--spacing-7); border-radius:var(--radius-element);
+  font-weight:600; font-size:.875rem; line-height:1; background:var(--color-background-gray); color:var(--color-text-secondary); }
+.markLarge { width:var(--spacing-9); height:var(--spacing-9); font-size:1.125rem; border-radius:var(--radius-container); }
+.mark[data-instruction-color="blue"] { background:var(--color-background-blue); color:var(--color-text-blue); }
+.mark[data-instruction-color="green"] { background:var(--color-background-green); color:var(--color-text-green); }
+.mark[data-instruction-color="purple"] { background:var(--color-background-purple); color:var(--color-text-purple); }
+.mark[data-instruction-color="orange"] { background:var(--color-background-orange); color:var(--color-text-orange); }
+.mark[data-instruction-color="teal"] { background:var(--color-background-teal); color:var(--color-text-teal); }
+.mark[data-instruction-color="pink"] { background:var(--color-background-pink); color:var(--color-text-pink); }
+.mark[data-instruction-color="cyan"] { background:var(--color-background-cyan); color:var(--color-text-cyan); }
+.mark[data-instruction-color="yellow"] { background:var(--color-background-yellow); color:var(--color-text-yellow); }
+
+/* The list: rows split by a hairline, no box around them; each row is one link with the mark, two lines and the exceptions. */
+.rows { list-style:none; margin:0; padding:0; border-top:1px solid var(--color-border); }
+.rows > li { border-bottom:1px solid var(--color-border); }
+.row { display:flex; align-items:center; gap:var(--spacing-4); padding:var(--spacing-4) var(--spacing-3); color:inherit; text-decoration:none; border-radius:var(--radius-element); }
+.row:hover { background:var(--color-background-muted); }
+.row:focus-visible { outline:2px solid var(--color-accent); outline-offset:-2px; }
+.rowText { flex:1; min-width:0; }
+.rowHead { min-width:0; flex-wrap:nowrap; align-items:baseline; }
+.rowTitle { flex:none; }
+.rowEnd { flex:none; }
+.clip { min-width:0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+
+/* Detail: the heading, then the file list beside the file being read. */
+.heading { padding-block:var(--spacing-2) var(--spacing-6); }
+.heading h1 { font-size:1.75rem; line-height:1.4; letter-spacing:-.025em; }
+.activity { font-size:.8125rem; }
+.reader { align-items:flex-start; border-top:1px solid var(--color-border); padding-top:var(--spacing-5); }
+.files { flex:0 0 14rem; min-width:0; position:sticky; top:calc(var(--gitifact-topbar-height) + var(--spacing-4)); padding-inline-end:var(--spacing-4); overflow-wrap:anywhere; }
+.content { flex:1 1 0; min-width:0; overflow-wrap:anywhere; }
+.fileGroup { padding-top:var(--spacing-3); }
+.folder { font-family:var(--font-family-code); padding-inline:var(--spacing-2); padding-bottom:var(--spacing-1); }
+.filePath { font-family:var(--font-family-code); padding-bottom:var(--spacing-3); }
+.related { padding-top:var(--spacing-8); }
+/* Narrow screens: the files come above the file being read. */
+@media(width<64rem) {
+  .reader { flex-direction:column; gap:var(--spacing-5); }
+  .files { position:static; flex-basis:auto; width:100%; padding-inline-end:0; }
+  .heading h1 { font-size:1.5rem; }
+}
+/* AGENTS.md has no colour of its own: it is the index every session loads, set apart from the instructions it lists. */
+.mark[data-instruction-color="agents"] { background:var(--color-background-surface); color:var(--color-text-primary); box-shadow:inset 0 0 0 1px var(--color-border); }
+.groupLabel { padding-top:var(--spacing-5); padding-bottom:var(--spacing-2); }
+.groupLabel:first-child { padding-top:0; }
+.agentsBody { border-top:1px solid var(--color-border); padding-top:var(--spacing-5); overflow-wrap:anywhere; }

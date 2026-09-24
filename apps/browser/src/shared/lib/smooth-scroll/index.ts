@@ -5,7 +5,7 @@ import Lenis from 'lenis';
  * Wheel scrolling that glides instead of stepping, on one scrolling element (the content card). The browser only
  * smooths scrolls it starts itself (`scroll-behavior` covers anchors and scrollTo, not the wheel), so the wheel goes
  * through Lenis. It stays off for readers who ask for less motion, and areas that scroll on their own inside the card
- * (the wiki tree, the requirement index, wide tables) keep their native scroll.
+ * (the requirement index, wide tables) keep their native scroll.
  */
 export function useSmoothWheel(ref: RefObject<HTMLElement | null>) {
   useEffect(() => {

@@ -16,10 +16,7 @@
 /* Header: the observed time sits left of the refresh button. */
 .headerActions { align-items:center; flex-shrink:0; white-space:nowrap; }
 /* Wiki: a repository-style explorer. The page fills the card so the tree and the pane scroll on their own. */
-.pageFill { min-width:0; min-height:100%; flex:0 0 auto; }
 /* These grow with the explorer instead of clipping it, so the sticky page header keeps a containing block as tall as the page. */
-.fill { flex:1 0 auto; min-width:0; }
-.fillContent { flex:1 0 auto; min-width:0; animation:reveal .22s ease-out both; }
 /* Narrow screens: the observed time yields to the breadcrumb, and the wiki tree is hidden because the folder list already navigates. */
 @media(width<48rem) {
   .headerTime { display:none; }

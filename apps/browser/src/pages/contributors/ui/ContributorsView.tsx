@@ -1,4 +1,4 @@
-import type { BrowserSessionV3, BrowserSpecsV5, SpecFeature } from '@gitifact/contracts';
+import type { BrowserSessionV3, BrowserSpecsV6, SpecFeature } from '@gitifact/contracts';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { historyOptions } from '../../../entities/project';
 import { VStack } from '@astryxdesign/core/VStack';
@@ -17,7 +17,7 @@ import styles from './contributors.module.css';
 import { PageState } from '../../../shared/ui/page-state';
 import { t, tNodes, useLanguage } from '../../../shared/i18n';
 
-type Contributor = NonNullable<BrowserSpecsV5['contributors']>[number];
+type Contributor = NonNullable<BrowserSpecsV6['contributors']>[number];
 
 export function ContributorsView({session,head,people,features,email,search}: {session:BrowserSessionV3;head:string|null;people:Contributor[];features:SpecFeature[];email?:string|undefined;search:RecordSearch}) {
   useLanguage();

@@ -40,7 +40,7 @@ export function ChangeDiff({ before, after, features }: { before: SpecSnapshot; 
   useLanguage();
   const index = useDocumentIndex();
   // A requirement or a page named by ID reads by its current title; one that no longer exists keeps its ID.
-  const title = (id: string) => features.flatMap(f => f.requirements).find(r => r.id === id)?.title ?? index.documents.find(d => d.id === id)?.title ?? id;
+  const title = (id: string) => features.flatMap(f => f.requirements).find(r => r.id === id)?.title ?? index.instructions?.find(d => d.id === id)?.title ?? id;
   const fields = fieldChanges(before, after, title);
   return <VStack gap={4}>
     {!!fields.length && <VStack as="section" gap={2} aria-label={t('diff.fields')} className={styles.fields}>

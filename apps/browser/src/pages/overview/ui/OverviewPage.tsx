@@ -8,6 +8,6 @@ import { t, useLanguage } from '../../../shared/i18n';
 export function OverviewPage() {
   useLanguage();
   return <RecordsPage header={PageHeader} title={t('nav.product')} root="/product" hasTitle={false} skeleton={<OverviewSkeleton/>}>
-    {({ checkout, session }) => <ProductOverview session={session} head={checkout.head} features={checkout.features} documents={checkout.documents} contributors={checkout.contributors} working={checkout.working}/>}
+    {({ checkout, session }) => <ProductOverview session={session} head={checkout.head} features={checkout.features} instructions={checkout.instructions.length} contributors={checkout.contributors} working={checkout.working}/>}
   </RecordsPage>;
 }

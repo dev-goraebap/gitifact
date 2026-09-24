@@ -1,5 +1,5 @@
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
-import { browserSpecsV5, browserHistoryV3, browserHistorySummaryV2, browserSearchV1, browserCommitFilesV1, browserCommitFileV1, browserCommitV1, type BrowserSessionV3 } from '@gitifact/contracts';
+import { browserSpecsV6, browserHistoryV4, browserHistorySummaryV3, browserSearchV2, browserCommitFilesV1, browserCommitFileV1, browserCommitV2, browserInstructionFileV1, type BrowserSessionV3 } from '@gitifact/contracts';
 import { requestJson, ApiError } from '../../../shared/api/client';
 import { httpFailure } from './repository';
 import { t } from '../../../shared/i18n';
@@ -19,13 +19,13 @@ async function read<T extends { sessionId: string }>(session: BrowserSessionV3, 
 const scope = (session: BrowserSessionV3) => [window.location.origin, session.sessionId, session.repository.worktreeKey] as const;
 
 /**
- * The checkout — current specs, wiki and contributors — read once and kept until the reader asks again. Every screen
+ * The checkout — current specs, instructions and contributors — read once and kept until the reader asks again. Every screen
  * that shows specs shares it, and the header's refresh button is how this project says an observation is explicit.
  */
 export const specsOptions = (session: BrowserSessionV3) => queryOptions({
-  queryKey: ['browser-specs', 5, ...scope(session)],
+  queryKey: ['browser-specs', 6, ...scope(session)],
   staleTime: Infinity, retry: false,
-  queryFn: ({ signal }) => read(session, '/api/v1/specs', browserSpecsV5, signal),
+  queryFn: ({ signal }) => read(session, '/api/v1/specs', browserSpecsV6, signal),
 });
 
 /**
@@ -34,28 +34,28 @@ export const specsOptions = (session: BrowserSessionV3) => queryOptions({
  * so its pages are kept for the session.
  */
 export const historyOptions = (session: BrowserSessionV3, head: string, filter: HistoryFilter, limit = 50) => infiniteQueryOptions({
-  queryKey: ['browser-history', 3, ...scope(session), head, filter, limit],
+  queryKey: ['browser-history', 4, ...scope(session), head, filter, limit],
   initialPageParam: 0, staleTime: Infinity, retry: false,
   queryFn: ({ signal, pageParam }) => {
     const query = new URLSearchParams({ head, offset: String(pageParam), limit: String(limit) });
     for (const [key, value] of Object.entries(filter)) if (value) query.set(key, value);
-    return read(session, '/api/v1/history?' + query, browserHistoryV3, signal);
+    return read(session, '/api/v1/history?' + query, browserHistoryV4, signal);
   },
   getNextPageParam: last => last.offset + last.events.length < last.total ? last.offset + last.events.length : undefined,
 });
 
 /** Counts over all of `head`'s history and its newest commits, for the overview. */
 export const summaryOptions = (session: BrowserSessionV3, head: string) => queryOptions({
-  queryKey: ['browser-history-summary', 2, ...scope(session), head],
+  queryKey: ['browser-history-summary', 3, ...scope(session), head],
   staleTime: Infinity, retry: false,
-  queryFn: ({ signal }) => read(session, '/api/v1/history/summary?head=' + head, browserHistorySummaryV2, signal),
+  queryFn: ({ signal }) => read(session, '/api/v1/history/summary?head=' + head, browserHistorySummaryV3, signal),
 });
 
 /** One commit with every document it changed and the text on both sides: what its page reads. A commit never changes. */
 export const commitOptions = (session: BrowserSessionV3, commit: string) => queryOptions({
-  queryKey: ['browser-commit', 1, ...scope(session), commit],
+  queryKey: ['browser-commit', 2, ...scope(session), commit],
   staleTime: Infinity, retry: false,
-  queryFn: ({ signal }) => read(session, '/api/v1/commit?commit=' + commit, browserCommitV1, signal),
+  queryFn: ({ signal }) => read(session, '/api/v1/commit?commit=' + commit, browserCommitV2, signal),
 });
 
 /** The source files a commit changed beside its documents. A commit never changes, so the answer is kept. */
@@ -72,8 +72,18 @@ export const commitFileOptions = (session: BrowserSessionV3, commit: string, pat
   queryFn: ({ signal }) => read(session, '/api/v1/commit/file?' + new URLSearchParams({ commit, path }), browserCommitFileV1, signal),
 });
 
-/** Records whose title, place or text holds the words: the current specs and wiki, then past changes of `head`. */
+/**
+ * One file of an instruction folder from the working tree, read when the reader opens it. Kept like the checkout: the header's
+ * refresh reads the checkout again, and a file whose size changed there is a new query.
+ */
+export const instructionFileOptions = (session: BrowserSessionV3, id: string, path: string, size: number) => queryOptions({
+  queryKey: ['browser-instruction-file', 1, ...scope(session), id, path, size],
+  staleTime: Infinity, retry: false,
+  queryFn: ({ signal }) => read(session, '/api/v1/instructions/file?' + new URLSearchParams({ id, path }), browserInstructionFileV1, signal),
+});
+
+/** Records whose title, place or text holds the words: the current specs and instructions, then past changes of `head`. */
 export function searchRecords(session: BrowserSessionV3, words: string, head: string | null, signal?: AbortSignal) {
   const query = new URLSearchParams({ q: words }); if (head) query.set('head', head);
-  return read(session, '/api/v1/search?' + query, browserSearchV1, signal);
+  return read(session, '/api/v1/search?' + query, browserSearchV2, signal);
 }

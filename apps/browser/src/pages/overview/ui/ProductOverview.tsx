@@ -1,4 +1,4 @@
-import type { SpecDocument, SpecEvent, SpecFeature, BrowserSessionV3, BrowserSpecsV5, BrowserHistorySummaryV2 } from '@gitifact/contracts';
+import type { SpecEvent, SpecFeature, BrowserSessionV3, BrowserSpecsV6, BrowserHistorySummaryV3 } from '@gitifact/contracts';
 import { useQuery } from '@tanstack/react-query';
 import { VStack } from '@astryxdesign/core/VStack';
 import { HStack } from '@astryxdesign/core/HStack';
@@ -15,7 +15,7 @@ import { statusOptions, summaryOptions } from '../../../entities/project';
 import styles from './overview.module.css';
 import { t, useLanguage, getLanguage } from '../../../shared/i18n';
 
-type Contributor = NonNullable<BrowserSpecsV5['contributors']>[number];
+type Contributor = NonNullable<BrowserSpecsV6['contributors']>[number];
 type ChangeType = SpecEvent['types'][number];
 
 // Categorical hues in a fixed order validated for adjacent-pair CVD separation (blue → orange → purple → green); gray closes a tail.
@@ -23,7 +23,7 @@ const series = ['var(--color-data-categorical-blue, #0171E3)', 'var(--color-data
 const tail = 'var(--color-data-neutral, #8494A3)';
 const changeNames: () => Record<ChangeType, string> = () => ({ created: t('change.created'), modified: t('change.modified'), moved: t('change.moved'), deleted: t('change.deleted') });
 const changeOrder: ChangeType[] = ['created', 'modified', 'moved', 'deleted'];
-const kindNames: () => Record<NonNullable<SpecEvent['kind']>, string> = () => ({ feature: t('kind.feature'), requirement: t('kind.requirement'), design: t('kind.design'), wiki: t('kind.wiki') });
+const kindNames: () => Record<NonNullable<SpecEvent['kind']>, string> = () => ({ feature: t('kind.feature'), requirement: t('kind.requirement'), design: t('kind.design'), wiki: t('kind.wiki'), instruction: t('kind.instruction') });
 const day = 86_400_000;
 // A commit that introduced the project can hold hundreds of records; the overview shows this many and links on.
 const RECENT_RECORDS = 10;
@@ -58,7 +58,7 @@ function StackedBar({ segments, label }: { segments: Segment[]; label: string })
  * Changes per day across the loaded history, as one column per day. A single series, so it carries no legend; the
  * caption states that it counts the loaded range rather than the whole repository.
  */
-function Pulse({ pulse, total }: { pulse: BrowserHistorySummaryV2['pulse']; total: number }) {
+function Pulse({ pulse, total }: { pulse: BrowserHistorySummaryV3['pulse']; total: number }) {
   useLanguage();
   // The server sends one entry per commit of the last three weeks; they are counted here by the reader's own day.
   const times = pulse.flatMap(c => { const time = Date.parse(c.date); return Number.isFinite(time) ? [{ time, count: c.count }] : []; });
@@ -88,10 +88,9 @@ function Pulse({ pulse, total }: { pulse: BrowserHistorySummaryV2['pulse']; tota
 /**
  * The overview opens with the project and its size on one line, then the two bars that show how the work is shaped
  * over all of history and who did it, then the reasons behind the last commits — what the product records and what a returning
- * reader comes back for. The wiki README is the wiki's policy, not a product document, so the dashboard neither
- * shows nor links it.
+ * reader comes back for.
  */
-export function ProductOverview({ session, head, features, documents, contributors, working }: { session: BrowserSessionV3; head: string | null; features: SpecFeature[]; documents: SpecDocument[]; contributors: Contributor[]; working: boolean }) {
+export function ProductOverview({ session, head, features, instructions, contributors, working }: { session: BrowserSessionV3; head: string | null; features: SpecFeature[]; instructions: number; contributors: Contributor[]; working: boolean }) {
   useLanguage();
   // Counts over all of history and its newest commits, from the server's index; nothing before the first commit.
   const history = useQuery({ ...summaryOptions(session, head ?? ''), enabled: !!head });
@@ -122,7 +121,7 @@ export function ProductOverview({ session, head, features, documents, contributo
         <HStack as="ul" gap={6} wrap="wrap" className={styles.facts} aria-label={t('overview.summary')}>
           {fact(t('overview.stat.features'), features.length)}
           {fact(t('overview.stat.requirements'), requirements)}
-          {fact(t('overview.stat.wiki'), documents.length)}
+          {fact(t('overview.stat.instructions'), instructions)}
           {fact(t('overview.stat.contributors'), contributors.length)}
         </HStack>
         <HStack gap={3} wrap="wrap" className={styles.heroState}>

@@ -74,8 +74,10 @@ export function CommitView({ commit, documentId, session, features, head }: { co
         <HStack gap={3} wrap="wrap" className={styles.changePlace}>
           <Text type="supporting" color="secondary">{event.id}</Text>
           <Text type="supporting" color="secondary">{(after ?? before)?.path}</Text>
-          {event.kind === 'wiki'
-            ? after && <Link to="/wiki/$documentId" params={{ documentId: event.id }}>{t('event.currentDocument')}</Link>
+          {/* A wiki page from before the wiki left the browser has no current page to open. */}
+          {event.kind === 'wiki' ? null
+            : event.kind === 'instruction'
+            ? after && <Link to="/instructions/$instructionId" params={{ instructionId: event.id }}>{t('event.currentInstruction')}</Link>
             : <Link to="/features/$featureId" params={{ featureId: (after ?? before)?.specId ?? '' }}
               search={{ ...(event.kind === 'feature' ? {} : { selected: event.id, tab: event.kind === 'design' ? 'design' : 'requirements' }) }}
               {...(event.kind === 'feature' ? {} : { hash: event.id })}>{t('event.currentFeature')}</Link>}

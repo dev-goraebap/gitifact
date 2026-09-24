@@ -1,8 +1,8 @@
 import { createContext, useContext } from 'react';
 import { resolveDocumentLink, type DocumentIndex, type ResolvedLink } from './resolveDocumentLink';
 
-/** The wiki pages and features the loaded specs know about; the product pages provide it once for every document below. */
-export const DocumentIndexContext = createContext<DocumentIndex>({ documents: [], features: [] });
+/** The features and instructions the loaded specs know about; the product pages provide it once for every document below. */
+export const DocumentIndexContext = createContext<DocumentIndex>({ features: [] });
 /** Repository path of the document being rendered, so its relative links have a folder to start from. */
 export const DocumentPathContext = createContext<string | undefined>(undefined);
 /** Id of the heading the reader was sent to, so the section it opens is marked as the one that was meant. */

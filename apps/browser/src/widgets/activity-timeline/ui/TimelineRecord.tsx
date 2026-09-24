@@ -9,7 +9,7 @@ import { useLanguage } from '../../../shared/i18n';
 /**
  * One record a commit changed, on one line: a badge of what happened to it and what kind of record it is, then where
  * it sits, the feature in quiet text and a dot before the document the link opens (the record's section of the commit
- * page). A wiki page and a feature's own introduction are named by their title alone. The title follows its badge
+ * page). A wiki page (from before the wiki left the browser) and a feature's own introduction are named by their title alone. The title follows its badge
  * directly rather than a column of fixed width, so a short badge leaves no gap.
  * The title is cut by CSS, not by Text's maxLines: maxLines measures every element to decide on a tooltip, which
  * forces a layout per row, and a list of 334 rows took 2.7 s to draw again when the reader came back to it.

@@ -18,7 +18,7 @@ function DesignSources({ sources, path }: { sources: DesignSource[]; path: strin
     {sources.map((source, i) => {
       // A source names a document by ID; the server resolved its path when the document exists.
       const link = source.url ? resolveDocumentLink(source.url, path, index) : source.path ? resolveDocumentLink(relativeTo(path, source.path), path, index) : { kind: 'missing' as const, path: source.id ?? '' };
-      const where = link.kind === 'external' ? hostOf(link.href) : link.kind === 'wiki' ? link.path.replace(/^\.gitifact\/wiki\//, '') : link.kind === 'missing' ? t('link.missing', { path: link.path }) : link.kind === 'outside' ? link.path : '';
+      const where = link.kind === 'external' ? hostOf(link.href) : link.kind === 'instruction' ? link.path.replace(/^\.gitifact\//, '') : link.kind === 'agents' ? link.path : link.kind === 'missing' ? t('link.missing', { path: link.path }) : link.kind === 'outside' ? link.path : '';
       return <RelatedItem key={i} title={<DocumentLink link={link}>{source.title ?? source.id}</DocumentLink>}
         description={(source.note || where) && <HStack gap={2} wrap="wrap">{source.note && <Text type="supporting" color="secondary">{source.note}</Text>}{where && <Text type="supporting" color="secondary">{where}</Text>}</HStack>}/>;
     })}

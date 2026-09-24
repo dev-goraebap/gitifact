@@ -1,6 +1,6 @@
 import type { ComponentType, ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import type { BrowserSessionV3, BrowserSpecsV5 } from '@gitifact/contracts';
+import type { BrowserSessionV3, BrowserSpecsV6 } from '@gitifact/contracts';
 import { VStack } from '@astryxdesign/core/VStack';
 import { HStack } from '@astryxdesign/core/HStack';
 import { Heading } from '@astryxdesign/core/Heading';
@@ -24,18 +24,16 @@ export interface RecordsPageProps {
   /** Where the first crumb leads. */
   root: string;
   /** Crumbs after the screen's own once the checkout is read: the feature, the person or the page being shown. */
-  trail?: (checkout: BrowserSpecsV5) => Crumb[];
-  /** A list shows its name as a heading; detail pages, the overview and the wiki carry their own. */
+  trail?: (checkout: BrowserSpecsV6) => Crumb[];
+  /** A list shows its name as a heading; detail pages and the overview carry their own. */
   hasTitle: boolean;
-  /** The wiki explorer fills the whole card instead of the centred column. */
-  isFill?: boolean;
   /** A screen whose content is compared side by side (the commit page) gets a wider column than reading prose needs. */
   isWide?: boolean;
   /** The filter row under the heading, which stays in view while the list scrolls. */
-  filters?: (checkout: BrowserSpecsV5) => ReactNode;
+  filters?: (checkout: BrowserSpecsV6) => ReactNode;
   /** Shaped like the screen, shown while the checkout is read. */
   skeleton: ReactNode;
-  children: (context: { checkout: BrowserSpecsV5; session: BrowserSessionV3 }) => ReactNode;
+  children: (context: { checkout: BrowserSpecsV6; session: BrowserSessionV3 }) => ReactNode;
 }
 
 /**
@@ -49,7 +47,7 @@ export function RecordsPage(props: RecordsPageProps) {
   return <RecordsPanel key={session.data.sessionId} session={session.data} {...props}/>;
 }
 
-function RecordsPanel({ session, header: Header, title, root, trail, hasTitle, isFill = false, isWide = false, filters, skeleton, children }: RecordsPageProps & { session: BrowserSessionV3 }) {
+function RecordsPanel({ session, header: Header, title, root, trail, hasTitle, isWide = false, filters, skeleton, children }: RecordsPageProps & { session: BrowserSessionV3 }) {
   useLanguage();
   const query = useQuery(specsOptions(session));
   const disconnected = query.error instanceof ApiError && query.error.code === 'SESSION_CHANGED';
@@ -62,17 +60,17 @@ function RecordsPanel({ session, header: Header, title, root, trail, hasTitle, i
     {first && <Text type="supporting" color="secondary" className={styles.headerTime}>{tNodes('header.observedAt', { time: <time dateTime={first.observedAt}>{new Date(first.observedAt).toLocaleString(getLanguage())}</time> })}</Text>}
     <IconButton label={t('common.refresh')} icon={<HgiRefresh/>} variant="ghost" size="sm" isLoading={query.isFetching} isDisabled={query.isFetching} onClick={() => { void query.refetch(); }}/>
   </HStack>;
-  return <VStack gap={0} className={isFill ? styles.pageFill : styles.page}>
+  return <VStack gap={0} className={styles.page}>
     <Header trail={crumbs} actions={actions}/>
-    <VStack gap={0} className={isFill ? styles.fill : isWide ? `${styles.column} ${styles.wide}` : styles.column}>
+    <VStack gap={0} className={isWide ? `${styles.column} ${styles.wide}` : styles.column}>
       {hasTitle && <VStack gap={1} className={styles.pageTitle}><Heading level={1}>{title}</Heading></VStack>}
       {query.error && first && <VStack padding={4} role="alert"><Text>{query.error.message}</Text><Text>{t('history.staleData')}</Text></VStack>}
       {!first && query.error && <RequestState error={query.error} retry={() => { if (disconnected) window.location.reload(); else void query.refetch(); }}/>}
       {loading && skeleton}
       {ready && filters && <HStack gap={3} wrap="wrap" className={`${styles.filters} ${styles.filtersSticky}`}>{filters(first)}</HStack>}
-      {ready && <VStack gap={3} className={isFill ? styles.fillContent : styles.content}>
+      {ready && <VStack gap={3} className={styles.content}>
         <DocumentIndexProvider index={first}>{children({ checkout: first, session })}</DocumentIndexProvider>
-        {!isFill && first.contributorsLimited && <HStack gap={3} wrap="wrap"><Text type="supporting">{t('history.contributorsLimited')}</Text></HStack>}
+        {first.contributorsLimited && <HStack gap={3} wrap="wrap"><Text type="supporting">{t('history.contributorsLimited')}</Text></HStack>}
       </VStack>}
     </VStack>
   </VStack>;

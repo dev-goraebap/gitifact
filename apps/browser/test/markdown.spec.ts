@@ -1,16 +1,16 @@
 import { expect, test } from '@playwright/test';
 import { mockApi, specs, serve } from './mock-api';
 
-// Every case below is one wiki page, because the document body renders the same way for wiki pages and specs.
+// Every case below is one instruction, because the document body renders the same way for instructions and specs.
 function withBody(body: string) {
   const payload = structuredClone(specs);
-  payload.documents[1]!.body = body;
+  payload.instructions![0]!.body = body;
   return payload;
 }
 async function openPage(page: Parameters<typeof mockApi>[0], body: string) {
   await mockApi(page);
   await serve(page, withBody(body));
-  await page.goto('/wiki/W-bbbbbbbbbb');
+  await page.goto('/instructions/I-bbbbbbbbbb');
 }
 
 test('a mermaid fence is drawn as a diagram, other fences stay code', async ({ page }) => {
@@ -51,11 +51,11 @@ test('GitHub alerts become labelled boxes and other quotes stay quotes', async (
 });
 
 test('an alert keeps the markup inside it', async ({ page }) => {
-  await openPage(page, '> [!TIP]\n> **굵게**와 [링크](../naming.md)를 담습니다.');
+  await openPage(page, '> [!TIP]\n> **굵게**와 [링크](../naming/index.md)를 담습니다.');
   await expect(page.getByText('팁', { exact: true })).toBeVisible();
   await expect(page.getByText('굵게')).toBeVisible();
   await page.getByRole('link', { name: '링크' }).click();
-  await expect(page).toHaveURL(/\/wiki\/W-cccccccccc$/);
+  await expect(page).toHaveURL(/\/instructions\/I-cccccccccc$/);
 });
 
 test('a node is drawn wide enough for its own label', async ({ page }) => {
@@ -83,11 +83,11 @@ test('drawing diagrams never makes the document itself scroll', async ({ page })
     ...Array.from({ length: 12 }, (_, i) => `  A${n}${i}[아주 긴 이름을 가진 단계 ${i}] --> A${n}${i + 1}[다음 단계 ${i}]`),
     '```'].join('\n');
   const payload = structuredClone(specs);
-  payload.documents[2]!.body = `${diagram(1)}\n\n${diagram(2)}`;
+  payload.instructions![1]!.body = `${diagram(1)}\n\n${diagram(2)}`;
   await serve(page, payload);
   // The first load has settling of its own, so the watch starts on a page without diagrams and the diagrams are
   // opened from there without remounting the shell.
-  await page.goto('/wiki/W-bbbbbbbbbb');
+  await page.goto('/instructions/I-bbbbbbbbbb');
   await expect(page.getByText('중앙 컬럼은 64rem입니다.')).toBeVisible();
   await page.evaluate(() => {
     const w = window as unknown as { overflow: number };
@@ -99,7 +99,9 @@ test('drawing diagrams never makes the document itself scroll', async ({ page })
     };
     requestAnimationFrame(watch);
   });
-  await page.getByRole('navigation', { name: '위키 트리' }).getByText('naming.md', { exact: true }).click();
+  // Moving between pages inside the app keeps the shell mounted, which is where the shift showed.
+  await page.getByRole('navigation', { name: '사이드 탐색' }).getByRole('link', { name: '프로젝트 지침' }).click();
+  await page.getByRole('list', { name: '작업별 지침' }).getByRole('link', { name: /이름 규칙/ }).click();
   await page.getByRole('img', { name: '다이어그램' }).nth(1).locator('svg').waitFor();
   await page.waitForTimeout(300);
   expect(await page.evaluate(() => (window as unknown as { overflow: number }).overflow)).toBe(0);

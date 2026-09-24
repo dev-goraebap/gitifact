@@ -35,19 +35,18 @@ test('the palette opens from the shortcut and from the header, and closes with e
   await expect(page.getByRole('dialog', palette)).toContainText('최근 변경');
 });
 
-test('a wiki page is found by its body and opens on enter', async ({ page }) => {
+test('an instruction is found by its body and opens on enter', async ({ page }) => {
   await mockApi(page); await page.goto('/product');
   await ask(page, '중앙 컬럼');
-  // The word is in the page body, not its title; the row shows the title, where it lives and the line it matched.
-  // The entry page links the same title, so it matches too; this is the page itself.
-  const row = page.getByRole('option').filter({ hasText: 'frontend/layout.md' });
+  // The word is in the body, not the title; the row shows the title, the folder it lives in and the line it matched.
+  const row = page.getByRole('option').filter({ hasText: '레이아웃 지침' });
   await expect(row).toBeVisible();
-  await expect(row).toContainText('frontend/layout.md');
+  await expect(row).toContainText('layout');
   await expect(row).toContainText('중앙 컬럼');
-  await expect(page.getByRole('dialog', palette)).toContainText('위키 페이지');
+  await expect(page.getByRole('dialog', palette)).toContainText('프로젝트 지침');
   // Nothing is highlighted yet, and enter still opens the first result.
   await page.keyboard.press('Enter');
-  await expect(page).toHaveURL(/\/wiki\/W-bbbbbbbbbb$/);
+  await expect(page).toHaveURL(/\/instructions\/I-bbbbbbbbbb$/);
   await expect(page.getByRole('dialog', palette)).toHaveCount(0);
 });
 

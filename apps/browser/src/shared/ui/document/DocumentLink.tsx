@@ -10,7 +10,7 @@ import styles from './document.module.css';
 import { t, useLanguage } from '../../i18n';
 
 /**
- * One resolved document link as something the reader can act on. Wiki pages and features open in the app, assets and
+ * One resolved document link as something the reader can act on. Features and instructions open in the app, assets and
  * external sites open in a new tab, a missing page is inert text, and a file the browser cannot show copies its path instead
  * of navigating, so no relative link ever lands on a 404.
  */
@@ -22,7 +22,8 @@ export function DocumentLink({ link, children }: { link: ResolvedLink; children:
     case 'asset': return <a href={link.url} target="_blank" rel="noopener noreferrer">{children}</a>;
     case 'anchor': return <a href={link.href}>{children}</a>;
     case 'app': return <AppLink href={link.href}>{children}</AppLink>;
-    case 'wiki': return <RouterLink to="/wiki/$documentId" params={{ documentId: link.documentId }} {...(link.hash.length > 1 ? { hash: link.hash.slice(1) } : {})}>{children}</RouterLink>;
+    case 'instruction': return <RouterLink to="/instructions/$instructionId" params={{ instructionId: link.instructionId }} search={link.file ? { file: link.file } : {}} {...(link.hash.length > 1 ? { hash: link.hash.slice(1) } : {})}>{children}</RouterLink>;
+    case 'agents': return <RouterLink to="/instructions/agents" {...(link.hash.length > 1 ? { hash: link.hash.slice(1) } : {})}>{children}</RouterLink>;
     case 'feature': return <RouterLink to="/features/$featureId" params={{ featureId: link.featureId }} search={{ tab: link.tab }} {...(link.hash.length > 1 ? { hash: link.hash.slice(1) } : {})}>{children}</RouterLink>;
     // Plain text rather than a disabled control: a disabled button never receives the hover that would show the hint.
     case 'missing': return <Tooltip content={t('link.missing', { path: link.path })}><Text as="span" type="inherit" color="secondary" hasStrikethrough className={styles.missingLink}>{children}</Text></Tooltip>;

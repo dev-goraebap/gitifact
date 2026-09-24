@@ -192,7 +192,7 @@ test('a list row carries no body; the commit is read once and shows the text of 
  let reads = 0;
  await page.route(url => url.pathname === '/api/v1/commit', async route => { reads++;
   const event = specs.events[0]!;
-  await route.fulfill({json:{contract:'browser-commit',version:1,sessionId:specs.sessionId,commit:event.commit,author:event.author,email:event.email,committer:event.committer,date:event.date,message:event.message,
+  await route.fulfill({json:{contract:'browser-commit',version:2,sessionId:specs.sessionId,commit:event.commit,author:event.author,email:event.email,committer:event.committer,date:event.date,message:event.message,
    changes:[{event,before:null,after:{id:'R-abcdefghij',kind:'requirement',title:'검색어 입력',description:'검색어 입력',body:'본문은 **열 때** 읽습니다.',specId:'S-abcdefghij',path:'.gitifact/spec/search/requirements/r-abcdefghij.md'}}]}}); });
  await page.goto('/activity');
  await expect(page.getByRole('list',{name:'활동 목록'})).not.toContainText('본문은 열 때 읽습니다.');
