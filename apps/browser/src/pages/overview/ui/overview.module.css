@@ -1,12 +1,12 @@
 @keyframes reveal { from { opacity:0; transform:translateY(4px); } }
-.content {padding:var(--spacing-4);min-width:0;animation:reveal .22s ease-out both}
+.content {padding:var(--spacing-4) var(--spacing-5);min-width:0;animation:reveal .22s ease-out both}
 .skeleton { min-height:24rem; animation:reveal .2s ease-out both; }
 @media (prefers-reduced-motion: reduce) {
   .content { animation:none; }
 }
 /* Product dashboard: the project and its state, then what changed and why, then what still needs a look.
    Counts orient and stay on one line; the records and their reasons carry the page. */
-.dashboard { min-width:0; padding:0 var(--spacing-1) var(--spacing-6); }
+.dashboard { min-width:0; padding:0 0 var(--spacing-6); }
 /* The project sits the same distance under the top bar as the page title on every other screen. */
 .hero { align-items:flex-end; justify-content:space-between; padding-block:var(--spacing-2) var(--spacing-4); border-bottom:1px solid var(--color-border); }
 .heroText { flex:1 1 20rem; min-width:0; }

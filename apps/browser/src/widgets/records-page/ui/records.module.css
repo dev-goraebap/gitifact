@@ -1,6 +1,7 @@
 @keyframes reveal { from { opacity:0; transform:translateY(4px); } }
 .page { min-width:0; }
-.content {padding:var(--spacing-4);min-width:0;animation:reveal .22s ease-out both}
+/* The same side gutter as the title, the filters and the top bar, so the page's left edge is one line. */
+.content {padding:var(--spacing-4) var(--spacing-5);min-width:0;animation:reveal .22s ease-out both}
 .skeleton { min-height:24rem; animation:reveal .2s ease-out both; }
 .skeletonRow { align-items:center; padding-block:var(--spacing-3); border-bottom:1px solid var(--color-border); }
 @media (prefers-reduced-motion: reduce) {
@@ -20,6 +21,11 @@
 /* Narrow screens: the observed time yields to the breadcrumb, and the wiki tree is hidden because the folder list already navigates. */
 @media(width<48rem) {
   .headerTime { display:none; }
+  /* Filters in two even columns under a full-width search, so every row ends at the same edge as the gutter. */
+  .filters { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); }
+  .filters > * { min-width:0; }
+  .filters > :first-child { grid-column:1 / -1; }
+  .filters > * > :last-child, .filters > * > :last-child > button { width:100%; }
 }
 /* A screen whose footer must rest on the floor of the card (the feature list's pager) marks it with
    data-page-footer, and the frame's stacks stretch to the card. Sticky alone holds only while there is something to
