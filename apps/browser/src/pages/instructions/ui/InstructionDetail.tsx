@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query';
 import type { BrowserSessionV3, SpecFeature, SpecInstruction } from '@gitifact/contracts';
 import { VStack } from '@astryxdesign/core/VStack';
 import { HStack } from '@astryxdesign/core/HStack';
@@ -7,6 +8,7 @@ import { List, ListItem } from '@astryxdesign/core/List';
 import { MetadataList, MetadataListItem } from '@astryxdesign/core/MetadataList';
 import { Timestamp } from '@astryxdesign/core/Timestamp';
 import { Link } from '@tanstack/react-router';
+import { instructionFileOptions } from '../../../entities/project';
 import { DocumentBody } from '../../../shared/ui/document';
 import { RelatedList, RelatedItem } from '../../../shared/ui/related-list';
 import { InstructionMark } from './InstructionMark';
@@ -36,6 +38,10 @@ export function InstructionDetail({ instruction, color, file, features, session 
   const chosen = file && instruction.files.find(f => f.path === file);
   const folder = instruction.path.slice(0, -INDEX.length);
   const followedBy = features.flatMap(feature => feature.designs.filter(d => d.sources.some(s => s.id === instruction.id)).map(design => ({ feature, design })));
+  // A file is read as the pointer or focus reaches its row, so opening it swaps the text instead of dropping to a
+  // skeleton first: the drop and regrowth shook the page on every switch.
+  const client = useQueryClient();
+  const prefetch = (f: SpecInstruction['files'][number]) => { void client.prefetchQuery(instructionFileOptions(session, instruction.id, f.path, f.size)); };
   const fileHref = (path?: string) => `/instructions/${encodeURIComponent(instruction.id)}${path ? '?file=' + encodeURIComponent(path) : ''}`;
   return <VStack as="article" gap={0} aria-label={instruction.title}>
     <VStack gap={3} className={styles.heading}>
@@ -62,6 +68,7 @@ export function InstructionDetail({ instruction, color, file, features, session 
           {name && <Text type="supporting" color="secondary" className={styles.folder}>{name}/</Text>}
           <List density="compact" aria-label={name || INDEX}>
             {files.map(f => <ListItem key={f.path} label={f.path.slice(name ? name.length + 1 : 0)} href={fileHref(f.path)} isSelected={chosen === f}
+              onMouseEnter={() => prefetch(f)} onFocus={() => prefetch(f)}
               endContent={<Text type="supporting" color="secondary">{sizeOf(f.size)}</Text>}/>)}
           </List>
         </VStack>)}

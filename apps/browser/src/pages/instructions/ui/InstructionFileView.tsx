@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import type { BrowserSessionV3, InstructionFile, SpecInstruction } from '@gitifact/contracts';
 import { CodeBlock } from '@astryxdesign/core/CodeBlock';
 import { Skeleton } from '@astryxdesign/core/Skeleton';
@@ -19,14 +19,16 @@ const languages: Record<string, string> = { sh: 'bash', bash: 'bash', js: 'javas
  */
 export function InstructionFileView({ session, instruction, file }: { session: BrowserSessionV3; instruction: SpecInstruction; file: InstructionFile }) {
   useLanguage();
-  const query = useQuery(instructionFileOptions(session, instruction.id, file.path, file.size));
+  // Moving to another file keeps the one on screen until the next arrives, instead of shrinking to a skeleton.
+  const query = useQuery({ ...instructionFileOptions(session, instruction.id, file.path, file.size), placeholderData: keepPreviousData });
   if (query.error) return <RequestState error={query.error} retry={() => { void query.refetch(); }}/>;
   if (!query.data) return <VStack gap={2} role="status" aria-label={t('request.loadingProject')} aria-busy="true">
     <Skeleton width="60%" height="var(--spacing-4)"/><Skeleton width="80%" height="var(--spacing-4)"/><Skeleton width="40%" height="var(--spacing-4)"/>
   </VStack>;
-  const { text, binary } = query.data;
+  // While the next file is read the previous one stays, drawn by its own path.
+  const { text, binary, path } = query.data;
   if (text === null) return <Text color="secondary">{binary ? t('instructions.binary') : t('instructions.tooLarge')}</Text>;
-  const extension = file.path.includes('.') ? file.path.slice(file.path.lastIndexOf('.') + 1).toLowerCase() : '';
-  if (extension === 'md') return <DocumentBody path={instruction.path.slice(0, -'index.md'.length) + file.path}>{text}</DocumentBody>;
+  const extension = path.includes('.') ? path.slice(path.lastIndexOf('.') + 1).toLowerCase() : '';
+  if (extension === 'md') return <DocumentBody path={instruction.path.slice(0, -'index.md'.length) + path}>{text}</DocumentBody>;
   return <CodeBlock code={text} language={languages[extension] ?? 'plaintext'} width="100%"/>;
 }

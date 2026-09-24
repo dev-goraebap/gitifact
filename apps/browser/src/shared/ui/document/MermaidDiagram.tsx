@@ -96,17 +96,25 @@ function useThemeSignature(): string {
   return `${palette}:${mode === 'system' ? (dark ? 'dark' : 'light') : mode}`;
 }
 
+// Drawings already made, by source and theme. A page opened again (an instruction's index after one of its references)
+// draws them at once instead of growing twice as each diagram arrives, which shook the text under the reader.
+const drawn = new Map<string, string>();
+const DRAWN_KEPT = 50;
+
 export function MermaidDiagram({ code }: { code: string }) {
   useLanguage();
   const host = useRef<HTMLElement>(null);
-  const [state, setState] = useState<State>({ kind: 'pending' });
   const signature = useThemeSignature();
+  const key = signature + '|' + code;
+  const [state, setState] = useState<State>(() => { const svg = drawn.get(key); return svg ? { kind: 'ready', svg } : { kind: 'pending' }; });
   // useId returns a value with colons, which mermaid puts into a CSS selector; only letters and digits survive.
   const id = 'gitifact-diagram-' + useId().replace(/[^a-zA-Z0-9]/g, '');
 
   useEffect(() => {
     const element = host.current;
     if (!element) return;
+    const kept = drawn.get(key);
+    if (kept) { setState(current => current.kind === 'ready' && current.svg === kept ? current : { kind: 'ready', svg: kept }); return; }
     let cancelled = false;
     void (async () => {
       try {
@@ -128,13 +136,15 @@ export function MermaidDiagram({ code }: { code: string }) {
           fontFamily: getComputedStyle(element).fontFamily,
         });
         const { svg } = await mermaid.render(id, code, measuringHost());
+        drawn.set(key, svg);
+        if (drawn.size > DRAWN_KEPT) drawn.delete(drawn.keys().next().value!);
         if (!cancelled) setState({ kind: 'ready', svg });
       } catch (error) {
         if (!cancelled) setState({ kind: 'failed', message: error instanceof Error ? error.message : String(error) });
       }
     })();
     return () => { cancelled = true; };
-  }, [code, signature, id]);
+  }, [code, signature, id, key]);
 
   if (state.kind === 'failed') return (
     <VStack gap={2} className={styles.codeblock}>
