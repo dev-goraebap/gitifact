@@ -18,6 +18,8 @@ const fields = ['paths', 'message', 'authorization', 'migration'];
 const integration = ['MERGE_HEAD', 'CHERRY_PICK_HEAD', 'REVERT_HEAD', 'rebase-merge', 'rebase-apply'];
 /** The format version a migration commit moves to; `changes commit` puts it in the migration trailer. */
 const MIGRATION_TARGET = '0.8.0';
+/** How many paths one commit takes; a migration moves a whole project in one commit, so it takes more. */
+const PATH_LIMIT = 128; const MIGRATION_PATH_LIMIT = 5000;
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 const problemLines = (problems: DocProblem[]) => problems.map(p => '  ' + p.code + ' ' + p.message);
 /** Old files a migration removes (0.7 requirements.md, design.md, per-folder history.jsonl, the wiki, the reason file): deletions there may be committed. */
@@ -102,7 +104,7 @@ export const runChangesCommit = (options: { format: Format; file: string; dryRun
 export async function commitChanges(cwd: string, input: unknown, dryRun: boolean) {
   const request = object(input);
   if (Object.keys(request).some(k => !fields.includes(k))) fail(t('commit.unknownField'));
-  const selected = paths(request.paths); const authorization = object(request.authorization);
+  const selected = paths(request.paths, request.migration === true ? MIGRATION_PATH_LIMIT : PATH_LIMIT); const authorization = object(request.authorization);
   if (Object.keys(authorization).sort().join(',') !== 'basis,evidence' || !['user-request', 'project-policy'].includes(String(authorization.basis))) fail(t('commit.authorizationRequired'));
   bounded(authorization.evidence, 2000);
   const message = bounded(request.message, 4000); if (/^\s*Gitifact-/im.test(message)) fail(t('commit.trailerInMessage'));
@@ -178,7 +180,8 @@ export async function commitChanges(cwd: string, input: unknown, dryRun: boolean
     await writeFile(join(busy, 'recovery.json'), JSON.stringify({ before: base, originalIndex: original?.toString('base64') ?? null, temporary, paths: selected, message }));
     const locked = await hashes([...new Set([...selected, ...contextPaths])]);
     if (original) await writeFile(temporary, original, { flag: 'wx' }); else await git(['read-tree', '--empty'], temporary);
-    await git(['add', '--', ...stageable], temporary);
+    // Paths and the message go through standard input: a migration's selection is longer than a command line may be.
+    await git(['add', '--pathspec-from-file=-', '--pathspec-file-nul'], temporary, Buffer.from(stageable.join('\0')));
     const actual = await staged(temporary);
     if (!actual.length || actual.some(p => !selected.includes(p))) fail(t('commit.unexpectedFiles'));
     const storeFiles = selected.filter(p => record(p) && locked.get(p) !== null);
@@ -200,7 +203,7 @@ export async function commitChanges(cwd: string, input: unknown, dryRun: boolean
     if (!same(base, await project.reader.baseline())) fail(t('commit.headChanged'));
     const tree = (await git(['write-tree'], temporary)).toString('utf8').trim();
     commitStarted = true;
-    await git(['commit', '-m', message.trim() + (trailers.length ? '\n\n' + trailers.join('\n') : '')], temporary);
+    await git(['commit', '-F', '-'], temporary, Buffer.from(message.trim() + (trailers.length ? '\n\n' + trailers.join('\n') : '') + '\n'));
     const after = await project.reader.baseline();
     if (!after.head) return fail(t('commit.resultUnknown'));
     // The raw object carries tree, parents and message without log formatting or signature display settings.

@@ -118,6 +118,7 @@ Write JSON to the input path that `gitifact changes list` reports and run `gitif
 }
 ```
 
+- A migration commit takes up to 5,000 paths (128 for other commits). Beyond 5,000, split it into several commits and give every one `migration: true` so all of them stay out of the history.
 - `migration: true` adds the `Gitifact-Migration: 0.8.0` trailer. That commit becomes the history boundary: activity before it stays visible in the viewer, and the commit itself does not appear as activity.
 - Add no records; the 0.7 reasons are read from the 0.7 commits.
 - The deleted old files must be in `paths`; without them the CLI refuses the commit.

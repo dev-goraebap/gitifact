@@ -287,3 +287,22 @@ test('a migration commit removes the 0.7 files, moves the wiki and the reasons t
   assert.equal(f.git(['status', '--porcelain']).stdout, '');
   assert.deepEqual(f.ok(['records', 'list', '--doc', R]).events, []);
 });
+
+test('a migration commit takes a whole project past the 128-path limit of other commits', t => {
+  const f = setup(t);
+  // More paths than one command line holds on Windows, with spaces and non-ASCII names, so Git reads them from standard input.
+  const many = Array.from({ length: 300 }, (_, i) => `assets dir/그림 ${String(i).padStart(3, '0')} ${'x'.repeat(80)}.png`);
+  mkdirSync(join(f.repo, '.gitifact/assets/assets dir'), { recursive: true });
+  for (const name of many) writeFileSync(join(f.repo, '.gitifact/assets', name), 'png ' + name);
+  const paths = [...docPaths, ...codePaths, ...many.map(name => '.gitifact/assets/' + name)];
+  const refused = f.commit(request({ paths }));
+  assert.equal(refused.status, 1); assert.equal(JSON.parse(refused.stderr).error.code, 'INVALID_COMMIT');
+  assert.equal(f.git(['rev-list', '--count', 'HEAD']).stdout.trim(), '1');
+  const result = f.done(f.commit(request({ paths, migration: true })));
+  assert.equal(result.paths.length, 304); assert.ok(result.trailers.includes('Gitifact-Migration: 0.8.0'));
+  assert.equal(f.git(['ls-tree', '-r', '--name-only', 'HEAD', '--', '.gitifact/assets']).stdout.trim().split('\n').length, 300);
+  assert.match(f.git(['log', '-1', '--format=%B']).stdout, /^Add post saving\n\n(Gitifact-[A-Za-z]+: .+\n)*Gitifact-Migration: 0\.8\.0\n/);
+  assert.equal(f.git(['status', '--porcelain', '--untracked-files=all']).stdout, '');
+  assert.equal(f.commit(request({ paths: Array.from({ length: 5001 }, (_, i) => `f${i}.js`), migration: true })).status, 1);
+});
+
