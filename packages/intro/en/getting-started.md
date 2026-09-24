@@ -48,7 +48,7 @@ The browser viewer includes:
 
 | Page | Contents |
 | :--- | :--- |
-| Product overview | Project size and recent activity |
+| Dashboard | Project size and recent activity |
 | Features | Current requirements and designs by feature |
 | Project instructions | AGENTS.md and per-task instructions such as development rules and architecture decisions |
 | Decision records | Committed decision records and the before/after content of the documents they explain |

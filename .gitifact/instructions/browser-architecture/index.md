@@ -4,11 +4,11 @@ title: 브라우저 아키텍처
 description: 브라우저 React 앱의 경로·코드 구성·데이터 흐름·레이아웃·디자인 시스템 규칙. apps/browser 코드를 고칠 때 쓴다.
 ---
 
-브라우저는 CLI 로컬 서버가 제공하는 읽기 전용 React SPA다. 제품 개요, 요구사항, 프로젝트 지침, 결정기록, 참여자, Git 상태를 보여 주며 요구사항을 편집하거나 승인을 만들지 않는다. 이 지침은 브라우저 코드를 고칠 때 따르는 규칙을 둔다. 규칙을 정한 맥락과 검토한 대안은 결정기록에 있으므로, 규칙을 바꾸기 전에 `docs history I-5x5yhjlk4u`로 읽는다.
+브라우저는 CLI 로컬 서버가 제공하는 읽기 전용 React SPA다. 대시보드, 요구사항, 프로젝트 지침, 결정기록, 참여자, Git 상태를 보여 주며 요구사항을 편집하거나 승인을 만들지 않는다. 이 지침은 브라우저 코드를 고칠 때 따르는 규칙을 둔다. 규칙을 정한 맥락과 검토한 대안은 결정기록에 있으므로, 규칙을 바꾸기 전에 `docs history I-5x5yhjlk4u`로 읽는다.
 
 ## 경로와 URL 상태
 
-`/`는 `/product`로 replace 리다이렉트한다. 화면의 상태는 종류마다 둘 곳이 정해져 있다.
+`/`는 `/dashboard`로 replace 리다이렉트한다. 화면의 상태는 종류마다 둘 곳이 정해져 있다.
 
 | 상태 | 둘 곳 |
 | :--- | :--- |
@@ -56,7 +56,7 @@ flowchart TD
 | `app/routes` | 라우트 파일과 search params 검증. 화면 컴포넌트는 pages에 둔다 |
 | `pages/*` | 화면마다 하나: overview·features·instructions·activity·commit·contributors·git-status·settings·about·getting-started·changelog·not-found. `commit`은 커밋 페이지와 기록 상세를 함께 맡는다 |
 | `widgets/records-page` | 명세·문서 화면이 함께 쓰는 틀: 세션·명세 조회, 머리 막대, 골격, 오류, 검색 인자 |
-| `widgets/activity-timeline` | 결정기록 목록·제품 개요가 쓰는 타임라인. 커밋 페이지와 기록 상세도 그 기록 묶기(`groupRecords`)를 쓴다 |
+| `widgets/activity-timeline` | 결정기록 목록·대시보드가 쓰는 타임라인. 커밋 페이지와 기록 상세도 그 기록 묶기(`groupRecords`)를 쓴다 |
 | `widgets/diff-view` | 줄 단위 diff(`LineDiff`) |
 | `widgets/page-header`·`app-shell` | 머리 막대, 셸 |
 | `features/search-palette` | 검색창(`SearchPalette`)과 머리의 검색 버튼(`SearchTrigger`) |
@@ -133,7 +133,7 @@ diff의 지운 줄·더한 줄 바탕은 `--color-background-red`·`--color-back
 
 ## 차트
 
-집계 차트에는 차트 라이브러리를 추가하지 않는다. 문서 다이어그램의 mermaid만 예외다. 제품 개요의 부분-전체 막대와 일자별 변경 막대는 인라인 SVG로 그리고, 크기 비교는 Astryx ProgressBar를 쓴다.
+집계 차트에는 차트 라이브러리를 추가하지 않는다. 문서 다이어그램의 mermaid만 예외다. 대시보드의 부분-전체 막대와 일자별 변경 막대는 인라인 SVG로 그리고, 크기 비교는 Astryx ProgressBar를 쓴다.
 
 | 항목 | 규칙 |
 | :--- | :--- |

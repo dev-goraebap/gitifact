@@ -1,5 +1,5 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
-// The browser opens on the product overview.
+// The browser opens on the dashboard.
 export const Route = createFileRoute('/')({
-  beforeLoad: () => { throw redirect({ to: '/product', replace: true }); },
+  beforeLoad: () => { throw redirect({ to: '/dashboard', replace: true }); },
 });

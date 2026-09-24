@@ -12,7 +12,7 @@ import { HgiRequirement } from '../../../shared/ui/icons/HgiRequirement';
 import { HgiMembers } from '../../../shared/ui/icons/HgiMembers';
 import { HgiGit } from '../../../shared/ui/icons/HgiGit';
 import { HgiGithub } from '../../../shared/ui/icons/HgiGithub';
-import { HgiProduct } from '../../../shared/ui/icons/HgiProduct';
+import { HgiDashboard } from '../../../shared/ui/icons/HgiDashboard';
 import { HgiInstruction } from '../../../shared/ui/icons/HgiInstruction';
 import { HgiRocket } from '../../../shared/ui/icons/HgiRocket';
 import { HgiInfo } from '../../../shared/ui/icons/HgiInfo';
@@ -23,7 +23,7 @@ import { SearchPalette } from '../../../features/search-palette';
 import styles from './app-shell.module.css';
 import { t, useLanguage } from '../../../shared/i18n';
 const destinations = () => ([
-  ['/product', t('nav.product'), HgiProduct],
+  ['/dashboard', t('nav.product'), HgiDashboard],
   ['/features', t('nav.features'), HgiRequirement],
   ['/instructions', t('nav.instructions'), HgiInstruction],
   ['/records', t('nav.history'), HgiHistory],
@@ -50,7 +50,7 @@ export function BrowserShell() {
       sideNav={
         <SideNav
           resizable={{ defaultWidth: 240, minWidth: 200, maxWidth: 400, autoSaveId: 'gitifact-sidenav' }}
-          header={<Link to="/product" className="gitifact-wordmark" aria-label={t('shell.home')} />}
+          header={<Link to="/dashboard" className="gitifact-wordmark" aria-label={t('shell.home')} />}
           footer={<HStack gap={1} hAlign="between" vAlign="center">
             <VersionFooter />
             <Button label="GitHub" icon={<HgiGithub/>} variant="ghost" size="sm"

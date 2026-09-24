@@ -79,7 +79,7 @@ test('a damaged stored preference falls back to the defaults', async ({ page }) 
 
 test('light text is softened from near-black in every palette, and the wordmark follows it', async ({ page }) => {
   await page.emulateMedia({ colorScheme: 'light' });
-  await page.goto('/product');
+  await page.goto('/dashboard');
   const heading = page.getByRole('heading', { level: 1 });
   await expect(heading).toBeVisible();
   // Stone's shipped #25252a read heavier than the surfaces around it; the wordmark draws in the same colour.

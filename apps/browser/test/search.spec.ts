@@ -18,7 +18,7 @@ async function ask(page: import('@playwright/test').Page, query: string) {
 }
 
 test('the palette opens from the shortcut and from the header, and closes with escape', async ({ page }) => {
-  await mockApi(page); await page.goto('/product');
+  await mockApi(page); await page.goto('/dashboard');
   // The header button is the app's own signal that the page has mounted; a keystroke sent before that is lost.
   await expect(page.getByRole('button', { name: '문서 검색 열기' })).toBeVisible();
   await expect(page.getByRole('dialog', palette)).toHaveCount(0);
@@ -36,7 +36,7 @@ test('the palette opens from the shortcut and from the header, and closes with e
 });
 
 test('an instruction is found by its body and opens on enter', async ({ page }) => {
-  await mockApi(page); await page.goto('/product');
+  await mockApi(page); await page.goto('/dashboard');
   await ask(page, '중앙 컬럼');
   // The word is in the body, not the title; the row shows the title, the folder it lives in and the line it matched.
   const row = page.getByRole('option').filter({ hasText: '레이아웃 지침' });
@@ -51,7 +51,7 @@ test('an instruction is found by its body and opens on enter', async ({ page }) 
 });
 
 test('a requirement opens its feature on the requirements tab', async ({ page }) => {
-  await mockApi(page); await page.goto('/product');
+  await mockApi(page); await page.goto('/dashboard');
   await ask(page, '검색어 입력');
   await expect(page.getByRole('dialog', palette)).toContainText('요구사항');
   await page.getByRole('option').filter({ hasText: '검색어 입력' }).first().click();
@@ -60,7 +60,7 @@ test('a requirement opens its feature on the requirements tab', async ({ page })
 });
 
 test('a query that matches nothing shows the search state rather than an empty box', async ({ page }) => {
-  await mockApi(page); await page.goto('/product');
+  await mockApi(page); await page.goto('/dashboard');
   await ask(page, '없는낱말');
   const dialog = page.getByRole('dialog', palette);
   await expect(dialog).toContainText('일치하는 문서가 없습니다.');
@@ -86,7 +86,7 @@ test('a search field waits for a pause in typing before it searches', async ({ p
 });
 
 test('past changes are found by their reason and open in the activity', async ({ page }) => {
-  await mockApi(page); await page.goto('/product');
+  await mockApi(page); await page.goto('/dashboard');
   await ask(page, '검색을 요청');
   const dialog = page.getByRole('dialog', palette);
   await expect(dialog).toContainText('변경 이력');
@@ -96,7 +96,7 @@ test('past changes are found by their reason and open in the activity', async ({
 });
 
 test('while a search is on its way the palette shows the loading rows, never an empty state', async ({ page }) => {
-  await mockApi(page); await page.goto('/product');
+  await mockApi(page); await page.goto('/dashboard');
   // Hold the answer, so the moment between the keystroke and the results can be looked at.
   let release!: () => void; const held = new Promise<void>(resolve => { release = resolve; });
   await page.route('**/api/v1/search*', async route => { await held; await route.fallback(); });

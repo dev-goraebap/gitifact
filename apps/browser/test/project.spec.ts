@@ -54,8 +54,8 @@ test('loaded history is kept across screens, and refresh re-reads the checkout b
  await page.getByRole('button',{name:'이전 이력 더 보기',exact:true}).click();
  await expect(page.getByText('이전 검색 요구사항',{exact:true})).toBeVisible();
  expect(history).toBe(2);
- await page.getByRole('link',{name:'제품 개요',exact:true}).click();
- await expect(page.getByRole('article',{name:'제품 개요'})).toBeVisible();
+ await page.getByRole('link',{name:'대시보드',exact:true}).click();
+ await expect(page.getByRole('article',{name:'대시보드'})).toBeVisible();
  await page.getByRole('link',{name:'결정기록',exact:true}).click();
  await expect(page.getByText('이전 검색 요구사항',{exact:true})).toBeVisible();
  expect(history).toBe(2);
@@ -250,7 +250,7 @@ test('a link to any commit opens its page, whether the list loaded it or not', a
 
 test('the overview counts all of history, and a contributor page asks for that person\'s changes', async ({page}) => {
  await mockApi(page, longHistory());
- await page.goto('/product');
+ await page.goto('/dashboard');
  await expect(page.getByText('전체 활동 51건').first()).toBeVisible();
  await page.goto('/contributors/' + encodeURIComponent('fixture@example.test'));
  const person = page.getByRole('article', { name: '참여자 상세' });

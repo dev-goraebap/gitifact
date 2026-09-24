@@ -12,12 +12,12 @@ test('built app loads Astryx and supports navigation, reload, and history', asyn
     if (message.type() === 'error') errors.push(message.text());
   });
 
-  // The browser opens on the product overview.
+  // The browser opens on the dashboard.
   await page.goto('/');
-  await expect(page).toHaveURL(/\/product$/);
+  await expect(page).toHaveURL(/\/dashboard$/);
   // The overview leads with the project, not with the menu label; the breadcrumb keeps the location.
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('project');
-  await expect(page.locator('header[aria-label="현재 위치"]')).toContainText('제품 개요');
+  await expect(page.locator('header[aria-label="현재 위치"]')).toContainText('대시보드');
   const button = page.getByRole('link', { name: '소개', exact: true });
   await expect(button).toBeVisible();
   // Confirms that the shipped component CSS and theme have both loaded.
@@ -42,7 +42,7 @@ test('built app loads Astryx and supports navigation, reload, and history', asyn
   await page.goBack();
   // The overview leads with the project, not with the menu label; the breadcrumb keeps the location.
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('project');
-  await expect(page.locator('header[aria-label="현재 위치"]')).toContainText('제품 개요');
+  await expect(page.locator('header[aria-label="현재 위치"]')).toContainText('대시보드');
   expect(errors).toEqual([]);
 });
 
@@ -64,12 +64,12 @@ test('unknown routes show an explicit missing page and a working return link', a
   await page.goto('/missing');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('페이지를 찾을 수 없습니다');
   await page.getByRole('link', { name: '처음으로' }).click();
-  await expect(page).toHaveURL(/\/product$/);
+  await expect(page).toHaveURL(/\/dashboard$/);
 });
 
 test('the wordmark, the menu and the version share one left edge', async ({ page }) => {
   await mockApi(page);
-  await page.goto('/product');
+  await page.goto('/dashboard');
   await expect(page.getByRole('link', { name: '기능별 요구사항' })).toBeVisible();
   const edges = await page.evaluate(() => {
     const left = (n: Element | null | undefined) => (n ? Math.round(n.getBoundingClientRect().left) : -1);

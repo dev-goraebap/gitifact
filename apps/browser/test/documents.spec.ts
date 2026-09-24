@@ -24,8 +24,8 @@ test('wiki changes from before the wiki left the browser stay in the activity wi
 });
 
 test('the product page leads with what changed and why', async ({ page }) => {
-  await mockApi(page); await page.goto('/product');
-  const article = page.getByRole('article', { name: '제품 개요' });
+  await mockApi(page); await page.goto('/dashboard');
+  const article = page.getByRole('article', { name: '대시보드' });
   // The project leads; the counts orient below it.
   await expect(article.getByRole('heading', { level: 1 })).toHaveText('project');
   const summary = article.getByLabel('현재 명세 요약');
@@ -60,7 +60,7 @@ test('uncommitted spec changes mark the Git menu and are explained on the Git pa
   const nav = page.getByRole('navigation', { name: '사이드 탐색' });
   await expect(nav.getByLabel('미커밋 명세 변경 있음')).toBeVisible();
   await nav.getByRole('link', { name: /^Git 상태/ }).click();
-  await expect(page.getByText('제품 개요·기능별 요구사항·프로젝트 지침 화면은 작업 중인 내용이고', { exact: false })).toBeVisible();
+  await expect(page.getByText('대시보드·기능별 요구사항·프로젝트 지침 화면은 작업 중인 내용이고', { exact: false })).toBeVisible();
   await page.getByRole('link', { name: '요구사항 보기 →' }).click();
   await expect(page).toHaveURL(/\/features$/);
 });
@@ -70,7 +70,7 @@ test('a direct visit to the Git page reads uncommitted store paths from the repo
   const data = { ...status, changes: [...status.changes, { kind: 'tracked', path: '.gitifact/spec/search/requirements.md', xy: '.M', submodule: null }], summary: { ...status.summary, unstaged: 2 } };
   await page.route('**/api/v1/status', r => r.fulfill({ json: data }));
   await page.goto('/git');
-  await expect(page.getByText('제품 개요·기능별 요구사항·프로젝트 지침 화면은 작업 중인 내용이고', { exact: false })).toBeVisible();
+  await expect(page.getByText('대시보드·기능별 요구사항·프로젝트 지침 화면은 작업 중인 내용이고', { exact: false })).toBeVisible();
   await expect(page.getByRole('navigation', { name: '사이드 탐색' }).getByLabel('미커밋 명세 변경 있음')).toBeVisible();
 });
 
@@ -79,7 +79,7 @@ test('the two overview charts share one height even when one legend wraps', asyn
   const many = structuredClone(specs);
   many.contributors = Array.from({ length: 7 }, (_, i) => ({ name: 'Person ' + i, email: `p${i}@example.test`, commits: 10 - i, latest: '2026-09-14T00:00:00Z' }));
   await serve(page, many);
-  await page.goto('/product');
+  await page.goto('/dashboard');
   const card = (name: string) => page.getByRole('heading', { level: 3, name }).locator('xpath=ancestor::*[parent::*[contains(@class,"astryx-grid") or contains(@style,"grid")]][1]');
   await expect(page.getByRole('heading', { level: 3, name: '참여자별 커밋' })).toBeVisible();
   const heights = await Promise.all(['변경 종류', '참여자별 커밋'].map(async name => Math.round((await card(name).boundingBox())!.height)));
@@ -94,8 +94,8 @@ test('a commit that touched a great many documents shows three under its record 
     ({ ...event, key: specs.head + ':R-' + 'abcdefghij'.slice(0, 8) + 'abcdefghijklmnopqrstuvwxyz234567'[i >> 5] + 'abcdefghijklmnopqrstuvwxyz234567'[i & 31],
       after: { ...event.after!, title: '도입 기록 ' + i } })) };
   await serve(page, data);
-  await page.goto('/product');
-  const activity = page.getByRole('article', { name: '제품 개요' }).getByLabel('최신 활동');
+  await page.goto('/dashboard');
+  const activity = page.getByRole('article', { name: '대시보드' }).getByLabel('최신 활동');
   // The record lists three of the ten documents the overview holds and leaves the rest to its page.
   await expect(activity.getByRole('list', { name: '이 기록이 설명하는 문서' }).getByRole('listitem')).toHaveCount(3);
   await expect(activity.getByRole('link', { name: '문서 7건 더 →' })).toHaveAttribute('href', /\/records\/H-aaaaaaaaaa$/);
@@ -114,8 +114,8 @@ test('while history is still being counted the overview says nothing about zero 
   let release!: () => void;
   const pending = new Promise<void>(resolve => { release = resolve; });
   await page.route(url => url.pathname === '/api/v1/history/summary', async route => { await pending; await route.fallback(); });
-  await page.goto('/product');
-  const article = page.getByRole('article', { name: '제품 개요' });
+  await page.goto('/dashboard');
+  const article = page.getByRole('article', { name: '대시보드' });
   await expect(article.getByRole('heading', { name: '최신 활동' })).toBeVisible();
   // The count and the two empty states belong to an answer that has not arrived.
   await expect(article).not.toContainText('커밋된 명세 활동이 아직 없습니다.');
