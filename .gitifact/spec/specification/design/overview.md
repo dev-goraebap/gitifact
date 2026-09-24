@@ -16,16 +16,18 @@ requirements:
 
 ## 개요
 
-기능별 현재 요구사항과 구현 설계를 문서 하나가 파일 하나인 Markdown으로 관리한다(결정 0010). 경로 판정·파싱·렌더링·전체 검사 같은 순수 형식 규칙은 packages/core에, 파일 읽기·쓰기와 캐시·ID 발급은 CLI 어댑터에 둔다. 변경 이유를 커밋에 잇는 방식은 Git 기록 연결 설계에서 다룬다.
+기능별 현재 요구사항과 구현 설계를 문서 하나가 파일 하나인 Markdown으로 관리한다. 경로 판정·파싱·렌더링·전체 검사 같은 순수 형식 규칙은 packages/core에, 파일 읽기·쓰기와 캐시·ID 발급은 CLI 어댑터에 둔다. 결정기록을 커밋에 잇는 방식은 Git 기록 연결 설계에서 다룬다.
 
 | 위치 | 맡는 일 |
 | :--- | :--- |
-| `packages/core/src/formats/document-file.ts` | 경로 판정(`classifyDocPath`), 문서 파싱·렌더링, 이유 줄 파싱 |
+| `packages/core/src/formats/document-file.ts` | 경로 판정(`classifyDocPath`), 문서 파싱·렌더링, 과거 커밋의 `history.jsonl` 줄 파싱 |
+| `packages/core/src/formats/record-file.ts` | 결정기록 파싱·렌더링과 섹션 검사 |
 | `packages/core/src/formats/frontmatter.ts` | 프론트매터 부분집합의 파싱과 렌더링(`quoteScalar`) |
 | `packages/core/src/use-cases/check-documents.ts` | 문서 전체 검사(`checkDocuments`) |
 | `apps/cli/src/adapters/filesystem/document-file.ts` | ID 발급(`generateId`), 새 문서 파일 쓰기 |
 | `apps/cli/src/adapters/cache/documents.ts` | 작업 폴더 문서 읽기와 캐시, 크기·링크 파일 판정 |
 | `apps/cli/src/commands/docs.ts` | `docs list`·`search`·`show`·`new`·`check`·`history` |
+| `apps/cli/src/commands/records.ts` | `records new`·`show` |
 
 기능 응집은 사용자의 제품 맥락으로 정하고 코드 모듈이나 DDD 계층을 강제하지 않는다. 설계는 기본 작성 대상으로 안내하되 빈 설계 파일을 만들게 하지 않는다. 별도 요구사항 목록, docs/specs 복사본, tasks.md는 두지 않는다.
 
@@ -39,13 +41,13 @@ erDiagram
   REQUIREMENT["요구사항"]
   DESIGN["설계"]
   INSTRUCTION["지침"]
-  REASON["이유 줄"]
+  RECORD["결정기록"]
   FEATURE ||--o{ REQUIREMENT : "폴더"
   FEATURE ||--o{ DESIGN : "폴더"
   DESIGN }o--o{ REQUIREMENT : "requirements"
   DESIGN }o--o{ INSTRUCTION : "sources"
-  REASON }o--o{ REQUIREMENT : "docs"
-  REASON }o--o{ DESIGN : "docs"
+  RECORD }o--o{ REQUIREMENT : "docs"
+  RECORD }o--o{ DESIGN : "docs"
 ```
 
 | 문서 | 경로 | ID | 필수 키 | 선택 키 |
@@ -53,9 +55,9 @@ erDiagram
 | 기능 소개 | `<기능>/index.md` | S- | `id`·`title`·`description` | `draft` |
 | 요구사항 | `<기능>/requirements/<slug>.md` | R- | 위 셋과 `order` | `draft` |
 | 설계 | `<기능>/design/<slug>.md` | D- | 위 셋과 `order` | `requirements`·`sources`·`draft` |
-| 이유 | `.gitifact/history.jsonl` | 줄마다 H- | 줄마다 `id`·`docs`·`reason` | — |
+| 결정기록 | `.gitifact/records/<yyyymmdd>/<DR-ID>.md` | DR- | `id`·`title`·`docs` | `draft` |
 
-`sources`는 지침뿐 아니라 자기 자신이 아닌 모든 문서를 ID로 가리킬 수 있고, 외부 자료를 가리킬 수도 있다. 이유 줄의 `docs`도 모든 종류의 문서 ID를 담으며, 지워진 문서(과거 위키 페이지의 W- 포함)도 가리킬 수 있다. 지침의 경로 규칙은 프로젝트 지침 기능이 다룬다.
+`sources`는 지침뿐 아니라 자기 자신이 아닌 모든 문서를 ID로 가리킬 수 있고, 외부 자료를 가리킬 수도 있다. 결정기록의 `docs`도 모든 종류의 문서 ID를 담으며, 지워진 문서(과거 위키 페이지의 W- 포함)도 가리킬 수 있다. 지침의 경로 규칙은 프로젝트 지침 기능이 다룬다.
 
 기능 폴더와 slug 이름은 소문자·숫자·하이픈 80자 이하다. 설계가 하나라도 있으면 `design/overview.md`가 있어야 한다. 기능 폴더에 이 밖의 파일(0.7의 `requirements.md`·`design.md`·폴더별 `history.jsonl` 포함)이 있으면 검사가 문제로 알린다. 설계는 파일 하나 전체가 비교 단위이며 파일 안의 문단에는 ID가 없다. 그래서 설계와 요구사항도 절이 아니라 파일 단위(`requirements` 목록)로 이어진다.
 
@@ -75,7 +77,7 @@ erDiagram
 
 ## ID
 
-ID는 종류 접두어(S·R·D·W, 이유 줄은 H)와 소문자 base32 10자다. `generateId`만 발급하며 `docs new`는 이미 쓰인 ID와 겹치지 않을 때까지 다시 뽑는다. ID는 이름·폴더와 독립적이어서 제목 변경, 파일 이동, 다른 기능 폴더로의 이동에도 유지한다. 이름 변경을 다른 요구사항 생성으로 처리하지 않으며, 설계의 `requirements`는 현재 전체 문서에서 찾으므로 다른 기능으로 옮긴 요구사항도 계속 가리킨다.
+ID는 종류 접두어(S·R·D·I·W, 결정기록은 H)와 소문자 base32 10자다. `generateId`만 발급하며 `docs new`와 `records new`는 이미 쓰인 ID와 겹치지 않을 때까지 다시 뽑는다. ID는 이름·폴더와 독립적이어서 제목 변경, 파일 이동, 다른 기능 폴더로의 이동에도 유지한다. 이름 변경을 다른 요구사항 생성으로 처리하지 않으며, 설계의 `requirements`는 현재 전체 문서에서 찾으므로 다른 기능으로 옮긴 요구사항도 계속 가리킨다.
 
 ## 작성 흐름
 
@@ -106,18 +108,20 @@ flowchart TD
 
 ## 검사
 
-`docs check`는 작업 폴더의 문서와 이유 파일 전체를 읽고, 첫 오류에서 멈추지 않고 모든 문제를 보인 뒤 문제가 있으면 종료 코드 1로 끝난다. 읽지 못한 파일은 문제로 보고하고 나머지끼리 계속 대조한다.
+`docs check`는 작업 폴더의 문서 전체와 아직 커밋하지 않은 결정기록을 읽고, 첫 오류에서 멈추지 않고 모든 문제를 보인 뒤 문제가 있으면 종료 코드 1로 끝난다. 읽지 못한 파일은 문제로 보고하고 나머지끼리 계속 대조한다.
 
 | 범위 | 문제 코드 | 조건 |
 | :--- | :--- | :--- |
 | 파일 | `PATH_UNSUPPORTED` | 경로 규칙 밖, 링크 파일 |
-| 파일 | `FILE_TOO_LARGE` | 문서 1MB, `history.jsonl` 64MB 초과 |
+| 파일 | `FILE_TOO_LARGE` | 문서·결정기록 1MB 초과 |
 | 파일 | `INVALID_CHARACTERS` | NUL·단독 CR·BOM, UTF-8이 아님 |
 | 파일 | `FRONTMATTER_*`, `ID_FORMAT`, `SOURCE_INVALID` | 프론트매터 형식·모르는 키·필수 키 누락·값, ID 형식, `sources` 형식 |
 | 파일 | `BODY_REQUIRED`·`BODY_HEADING`·`BODY_MARKER`·`BODY_UNCLOSED_FENCE` | 빈 본문, `#` 제목, gitifact 주석, 닫히지 않은 펜스 |
-| 파일 | `REASON_INVALID` | 형식이 맞지 않는 이유 줄 |
+| 파일 | `RECORD_PATH`·`RECORD_SECTION_*` | 결정기록의 경로와 ID 불일치, 모르거나 중복된 섹션·빠진 필수 섹션·500자를 넘는 섹션 |
+| 파일 | `RECORD_ALTERED` | 커밋된 결정기록의 수정·삭제 |
+| 파일 | `REASONS_FILE_REMOVED` | 작업 폴더에 남은 `.gitifact/history.jsonl` |
 | 전체 | `DOC_DRAFT` | 남은 `draft: true` |
-| 전체 | `DUPLICATE_ID`·`DUPLICATE_REASON_ID`·`DUPLICATE_ORDER` | 문서 ID, 이유 ID, 같은 폴더의 `order` 중복 |
+| 전체 | `DUPLICATE_ID`·`DUPLICATE_RECORD_ID`·`DUPLICATE_ORDER` | 문서 ID, 결정기록 ID, 같은 폴더의 `order` 중복 |
 | 전체 | `MISSING_REFERENCE` | `requirements`가 요구사항이 아닌 ID를, `sources`가 없는 문서나 자기 자신을 가리킴 |
 | 전체 | `FEATURE_INDEX_REQUIRED`·`DESIGN_OVERVIEW_REQUIRED` | `index.md`·`design/overview.md` 누락 |
 
@@ -156,15 +160,3 @@ core `documentWarnings`(`use-cases/document-warnings.ts`)가 모든 문서 본�
 
 > [!IMPORTANT]
 > 경고는 종료 코드를 바꾸지 않고 `changes commit`도 막지 않는다. 한도는 core 상수(`ASSET_SIZE_LIMIT`, `ASSETS_TOTAL_LIMIT`, `RECOMMENDED_ASSET_EXTENSIONS`)다.
-
-## 결정
-
-| 결정 | 이유 | 기각한 안 |
-| :--- | :--- | :--- |
-| 요구사항·설계를 파일 하나씩 두고 기능 단위 읽기는 `docs list --feature`와 브라우저 기능 상세가 맡는다 | 서로 다른 요구사항의 수정이 파일 단위로 충돌 없이 합쳐지고, 제목과 ID의 짝을 따로 유지하지 않아도 된다 | 기능마다 `requirements.md`·`design.md` 한 파일에 모으기, 한 파일의 요구사항을 프론트매터 목록으로 나누기(제목과 ID의 대응을 따로 유지해야 함) |
-| 구조 정보는 모두 프론트매터에 두고 본문 주석을 금지한다 | 참고 문서 목록처럼 구조가 있는 메타를 주석 한 줄에 담기 어렵고, GitHub가 프론트매터를 표로 보여 준다 | 절 단위 본문 주석(`gitifact-req`·`gitifact-ref`) |
-| 이유는 `.gitifact/history.jsonl` 한 파일에 두고 `merge=union`으로 병합한다 | 요구사항을 다른 기능으로 옮기거나 여러 폴더에 걸친 이유를 남길 때 둘 곳이 모호하지 않고, 두 브랜치가 더한 줄이 모두 남는다 | 기능 폴더·위키마다 `history.jsonl` |
-| 현재 문서만 저장하고 과거 원문은 Git에서 읽는다 | 중복 스냅샷을 줄인다 | 문서의 과거 스냅샷 저장 |
-| `docs check`는 바뀐 파일이 아니라 문서 전체를 검사한다 | 문제가 아무도 고치지 않은 파일에 생길 수 있다. 지침을 지우면 설계의 `sources`가 없는 문서를 가리킨다 | 바뀐 파일만 검사 |
-| 에셋에 ID를 두지 않는다 | ID 참조는 에디터·GitHub에서 이미지로 보이지 않아 상대 링크 방식과 충돌한다. 대신 깨진 링크를 경고한다 | ID로 에셋 참조 |
-| 에셋 크기·확장자 제한은 경고로만 한다 | Git 저장소에 큰 파일을 두는 것은 사용자의 선택이며 커밋을 막으면 우회하게 된다 | 한도 초과 시 커밋 거부 |

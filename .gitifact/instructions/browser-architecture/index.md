@@ -4,7 +4,7 @@ title: 브라우저 아키텍처
 description: 브라우저 React 앱의 경로·코드 구성·데이터 흐름·레이아웃·디자인 시스템 규칙. apps/browser 코드를 고칠 때 쓴다.
 ---
 
-브라우저는 CLI 로컬 서버가 제공하는 읽기 전용 React SPA다. 제품 개요, 요구사항, 프로젝트 지침, 활동, 참여자, Git 상태를 보여 주며 요구사항을 편집하거나 승인을 만들지 않는다. 이 지침은 브라우저 코드를 고칠 때 따르는 규칙을 둔다.
+브라우저는 CLI 로컬 서버가 제공하는 읽기 전용 React SPA다. 제품 개요, 요구사항, 프로젝트 지침, 결정기록, 참여자, Git 상태를 보여 주며 요구사항을 편집하거나 승인을 만들지 않는다. 이 지침은 브라우저 코드를 고칠 때 따르는 규칙을 둔다. 규칙을 정한 맥락과 검토한 대안은 결정기록에 있으므로, 규칙을 바꾸기 전에 `docs history I-5x5yhjlk4u`로 읽는다.
 
 ## 경로와 URL 상태
 
@@ -18,7 +18,7 @@ description: 브라우저 React 앱의 경로·코드 구성·데이터 흐름·
 | 모바일 메뉴 등 일시 UI | 컴포넌트 또는 app provider |
 | 표시 언어·화면 모드·색 조합·메뉴 폭 | 그 브라우저의 localStorage |
 
-검색 입력은 URL을 replace하고, 상세 이동은 뒤로가기로 복원한다. 필터·정렬의 기본값은 주소에 쓰지 않으며, 목록에서 상세로 갈 때와 돌아올 때 그대로 넘긴다. 검색창은 입력값을 URL에 직접 묶지 않고 필드가 값을 들고 URL에 따라 반영한다(`widgets/records-page/ui/SearchFilter.tsx`, 이유는 설계 결정 표).
+검색 입력은 URL을 replace하고, 상세 이동은 뒤로가기로 복원한다. 필터·정렬의 기본값은 주소에 쓰지 않으며, 목록에서 상세로 갈 때와 돌아올 때 그대로 넘긴다. 검색창은 입력값을 URL에 직접 묶지 않고 필드가 값을 들고 URL에 따라 반영한다(`widgets/records-page/ui/SearchFilter.tsx`).
 
 모든 화면 머리의 문서 검색 입구와 `mod+K`는 같은 검색창을 열고, 검색창에는 별도 주소를 두지 않는다.
 
@@ -54,9 +54,9 @@ flowchart TD
 | 슬라이스 | 맡는 것 |
 | :--- | :--- |
 | `app/routes` | 라우트 파일과 search params 검증. 화면 컴포넌트는 pages에 둔다 |
-| `pages/*` | 화면마다 하나: overview·features·instructions·activity·commit·contributors·git-status·settings·about·getting-started·changelog·not-found |
+| `pages/*` | 화면마다 하나: overview·features·instructions·activity·commit·contributors·git-status·settings·about·getting-started·changelog·not-found. `commit`은 커밋 페이지와 기록 상세를 함께 맡는다 |
 | `widgets/records-page` | 명세·문서 화면이 함께 쓰는 틀: 세션·명세 조회, 머리 막대, 골격, 오류, 검색 인자 |
-| `widgets/activity-timeline` | 활동 화면·제품 개요·커밋 페이지가 쓰는 타임라인 |
+| `widgets/activity-timeline` | 결정기록 목록·제품 개요가 쓰는 타임라인. 커밋 페이지와 기록 상세도 그 기록 묶기(`groupRecords`)를 쓴다 |
 | `widgets/diff-view` | 줄 단위 diff(`LineDiff`) |
 | `widgets/page-header`·`app-shell` | 머리 막대, 셸 |
 | `features/search-palette` | 검색창(`SearchPalette`)과 머리의 검색 버튼(`SearchTrigger`) |
@@ -74,7 +74,7 @@ QueryClient는 앱에서 하나만 만든다. 조회 키에는 계약 이름과 
 > [!IMPORTANT]
 > 처음 로딩·빈 결과·조회 실패를 구분하고, 실패를 빈 목록이나 clean으로 바꾸지 않는다. 재조회가 실패하면 이전 자료와 확인 시각을 유지하고, 세션 변경·계약 불일치는 다시 연결하게 한다.
 
-파일 변경을 자동으로 통지받는다고 가정하지 않고 헤더의 새로고침으로 갱신한다. 그래서 명세 조회는 만료되지 않는다(staleTime 무한, 이유는 설계 결정 표). 이력은 HEAD·조건마다 `useInfiniteQuery`로 50건씩 이어 읽고, 다음 페이지가 실패해도 기존 목록을 보존한다.
+파일 변경을 자동으로 통지받는다고 가정하지 않고 헤더의 새로고침으로 갱신한다. 그래서 명세 조회는 만료되지 않는다(staleTime 무한). 이력은 HEAD·조건마다 `useInfiniteQuery`로 50건씩 이어 읽고, 다음 페이지가 실패해도 기존 목록을 보존한다.
 
 ```mermaid
 flowchart TD
@@ -106,16 +106,16 @@ AppShell은 wash 변형의 inset 배치다. 왼쪽 메뉴는 기본 240px이고 
 
 | 화면 | 본문 폭 |
 | :--- | :--- |
-| 커밋 페이지(`/activity/<커밋>`) | 96rem 컬럼 |
+| 커밋 페이지(`/records/commits/<커밋>`), 기록 상세(`/records/<기록 ID>`) | 96rem 컬럼 |
 | 그 밖의 화면 | 64rem 중앙 컬럼 |
 
 페이지별 zoom이나 root font-size 변경은 두지 않는다.
 
 ### 활동 타임라인
 
-한 항목은 커밋 하나이고, 본문은 기록된 이유마다 한 덩어리다(구성은 화면 구성 설계의 타임라인 절). 이유 문단은 46rem 폭까지만 흐른다. 묶음을 나누는 선은 두지 않고 간격으로만 나누며, 한 이유와 그 기록 사이는 `--spacing-2`, 이유 묶음 사이는 `--spacing-5`다. 세로 선은 타임라인의 것 하나뿐이다.
+한 항목은 커밋 하나이고, 본문은 커밋이 더한 결정기록마다 한 묶음이다(구성은 화면 구성 설계의 타임라인 절). 묶음은 기록 제목, 결정의 첫 줄, 문서 줄 순서이고 그 사이는 `--spacing-1`이다. 결정의 첫 줄은 CSS로 한 줄에서 자르고 46rem 폭까지만 흐른다. 섹션 전체는 목록에 두지 않는다. 묶음을 나누는 선은 두지 않고 간격으로만 나누며, 기록 묶음 사이는 `--spacing-6`(묶음마다 위아래 `--spacing-3`), 커밋 머리·기록 묶음들·기록 없는 변경 사이는 `--spacing-5`다. 세로 선은 타임라인의 것 하나뿐이다.
 
-기록 줄은 변경·문서 종류 배지와 `기능 · 문서 제목` 순서이고, 제목은 고정 폭 칸 없이 배지 바로 뒤에 붙으며 모든 요소가 세로 가운데에 선다. 배지는 `entities/document`의 `ChangeBadge`로, 변경 종류 토큰과 문서 종류 토큰(`KindToken`)을 안쪽 모서리를 없애 붙인 한 덩어리다. 문서 종류는 변경 종류의 초록·파랑·빨강·보라와 겹치지 않게 요구사항 teal, 설계 orange, 위키 pink, 지침 cyan, 기능 기본색이다. 커밋 페이지의 문서 절 머리와 참여자의 최근 활동도 같은 배지를, 커밋 페이지의 이유별 기록 칩은 문서 종류 토큰만 쓴다. 기능 제목은 누를 수 없는 옅은 글자이고 줄이 좁으면 먼저 줄어든다. 링크는 문서 제목 하나이며 커밋 페이지의 그 문서 절을 연다. 위키 페이지와 기능 소개는 제목만 둔다.
+문서 줄은 변경·문서 종류 배지와 `기능 · 문서 제목` 순서이고, 제목은 고정 폭 칸 없이 배지 바로 뒤에 붙으며 모든 요소가 세로 가운데에 선다. 배지는 `entities/document`의 `ChangeBadge`로, 변경 종류 토큰과 문서 종류 토큰(`KindToken`)을 안쪽 모서리를 없애 붙인 한 덩어리다. 문서 종류는 변경 종류의 초록·파랑·빨강·보라와 겹치지 않게 요구사항 teal, 설계 orange, 위키 pink, 지침 cyan, 기능 기본색이다. 커밋 페이지의 문서 절 머리, 기록 상세의 문서 행, 참여자의 최근 활동도 같은 배지를, 커밋 페이지의 "결정기록 없이 바뀐 문서" 칩은 문서 종류 토큰만 쓴다. 기능 제목은 누를 수 없는 옅은 글자이고 줄이 좁으면 먼저 줄어든다. 링크는 문서 제목 하나이며, 기록 아래의 문서는 기록 상세의 그 문서를, 기록 없는 변경은 커밋 페이지의 그 문서 절을 연다. 위키 페이지와 기능 소개는 제목만 둔다.
 
 ### 커밋 페이지와 기능 상세
 
@@ -133,7 +133,7 @@ diff의 지운 줄·더한 줄 바탕은 `--color-background-red`·`--color-back
 
 ## 차트
 
-집계 차트에는 차트 라이브러리를 추가하지 않는다. 문서 다이어그램의 mermaid만 [결정 표](references/decisions.md)의 예외다. 제품 개요의 부분-전체 막대와 일자별 변경 막대는 인라인 SVG로 그리고, 크기 비교는 Astryx ProgressBar를 쓴다.
+집계 차트에는 차트 라이브러리를 추가하지 않는다. 문서 다이어그램의 mermaid만 예외다. 제품 개요의 부분-전체 막대와 일자별 변경 막대는 인라인 SVG로 그리고, 크기 비교는 Astryx ProgressBar를 쓴다.
 
 | 항목 | 규칙 |
 | :--- | :--- |
@@ -149,7 +149,7 @@ diff의 지운 줄·더한 줄 바탕은 `--color-background-red`·`--color-back
 
 체크아웃(`/api/v1/specs`)은 저장 규약의 상한이 있어 통째로 받고 화면이 거른다. 이력은 끝이 없으므로 화면이 받은 범위에서 거르거나 세지 않는다. 필터·검색어·건수·페이지는 서버가 전체 이력에 대해 답하고(`/api/v1/history`), 개요의 집계도 서버 요약(`/api/v1/history/summary`)을 쓴다. 참여자는 최근 10,000개 커밋 기준이며 초과 시 표시한다.
 
-이력은 CLI와 함께 쓰는 캐시 `.gitifact/cache/index.db`가 답하고, git은 캐시에 없는 커밋을 읽을 때만 부른다([CLI 결정 표](../cli-architecture/references/decisions.md)). Windows에서 git 프로세스는 하는 일과 무관하게 한 번에 약 80ms이므로, 기록 수나 파일 수만큼 git을 띄우는 읽기를 새로 만들지 않는다.
+이력은 CLI와 함께 쓰는 캐시 `.gitifact/cache/index.db`가 답하고, git은 캐시에 없는 커밋을 읽을 때만 부른다([CLI 아키텍처](../cli-architecture/index.md)). Windows에서 git 프로세스는 하는 일과 무관하게 한 번에 약 80ms이므로, 기록 수나 파일 수만큼 git을 띄우는 읽기를 새로 만들지 않는다.
 
 ## 문서 렌더링
 
@@ -172,4 +172,3 @@ Astryx locale·날짜·소개·시작하기·패치노트도 같은 언어를 �
 | [코드 스타일](references/code-style.md) | 파일·컴포넌트·상태 작성 규칙 |
 | [디자인 시스템](references/design-system.md) | Astryx 배치, 글꼴, 스크롤, 아이콘·색, 검증 |
 | [개발 환경](references/development.md) | 의존성, 개발 서버, Astryx API 확인, 화면 검증 |
-| [결정 표](references/decisions.md) | 되돌리면 안 되는 결정과 기각한 안 |
