@@ -37,6 +37,8 @@ A commit reference is not a declaration that implementation is complete. Report 
 
 By default, one commit holds one decision: its record, the documents it changed, and the code and tests that implement it. `changes list` shows the documents each record explains; split along those. Records that explain the same document (`Documents two records explain`) go into one commit. The CLI cannot assign code files to records, so decide which decision each belongs to, and commit a file that spans two decisions with both.
 
+When a task is finished but not committed and the next one is about to start, suggest a commit once. Say in one line that if the next task edits the same files, two decisions end up in one file, the work can no longer be committed decision by decision, and the history blurs which change belongs to which decision. A suggestion is not permission to commit: do not commit before the user answers, and if they decline, do not ask again in the same session.
+
 If the project has its own rules for grouping commits, follow them. Under a split policy, commit documents and records first, then explain the related documents in the following code and test commit messages. Do not remove existing user changes or staging, and do not include unrelated changes.
 
 ## Message and trailers

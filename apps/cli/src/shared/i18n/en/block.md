@@ -30,7 +30,7 @@ Record product behavior and constraints that must be maintained.
 - Before changing requirements, designs, or code, find the project instructions (`.gitifact/instructions/`) for the work in the index outside this block, read them and follow them. Rules that span features belong in instructions; read `gitifact guide show instructions` before changing instructions or the index outside this block.
 - Before writing instruction, requirement, or design content, follow `gitifact guide show writing`. Use the project's language for its documents, independently of the CLI display language.
 - When asked to commit, read `gitifact guide show commit`. By default, one decision is committed with its record, documents, code, and tests.
-- Automatic recording does not authorize commits. Commit only on user request or under an explicit project policy. Pushing requires separate authorization.
+- Automatic recording does not authorize commits. Commit only on user request or under an explicit project policy. Pushing requires separate authorization. When a task is finished but not committed and the next one begins, suggest a commit once (two tasks mixed in the same files are hard to commit decision by decision). If the user declines, do not ask again.
 - Ask only about unclear product behavior and continue independent work. Derive all existing features only when asked.
 - SELF-CHECK: before preparing documents or commit input, reread the relevant guide and compare formats. If unsure, run `gitifact guide show <topic>` instead of guessing.
 - Write commit JSON to the input path reported by `changes list`. The CLI removes the file on success. Do not save query results or guide output to files; rerun them when needed.
