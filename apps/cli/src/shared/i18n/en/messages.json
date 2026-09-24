@@ -272,5 +272,17 @@
   "instructions.fileTooLarge": "(Too large to show: {size} bytes)",
   "instructions.fileBinary": "(Not a text file: {size} bytes)",
   "records.empty": "No decision records yet.",
-  "records.moreDocs": "and {count} more"
+  "records.moreDocs": "and {count} more",
+  "help.feedback": "Send a Gitifact bug or idea as an issue to Gitifact's repository (prints a new-issue address without gh)",
+  "help.feedbackFile": "JSON file with type (bug or idea), title and body (- for standard input)",
+  "help.feedbackDryRun": "Show how and what would be sent without sending",
+  "feedback.invalid": "The input holds only type (bug or idea), a one-line title (up to 200 characters) and a non-empty body (up to 20,000 characters).",
+  "feedback.cut": "(The body was cut here because it is long. Paste the full body.)",
+  "feedback.dryRunGh": "Preview: the signed-in gh would create the issue. Nothing was sent.",
+  "feedback.dryRunUrl": "Preview: gh is not available, so the new-issue address below would be opened. Nothing was sent.",
+  "feedback.created": "Created the issue: {url}",
+  "feedback.openUrl": "gh is not available. Open the address below in a browser and submit the issue.",
+  "feedback.ghFailed": "gh could not create the issue. Open the address below in a browser and submit the issue.",
+  "feedback.truncated": "The body is long, so the address holds only its beginning. Paste the full body below into the page.",
+  "feedback.title": "Title: {title}"
 }

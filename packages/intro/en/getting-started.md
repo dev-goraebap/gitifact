@@ -57,6 +57,16 @@ The browser viewer includes:
 
 Requirements, designs, and instructions show the working copy. Decision records show committed history.
 
+## Send feedback on Gitifact
+
+To report a bug in Gitifact or suggest an improvement, tell your agent.
+
+```text
+Report this bug to Gitifact as an issue.
+```
+
+The agent shows you the title and body first and sends the issue to the Gitifact repository once you confirm. If the GitHub CLI (`gh`) is signed in, the issue is created under your account; otherwise you get the new-issue page with everything filled in. Only the Gitifact, OS and Node versions are appended; no project files are sent.
+
 ## Language
 
 Choose English, 한국어, or Browser default in the viewer's Settings. The selection is saved in that browser. Project documents stay in their original language.

@@ -7,6 +7,7 @@ import { runCheck } from './commands/check.js';
 import { parseFields, parseLimit } from './commands/list-options.js';
 import { runChangesCommit, runChangesList } from './commands/changes.js';
 import { runRecordsList, runRecordsNew, runRecordsShow } from './commands/records.js';
+import { runFeedback } from './commands/feedback.js';
 import { runGuideList, runGuideShow } from './commands/guide.js';
 import { formats } from './commands/output.js';
 import { runUpdate } from './commands/update.js';
@@ -115,6 +116,10 @@ changes.command('list').description(t('help.changesList')).allowExcessArguments(
 changes.command('commit').description(t('help.changesCommit')).allowExcessArguments(false)
   .requiredOption('--file <path>', t('help.changesCommitFile')).option('--dry-run', t('help.changesCommitDryRun'))
   .addOption(format()).action(o => runChangesCommit(o));
+
+program.command('feedback').description(t('help.feedback')).allowExcessArguments(false)
+  .requiredOption('--file <path>', t('help.feedbackFile')).option('--dry-run', t('help.feedbackDryRun'))
+  .addOption(format()).action(o => runFeedback(o, __CLI_VERSION__));
 
 const guide = program.command('guide').description(t('help.guide'));
 guide.command('list').description(t('help.guideList')).allowExcessArguments(false).addOption(format()).action(o => runGuideList(o));

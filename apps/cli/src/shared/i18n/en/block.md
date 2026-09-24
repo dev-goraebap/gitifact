@@ -34,6 +34,7 @@ Record product behavior and constraints that must be maintained.
 - Ask only about unclear product behavior and continue independent work. Derive all existing features only when asked.
 - SELF-CHECK: before preparing documents or commit input, reread the relevant guide and compare formats. If unsure, run `gitifact guide show <topic>` instead of guessing.
 - When the user asks to see requirements, project status, or change history, start `gitifact browser` in the background and share its URL. Do not substitute a chat summary.
+- When the user wants to report a Gitifact bug or idea, show the draft, get confirmation, then send it with `gitifact feedback`.
 
 ### Commands
 
@@ -41,6 +42,7 @@ Record product behavior and constraints that must be maintained.
 - `list`, `show`, `new` of `specs`, `instructions` and `records`: lists (filters by relation, history and state; `--fields`), a document with its references, ID and skeleton (`draft: true`). `records list --doc <ID>` is one document's decisions; `check` checks everything (options in `--help`)
 - `changes list`: documents changed since HEAD, uncommitted records, changes without a record, and the commit input path. `changes commit --file <json|-> [--dry-run]`: check documents, then commit the selected files and records
 - `browser`: run the read-only browser server; prints a URL and keeps running
+- `feedback --file <json|-> [--dry-run]`: send an issue to Gitifact's repository (`type`, `title`, `body`; a new-issue address without gh)
 - `update [--check | --commit]`: `--check` only checks versions. Without it, refresh this block to the running version; `--commit` commits block-only changes with a fixed message. `init`: create configuration and this block when adopting Gitifact
 
 ---

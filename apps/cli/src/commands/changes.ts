@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { mkdir, open, readFile, rename, rmdir, stat, unlink, writeFile } from 'node:fs/promises';
+import { mkdir, open, readFile, rename, rmdir, unlink, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { checkDocuments, compareDocumentSets, kindOfId, HISTORY_PATH, SPEC_ROOT, WIKI_ROOT,
   type DecisionRecord, type DocChange, type DocProblem } from '@gitifact/core';
@@ -9,6 +9,7 @@ import { discardAgentInput, prepareAgentInputs, type AgentInputControls } from '
 import { readDocumentWarnings } from '../adapters/filesystem/document-warnings.js';
 import { MIGRATION_TRAILER } from '../adapters/cache/index.js';
 import { checkStoreSelection, fail, fingerprint, hash, info, object, optional, paths, policyPaths, record, text as bounded } from './commit-files.js';
+import { readJsonInput } from './input.js';
 import { CommandError, runCommand, section, text, type Format } from './output.js';
 import { documentsOf, openProject, type Project } from './project.js';
 import { t } from '../shared/i18n/index.js';
@@ -78,10 +79,7 @@ export const runChangesList = (options: { format: Format }, controls: AgentInput
 /** `changes commit`: reads the input, checks and commits the selected files, then removes an input file it consumed. */
 export const runChangesCommit = (options: { format: Format; file: string; dryRun?: boolean }, controls: AgentInputControls & { stdin?: AsyncIterable<Uint8Array> } = {}) =>
   runCommand('changes', options.format, async () => {
-    const bytes = options.file === '-' ? await readStdin(controls.stdin ?? process.stdin) : await readInputFile(options.file);
-    let input: unknown;
-    try { input = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes)); }
-    catch { throw new CommandError('INVALID_INPUT', t('input.json')); }
+    const input = await readJsonInput(options.file, controls.stdin);
     const result = await commitChanges(process.cwd(), input, !!options.dryRun);
     // Only a certain success consumes the input; failures and dry runs keep it for the retry.
     const inputRemoved = result.outcome === 'committed' && options.file !== '-' ? await discardAgentInput(result.root, options.file, controls) : undefined;
@@ -94,21 +92,6 @@ export const runChangesCommit = (options: { format: Format; file: string; dryRun
       ...result.trailers];
     return { json: { ...json, ...(inputRemoved === undefined ? {} : { inputRemoved }) }, text: text(out) };
   });
-
-async function readInputFile(path: string) {
-  const source = await stat(path).catch(() => undefined);
-  if (!source?.isFile() || source.size > 1024 * 1024) throw new CommandError('INVALID_INPUT', t('input.file'));
-  return readFile(path);
-}
-async function readStdin(stream: AsyncIterable<Uint8Array>) {
-  const chunks: Uint8Array[] = []; let size = 0;
-  for await (const chunk of stream) {
-    size += chunk.length;
-    if (size > 1024 * 1024) throw new CommandError('INVALID_INPUT', t('input.size'));
-    chunks.push(chunk);
-  }
-  return Buffer.concat(chunks);
-}
 
 /**
  * Checks the documents and commits the selected files in one process. Records are files the agent wrote; the ones

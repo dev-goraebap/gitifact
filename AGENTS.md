@@ -37,6 +37,7 @@ CLI: 전역 명령 `gitifact`(버전 0.7.1)로 실행한다. 아래 `gitifact`�
 - 불명확한 제품 동작만 질문하고 독립적인 작업은 진행한다. 기존 기능 전체 도출은 요청받았을 때 한다.
 - SELF-CHECK: 문서나 커밋 입력을 만들기 전에 해당 지침을 다시 읽고 형식을 대조한다. 확실하지 않으면 추측하지 말고 `gitifact guide show <topic>`을 실행한다.
 - 사용자가 요구사항·프로젝트 현황·변경 이력을 보여 달라고 하면 `gitifact browser`를 백그라운드로 실행하고 출력된 URL을 알려 준다. 채팅 요약으로 대신하지 않는다.
+- 사용자가 Gitifact의 버그·개선을 남기고 싶어 하면 초안을 보여 주고 확인받은 뒤 `gitifact feedback`으로 보낸다.
 
 ### 명령
 
@@ -44,6 +45,7 @@ CLI: 전역 명령 `gitifact`(버전 0.7.1)로 실행한다. 아래 `gitifact`�
 - `specs`·`instructions`·`records`의 `list`·`show`·`new`: 목록(관계·이력·상태 필터, `--fields`), 원문과 참조, ID 발급과 뼈대(`draft: true`). `records list --doc <ID>`는 한 문서의 결정 흐름, `check`는 전체 검사 (옵션은 `--help`)
 - `changes list`: HEAD 대비 바뀐 문서, 커밋하지 않은 결정기록, 기록 없는 변경, 커밋 입력 파일 경로. `changes commit --file <json|-> [--dry-run]`: 문서 검사 뒤 고른 파일과 결정기록을 커밋
 - `browser`: 읽기 전용 브라우저 서버 실행, URL 출력 후 계속 실행
+- `feedback --file <json|-> [--dry-run]`: Gitifact 저장소에 이슈 보내기(`type`·`title`·`body`, gh가 없으면 작성 페이지 주소)
 - `update [--check | --commit]`: `--check`는 읽기 전용 버전 확인. 옵션 없이는 이 블록을 실행 버전으로 갱신하며 `--commit`은 블록만 바뀐 파일을 고정 메시지로 커밋한다. `init`: 처음 도입할 때 설정과 이 블록을 만든다
 
 ---

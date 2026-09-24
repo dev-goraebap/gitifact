@@ -39,6 +39,7 @@ flowchart TD
 | `adapters/filesystem/` | 설정·문서 파일 쓰기, 커밋 입력 폴더, 에셋·링크 경고, 사용자 편집을 보존하는 원자적 쓰기, 지침 폴더 읽기(`instruction-folder.ts`)와 AGENTS.md 읽기(`agents-file.ts`) |
 | `adapters/cache/` | 캐시 `.gitifact/cache/index.db`: 문서·참조·검색·이력 |
 | `adapters/registry/` | npm 최신 버전 조회 |
+| `adapters/github/` | `feedback`의 `gh` 실행과 이슈 작성 주소 |
 | `output/` | core 결과를 버전 있는 DTO로 변환 |
 | `server/` | `browser-server`(수명), `http/`(검사·라우터·응답·앱 파일), `routes/`(경로 표), `checkout/`(작업 폴더 체크아웃), `commit/`(커밋의 소스 변경) |
 | `shared/i18n/` | 사용자에게 보이는 문구와 언어별 Markdown |
@@ -166,7 +167,9 @@ GET은 정의한 조회만 수행하고 재검사는 별도 POST(`/api/v1/status
 
 ## 외부 요청
 
-CLI가 외부로 보내는 요청은 하나다. `init`·`update`·`update --check` 실행 시 `registry.npmjs.org/gitifact`의 최신 버전을 조회하며 프로젝트 정보는 보내지 않는다. 3초 안에 답이 없으면 확인 불가로 처리하고 동작을 막지 않는다. `GITIFACT_NO_UPDATE_CHECK`로 끈다. 브라우저 서버는 새 버전을 조회하지 않는다. 이 요청은 `adapters/registry/`에만 두고, 테스트는 조회 함수를 주입해 네트워크 없이 실행한다.
+CLI가 외부로 보내는 요청은 둘이다. 첫째, `init`·`update`·`update --check` 실행 시 `registry.npmjs.org/gitifact`의 최신 버전을 조회하며 프로젝트 정보는 보내지 않는다. 3초 안에 답이 없으면 확인 불가로 처리하고 동작을 막지 않는다. `GITIFACT_NO_UPDATE_CHECK`로 끈다. 브라우저 서버는 새 버전을 조회하지 않는다. 이 요청은 `adapters/registry/`에만 두고, 테스트는 조회 함수를 주입해 네트워크 없이 실행한다.
+
+둘째, `feedback`은 사용자가 확인한 이슈를 사용자의 `gh`로 Gitifact 저장소에 만든다. CLI는 GitHub API를 직접 부르거나 토큰을 읽지 않고, `gh`가 없으면 이슈 작성 주소만 출력한다. 본문에 붙이는 환경 정보는 버전·운영체제·Node·`schemaVersion`뿐이다. `gh` 실행은 `adapters/github/`에만 두고, 테스트는 실행 함수를 주입하거나 `gh`가 없는 PATH로 실행한다.
 
 ## 빌드·배포·테스트
 

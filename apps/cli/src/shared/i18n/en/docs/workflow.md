@@ -44,7 +44,11 @@ Write commit JSON to the input path `gitifact changes list` reports (`inputs.com
 
 ## Requests to view records
 
-When the user asks to see requirements, project status, history, or release notes, start `gitifact browser` and share the URL. Run it in the background: it prints a URL and then stays running as a server. Do not wait for it to finish or substitute a chat summary of `docs` output. Follow requests to explain specific content. If a server started in this conversation is still running, reuse its URL. Open the default browser only when asked.
+When the user asks to see requirements, project status, history, or release notes, start `gitifact browser` and share the URL. Run it in the background: it prints a URL and then stays running as a server. Do not wait for it to finish or substitute a chat summary of list output. Follow requests to explain specific content. If a server started in this conversation is still running, reuse its URL. Open the default browser only when asked.
+
+## Sending feedback on Gitifact
+
+When the user wants to report a bug in Gitifact itself or suggest an improvement, draft the type (`bug` or `idea`), title and body and show them to the user. Describe what the user ran into and how to reproduce it; include project files, document text or paths only when the user asks. Do not send before the user confirms. Once confirmed, write `{"type": "bug", "title": "…", "body": "…"}` to an input file and run `gitifact feedback --file <path>`. Use `--dry-run` first to show how it will be sent and the environment the CLI appends (versions, OS, Node, storage version). With a signed-in `gh`, the CLI creates the issue under the user's account; otherwise it prints the new-issue page address. Give the address to the user to submit in a browser, and pass on the full body when the output says it was cut.
 
 ## Finish
 
