@@ -6,7 +6,7 @@
 | --- | --- |
 | `feature-requirements.jpg` | 기능별 요구사항과 설계 연결 |
 | `project-instructions.jpg` | AGENTS.md와 작업별 지침 3개가 있는 프로젝트 지침 목록 |
-| `activity.jpg` | 명세 변경, 작성자, 변경 이유 |
+| `activity.jpg` | 결정기록 목록: 커밋마다 결정기록과 그것이 설명하는 문서 변경 |
 
 ## 촬영 자료
 
@@ -21,6 +21,14 @@ Fieldnotes는 고객 피드백을 제품 로드맵과 연결하는 가상의 서
 ## 2026-09-24 프로젝트 지침 화면
 
 위키가 프로젝트 지침으로 바뀌어 `project-wiki.jpg`를 `project-instructions.jpg`로 바꿨다. 원본 데모는 그대로 두고, 사본 `.tmp/readme-showcase/fieldnotes-0.8`을 개발 빌드의 `guide show migrate` 절차로 0.8.0 형식에 옮겼다(전환 커밋과 AGENTS.md 색인 커밋). 위키 폴더 셋이 지침 `architecture`·`handbook`·`product`가 됐다. 촬영은 같은 조건(English, Dark, 1368×1242)으로 Playwright chromium이 반환한 JPEG(품질 90)를 그대로 저장했다. 사이드바의 버전 표시는 촬영 때 빌드 버전인 v0.7.1이다. 이 전환에서 찾은 migrate 지침의 빈틈(고친 위키 README의 처리, 제목 없는 폴더, 설계의 `# 제목` 줄)은 지침에 반영했다. 데모의 README는 그 반영 전에 옮겨 지침이 되지 않았다.
+
+## 2026-09-24 결정기록과 대시보드
+
+변경 이유가 결정기록으로, 활동 메뉴가 "Decision records"로, 제품 개요가 "Dashboard"로 바뀌어 세 장을 모두 다시 찍었다. 사이드바와 필터에 아이콘이 생겨 나머지 두 장도 옛 화면이었다.
+
+데모 `fieldnotes-0.8`은 이전 개발 빌드로 옮긴 것이라 옛 이유 파일 `history.jsonl`이 남아 있었다. 현재 개발 빌드의 CLI로 세 커밋을 더했다. Alex Morgan이 옛 이유 파일을 지웠고, Jamie Chen이 출시 알림을 하루 한 통 요약으로 바꿨으며(요구사항·설계와 결정기록), Sam Rivera가 초대 유효 기간을 72시간으로 줄였다(요구사항·설계와 결정기록). 스크립트는 로컬 촬영 자료다. 브라우저의 이동 경로가 폴더 이름을 쓰므로 `.tmp/readme-showcase/shoot/fieldnotes`로 복제해 찍었다.
+
+촬영 조건은 같다(English, Dark, 1368×1242, Playwright chromium JPEG 품질 90, 재압축 없음). 사이드바의 버전 표시는 빌드 버전인 v0.7.1이다. 촬영 중 0.7 이유가 문서마다 다른 ID로 저장돼 결정기록 목록에 같은 글이 문서 수만큼 반복되는 결함을 찾아 고쳤다(한 커밋 안의 같은 옛 이유는 한 묶음).
 
 ## 검증
 

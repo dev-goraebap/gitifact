@@ -68,7 +68,7 @@ Gitifact는 기능마다 **요구사항**과 **설계**를 짝지어 다룹니�
 
 사용자가 변경 이유를 남기기 위해 문서를 따로 작성하거나 복잡한 명령을 외울 필요는 없습니다. 기존 요구사항을 바꾸거나 여러 안 중 하나를 고르는 순간, 대화 맥락을 이해한 에이전트가 "무엇을 왜 정했는가"를 제목과 몇 개의 짧은 섹션(맥락·결정, 검토한 대안이 있으면 그것까지)으로 된 결정기록에 정리해 커밋에 담아줍니다. 결정기록은 문서마다 모여, 나중에 그 문서가 왜 지금 모양이 됐는지 순서대로 읽을 수 있습니다. 만약 제품의 동작이나 의도가 모호한 부분이 있다면 에이전트가 먼저 질문을 건네며 구체화해 나갑니다.
 
-![요구사항·설계 변경과 그 이유를 보여주는 활동 이력](https://raw.githubusercontent.com/dev-goraebap/gitifact/main/packages/intro/assets/screenshots/activity.jpg)
+![요구사항·설계 변경을 그것을 설명하는 결정기록 아래에 보여주는 결정기록 화면](https://raw.githubusercontent.com/dev-goraebap/gitifact/main/packages/intro/assets/screenshots/activity.jpg)
 
 ## 점진적인 도입
 

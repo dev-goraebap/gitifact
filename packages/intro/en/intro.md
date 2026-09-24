@@ -68,7 +68,7 @@ With Gitifact, the agent prepares a requirements draft and refines it as the con
 
 You do not need to write a separate explanation or remember recording commands. When an existing requirement changes or one of several options is chosen, the agent turns the conversation into a decision record: a title and a few short sections (context and decision, plus alternatives considered when there were any). Records gather by document, so you can later read in order why a document looks the way it does. When the intended behavior is unclear, it asks for clarification.
 
-![Requirement and design changes with their reasons in the activity timeline](https://raw.githubusercontent.com/dev-goraebap/gitifact/main/packages/intro/assets/screenshots/activity.jpg)
+![Requirement and design changes under the decision records that explain them](https://raw.githubusercontent.com/dev-goraebap/gitifact/main/packages/intro/assets/screenshots/activity.jpg)
 
 ## Adopt it gradually
 
