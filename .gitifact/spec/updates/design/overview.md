@@ -9,10 +9,8 @@ requirements:
   - R-hlndpxflx7
   - R-yrk7zcukqy
 sources:
-  - id: W-dmcvdbs53b
-  - id: W-hwwbtzdipa
-  - id: W-5t5ypod2ty
-  - id: W-3lihunsfpn
+  - id: I-zdpwuta64o
+    note: 패키지 경계·로컬 실행·지침 단일 원본(결정 표)
 ---
 
 ## 개요

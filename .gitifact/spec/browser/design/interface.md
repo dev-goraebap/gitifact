@@ -46,13 +46,14 @@ requirements:
 | `GET /api/v1/status` | repository-status v1 | 마지막으로 관측한 Git 상태. 실패는 503 |
 | `POST /api/v1/status/refresh` | repository-status v1 | Git 상태를 다시 관측. 허용된 Origin만(아니면 403) |
 | `GET /api/v1/changelog?lang` | changelog v1 | 패치노트. 그 언어가 없으면 기본 언어로 답하고 `fallback`으로 알림 |
-| `GET /api/v1/specs` | browser-specs v5 | 체크아웃 전체: 현재 기능과 그 요구사항·설계, 위키, 참여자, 미커밋 여부, 읽지 못한 파일 |
-| `GET /api/v1/history?head&offset&limit&kind&document&feature&author&q` | browser-history v3 | 조건에 맞는 변경 한 페이지와 전체 건수 |
-| `GET /api/v1/history/summary?head` | browser-history-summary v2 | 종류별 건수, 최근 3주 커밋별 건수, 최신 커밋 셋 |
-| `GET /api/v1/commit?commit` | browser-commit v1 | 커밋 하나의 작성자·시각·메시지와, 바꾼 문서마다 목록 정보와 전후 본문 |
+| `GET /api/v1/specs` | browser-specs v6 | 체크아웃 전체: 현재 기능과 그 요구사항·설계, 프로젝트 지침(폴더 파일 목록 포함)과 AGENTS.md, 참여자, 미커밋 여부, 읽지 못한 파일 |
+| `GET /api/v1/history?head&offset&limit&kind&document&feature&author&q` | browser-history v4 | 조건에 맞는 변경 한 페이지와 전체 건수 |
+| `GET /api/v1/history/summary?head` | browser-history-summary v3 | 종류별 건수, 최근 3주 커밋별 건수, 최신 커밋 셋 |
+| `GET /api/v1/commit?commit` | browser-commit v2 | 커밋 하나의 작성자·시각·메시지와, 바꾼 문서마다 목록 정보와 전후 본문 |
 | `GET /api/v1/commit/files?commit` | browser-commit-files v1 | 첫 부모 대비 바뀐 소스 파일(`.gitifact` 밖)의 경로·상태·줄 수. 500개까지와 전체 수 |
 | `GET /api/v1/commit/file?commit&path` | browser-commit-file v1 | 그 목록의 파일 하나의 양쪽 원문. 이진 파일과 512KB 넘는 쪽은 원문 없이 표시만 |
-| `GET /api/v1/search?q&head` | browser-search v1 | 체크아웃과 지난 변경의 검색 결과 |
+| `GET /api/v1/search?q&head` | browser-search v2 | 체크아웃과 지난 변경의 검색 결과 |
+| `GET /api/v1/instructions/file?id&path` | browser-instruction-file v1 | 작업 폴더의 지침 파일 하나. 링크는 따라가지 않고, 이진 파일과 512KB 넘는 파일은 원문 없이 표시만 |
 | `GET /api/v1/assets/*` | — | `.gitifact/assets` 아래 파일. 세션 헤더 불필요 |
 
 > [!WARNING]

@@ -10,7 +10,9 @@ export const hash = (value: Buffer | string) => createHash('sha256').update(valu
 export const optional = (path: string) => readFile(path).catch(e => { if (e.code === 'ENOENT') return null; throw e; });
 export const info = (path: string) => lstat(path).catch(e => { if (e.code === 'ENOENT') return undefined; throw e; });
 /** A document or the reason file: what the commit reads, checks and binds to the staged bytes. */
-export const record = (path: string) => { try { return classifyDocPath(path).type !== 'ignored'; } catch { return false; } };
+export const record = (path: string) => { try { const type = classifyDocPath(path).type; return type !== 'ignored' && type !== 'instruction-file'; } catch { return false; } };
+/** A file of an instruction folder besides its index.md: committed with the instruction, not parsed. */
+const instructionFile = (path: string) => { try { return classifyDocPath(path).type === 'instruction-file'; } catch { return false; } };
 export function validPath(path: string) {
   if (typeof path !== 'string' || path.length > 1000 || /[\\:\x00-\x1f\x7f]/.test(path)
     || path.split('/').some(p => !p || p === '.' || p === '..' || p.toLowerCase() === '.git')) fail(t('commitFiles.relativePath'));
@@ -46,10 +48,10 @@ export function policyPaths(files: string[]) {
   for (const file of files) { const parts = file.split('/'); for (let i = 1; i < parts.length; i++) for (const name of ['AGENTS.md', 'CLAUDE.md', '.gitignore', '.gitattributes']) all.add(parts.slice(0, i).join('/') + '/' + name); }
   return [...all].sort();
 }
-/** Inside `.gitifact` only documents, the reason file, the configuration and assets are committed; the cache never is. */
+/** Inside `.gitifact` only documents, instruction files, the reason file, the configuration and assets are committed; the cache never is. */
 export function checkStoreSelection(selected: string[]) {
   for (const p of selected.filter(p => p.startsWith('.gitifact/') && !record(p) && p !== '.gitifact/config.json')) {
     // Assets travel with the documents; they are committed, not parsed.
-    if (!isAssetPath(p)) fail(t('commitFiles.notRecord', { path: p }));
+    if (!isAssetPath(p) && !instructionFile(p)) fail(t('commitFiles.notRecord', { path: p }));
   }
 }

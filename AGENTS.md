@@ -68,13 +68,13 @@ CLI: 기본 실행은 `npx --yes gitifact@0.7.1 <cmd>`다. 아래 `gitifact`는 
 ## 작업을 시작할 때
 
 1. `git status`와 현재 브랜치·작업 경로를 확인한다. 기존 변경과 다른 에이전트의 작업을 보존한다.
-2. [README](README.md)의 제품 소개와 [위키 운영 방침](.gitifact/wiki/README.md)을 읽고 이번 작업이 제품의 목적·원칙·범위 안에 있는지 확인한다. 관련 기능 명세(`.gitifact/spec/`)도 읽는다.
-   코드 구조와 기술 선택은 [결정 기록](.gitifact/wiki/adr/)을 따른다. CLI 작업은 [CLI 규칙](.gitifact/wiki/rules/cli.md), 브라우저 작업은 [브라우저 규칙](.gitifact/wiki/rules/browser.md)과 `.gitifact/wiki/rules/frontend/`의 문서, [apps/browser/AGENTS.md](apps/browser/AGENTS.md)의 Astryx 생성 지침을 직접 읽는다. 설계 문서 규약은 [기능 설계 문서](.gitifact/wiki/rules/design-documents.md)다. 자동 첨부 여부에 의존하지 않고, 사용할 컴포넌트의 설치 버전 API를 Astryx CLI로 확인한다.
+2. [README](README.md)의 제품 소개를 읽고 이번 작업이 제품의 목적·원칙·범위 안에 있는지 확인한다. 관련 기능 명세(`.gitifact/spec/`)도 읽는다.
+   구현 규칙과 결정은 프로젝트 지침(`.gitifact/instructions/`)에 있다. CLI 작업은 [CLI 아키텍처](.gitifact/instructions/cli-architecture/index.md), 브라우저 작업은 [브라우저 아키텍처](.gitifact/instructions/browser-architecture/index.md)와 그 references, [apps/browser/AGENTS.md](apps/browser/AGENTS.md)의 Astryx 생성 지침, 문서 작업은 [문서 작성](.gitifact/instructions/writing-docs/index.md), 검증과 커밋 전에는 [검증](.gitifact/instructions/verification/index.md)을 직접 읽는다. 결정 기록은 각 지침의 `references/decisions.md` 결정 표다. 자동 첨부 여부에 의존하지 않고, 사용할 컴포넌트의 설치 버전 API를 Astryx CLI로 확인한다.
 3. 실제 파일과 실행 가능한 명령을 확인한다. README나 설계 문서에 등장한다는 이유만으로 기능이 구현됐다고 가정하지 않는다.
    실행 방법과 검증 범위는 [개발 환경](docs/development.md)을 확인한다. 현재 통합 검증 명령은 `pnpm check`다.
 4. 이번 작업의 범위, 관련 문서, 검증 방법을 정하고 진행한다.
 
-`.tmp/`는 로컬 조사·논의 자료다. 새 체크아웃에 없어도 작업을 시작할 수 있어야 한다. 구현 규칙과 결정은 `.gitifact/wiki/`의 페이지에, 제품의 목적·원칙·범위는 루트 README.md(원본은 packages/intro)에 둔다. 위키 페이지는 파일을 직접 고친 뒤 `docs check`로 확인하고, 둘 다 커밋 시 변경 이유를 붙인다. 날짜별 작업·검증·배포 기록만 `docs/`에 둔다.
+`.tmp/`는 로컬 조사·논의 자료다. 새 체크아웃에 없어도 작업을 시작할 수 있어야 한다. 구현 규칙과 결정은 `.gitifact/instructions/`의 프로젝트 지침에, 제품의 목적·원칙·범위는 루트 README.md(원본은 packages/intro)에 둔다. 지침은 파일을 직접 고친 뒤 `docs check`로 확인하고, 둘 다 커밋 시 변경 이유를 붙인다. 2026-09-23 이 저장소의 위키를 프로젝트 지침 4개로 옮겼고(2026-09-24 스킬에서 지침으로 이름을 바꿈), 옛 위키 페이지(W-)는 이력에서 읽는다. 날짜별 작업·검증·배포 기록만 `docs/`에 둔다.
 
 ## 항상 지킬 원칙
 

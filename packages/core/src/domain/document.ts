@@ -3,13 +3,13 @@ import { t } from '../shared/i18n/index.js';
 // The 0.8.0 document model. Every structural fact lives in frontmatter; the body is prose that is never parsed for data.
 // Membership comes from the folder a file sits in, identity from its `id`, order from `order`.
 
-export type DocKind = 'feature' | 'requirement' | 'design' | 'wiki';
+export type DocKind = 'feature' | 'requirement' | 'design' | 'wiki' | 'instruction';
 
 /** ID prefix per kind. `H-` names a reason line in history.jsonl. IDs are issued by the CLI and never change. */
-export const DOC_ID_PREFIX = { feature: 'S', requirement: 'R', design: 'D', wiki: 'W' } as const satisfies Record<DocKind, string>;
+export const DOC_ID_PREFIX = { feature: 'S', requirement: 'R', design: 'D', wiki: 'W', instruction: 'I' } as const satisfies Record<DocKind, string>;
 export const REASON_ID_PREFIX = 'H';
 const token = '[a-z2-7]{10}';
-export const docIdPattern = new RegExp(`^[SRDW]-${token}$`);
+export const docIdPattern = new RegExp(`^[SRDWI]-${token}$`);
 export const reasonIdPattern = new RegExp(`^H-${token}$`);
 export const idPatternOf = (kind: DocKind) => new RegExp(`^${DOC_ID_PREFIX[kind]}-${token}$`);
 export const kindOfId = (id: string): DocKind | undefined =>
@@ -24,7 +24,12 @@ export interface FeatureDoc extends DocBase { kind: 'feature'; feature: string }
 export interface RequirementDoc extends DocBase { kind: 'requirement'; feature: string; order: number }
 export interface DesignDoc extends DocBase { kind: 'design'; feature: string; order: number; requirements: string[]; sources: DocSource[] }
 export interface WikiDoc extends DocBase { kind: 'wiki' }
-export type Doc = FeatureDoc | RequirementDoc | DesignDoc | WikiDoc;
+/**
+ * A project instruction: `.gitifact/instructions/<name>/index.md`, what agents read for one kind of work when AGENTS.md
+ * sends them there. `name` is the folder; the other files of the folder (references) belong to it.
+ */
+export interface InstructionDoc extends DocBase { kind: 'instruction'; name: string }
+export type Doc = FeatureDoc | RequirementDoc | DesignDoc | WikiDoc | InstructionDoc;
 
 /** One line of history.jsonl: why the listed documents changed. Author and time are read from the commit. */
 export interface DocReason { id: string; docs: string[]; reason: string }
@@ -34,6 +39,7 @@ export const docProblemCodes = [
   'PATH_UNSUPPORTED', 'FRONTMATTER_REQUIRED', 'FRONTMATTER_UNCLOSED', 'FRONTMATTER_LINE', 'FRONTMATTER_VALUE',
   'FRONTMATTER_UNKNOWN_KEY', 'FRONTMATTER_MISSING_KEY', 'ID_FORMAT', 'SOURCE_INVALID', 'BODY_REQUIRED', 'BODY_HEADING',
   'BODY_MARKER', 'BODY_UNCLOSED_FENCE', 'INVALID_CHARACTERS', 'FILE_TOO_LARGE', 'REASON_INVALID',
+  'INSTRUCTION_INDEX_REQUIRED', 'INSTRUCTION_SPEC_LINK',
   // Across files
   'DOC_DRAFT', 'DUPLICATE_ID', 'DUPLICATE_REASON_ID', 'DUPLICATE_ORDER', 'MISSING_REFERENCE', 'FEATURE_INDEX_REQUIRED', 'DESIGN_OVERVIEW_REQUIRED',
 ] as const;

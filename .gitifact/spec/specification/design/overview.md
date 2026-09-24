@@ -10,6 +10,8 @@ requirements:
   - R-hbz77tj5kc
   - R-vaw2ychvkd
   - R-uvehohexvw
+  - R-rir7dn3eez
+  - R-dzowfm436d
 ---
 
 ## 개요
@@ -123,6 +125,38 @@ flowchart TD
 
 형식 고정 자료와 독립 저장소로 파싱·렌더링·검사와 명령 동작을 시험한다(`packages/core/test/documents.test.mjs`, `apps/cli/test/docs-commands.test.mjs`). 명세 구조가 유효하다는 결과를 제품 의미나 코드 구현의 검증으로 해석하지 않는다.
 
+## 에셋과 링크
+
+에셋은 `.gitifact/assets/**`이며 core `isAssetPath`(`formats/links.ts`)가 경로를 판정한다. 에셋 폴더 아래 경로는 파일 이름을 포함해 8단계, 전체 경로는 300자까지이고 `..`·역슬래시·콜론은 쓰지 못한다. 에셋은 파싱하지 않으며, `changes commit`의 선택 검사와 브라우저 서버의 제공이 같은 판정을 쓴다.
+
+본문 링크는 그 파일 기준 상대 경로다. CLI는 원문을 바꾸지 않고, 대상이 없는 링크를 경고하며 스킬 사이의 관계를 읽을 때 본다. 브라우저가 링크를 그리는 방식은 [브라우저 문서 설계](../../browser/design/document.md)를 따른다.
+
+```mermaid
+flowchart TD
+  L["본문의 상대 링크"] --> D{"문서?"}
+  D -->|예| OK["통과"]
+  D -->|아니요| A{"에셋?"}
+  A -->|예| R["참조된 에셋"]
+  A -->|아니요| O{"밖의 파일?"}
+  O -->|예| OK
+  O -->|아니요| M["MISSING_LINK_TARGET"]
+```
+
+core `documentWarnings`(`use-cases/document-warnings.ts`)가 모든 문서 본문에서 `extractLinks`·`resolveLink`로 링크를 찾는다. 외부·절대 경로·앵커·메일 링크와 코드 펜스 안은 보지 않는다. "밖의 파일"은 `.gitifact` 밖에 있는 일반 파일이고, `.gitifact` 안의 문서도 에셋도 스킬 파일도 아닌 대상은 경고한다. 파일 존재 확인과 에셋 목록은 CLI 어댑터(`adapters/filesystem/document-warnings.ts`)가 맡으며, 심볼릭 링크는 목록에서 뺀다.
+
+| 경고 | 조건 |
+| :--- | :--- |
+| `MISSING_LINK_TARGET` | 링크 대상이 위 판정을 통과하지 못함 |
+| `ASSET_SIZE` | 에셋 하나가 1MB 초과 |
+| `ASSET_EXTENSION` | 확장자가 png·jpg·jpeg·gif·webp·svg·pdf가 아님 |
+| `ASSETS_TOTAL_SIZE` | 에셋 전체가 50MB 초과 |
+| `UNREFERENCED_ASSET` | 어떤 본문도 가리키지 않는 에셋 |
+
+`docs check`는 문제 목록 뒤에 경고를 따로 보이고, `changes list`는 경고 수를 알린다. 브라우저 서버는 `/api/v1/assets/<경로>`로 에셋을 제공한다. 이미지는 inline, 그 밖은 attachment다.
+
+> [!IMPORTANT]
+> 경고는 종료 코드를 바꾸지 않고 `changes commit`도 막지 않는다. 한도는 core 상수(`ASSET_SIZE_LIMIT`, `ASSETS_TOTAL_LIMIT`, `RECOMMENDED_ASSET_EXTENSIONS`)다.
+
 ## 결정
 
 | 결정 | 이유 | 기각한 안 |
@@ -132,3 +166,5 @@ flowchart TD
 | 이유는 `.gitifact/history.jsonl` 한 파일에 두고 `merge=union`으로 병합한다 | 요구사항을 다른 기능으로 옮기거나 여러 폴더에 걸친 이유를 남길 때 둘 곳이 모호하지 않고, 두 브랜치가 더한 줄이 모두 남는다 | 기능 폴더·위키마다 `history.jsonl` |
 | 현재 문서만 저장하고 과거 원문은 Git에서 읽는다 | 중복 스냅샷을 줄인다 | 문서의 과거 스냅샷 저장 |
 | `docs check`는 바뀐 파일이 아니라 문서 전체를 검사한다 | 문제가 아무도 고치지 않은 파일에 생길 수 있다. 위키 페이지를 지우면 설계의 `sources`가 없는 문서를 가리킨다 | 바뀐 파일만 검사 |
+| 에셋에 ID를 두지 않는다 | ID 참조는 에디터·GitHub에서 이미지로 보이지 않아 상대 링크 방식과 충돌한다. 대신 깨진 링크를 경고한다 | ID로 에셋 참조 |
+| 에셋 크기·확장자 제한은 경고로만 한다 | Git 저장소에 큰 파일을 두는 것은 사용자의 선택이며 커밋을 막으면 우회하게 된다 | 한도 초과 시 커밋 거부 |

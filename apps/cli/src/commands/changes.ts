@@ -171,7 +171,7 @@ export async function commitChanges(cwd: string, input: unknown, dryRun: boolean
 
   const ids = [...new Set([...changes.map(c => c.id), ...lines.flatMap(r => r.docs)])].sort();
   const trailer = (name: string, kinds: string[]) => ids.filter(id => kinds.includes(kindOfId(id)!)).map(id => name + ': ' + id);
-  const trailers = [...trailer('Gitifact-Req', ['requirement']), ...trailer('Gitifact-Design', ['design']), ...trailer('Gitifact-Doc', ['feature', 'wiki']),
+  const trailers = [...trailer('Gitifact-Req', ['requirement']), ...trailer('Gitifact-Design', ['design']), ...trailer('Gitifact-Doc', ['feature', 'wiki', 'instruction']),
     ...(request.migration ? [MIGRATION_TRAILER + ': ' + MIGRATION_TARGET] : [])];
   const contextPaths = policyPaths(selected);
   const hashes = async (list: string[]) => new Map(await Promise.all(list.map(async p => [p, await fingerprint(root, p)] as const)));

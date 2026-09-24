@@ -1,6 +1,6 @@
 import { lstat, readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { DocumentError, classifyDocPath, docProblem, parseDocumentFile, HISTORY_PATH, SPEC_ROOT, WIKI_ROOT, type Doc, type DocProblem } from '@gitifact/core';
+import { DocumentError, classifyDocPath, docProblem, parseDocumentFile, HISTORY_PATH, INSTRUCTIONS_ROOT, SPEC_ROOT, WIKI_ROOT, type Doc, type DocProblem } from '@gitifact/core';
 import { transaction, type CacheDatabase } from './database.js';
 import { plain } from './search-text.js';
 
@@ -34,7 +34,7 @@ export function createDocumentCache(root: string, database: CacheDatabase) {
       }
       found.set(relative, { mtime: info.mtimeMs, size: info.size, link: info.isSymbolicLink() || !info.isFile() });
     }
-    await visit(SPEC_ROOT, 0); await visit(WIKI_ROOT, 0);
+    await visit(SPEC_ROOT, 0); await visit(WIKI_ROOT, 0); await visit(INSTRUCTIONS_ROOT, 0);
     return found;
   }
 
@@ -76,7 +76,7 @@ export function createDocumentCache(root: string, database: CacheDatabase) {
         forget(p.path);
         file.run(p.path, p.seen.mtime, p.seen.size, p.problem ? JSON.stringify(p.problem) : null);
         const doc = p.doc; if (!doc) continue;
-        const feature = doc.kind === 'wiki' ? null : doc.feature;
+        const feature = doc.kind === 'wiki' || doc.kind === 'instruction' ? null : doc.feature;
         document.run(doc.path, doc.id, doc.kind, feature, doc.title, doc.description, doc.kind === 'requirement' || doc.kind === 'design' ? doc.order : null, JSON.stringify(doc));
         if (doc.kind === 'design') {
           for (const id of doc.requirements) reference.run(doc.id, id, 'requirement');
@@ -98,6 +98,7 @@ export function createDocumentCache(root: string, database: CacheDatabase) {
 
   /** Whether a walked path is read as a document or reason source; unknown paths are kept so the check names them. */
   const readable = (path: string) => { try { return classifyDocPath(path).type !== 'ignored'; } catch { return true; } };
+  const instructionFile = (path: string) => { try { return classifyDocPath(path).type === 'instruction-file'; } catch { return false; } };
 
   return {
     sync,
@@ -113,6 +114,9 @@ export function createDocumentCache(root: string, database: CacheDatabase) {
       const files = new Map<string, string>(); const problems: DocProblem[] = [];
       for (const [path, s] of seen) {
         if (!readable(path)) continue;
+        // The other files of an instruction folder are references and images: the check needs their paths, and the
+        // text of the Markdown ones only, for the links an instruction must not make.
+        if (instructionFile(path) && !path.endsWith('.md')) { files.set(path, ''); continue; }
         if (s.link) { problems.push(docProblem('PATH_UNSUPPORTED', path)); continue; }
         // The reason file grows with every commit, so it alone may pass the one-document limit.
         if (s.size > (path === HISTORY_PATH ? 64 * FILE_LIMIT : FILE_LIMIT)) { problems.push(docProblem('FILE_TOO_LARGE', path)); continue; }

@@ -4,7 +4,7 @@ import { transaction, type CacheDatabase } from './database.js';
 import { containing, snippet } from './search-text.js';
 
 export interface HistoryFilter { kind?: ChangeType | undefined; document?: HistoryEvent['kind'] | undefined; feature?: string | undefined; author?: string | undefined; q?: string | undefined }
-export interface SearchHit { id: string; kind: 'feature' | 'requirement' | 'design' | 'document' | 'history'; title: string; where: string; line: string; featureId?: string; documentId?: string; key?: string }
+export interface SearchHit { id: string; kind: 'feature' | 'requirement' | 'design' | 'document' | 'instruction' | 'history'; title: string; where: string; line: string; featureId?: string; documentId?: string; key?: string }
 
 /** The list row of a change: the document's name and place, without the text on either side. */
 const listed = (e: HistoryEvent) => {

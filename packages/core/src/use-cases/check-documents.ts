@@ -1,5 +1,6 @@
 import { DocumentError, docProblem, type Doc, type DocProblem, type DocProblemCode, type DocReason } from '../domain/document.js';
-import { classifyDocPath, parseDocumentFile, parseReasonLines } from '../formats/document-file.js';
+import { classifyDocPath, parseDocumentFile, parseReasonLines, INSTRUCTIONS_ROOT, INSTRUCTION_FILE, SPEC_ROOT } from '../formats/document-file.js';
+import { extractLinks, resolveLink } from '../formats/links.js';
 
 export interface DocumentSet { documents: Doc[]; reasons: (DocReason & { path: string })[]; problems: DocProblem[] }
 
@@ -12,11 +13,24 @@ export function checkDocuments(files: ReadonlyMap<string, string>): DocumentSet 
   const documents: Doc[] = []; const reasons: DocumentSet['reasons'] = []; const problems: DocProblem[] = [];
   const report = (code: DocProblemCode, path: string, values: Record<string, unknown> = {}) => problems.push(docProblem(code, path, values));
   const features = new Set<string>(); const designFolders = new Map<string, boolean>();
+  // Instruction folders, and whether each has its index.md; the other files of a folder only show that it exists.
+  const instructionFolders = new Map<string, boolean>();
+  // Instructions hold how the project works across features; a design names the instructions it follows, never the
+  // other way round.
+  const specLinks = (path: string, body: string) => {
+    for (const link of extractLinks(body)) if (resolveLink(path, link)?.startsWith(SPEC_ROOT + '/')) report('INSTRUCTION_SPEC_LINK', path, { link });
+  };
   for (const [path, source] of [...files].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) {
     try {
       const where = classifyDocPath(path);
       if (where.type === 'ignored') continue;
       if (where.type === 'reasons') { reasons.push(...parseReasonLines(path, source).map(r => ({ ...r, path }))); continue; }
+      if (where.type === 'instruction-file') {
+        instructionFolders.set(where.name, instructionFolders.get(where.name) === true);
+        if (path.endsWith('.md')) specLinks(path, source);
+        continue;
+      }
+      if (where.kind === 'instruction') instructionFolders.set(where.name, true);
       if (where.kind === 'requirement' || where.kind === 'design') features.add(where.feature);
       if (where.kind === 'design') designFolders.set(where.feature, designFolders.get(where.feature) === true || where.slug === 'overview');
       documents.push(parseDocumentFile(path, source));
@@ -28,6 +42,7 @@ export function checkDocuments(files: ReadonlyMap<string, string>): DocumentSet 
 
   const byId = new Map<string, Doc>();
   for (const doc of documents) if (doc.draft) report('DOC_DRAFT', doc.path);
+  for (const doc of documents) if (doc.kind === 'instruction') specLinks(doc.path, doc.body);
   for (const doc of documents) {
     const seen = byId.get(doc.id);
     if (seen) report('DUPLICATE_ID', doc.path, { id: doc.id, other: seen.path }); else byId.set(doc.id, doc);
@@ -54,5 +69,6 @@ export function checkDocuments(files: ReadonlyMap<string, string>): DocumentSet 
   const hasIndexFile = new Set([...files.keys()].map(p => /^\.gitifact\/spec\/([^/]+)\/index\.md$/.exec(p)?.[1]).filter(Boolean));
   for (const feature of features) if (!indexed.has(feature) && !hasIndexFile.has(feature)) report('FEATURE_INDEX_REQUIRED', `.gitifact/spec/${feature}/index.md`, { feature });
   for (const [feature, overview] of designFolders) if (!overview) report('DESIGN_OVERVIEW_REQUIRED', `.gitifact/spec/${feature}/design/overview.md`, { feature });
+  for (const [name, hasFile] of instructionFolders) if (!hasFile) report('INSTRUCTION_INDEX_REQUIRED', `${INSTRUCTIONS_ROOT}/${name}/${INSTRUCTION_FILE}`);
   return { documents, reasons, problems };
 }

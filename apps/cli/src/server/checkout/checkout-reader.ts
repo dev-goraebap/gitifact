@@ -1,12 +1,14 @@
-import { StoreError, parseManagedConfig, docProblem, arrangeDocuments, WIKI_ROOT, type Doc, type DesignDoc } from '@gitifact/core';
-import { browserSpecsV5, type BrowserSpecsV5, type DesignSource } from '@gitifact/contracts';
+import { StoreError, parseManagedConfig, docProblem, arrangeDocuments, INSTRUCTIONS_ROOT, type Doc, type DesignDoc } from '@gitifact/core';
+import { browserSpecsV6, type BrowserSpecsV6, type DesignSource } from '@gitifact/contracts';
 import { createGitRunner } from '../../adapters/git/run-git.js';
 import { storeReader } from '../../adapters/git/store-reader.js';
 import { readConfigFile } from '../../adapters/filesystem/config-file.js';
+import { listInstructionFiles } from '../../adapters/filesystem/instruction-folder.js';
+import { readAgentsFile } from '../../adapters/filesystem/agents-file.js';
 import { MIGRATION_TRAILER, type Cache } from '../../adapters/cache/index.js';
 import { t, getLanguage } from '../../shared/i18n/index.js';
 
-type Contributor = BrowserSpecsV5['contributors'][number];
+type Contributor = BrowserSpecsV6['contributors'][number];
 const tally = (people: Map<string, Contributor>, name: string, email: string, latest: string) => {
   const person = people.get(email); if (person) person.commits++; else people.set(email, { name, email, latest, commits: 1 });
 };
@@ -22,7 +24,7 @@ export async function settled<T extends readonly unknown[]>(reads: { [K in keyof
 }
 const folderOf = (path: string) => path.split('/').slice(0, 3).join('/');
 
-/** The documents in the shape the screens read: features with their requirements and designs in order, and the wiki. */
+/** The documents in the shape the screens read: features with their requirements and designs in order, and the instructions. */
 function checkoutDocuments(documents: Doc[]) {
   const byId = new Map(documents.map(d => [d.id, d]));
   const source = (s: DesignDoc['sources'][number]): DesignSource => {
@@ -35,12 +37,12 @@ function checkoutDocuments(documents: Doc[]) {
     requirements: requirements.map(r => ({ id: r.id, path: r.path, title: r.title, description: r.description, order: r.order, body: r.body })),
     designs: designs.map(d => ({ id: d.id, path: d.path, title: d.title, description: d.description, order: d.order, body: d.body,
       requirements: d.requirements, sources: d.sources.map(source) })) }));
-  const wiki = arranged.wiki.map(d => ({ id: d.id, path: d.path, title: d.title, description: d.description, body: d.body }));
-  return { features, wiki, orphans: arranged.orphans };
+  const instructions = arranged.instructions.map(k => ({ id: k.id, name: k.name, path: k.path, title: k.title, description: k.description, body: k.body }));
+  return { features, instructions, orphans: arranged.orphans };
 }
 
 /**
- * The checkout the browser shows: the features and wiki of the working tree from the cache, who wrote them, and
+ * The checkout the browser shows: the features and instructions of the working tree and AGENTS.md, who wrote them, and
  * whether anything is uncommitted.
  */
 export function createCheckoutReader(root: string, sessionId: string, cache: Cache, inherited = process.env) {
@@ -53,19 +55,19 @@ export function createCheckoutReader(root: string, sessionId: string, cache: Cac
     if (!head) await reader.baseline();
     return head || null;
   };
-  const pending = new Map<string, Promise<{ checkout: BrowserSpecsV5; head: string | null }>>();
+  const pending = new Map<string, Promise<{ checkout: BrowserSpecsV6; head: string | null }>>();
   // A format migration rewrites every document but is nobody's work on them: it counts toward no author or date.
   const notMigration = ['-E', '--invert-grep', `--grep=^${MIGRATION_TRAILER}: `];
 
   /**
-   * Authors per feature folder and the latest commit per wiki page, from one walk over the commits that touched the
+   * Authors per feature folder and the latest commit per instruction folder and AGENTS.md, from one walk over the commits that touched the
    * store. It used to be one `git log` per feature and one per page — 85 processes for a project with 22 features
    * and 63 pages, about 80 ms each on Windows. A feature still counts at most 2000 commits.
    */
   async function storeAuthors(head: string) {
-    const text = await git(['log', ...notMigration, '--format=%x1e%aN%x00%aE%x00%aI', '-z', '--name-only', '--no-renames', '--max-count=20000', head, '--', '.gitifact/spec', WIKI_ROOT]);
+    const text = await git(['log', ...notMigration, '--format=%x1e%aN%x00%aE%x00%aI', '-z', '--name-only', '--no-renames', '--max-count=20000', head, '--', '.gitifact/spec', INSTRUCTIONS_ROOT, 'AGENTS.md']);
     const folders = new Map<string, { people: Map<string, Contributor>; count: number; latest: string }>();
-    const pages = new Map<string, string>();
+    const instructions = new Map<string, string>();
     for (const chunk of text.split('\x1e')) {
       if (!chunk) continue;
       const [name, email, date, ...paths] = chunk.split('\0');
@@ -79,10 +81,12 @@ export function createCheckoutReader(root: string, sessionId: string, cache: Cac
           let entry = folders.get(folder); if (!entry) folders.set(folder, entry = { people: new Map(), count: 0, latest: date });
           if (entry.count < 2000) { entry.count++; tally(entry.people, name, email, date); }
         }
-        if (path.startsWith(WIKI_ROOT + '/') && !pages.has(path)) pages.set(path, date);
+        // Any file of an instruction folder counts: the instruction is the folder. AGENTS.md is kept under its own path.
+        const instruction = path === 'AGENTS.md' ? path : /^(\.gitifact\/instructions\/[^/]+)\//.exec(path)?.[1];
+        if (instruction && !instructions.has(instruction)) instructions.set(instruction, date);
       }
     }
-    return { folders, pages };
+    return { folders, instructions };
   }
 
   async function read() {
@@ -92,7 +96,7 @@ export function createCheckoutReader(root: string, sessionId: string, cache: Cac
     const head = await readHead();
     const [current, dirty, authors, everyone] = await settled([
       cache.documents.list(),
-      head ? git(['status', '--porcelain=v1', '--', '.gitifact/spec', WIKI_ROOT]) : Promise.resolve(''),
+      head ? git(['status', '--porcelain=v1', '--', '.gitifact/spec', INSTRUCTIONS_ROOT]) : Promise.resolve(''),
       head ? storeAuthors(head) : Promise.resolve(undefined),
       // Git mailmap may change without a new HEAD; refresh names with every observation that carries them.
       head ? git(['log', ...notMigration, '--format=%aN%x00%aE%x00%aI', '--max-count=10001', head]) : Promise.resolve(''),
@@ -108,12 +112,16 @@ export function createCheckoutReader(root: string, sessionId: string, cache: Cac
       const entry = authors?.folders.get(folderOf(feature.path));
       return { ...feature, contributors: entry ? [...entry.people.values()].sort((a, b) => b.commits - a.commits) : [], updatedAt: entry?.latest ?? null };
     });
-    // Wiki pages record their latest commit by current path; a moved page restarts at the move commit.
-    const documents = arranged.wiki.map(doc => ({ ...doc, updatedAt: authors?.pages.get(doc.path) ?? null }));
+    const instructions = await Promise.all(arranged.instructions.map(async instruction => {
+      const { files, limited } = await listInstructionFiles(root, instruction.path);
+      return { ...instruction, files, filesLimited: limited, updatedAt: authors?.instructions.get(instruction.path.split('/').slice(0, 3).join('/')) ?? null };
+    }));
+    const agentsText = await readAgentsFile(root);
+    const agents = agentsText === null ? null : { path: 'AGENTS.md', body: agentsText, updatedAt: authors?.instructions.get('AGENTS.md') ?? null };
     const problems = [...current.problems, ...arranged.orphans.map(feature => docProblem('FEATURE_INDEX_REQUIRED', `.gitifact/spec/${feature}/index.md`, { feature }))];
     if (await readHead() !== head) throw new StoreError(t('specReader.projectChanged'));
-    const checkout = browserSpecsV5.parse({ contract: 'browser-specs', version: 5, sessionId, head, observedAt: new Date().toISOString(),
-      working: head ? !!dirty.trim() : features.length > 0 || documents.length > 0, features, documents, problems,
+    const checkout = browserSpecsV6.parse({ contract: 'browser-specs', version: 6, sessionId, head, observedAt: new Date().toISOString(),
+      working: head ? !!dirty.trim() : features.length > 0 || instructions.length > 0, features, instructions, agents, problems,
       contributors: [...people.values()].sort((a, b) => b.commits - a.commits), contributorsLimited: lines.length > 10000 });
     return { checkout, head };
   }

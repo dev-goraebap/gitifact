@@ -60,7 +60,7 @@ program.command('update')
 const docs = program.command('docs').description(t('help.docs'));
 docs.command('list').description(t('help.docsList')).allowExcessArguments(false)
   .option('--feature <name>', t('help.docsListFeature'))
-  .addOption(new Option('--kind <kind>', t('help.docsListKind')).choices(['spec', 'wiki']))
+  .addOption(new Option('--kind <kind>', t('help.docsListKind')).choices(['spec', 'wiki', 'instruction']))
   .addOption(format()).action(o => runDocsList(o));
 docs.command('search').description(t('help.docsSearch')).argument('<words...>', t('help.docsSearchWords'))
   .addOption(format()).action((words: string[], o) => runDocsSearch(words.join(' '), o));
@@ -85,5 +85,6 @@ const guide = program.command('guide').description(t('help.guide'));
 guide.command('list').description(t('help.guideList')).allowExcessArguments(false).addOption(format()).action(o => runGuideList(o));
 guide.command('show').description(t('help.guideShow')).argument('<topic>', t('help.guideTopic')).allowExcessArguments(false)
   .addOption(format()).action((topic: string, o) => runGuideShow(topic, o));
+
 
 await program.parseAsync();

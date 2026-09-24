@@ -40,7 +40,9 @@ test('the browser reads the checkout and history without touching the project, a
   assert.deepEqual(feature.requirements.map(r => [r.id, r.order, r.body]), [[R2, 10, 'List 본문'], [R, 20, 'Draft']]);
   assert.deepEqual(feature.designs.map(x => x.id), [D, D2]);
   assert.deepEqual(feature.designs[0].sources, [{ id: W, title: 'Guide', path: '.gitifact/wiki/guide.md', note: 'rules' }, { title: 'Spec', url: 'https://example.test/' }]);
-  assert.deepEqual([feature.id, feature.body, result.documents[0].description, result.working, result.contributors[0].commits], [S, 'Posts 본문', 'Guide 설명', true, 2]);
+  assert.deepEqual([feature.id, feature.body, result.working, result.contributors[0].commits], [S, 'Posts 본문', true, 2]);
+  // The browser no longer shows the wiki: the checkout carries no wiki pages, though sources still name them by title.
+  assert.equal('documents' in result, false);
   // The project is as it was; the cache is in .gitifact/cache with a .gitignore of `*`, so `git status` shows only the edit.
   assert.deepEqual(project(f), original); assert.ok(existsSync(cacheFile(f)));
   assert.equal(readFileSync(join(f.repo, '.gitifact/cache/.gitignore'), 'utf8'), '*\n');
@@ -260,10 +262,10 @@ test('reading only changed files reports the same changes, texts and reasons as 
   assert.deepEqual(listed.find(e => e.id === W && e.types.includes('moved')).types, ['moved', 'modified']);
 });
 
-test('authors per feature and the latest commit per page match a log per path', async t => {
+test('authors per feature and the latest commit per instruction match a log per path', async t => {
   const { f, d } = await adopted(t);
   const as = (name, email) => { f.git(['config', 'user.name', name]); f.git(['config', 'user.email', email]); };
-  as('Ann', 'ann@example.invalid'); d.feature('posts', S); d.requirement('posts', 'save', R, { body: '1' }); d.wiki('guide.md', W); f.commit('posts 1');
+  as('Ann', 'ann@example.invalid'); d.feature('posts', S); d.requirement('posts', 'save', R, { body: '1' }); d.instruction('cli-rules', 'I-aaaaaaaaaa'); f.commit('posts 1');
   as('Bob', 'bob@example.invalid'); d.feature('tags', 'S-bbbbbbbbbb'); d.requirement('posts', 'save', R, { body: '2' }); f.commit('both');
   f.write('code.js', 'x'); f.commit('code');
   const result = await openRecords(f.repo, f.env)();
@@ -273,7 +275,8 @@ test('authors per feature and the latest commit per page match a log per path', 
     assert.equal(feature.updatedAt, lines[0].split('\0')[2], folder);
     assert.equal(feature.contributors.reduce((n, p) => n + p.commits, 0), lines.length, folder);
   }
-  for (const doc of result.documents) assert.equal(doc.updatedAt, f.git(['log', '-1', '--format=%aI', 'HEAD', '--', doc.path]).stdout.trim() || null, doc.path);
+  assert.equal(result.instructions.length, 1);
+  for (const doc of result.instructions) assert.equal(doc.updatedAt, f.git(['log', '-1', '--format=%aI', 'HEAD', '--', doc.path.replace(/\/index\.md$/, '')]).stdout.trim() || null, doc.path);
 });
 
 test('a commit answers with every document it changed, and with its author when it changed none', async t => {
@@ -326,4 +329,39 @@ test('a commit lists the source files it changed beside its documents, and one f
   assert.equal((await get('/api/v1/commit/file?commit=' + second + '&path=.gitifact/config.json')).status, 404);
   assert.equal((await get('/api/v1/commit/files?commit=' + '0'.repeat(second.length))).status, 404);
   assert.equal((await get('/api/v1/commit/files?commit=nope')).status, 400);
+});
+
+test('instructions and AGENTS.md come in the checkout, instructions in history, commits and search, and one file reads on its own', async t => {
+  const { f, d } = await adopted(t);
+  d.feature('posts', S, { title: 'Posts' }); f.commit('Add');
+  d.instruction('cli-rules', 'I-aaaaaaaaaa', { title: 'CLI rules', body: 'Rules about layers' });
+  d.put('.gitifact/instructions/cli-rules/references/decisions.md', '| decision | reason |\n');
+  d.put('.gitifact/instructions/cli-rules/assets/logo.png', '\u0000PNG');
+  f.write('AGENTS.md', '# Agents\n\nRead the CLI rules first.\n');
+  f.commit('Add instruction');
+  const head = f.git(['rev-parse', 'HEAD']).stdout.trim();
+  const server = await startBrowserServer({ cwd: f.repo, env: f.env, assetsDirectory: fileURLToPath(new URL('../../browser/dist/', import.meta.url)) }); t.after(() => server.close());
+  const get = async path => { const response = await fetch(server.url + path, { headers: { 'X-Gitifact-Session': server.session.sessionId } }); return { status: response.status, body: await response.json() }; };
+  const specs = (await get('/api/v1/specs')).body;
+  assert.equal(specs.version, 6);
+  assert.deepEqual(specs.instructions.map(k => [k.id, k.name, k.title, k.files, k.filesLimited, !!k.updatedAt]),
+    [['I-aaaaaaaaaa', 'cli-rules', 'CLI rules', [{ path: 'assets/logo.png', size: 4 }, { path: 'references/decisions.md', size: 22 }], false, true]]);
+  assert.deepEqual([specs.agents.path, specs.agents.body, !!specs.agents.updatedAt], ['AGENTS.md', '# Agents\n\nRead the CLI rules first.\n', true]);
+  const history = await get('/api/v1/history?head=' + head + '&document=instruction');
+  assert.deepEqual([history.status, history.body.version, history.body.events.map(e => [e.id, e.kind])], [200, 4, [['I-aaaaaaaaaa', 'instruction']]]);
+  const commit = await get('/api/v1/commit?commit=' + head);
+  assert.deepEqual([commit.body.version, commit.body.changes.map(c => [c.event.kind, c.after.body])], [2, [['instruction', 'Rules about layers']]]);
+  const search = await get('/api/v1/search?q=layers&head=' + head);
+  assert.deepEqual(search.body.hits.filter(h => h.kind === 'instruction').map(h => h.id), ['I-aaaaaaaaaa']);
+  // A file of the folder is read on its own; a binary file comes without text, and nothing outside the folder is served.
+  const file = (path, id = 'I-aaaaaaaaaa') => get('/api/v1/instructions/file?' + new URLSearchParams({ id, path }));
+  const decisions = await file('references/decisions.md');
+  assert.deepEqual([decisions.status, decisions.body.text, decisions.body.binary], [200, '| decision | reason |\n', false]);
+  assert.deepEqual([(await file('assets/logo.png')).body.text, (await file('assets/logo.png')).body.binary], [null, true]);
+  for (const path of ['../../config.json', 'references/../index.md', 'missing.md']) assert.equal((await file(path)).status, 404, path);
+  assert.equal((await file('index.md', 'I-zzzzzzzzzz')).status, 404);
+  assert.equal((await file('index.md', 'nope')).status, 400);
+  // Without AGENTS.md the checkout says so rather than failing.
+  f.git(['rm', '-q', 'AGENTS.md']); f.commit('Drop AGENTS.md');
+  assert.equal((await get('/api/v1/specs')).body.agents, null);
 });

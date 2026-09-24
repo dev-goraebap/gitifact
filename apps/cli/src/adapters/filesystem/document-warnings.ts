@@ -1,6 +1,6 @@
 import { lstat, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
-import { ASSETS_DIR, documentBodyLinks, documentWarnings, type AssetFile, type Doc, type DocWarning } from '@gitifact/core';
+import { ASSETS_DIR, INSTRUCTIONS_ROOT, documentBodyLinks, documentWarnings, type AssetFile, type Doc, type DocWarning } from '@gitifact/core';
 
 const info = async (path: string) => lstat(path).catch(e => { if (e.code === 'ENOENT') return undefined; throw e; });
 const posix = (path: string) => path.split('\\').join('/');
@@ -17,9 +17,12 @@ export async function listAssets(root: string): Promise<AssetFile[]> {
   return out;
 }
 
-/** Link and asset warnings for the working tree. A link outside `.gitifact` counts when it names a regular file there. */
+/**
+ * Link and asset warnings for the working tree. A link outside `.gitifact`, or to a file of an instruction folder, counts
+ * when it names a regular file there.
+ */
 export async function readDocumentWarnings(root: string, documents: readonly Doc[]): Promise<DocWarning[]> {
-  const outside = [...new Set(documentBodyLinks(documents).map(l => l.target).filter(t => !t.startsWith('.gitifact/')))];
+  const outside = [...new Set(documentBodyLinks(documents).map(l => l.target).filter(t => !t.startsWith('.gitifact/') || t.startsWith(INSTRUCTIONS_ROOT + '/')))];
   const existing = new Set<string>();
   for (const target of outside) if ((await info(join(root, ...target.split('/'))))?.isFile()) existing.add(target);
   return documentWarnings(documents, await listAssets(root), existing);

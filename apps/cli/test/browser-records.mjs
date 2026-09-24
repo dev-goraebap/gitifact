@@ -39,6 +39,8 @@ export function docs(f) {
     requirement: (folder, slug, id, fields) => doc('requirement', `.gitifact/spec/${folder}/requirements/${slug}.md`, id, fields),
     design: (folder, slug, id, fields) => doc('design', `.gitifact/spec/${folder}/design/${slug}.md`, id, fields),
     wiki: (path, id, fields) => doc('wiki', `.gitifact/wiki/${path}`, id, fields),
+    /** An instruction folder's index.md; `name` is the folder. */
+    instruction: (name, id, fields) => doc('instruction', `.gitifact/instructions/${name}/index.md`, id, { name, ...fields }),
     /** Appends reason lines to the one reason file, `.gitifact/history.jsonl`. */
     reasons: (...lines) => {
       const path = '.gitifact/history.jsonl';

@@ -7,10 +7,14 @@ import { t } from '../shared/i18n/index.js';
 //   .gitifact/spec/<feature>/requirements/<slug>.md   one requirement (R-)
 //   .gitifact/spec/<feature>/design/<slug>.md         one design axis (D-); design/overview.md is required once a design exists
 //   .gitifact/wiki/**/*.md                            wiki pages (W-)
+//   .gitifact/instructions/<name>/index.md            one instruction (I-); other files in the folder belong to it
 //   .gitifact/history.jsonl                           reasons for every document, one file for the whole store
 
 export const SPEC_ROOT = '.gitifact/spec';
 export const WIKI_ROOT = '.gitifact/wiki';
+export const INSTRUCTIONS_ROOT = '.gitifact/instructions';
+/** The file of an instruction folder that is the instruction; every other file there is one of its references. */
+export const INSTRUCTION_FILE = 'index.md';
 /** The one reason file. Git merges it with `merge=union`, so lines added on two branches are both kept. */
 export const HISTORY_PATH = '.gitifact/history.jsonl';
 const name = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -21,6 +25,9 @@ export type DocPath =
   | { type: 'doc'; kind: 'feature'; feature: string }
   | { type: 'doc'; kind: 'requirement' | 'design'; feature: string; slug: string }
   | { type: 'doc'; kind: 'wiki' }
+  | { type: 'doc'; kind: 'instruction'; name: string }
+  /** A file of an instruction folder other than its index.md: part of the instruction, never parsed as a document. */
+  | { type: 'instruction-file'; name: string }
   | { type: 'reasons' }
   | { type: 'ignored' };
 
@@ -43,6 +50,11 @@ export function classifyDocPath(path: string): DocPath {
     }
     throw unsupported();
   }
+  if (path.startsWith(INSTRUCTIONS_ROOT + '/')) {
+    const parts = path.slice(INSTRUCTIONS_ROOT.length + 1).split('/');
+    if (parts.length < 2 || !name.test(parts[0]!) || parts[0]!.length > 80 || path.length > 400) throw unsupported();
+    return parts.length === 2 && parts[1] === INSTRUCTION_FILE ? { type: 'doc', kind: 'instruction', name: parts[0]! } : { type: 'instruction-file', name: parts[0]! };
+  }
   if (path.startsWith(WIKI_ROOT + '/')) {
     const relative = path.slice(WIKI_ROOT.length + 1);
     // Images and other files beside the pages are not documents.
@@ -61,10 +73,12 @@ const KEYS: Record<DocKind, string[]> = {
   requirement: ['id', 'title', 'description', 'order', 'draft'],
   design: ['id', 'title', 'description', 'order', 'requirements', 'sources', 'draft'],
   wiki: ['id', 'title', 'description', 'draft'],
+  instruction: ['id', 'title', 'description', 'draft'],
 };
 const REQUIRED: Record<DocKind, string[]> = {
   feature: ['id', 'title', 'description'], requirement: ['id', 'title', 'description', 'order'],
   design: ['id', 'title', 'description', 'order'], wiki: ['id', 'title', 'description'],
+  instruction: ['id', 'title', 'description'],
 };
 
 function text(fields: FrontFields, key: string, path: string, limit: number): string {
@@ -131,6 +145,7 @@ export function parseDocumentFile(path: string, source: string): Doc {
   };
   if (where.kind === 'feature') return { kind: 'feature', feature: where.feature, ...common };
   if (where.kind === 'wiki') return { kind: 'wiki', ...common };
+  if (where.kind === 'instruction') return { kind: 'instruction', name: where.name, ...common };
   if (where.kind === 'requirement') return { kind: 'requirement', feature: where.feature, order: order(), ...common };
   const refs = fields.get('requirements');
   if (refs && (refs.type !== 'list' || refs.items.some(r => !idPatternOf('requirement').test(r)) || new Set(refs.items).size !== refs.items.length)) {

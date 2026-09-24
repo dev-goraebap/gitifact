@@ -12,7 +12,7 @@ requirements:
 
 ## 문서 읽기
 
-위키 페이지·요구사항·설계·활동 전후 본문·소개는 `shared/ui/document`의 `DocumentBody`로 렌더링한다. 읽기 영역은 48rem 한 폭이고 Astryx Markdown의 `contentWidth`는 100%다. Astryx는 문단만 680px로 제한하고 표·코드·구분선은 전체 폭으로 그려 오른쪽 끝이 어긋나기 때문이다.
+프로젝트 지침·AGENTS.md·요구사항·설계·활동 전후 본문·소개는 `shared/ui/document`의 `DocumentBody`로 렌더링한다. 읽기 영역은 48rem 한 폭이고 Astryx Markdown의 `contentWidth`는 100%다. Astryx는 문단만 680px로 제한하고 표·코드·구분선은 전체 폭으로 그려 오른쪽 끝이 어긋나기 때문이다.
 
 크기는 읽기 영역에서 Astryx 글자 토큰을 재정의해 맞춘다. 제목은 어느 단계에서도 본문보다 크고 위 간격이 아래보다 넓다. `density`로 compact 표시를 고를 수 있지만 지금 compact를 넘기는 화면은 없다.
 
@@ -90,7 +90,7 @@ flowchart TD
   K -->|"/"| APP["앱 경로"]
   K -->|"상대 경로"| R["from 기준으로 풀기"]
   R --> T{"대상"}
-  T -->|"위키"| WIKI["/wiki/W-ID"]
+  T -->|"지침·AGENTS.md"| INS["/instructions/I-ID · /instructions/agents"]
   T -->|"기능 문서"| FEAT["/features/S-ID"]
   T -->|"에셋"| ASSET["/api/v1/assets/…"]
   T -->|"그 밖"| OUT["브라우저 밖"]

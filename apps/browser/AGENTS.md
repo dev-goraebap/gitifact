@@ -34,4 +34,4 @@ MORE CLI:
 
 ## Tryce frontend
 
-Follow the browser and frontend guides in [.gitifact/guides/](../../.gitifact/guides/) (browser.md, frontend/*) and the root AGENTS.md. This app reads local project records; it does not edit requirements or grant approvals. Use the installed Astryx component documentation. Keep app-specific guidance outside the generated ASTRYX markers.
+Follow the browser instruction [.gitifact/instructions/browser-architecture/](../../.gitifact/instructions/browser-architecture/index.md) (index.md and references/) and the root AGENTS.md. This app reads local project records; it does not edit requirements or grant approvals. Use the installed Astryx component documentation. Keep app-specific guidance outside the generated ASTRYX markers.

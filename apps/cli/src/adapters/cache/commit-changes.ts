@@ -1,5 +1,5 @@
 import { t } from '../../shared/i18n/index.js';
-import { classifyDocPath, parseDocumentFile, parseReasonLines, emptyBundle as emptyStore, HISTORY_PATH, SPEC_ROOT, WIKI_ROOT, type Doc, type DocKind, type DocReason, type StoreBundle } from '@gitifact/core';
+import { classifyDocPath, parseDocumentFile, parseReasonLines, emptyBundle as emptyStore, HISTORY_PATH, INSTRUCTIONS_ROOT, SPEC_ROOT, WIKI_ROOT, type Doc, type DocKind, type DocReason, type StoreBundle } from '@gitifact/core';
 import { legacyChanges } from './legacy-changes.js';
 import type { ChangeType, CommitChanges, DocSnapshot, HistoryEvent } from './events.js';
 
@@ -18,10 +18,10 @@ export const MIGRATION_TRAILER = 'Gitifact-Migration';
 /** The documents and reasons of one side, read from some or all of its files. */
 interface Side { docs: Map<string, DocSnapshot>; reasons: Map<string, DocReason> }
 
-/** The files a commit must touch to appear in the history: features, requirements, designs, wiki pages and reasons. */
+/** The files a commit must touch to appear in the history: features, requirements, designs, wiki pages, instructions and reasons. */
 export const HISTORY_PATHSPECS = [
   `:(glob)${SPEC_ROOT}/*/index.md`, `:(glob)${SPEC_ROOT}/*/requirements/*.md`, `:(glob)${SPEC_ROOT}/*/design/*.md`,
-  `:(glob)${WIKI_ROOT}/**/*.md`, `:(literal)${HISTORY_PATH}`,
+  `:(glob)${WIKI_ROOT}/**/*.md`, `:(glob)${INSTRUCTIONS_ROOT}/*/index.md`, `:(literal)${HISTORY_PATH}`,
   // The 0.7 files, so the commits before a migration are in the lineage too. Removed with the 0.7 parser at 1.0.0.
   `:(glob)${SPEC_ROOT}/*/requirements.md`, `:(glob)${SPEC_ROOT}/*/design.md`, `:(glob)${SPEC_ROOT}/*/history.jsonl`, `:(literal)${WIKI_ROOT}/history.jsonl`,
 ];
@@ -30,7 +30,7 @@ const BATCH = 100;
 
 const unreadable = () => new Error(t('specReader.historyUnreadable'));
 /** Whether a path is a document or reason file; malformed paths in old commits are simply not records. */
-const recordKind = (path: string) => { try { return classifyDocPath(path).type; } catch { return 'ignored'; } };
+const recordKind = (path: string) => { try { const type = classifyDocPath(path).type; return type === 'instruction-file' ? 'ignored' : type; } catch { return 'ignored'; } };
 const folderOf = (path: string) => path.startsWith(SPEC_ROOT + '/') ? path.split('/').slice(0, 3).join('/') : null;
 
 function snapshot(doc: Doc, specId: string): DocSnapshot {
@@ -50,7 +50,7 @@ function sideOf(files: Map<string, string>): Side {
       if (doc.kind === 'feature') specIds.set(folderOf(path)!, doc.id);
     } catch { /* not readable at this commit */ }
   }
-  return { docs: new Map(docs.map(d => [d.id, snapshot(d, d.kind === 'wiki' ? 'wiki' : specIds.get(folderOf(d.path)!) ?? '')])), reasons };
+  return { docs: new Map(docs.map(d => [d.id, snapshot(d, d.kind === 'wiki' || d.kind === 'instruction' ? d.kind : specIds.get(folderOf(d.path)!) ?? '')])), reasons };
 }
 const same = (a: DocSnapshot, b: DocSnapshot) => a.title === b.title && a.description === b.description && a.body === b.body
   && a.order === b.order && JSON.stringify(a.requirements) === JSON.stringify(b.requirements) && JSON.stringify(a.sources) === JSON.stringify(b.sources);
@@ -99,7 +99,7 @@ export function createCommitChanges(git: GitAccess) {
     new Map(paths.filter(p => blobs.has(rev + ':' + p)).map(p => [p, blobs.get(rev + ':' + p)!]));
   /** Every document and reason file of a commit, for merges, which compare whole trees. */
   async function tree(rev: string): Promise<Map<string, string>> {
-    const listing = git.decode(await git.run(['ls-tree', '--full-tree', '-r', '-z', rev, '--', SPEC_ROOT, WIKI_ROOT, HISTORY_PATH]));
+    const listing = git.decode(await git.run(['ls-tree', '--full-tree', '-r', '-z', rev, '--', SPEC_ROOT, WIKI_ROOT, INSTRUCTIONS_ROOT, HISTORY_PATH]));
     const paths = listing.split('\0').filter(Boolean).map(row => /^\d+ blob [a-f0-9]+\t([\s\S]+)$/.exec(row)?.[1]).filter((p): p is string => !!p && recordKind(p) !== 'ignored');
     const blobs = await readBlobs(paths.map(p => rev + ':' + p));
     return at(blobs, rev, paths);
