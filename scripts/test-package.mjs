@@ -56,7 +56,7 @@ try {
   const initialized = JSON.parse(npx('init'));
   assert.deepEqual(await readFile(join(temporaryRoot, 'package.json')), packageBefore);
   assert.deepEqual(await readFile(join(temporaryRoot, 'pnpm-lock.yaml')), lockBefore);
-  assert.deepEqual(JSON.parse(npx('docs', 'check', '--format', 'json')).problems, []);
+  assert.deepEqual(JSON.parse(npx('check', '--format', 'json')).problems, []);
   assert.equal(initialized.outcome, 'created');
   assert.equal(initialized.schemaVersion, 3);
   assert.deepEqual([initialized.version, initialized.update, initialized.install], [7, { status: 'disabled', latestVersion: null }, null]);
@@ -73,11 +73,11 @@ try {
   const gitifact = args => JSON.parse(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', ...args, '--format', 'json'], temporaryRoot, specEnv));
   const { inputs } = gitifact(['changes', 'list']);
   assert.ok(inputs.commit.startsWith(systemTemp), 'The commit input must default to the system temporary folder.');
-  const feature = gitifact(['docs', 'new', 'feature', 'package', '--title', '패키지 기능', '--description', '설치한 CLI로 쓰는 기능']);
-  const requirement = gitifact(['docs', 'new', 'requirement', 'package/install', '--title', '설치 확인', '--description', '설치한 CLI로 명세와 코드를 커밋한다']);
+  const feature = gitifact(['specs', 'new', 'feature', 'package', '--title', '패키지 기능', '--description', '설치한 CLI로 쓰는 기능']);
+  const requirement = gitifact(['specs', 'new', 'requirement', 'package/install', '--title', '설치 확인', '--description', '설치한 CLI로 명세와 코드를 커밋한다']);
   // A record of the choice made, written as a draft by the installed CLI.
   const record = gitifact(['records', 'new', '--title', '패키지 검증', '--docs', requirement.id]);
-  // docs new and records new mark their files as drafts; the author fills them in and removes the mark.
+  // specs new and records new mark their files as drafts; the author fills them in and removes the mark.
   const recordFile = join(temporaryRoot, ...record.path.split('/'));
   await writeFile(recordFile, (await readFile(recordFile, 'utf8')).replace('(내용)', '설치본의 동작을 확인해야 한다.').replace('(내용)', '설치본으로 확인한다.'));
   for (const created of [feature, requirement, record]) {
@@ -91,8 +91,8 @@ try {
   const committed = gitifact(['changes', 'commit', '--file', inputs.commit]);
   assert.equal(committed.outcome, 'committed');
   assert.equal(committed.inputRemoved, true, 'A successful commit removes its input file.');
-  assert.equal(gitifact(['docs', 'show', requirement.id, '--ref', 'HEAD']).documents[0].path, requirement.path);
-  assert.deepEqual(gitifact(['docs', 'history', requirement.id]).events[0].records.map(r => [r.id, r.title, r.sections.map(s => s.body)]),
+  assert.equal(gitifact(['specs', 'show', requirement.id, '--ref', 'HEAD']).documents[0].path, requirement.path);
+  assert.deepEqual(gitifact(['records', 'list', '--doc', requirement.id]).events[0].records.map(r => [r.id, r.title, r.sections.map(s => s.body)]),
     [[record.id, '패키지 검증', ['설치본의 동작을 확인해야 한다.', '설치본으로 확인한다.']]]);
   assert.match(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', 'guide', 'list'], temporaryRoot), /^workflow /m);
   assert.equal(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', 'guide', 'show', 'spec'], temporaryRoot),
@@ -169,7 +169,7 @@ try {
     assert.equal(response.status, 200);
     assert.ok((await response.json()).changes.some(change => change.path === 'browser-created.txt'));
   } finally { child.kill(); await exited; }
-  console.log('PASS: packed CLI installs offline; init with the AGENTS.md block, guides, docs new/check/show/history, changes list/commit, update, release notes and browser run outside the workspace.');
+  console.log('PASS: packed CLI installs offline; init with the AGENTS.md block, guides, specs new/show, check, records list, changes list/commit, update, release notes and browser run outside the workspace.');
 } finally {
   // Only removes the exact directory returned by mkdtemp for this check.
   await rm(temporaryRoot, { recursive: true, force: true });

@@ -1,9 +1,10 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { docIdPattern, parseRecordFile, recordDayOf, recordPathOf, renderRecordFile, recordIdPattern, RECORD_ID_PREFIX, RECORD_REQUIRED_SECTIONS, RECORD_SECTION_HEADINGS,
-  type DecisionRecord } from '@gitifact/core';
+  type DecisionRecord, type RecordSectionKey } from '@gitifact/core';
 import { createDocumentFile, generateId } from '../adapters/filesystem/document-file.js';
 import { findRecord } from '../adapters/git/pending-records.js';
+import { byAuthor, checkFields, contains, selected, since, type ListOptions } from './list-options.js';
 import { CommandError, runCommand, text, type Format } from './output.js';
 import { openProject } from './project.js';
 import { getLanguage, t } from '../shared/i18n/index.js';
@@ -56,4 +57,63 @@ export const runRecordsShow = (ids: string[], options: Options) => runCommand('r
     r.text.replace(/\n$/, ''),
   ].join('\n'));
   return { json: { records: found }, text: blocks.join('\n\n') + '\n' };
+});
+
+/** Record sections named in the CLI language, whatever language their headings were written in. */
+const sectionLabel: Record<RecordSectionKey, () => string> = {
+  context: () => t('records.section.context'), decision: () => t('records.section.decision'), alternatives: () => t('records.section.alternatives'),
+};
+const recordColumns = ['id', 'title', 'commit', 'date', 'author', 'docs', 'sections'] as const;
+const eventColumns = ['commit', 'date', 'author', 'types', 'path', 'records', 'message'] as const;
+
+/**
+ * `records list`: the records of HEAD's history, newest first, after the ones not committed yet. With `--doc`, the
+ * decision flow of one document instead: each commit that changed it with the records that explain it, and a change
+ * a record should have explained says it has none.
+ */
+export const runRecordsList = (options: ListOptions & { doc?: string; since?: string }) => runCommand('records', options.format, async () => {
+  const fields = checkFields(options.fields, options.doc === undefined ? recordColumns : eventColumns);
+  const project = await openProject(process.cwd());
+  const head = await project.head();
+  const after = await since(project, options.since, head); const by = byAuthor(options.author); const has = contains(options.q);
+  const limit = <T>(rows: T[]) => options.limit === undefined ? rows : rows.slice(0, options.limit);
+  const sectionText = (sections: { body: string }[]) => sections.map(s => s.body);
+
+  if (options.doc !== undefined) {
+    const id = options.doc;
+    const events = head ? await project.cache.history.ofDocument(head, id) : [];
+    const { documents } = await project.cache.documents.list();
+    const title = documents.find(d => d.id === id)?.title ?? events.map(e => (e.after ?? e.before)?.title).find(Boolean) ?? null;
+    if (!title && !events.length) throw new CommandError('UNKNOWN_DOCUMENT', t('docs.unknownDocument', { ids: id }));
+    const rows = limit(events.filter(e => after(e) && by(e) && has(e.message, ...e.records.flatMap(r => [r.title, ...sectionText(r.sections)]))).map(e => ({
+      commit: e.commit, date: e.date, author: e.author, email: e.email, message: e.message, types: e.types, path: (e.after ?? e.before)?.path ?? null, records: e.records })));
+    if (fields) { const picked = selected(rows, fields); return { json: { doc: { id, title }, events: picked.json }, text: picked.text }; }
+    const out = [`${id} ${title ?? ''}`.trimEnd()];
+    for (const e of rows) {
+      out.push('', `${e.date.slice(0, 10)} ${e.commit.slice(0, 7)} ${e.types.join(',')} — ${e.author}`);
+      for (const r of e.records) {
+        out.push(`  ${r.id} ${r.title}`);
+        out.push(...r.sections.map(s => '    ' + sectionLabel[s.key]() + ': ' + s.body.replace(/\s*\n\s*/g, ' ')));
+      }
+      if (!e.records.length && e.types.some(type => type !== 'created')) out.push('  ' + t('docs.noRecord'));
+      out.push('  ' + t('docs.commit') + ': ' + e.message);
+    }
+    if (!rows.length) out.push(events.length ? t('docs.noMatch') : t('docs.noHistory'));
+    return { json: { doc: { id, title }, events: rows }, text: text(out) };
+  }
+
+  // Records not committed yet have no commit, author or date: they come first and only while no author is asked for.
+  const pending = options.author !== undefined ? [] : [...(await project.pendingRecords()).files].flatMap(([path, source]) => {
+    try { return [parseRecordFile(path, source)]; } catch { return []; }
+  }).map(r => ({ id: r.id, title: r.title, commit: null, date: null, author: null, docs: r.docs, sections: r.sections.map(s => ({ key: s.key, body: s.body })) }));
+  const committed = (head ? await project.cache.history.recordsOf(head) : []).filter(r => after(r) && by(r) && has(r.title, r.message, ...sectionText(r.sections)))
+    .map(r => ({ id: r.id, title: r.title, commit: r.commit, date: r.date, author: r.author, docs: r.docs, sections: r.sections }));
+  const rows = limit([...pending.filter(r => has(r.title, ...sectionText(r.sections))).sort((a, b) => a.id < b.id ? -1 : 1), ...committed]);
+  if (fields) { const picked = selected(rows, fields); return { json: { records: picked.json }, text: picked.text }; }
+  // A record that explains many documents names the first few; JSON and --fields docs carry them all.
+  const docs = (ids: string[]) => ids.slice(0, 5).join(', ') + (ids.length > 5 ? ' ' + t('records.moreDocs', { count: ids.length - 5 }) : '');
+  const out = rows.flatMap(r => [`${r.id} ${r.title}`,
+    `  ${r.commit ? `${r.date!.slice(0, 10)} ${r.commit.slice(0, 7)} ${r.author}` : t('records.uncommitted')} · ${docs(r.docs)}`]);
+  const filtered = options.since !== undefined || options.author !== undefined || options.q !== undefined;
+  return { json: { records: rows }, text: text(out.length ? out : [filtered ? t('docs.noMatch') : t('records.empty')]) };
 });

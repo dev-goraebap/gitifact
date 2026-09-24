@@ -31,8 +31,8 @@ test('rendered block is versioned, marker-delimited, Markdown-structured and sho
   assert.ok(lines.length >= 25 && lines.length <= 50, String(lines.length));
   assert.deepEqual(parseAgentBlock(block), { version: '1.2.3', language: 'ko', schemaVersion: 3 });
   assert.equal(parseAgentBlock('no block'), null);
-  for (const topic of ['guide show spec', 'guide show commit', 'guide show <topic>', 'docs list', 'docs new', 'docs check', 'changes commit', 'SELF-CHECK']) assert.ok(block.includes(topic), topic);
-  for (const removed of ['spec working', 'spec save', 'spec commit', '`docs <topic>`']) assert.ok(!block.includes(removed), removed);
+  for (const topic of ['guide show spec', 'guide show commit', 'guide show <topic>', 'specs list', 'specs new', 'instructions list', 'records list --doc', 'gitifact check', 'changes commit', 'SELF-CHECK']) assert.ok(block.includes(topic), topic);
+  for (const removed of ['spec working', 'spec save', 'spec commit', '`docs <topic>`', 'docs list', 'docs check']) assert.ok(!block.includes(removed), removed);
   assert.equal(boilerplateFor('.claude/CLAUDE.md'), '# CLAUDE\n\nProject-specific guidance for AI coding agents.\n');
   assert.equal(boilerplateFor('.cursorrules'), '# cursorrules\n\nProject-specific guidance for AI coding agents.\n');
 });

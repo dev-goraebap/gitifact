@@ -4,7 +4,7 @@ title: CLI 아키텍처
 description: CLI·core·contracts의 구조, 계약과 오류, 문구, 저장 규약, 서버, 빌드·배포 규칙. apps/cli, packages/core, packages/contracts 코드를 고칠 때 쓴다.
 ---
 
-CLI는 사용자 입력과 실행 환경을 받아 제품 규칙을 실행하는 진입점이다. 터미널 명령과 브라우저 API가 같은 규칙을 사용한다. 이 지침의 규칙을 정한 맥락과 검토한 대안은 결정기록에 있으므로, 규칙을 바꾸기 전에 `docs history I-zdpwuta64o`로 읽는다.
+CLI는 사용자 입력과 실행 환경을 받아 제품 규칙을 실행하는 진입점이다. 터미널 명령과 브라우저 API가 같은 규칙을 사용한다. 이 지침의 규칙을 정한 맥락과 검토한 대안은 결정기록에 있으므로, 규칙을 바꾸기 전에 `records list --doc I-zdpwuta64o`로 읽는다.
 
 ## 코드 책임
 
@@ -92,7 +92,7 @@ stdout에는 선택한 출력 형식만 내보내고 로그·진행 상황은 st
 
 `.gitifact/config.json`은 `schemaVersion: 3`과 `baseline`만 쓴다. baseline은 최초 도입 기준점이며 규약 버전 변경으로 갱신하지 않는다.
 
-문서는 파일 하나가 문서 하나이고, 구조 정보는 모두 YAML 프론트매터에 둔다. 본문은 산문이며 CLI가 데이터를 뽑으려고 파싱하지 않는다. 형식 규칙은 core의 `formats/document-file.ts`·`formats/record-file.ts`와 `use-cases/check-documents.ts` 한 곳에 있고 `docs check`와 `changes commit`이 같은 검사를 쓴다.
+문서는 파일 하나가 문서 하나이고, 구조 정보는 모두 YAML 프론트매터에 둔다. 본문은 산문이며 CLI가 데이터를 뽑으려고 파싱하지 않는다. 형식 규칙은 core의 `formats/document-file.ts`·`formats/record-file.ts`와 `use-cases/check-documents.ts` 한 곳에 있고 `check`와 `changes commit`이 같은 검사를 쓴다.
 
 | 파일 | 프론트매터 |
 | :--- | :--- |
@@ -104,7 +104,7 @@ stdout에는 선택한 출력 형식만 내보내고 로그·진행 상황은 st
 | `.gitifact/records/<yyyymmdd>/<DR-ID>.md` | `id`(DR-), `title`, `docs`, 선택 `draft`. 본문은 맥락·결정·검토한 대안 `##` 섹션뿐이다 |
 
 - **ID:** CLI가 발급하는 소문자 base32 10자다. 기능 S-, 요구사항 R-, 설계 D-, 위키 W-, 지침 I-, 결정기록 DR-(D-·R-와 겹치지 않게 두 글자). `H-`는 기록 도입 전 이유의 ID로, 과거 커밋에서 이력용으로만 읽으며 0.7 파서와 함께 1.0.0에서 지운다. 경로·제목과 독립적이며 파일을 옮겨도 바뀌지 않는다. 소속은 폴더 위치로만 정한다.
-- **필드:** `title`(200자)과 `description`(300자)은 한 줄·필수다. `order`는 0~999999 정수이고 같은 폴더 안에서 겹치면 오류다. 설계의 `requirements`는 있는 R-만, `sources`는 `{id, note?}` 또는 `{title, url, note?}`(http·https)다. 프론트매터 끝의 `draft: true`는 `docs new`·`records new`가 붙이며 남아 있으면 검사가 실패한다.
+- **필드:** `title`(200자)과 `description`(300자)은 한 줄·필수다. `order`는 0~999999 정수이고 같은 폴더 안에서 겹치면 오류다. 설계의 `requirements`는 있는 R-만, `sources`는 `{id, note?}` 또는 `{title, url, note?}`(http·https)다. 프론트매터 끝의 `draft: true`는 `specs new`·`instructions new`·`records new`가 붙이며 남아 있으면 검사가 실패한다.
 - **본문:** 필수다. 코드 블록 밖의 `#` 제목과 gitifact HTML 주석을 금지한다. UTF-8이며 NUL·단독 CR·BOM을 금지하고 CRLF는 LF로 읽는다. 파일 하나는 1MB까지 읽는다.
 - **개요 파일:** 요구사항이나 설계가 있는 기능은 `index.md`, 설계가 하나라도 있으면 `design/overview.md`가 필수다.
 - **결정기록:** 기록 하나가 파일 하나다. 기록에는 종류가 없고 맥락·결정(필수)과 검토한 대안(선택)을 섹션으로 두며, 섹션은 한국어나 영어 제목으로 쓰며 500자까지다. `docs`는 지워진 문서도 가리킬 수 있다. 작성자·시각은 기록을 더한 커밋에서 읽는다. 아직 커밋하지 않은 기록은 `.gitifact/records/`의 `git status`로 찾고, 이력은 커밋이 더한 기록 파일만 읽는다. 모든 기록 파일을 읽는 경로를 만들지 않는다. 작업 폴더에 남은 `.gitifact/history.jsonl`은 `REASONS_FILE_REMOVED` 문제다.
@@ -121,7 +121,7 @@ stdout에는 선택한 출력 형식만 내보내고 로그·진행 상황은 st
 
 ## 조회와 커밋 흐름
 
-문서는 에이전트가 파일을 직접 고치며 저장 명령은 없다. 새 문서는 `docs new`가, 결정기록은 결정한 때 `records new`가 ID를 발급하고 뼈대를 쓴다. 조회는 `docs list·search·show·history`와 `records show`, 검사는 `docs check`다. 모든 조회는 캐시를 거치며, 캐시는 명령마다 수정 시각·크기가 바뀐 문서만 다시 읽는다.
+문서는 에이전트가 파일을 직접 고치며 저장 명령은 없다. 명령은 리소스마다 `list`·`show`·`new`를 둔다(`specs`·`instructions`·`records`). 새 문서는 `specs new`·`instructions new`가, 결정기록은 결정한 때 `records new`가 ID를 발급하고 뼈대를 쓴다. 검사는 최상위 `check` 하나다. 최상위에는 리소스와 `check` 밖에 시스템 명령(`init`·`update`·`browser`·`guide`)만 둔다. 목록은 같은 공통 옵션(`--q`·`--author`·`--sort`·`--limit`·`--fields`·`--format`)을 같은 뜻으로 받는다. 모든 조회는 캐시를 거치며, 캐시는 명령마다 수정 시각·크기가 바뀐 문서만 다시 읽는다.
 
 커밋은 `changes list`로 바뀐 문서와 입력 파일 경로를 받고, 에이전트가 그 파일에 JSON(`paths`·`message`·`authorization`, 마이그레이션이면 `migration: true`)을 써서 `changes commit --file`로 넘긴다.
 

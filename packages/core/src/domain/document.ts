@@ -22,7 +22,7 @@ export const kindOfId = (id: string): DocKind | undefined =>
 /** A document the design refers to: another Gitifact document by ID, or an outside page by title and URL. */
 export type DocSource = { id: string; note?: string } | { title: string; url: string; note?: string };
 
-// `draft: true` marks a file `docs new` made and the author has not finished; the check fails until the line is removed.
+// `draft: true` marks a file `specs new` or `instructions new` made and the author has not finished; the check fails until the line is removed.
 interface DocBase { id: string; path: string; title: string; description: string; body: string; draft?: true }
 export interface FeatureDoc extends DocBase { kind: 'feature'; feature: string }
 export interface RequirementDoc extends DocBase { kind: 'requirement'; feature: string; order: number }

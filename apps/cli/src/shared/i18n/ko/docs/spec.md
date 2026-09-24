@@ -20,11 +20,11 @@ description: 기능과 요구사항 파일의 구조, 프론트매터, 사용자
 파일은 CLI로 만든다. CLI가 ID를 발급하고 프론트매터를 채우며 본문 뼈대를 쓴다.
 
 ```text
-gitifact docs new feature posts --title "게시물 관리" --description "게시물을 쓰고 고치고 지우는 기능"
-gitifact docs new requirement posts/create --title "게시물 등록" --description "작성자가 제목과 내용으로 게시물을 저장한다"
+gitifact specs new feature posts --title "게시물 관리" --description "게시물을 쓰고 고치고 지우는 기능"
+gitifact specs new requirement posts/create --title "게시물 등록" --description "작성자가 제목과 내용으로 게시물을 저장한다"
 ```
 
-만든 파일에는 `draft: true`가 붙는다. 본문을 채운 뒤 이 줄을 지우고 `gitifact docs check`로 확인한다. 이 줄이 남아 있으면 `docs check`와 `changes commit`이 실패한다. ID를 직접 만들거나 다른 문서의 ID를 복사하지 않는다.
+만든 파일에는 `draft: true`가 붙는다. 본문을 채운 뒤 이 줄을 지우고 `gitifact check`로 확인한다. 이 줄이 남아 있으면 `check`와 `changes commit`이 실패한다. ID를 직접 만들거나 다른 문서의 ID를 복사하지 않는다.
 
 ## 파일 구조
 
@@ -47,38 +47,40 @@ order: 10
 위 ID와 문장은 구조 설명이며 유효한 입력이 아니다.
 
 - **`id`:** CLI가 발급한 값이다. 기능은 `S-`, 요구사항은 `R-`, 뒤는 소문자 base32 10자다. 파일을 옮기거나 제목을 바꿔도 그대로 둔다.
-- **`title`·`description`:** 필수이며 한 줄이다. 제목은 본문에 `#`로 다시 쓰지 않는다. 설명은 목록(`docs list`)에서 본문을 열지 않고도 무엇인지 알 수 있게 쓴다.
-- **`order`:** 요구사항에만 있다. 기능 안에서 사용 흐름에 맞는 순서로 매기고, 같은 기능에서 겹치면 안 된다. `docs new`는 그 폴더의 최댓값+10을 넣으므로 사이에 끼울 자리가 남는다.
+- **`title`·`description`:** 필수이며 한 줄이다. 제목은 본문에 `#`로 다시 쓰지 않는다. 설명은 목록(`specs list`)에서 본문을 열지 않고도 무엇인지 알 수 있게 쓴다.
+- **`order`:** 요구사항에만 있다. 기능 안에서 사용 흐름에 맞는 순서로 매기고, 같은 기능에서 겹치면 안 된다. `specs new`는 그 폴더의 최댓값+10을 넣으므로 사이에 끼울 자리가 남는다.
 - **본문:** 비워 둘 수 없다. `#` 제목과 gitifact 주석(`<!-- gitifact-… -->`)을 쓰지 않는다. 기능 `index.md`의 본문은 그 기능이 무엇이고 어디까지인지를 한두 문단으로 쓴다.
 
 프론트매터에 다른 키를 두지 않는다. 문서 사이의 관계는 설계의 `requirements`·`sources`로 나타내고, 요구사항이 어느 기능에 속하는지는 폴더가 정한다.
 
-다른 문서로 가는 링크는 이 파일 기준 상대 경로로 쓴다(요구사항에서 에셋으로는 `../../../assets/flow.png`). 브라우저가 해당 페이지로 연결한다. 대상이 없으면 `docs check`와 `changes list`가 `MISSING_LINK_TARGET` 경고로 알린다. 경고는 커밋을 막지 않는다.
+다른 문서로 가는 링크는 이 파일 기준 상대 경로로 쓴다(요구사항에서 에셋으로는 `../../../assets/flow.png`). 브라우저가 해당 페이지로 연결한다. 대상이 없으면 `check`와 `changes list`가 `MISSING_LINK_TARGET` 경고로 알린다. 경고는 커밋을 막지 않는다.
 
 ## 읽기
 
 | 명령 | 쓰는 때 |
 | :--- | :--- |
-| `gitifact docs list [--feature <기능>]` | 기능·요구사항·설계·지침의 ID·제목·설명을 본문 없이 본다 |
-| `gitifact docs search <검색어>` | 제목이나 설명에 없는 내용을 본문에서 찾는다 |
-| `gitifact docs show <ID…>` | 고른 문서의 원문과 그 문서를 가리키는 설계를 본다. `--ref <커밋>`은 그 시점의 원문이다 |
-| `gitifact docs history <ID>` | 그 문서가 왜 바뀌어 왔는지 결정기록과 커밋을 본다 |
+| `gitifact specs list [--feature <기능>]` | 기능·요구사항·설계의 ID·제목·설명을 본문 없이 본다 |
+| `gitifact specs list --uncovered` | 어떤 설계도 다루지 않는 요구사항을 찾는다. `--without-design`은 설계 없는 기능, `--draft`는 초안이 남은 문서다 |
+| `gitifact specs list --changed-since <날짜\|커밋>` | 그 뒤에 바뀐 문서를 찾는다. `--author`, `--sort updated`와 함께 쓴다 |
+| `gitifact specs list --q <검색어>` | 제목이나 설명에 없는 내용을 본문에서 찾는다 |
+| `gitifact specs show <ID…>` | 고른 문서의 원문과 그 문서를 가리키는 설계를 본다. `--ref <커밋>`은 그 시점의 원문이다 |
+| `gitifact records list --doc <ID>` | 그 문서가 왜 바뀌어 왔는지 결정기록과 커밋을 본다 |
 
-목록과 검색으로 고른 뒤 필요한 문서만 `show`로 읽는다. 전체 파일을 grep하거나 모두 여는 것보다 적게 읽는다.
+목록의 조건으로 고른 뒤 필요한 문서만 `show`로 읽는다. 목록은 `--fields id,title`처럼 필요한 열만, `--format json`으로도 받는다. 전체 파일을 grep하거나 모두 여는 것보다 적게 읽는다.
 
 ## 고치기·옮기기·지우기
 
-파일을 직접 고친다. 저장 명령은 없다. 고친 뒤에는 `gitifact docs check`로 형식과 참조를 확인한다.
+파일을 직접 고친다. 저장 명령은 없다. 고친 뒤에는 `gitifact check`로 형식과 참조를 확인한다.
 
 | 작업 | 방법 |
 | :--- | :--- |
 | 내용 고치기 | 파일의 `title`·`description`·본문을 고친다. ID는 그대로 둔다 |
 | 다른 기능으로 옮기기 | 파일을 그 기능의 `requirements/`로 옮기고 ID를 유지한다. 옮긴 곳의 순서에 맞게 `order`를 고친다 |
 | slug 바꾸기 | 파일 이름만 바꾼다. ID와 내용은 그대로다 |
-| 지우기 | 파일을 지운다. 그 요구사항을 가리키던 설계의 `requirements`에서 ID를 빼야 `docs check`가 통과한다 |
+| 지우기 | 파일을 지운다. 그 요구사항을 가리키던 설계의 `requirements`에서 ID를 빼야 `check`가 통과한다 |
 | 기능 이름(폴더) 바꾸기 | 폴더를 옮긴다. `index.md`의 S- ID는 그대로다 |
 
-옮기거나 이름을 바꿀 때 새 ID로 복제하지 않는다. 지운 ID를 다른 문서에 다시 쓰지 않는다. 요구사항을 바꾸면 그것을 가리키는 설계도 확인한다(`docs show <R-ID>`의 "가리키는 문서").
+옮기거나 이름을 바꿀 때 새 ID로 복제하지 않는다. 지운 ID를 다른 문서에 다시 쓰지 않는다. 요구사항을 바꾸면 그것을 가리키는 설계도 확인한다(`specs show <R-ID>`의 "가리키는 문서").
 
 ## 기능으로 묶는 기준
 

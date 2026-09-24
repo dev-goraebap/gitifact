@@ -36,7 +36,7 @@ flowchart LR
 
 ## 위키에서의 전환
 
-지침은 위키를 대신한다. 이 저장소의 위키는 지침 4개로 옮겼다. 브라우저는 위키를 보이지 않고(메뉴·화면·검색·체크아웃), CLI에는 위키를 만들거나 안내하는 명령이 없다(`docs new wiki`, `docs list --kind wiki`, `guide show wiki`, `init`의 위키 README를 지웠다). 작업 트리의 `.gitifact/wiki/` 아래 Markdown은 문서로 읽지 않고 `docs check`가 `WIKI_REMOVED` 문제로 알린다. 과거 커밋의 위키 페이지(`W-`)는 이력에서 계속 읽는다.
+지침은 위키를 대신한다. 이 저장소의 위키는 지침 4개로 옮겼다. 브라우저는 위키를 보이지 않고(메뉴·화면·검색·체크아웃), CLI에는 위키를 만들거나 안내하는 명령이 없다(위키를 만드는 명령과 목록, `guide show wiki`, `init`의 위키 README가 없다). 작업 트리의 `.gitifact/wiki/` 아래 Markdown은 문서로 읽지 않고 `check`가 `WIKI_REMOVED` 문제로 알린다. 과거 커밋의 위키 페이지(`W-`)는 이력에서 계속 읽는다.
 
 0.7 프로젝트는 `guide show migrate`의 전환 커밋에서 위키를 지침으로 옮긴다. 최상위 폴더 하나 또는 루트 페이지 하나가 지침 하나가 되고, 폴더의 `README.md`가 `index.md`, 나머지 페이지가 `references/`가 된다. 프로젝트가 고쳐 쓴 위키 루트 README는 지침 `overview`가 되고, `init`의 기본 방침 그대로인 README는 지운다. 본문은 그대로 옮기고 명세로 가는 링크만 글자로 바꾸며, 설계 `sources`의 W-는 옮겨 간 지침의 I-로 바꾼다. 지침 본문의 규칙과 결정기록으로 나눠 다시 쓰는 일은 전환 뒤 별도 커밋이다. 아래 표는 그 뒤 정리할 때의 기준이다.
 

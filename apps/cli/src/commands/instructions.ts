@@ -1,0 +1,92 @@
+import { lstat } from 'node:fs/promises';
+import { join } from 'node:path';
+import { INSTRUCTIONS_ROOT, type InstructionDoc } from '@gitifact/core';
+import { listInstructionFiles, readInstructionFile } from '../adapters/filesystem/instruction-folder.js';
+import { committed, createDocument, draftMark, showDocuments, working } from './documents.js';
+import { byAuthor, checkFields, selected, type Change, type ListOptions } from './list-options.js';
+import { CommandError, runCommand, text, type Format } from './output.js';
+import { openProject, type Project } from './project.js';
+import { t } from '../shared/i18n/index.js';
+
+export const instructionSorts = ['name', 'updated'] as const;
+const columns = ['id', 'name', 'path', 'title', 'description', 'draft', 'files', 'updated', 'line'] as const;
+const AGENTS = 'AGENTS.md';
+
+/**
+ * `instructions list`: where AGENTS.md is, since its index says which instruction a kind of work reads, then each
+ * instruction with how many files its folder holds besides index.md, so an agent knows there is more to open.
+ */
+export const runInstructionsList = (options: ListOptions & { sort: typeof instructionSorts[number] }) => runCommand('instructions', options.format, async () => {
+  const fields = checkFields(options.fields, columns);
+  const project = await openProject(process.cwd());
+  const { documents, problems } = await project.cache.documents.list();
+  const agents = { path: AGENTS, exists: !!(await lstat(join(project.root, AGENTS)).catch(() => undefined))?.isFile() };
+  const historyNeeded = options.sort === 'updated' || options.author !== undefined || !!fields?.includes('updated');
+  const latest = new Map<string, Change>();
+  // Each document's place in HEAD's history, newest first: the order of commits, not their dates, which may tie.
+  const newest = new Map<string, number>();
+  let touched: Set<string> | undefined;
+  if (historyNeeded) {
+    const head = await project.head();
+    const changes = head ? await project.cache.history.changesOf(head) : [];
+    changes.forEach((c, rank) => { if (!latest.has(c.id)) { latest.set(c.id, { commit: c.commit, date: c.date, author: c.author, email: c.email }); newest.set(c.id, rank); } });
+    if (options.author !== undefined) { const by = byAuthor(options.author); touched = new Set(changes.filter(by).map(c => c.id)); }
+  }
+  const matched = options.q !== undefined ? await project.cache.documents.matching(options.q) : undefined;
+  const instructions = documents.filter((d): d is InstructionDoc => d.kind === 'instruction')
+    .filter(d => (!touched || touched.has(d.id)) && (!matched || matched.has(d.id)))
+    .sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
+  const rows = await Promise.all(instructions.map(async d => ({
+    id: d.id, name: d.name, path: d.path, title: d.title, description: d.description, ...(d.draft ? { draft: true } : {}),
+    files: (await listInstructionFiles(project.root, d.path)).files.length,
+    ...(historyNeeded ? { updated: latest.get(d.id) ?? null } : {}),
+    ...(matched ? { line: matched.get(d.id)! } : {}),
+  })));
+  if (options.sort === 'updated') rows.sort((a, b) => (newest.get(a.id) ?? Infinity) - (newest.get(b.id) ?? Infinity));
+  const shown = options.limit === undefined ? rows : rows.slice(0, options.limit);
+  const unreadable = problems.filter(p => p.path.startsWith(INSTRUCTIONS_ROOT + '/'));
+  if (fields) {
+    const picked = selected(shown, fields);
+    return { json: { agents, instructions: picked.json, problems: unreadable }, text: picked.text };
+  }
+  const out = [agents.exists ? t('instructions.agents') : t('instructions.noAgents')];
+  for (const r of shown) {
+    const files = r.files ? ' · ' + t('instructions.files', { count: r.files }) : '';
+    const when = r.updated ? ` · ${r.updated.date.slice(0, 10)} ${r.updated.author}` : '';
+    out.push(`${r.id} ${r.title}${draftMark(r as { draft?: true })} (${r.name}) — ${r.description}${files}${when}`, ...(r.line ? ['  ' + r.line] : []));
+  }
+  if (!shown.length) out.push(options.q !== undefined || options.author !== undefined ? t('docs.noMatch') : t('instructions.empty'));
+  if (unreadable.length) out.push(t('docs.unreadable', { count: unreadable.length }));
+  return { json: { agents, instructions: shown, problems: unreadable }, text: text(out) };
+});
+
+/** An instruction named by its I- ID or by its folder name, resolved to the ID. */
+async function resolveInstructions(project: Project, targets: string[], at: string | undefined): Promise<string[]> {
+  const view = at === undefined ? await working(project) : await committed(project, at);
+  const byName = new Map([...view.byId.values()].filter((d): d is InstructionDoc => d.kind === 'instruction').map(d => [d.name, d.id]));
+  // Folder names are lower case and IDs start with a capital prefix, so the two never collide.
+  return targets.map(target => byName.get(target) ?? target);
+}
+
+/**
+ * `instructions show`: index.md as written, the designs that name the instruction and the other files of its folder;
+ * with `--file`, one of those files instead.
+ */
+export const runInstructionsShow = (targets: string[], options: { format: Format; ref?: string; file?: string }) => runCommand('instructions', options.format, async () => {
+  const project = await openProject(process.cwd());
+  if (options.file !== undefined && (targets.length !== 1 || options.ref !== undefined)) throw new CommandError('INVALID_VALUE', t('instructions.fileWithOne'));
+  const at = options.ref === undefined ? undefined : await project.reader.resolve(options.ref);
+  const ids = await resolveInstructions(project, targets, at);
+  if (options.file === undefined) return showDocuments(project, ids, at, ['instruction'], 'specs show');
+  const instruction = (await working(project)).byId.get(ids[0]!);
+  if (instruction?.kind !== 'instruction') throw new CommandError('UNKNOWN_DOCUMENT', t('docs.unknownDocument', { ids: targets[0]! }));
+  const found = await readInstructionFile(project.root, instruction.path, options.file);
+  if (!found) throw new CommandError('UNKNOWN_FILE', t('instructions.unknownFile', { path: options.file, name: instruction.name }));
+  const note = found.text !== null ? [] : [found.tooLarge ? t('instructions.fileTooLarge', { size: found.size }) : t('instructions.fileBinary', { size: found.size })];
+  return { json: { id: instruction.id, name: instruction.name, file: { path: options.file, ...found } },
+    text: text([`== ${instruction.id} ${instruction.name}/${options.file}`, ...(found.text !== null ? [found.text.replace(/\n$/, '')] : note)]) };
+});
+
+/** `instructions new <name>`: an instruction folder with index.md, an issued ID and a draft skeleton. */
+export const runInstructionsNew = (name: string, options: { format: Format; title: string; description: string }) => runCommand('instructions', options.format, async () =>
+  createDocument(await openProject(process.cwd()), 'instruction', name, options));

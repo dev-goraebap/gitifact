@@ -35,9 +35,9 @@ sequenceDiagram
   participant 에이전트
   participant CLI
   사용자->>에이전트: 게시물을 지울 수 있게 해주세요
-  에이전트->>CLI: docs list
+  에이전트->>CLI: specs list
   CLI-->>에이전트: 기능·요구사항 목록
-  에이전트->>CLI: docs new requirement
+  에이전트->>CLI: specs new requirement
   CLI-->>에이전트: 발급한 R-ID와 파일
 ```
 

@@ -35,7 +35,7 @@ stateDiagram-v2
 
 ## 서버 검색
 
-입력한 뒤의 결과는 서버(`/api/v1/search`)가 캐시의 검색 행에서 찾는다. CLI의 `docs search`도 같은 검색 행을 쓴다.
+입력한 뒤의 결과는 서버(`/api/v1/search`)가 캐시의 검색 행에서 찾는다. CLI 목록의 `--q`도 같은 검색 행을 쓴다.
 
 ```mermaid
 sequenceDiagram

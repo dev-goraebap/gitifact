@@ -14,21 +14,21 @@ requirements:
 | 경로 | 판정(core `classifyDocPath`) |
 | :--- | :--- |
 | `.gitifact/instructions/<이름>/index.md` | 지침 문서(`kind: instruction`, `I-`) |
-| `.gitifact/instructions/<이름>/**` 그 밖 | 그 지침의 파일(`instruction-file`). 문서로 파싱하지 않는다. 폴더가 있다는 표시, `docs show`의 파일 목록, 커밋 선택에 쓴다 |
+| `.gitifact/instructions/<이름>/**` 그 밖 | 그 지침의 파일(`instruction-file`). 문서로 파싱하지 않는다. 폴더가 있다는 표시, `instructions show`의 파일 목록, 커밋 선택에 쓴다 |
 | `.gitifact/instructions/<파일>`(폴더 밖) | 문제 `PATH_UNSUPPORTED` |
 
-폴더 이름은 소문자·숫자·하이픈 80자까지다. `index.md`는 다른 문서와 같은 프론트매터(`id`·`title`·`description`, `docs new`가 붙이는 `draft: true`)와 본문 규칙(`#` 제목과 gitifact 주석 금지)을 따른다. 폴더의 파일은 500개, 파일 하나 1MB까지 읽고 링크는 따라가지 않는다.
+폴더 이름은 소문자·숫자·하이픈 80자까지다. `index.md`는 다른 문서와 같은 프론트매터(`id`·`title`·`description`, `instructions new`가 붙이는 `draft: true`)와 본문 규칙(`#` 제목과 gitifact 주석 금지)을 따른다. 폴더의 파일은 500개, 파일 하나 1MB까지 읽고 링크는 따라가지 않는다.
 
 ## 검사
 
-`docs check`는 다른 문서와 같은 흐름에서 지침을 검사한다.
+`check`는 다른 문서와 같은 흐름에서 지침을 검사한다.
 
 | 코드 | 조건 | 종류 |
 | :--- | :--- | :--- |
 | `INSTRUCTION_INDEX_REQUIRED` | 지침 폴더에 `index.md`가 없음 | 문제 |
 | `INSTRUCTION_SPEC_LINK` | `index.md`나 폴더의 `.md` 파일이 `.gitifact/spec` 아래를 링크함(코드 블록 안은 제외) | 문제 |
 | `MISSING_LINK_TARGET` | 지침 본문의 상대 링크가 가리키는 파일이 없음(폴더 안 파일은 있는 것으로 셈) | 경고 |
-| `WIKI_REMOVED` | 작업 트리의 `.gitifact/wiki/` 아래에 Markdown 파일이 있음. 문서로 읽지 않으므로 목록·검색·`docs show`에 나오지 않고, 그 W-를 가리키는 설계는 `MISSING_REFERENCE`도 받는다 | 문제 |
+| `WIKI_REMOVED` | 작업 트리의 `.gitifact/wiki/` 아래에 Markdown 파일이 있음. 문서로 읽지 않으므로 목록·검색·`show`에 나오지 않고, 그 W-를 가리키는 설계는 `MISSING_REFERENCE`도 받는다 | 문제 |
 
 ## 이력
 

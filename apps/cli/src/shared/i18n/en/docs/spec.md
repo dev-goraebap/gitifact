@@ -20,11 +20,11 @@ A feature is one folder, `.gitifact/spec/<feature>/`. The feature introduction i
 Create files through the CLI. It issues the ID, fills in the frontmatter and writes a body skeleton.
 
 ```text
-gitifact docs new feature posts --title "Posts" --description "Writing, editing and deleting posts"
-gitifact docs new requirement posts/create --title "Create a post" --description "An author saves a post with a title and body"
+gitifact specs new feature posts --title "Posts" --description "Writing, editing and deleting posts"
+gitifact specs new requirement posts/create --title "Create a post" --description "An author saves a post with a title and body"
 ```
 
-A new file carries `draft: true`. Fill in the body, remove that line and run `gitifact docs check`. While the line remains, `docs check` and `changes commit` fail. Do not invent IDs or copy another document's ID.
+A new file carries `draft: true`. Fill in the body, remove that line and run `gitifact check`. While the line remains, `check` and `changes commit` fail. Do not invent IDs or copy another document's ID.
 
 ## File structure
 
@@ -47,38 +47,40 @@ As a post author, I want to save a title and body so that I can return to my wri
 These IDs and sentences illustrate the structure and are not valid input.
 
 - **`id`:** issued by the CLI. Features use `S-`, requirements `R-`, followed by ten lowercase base32 characters. It stays the same when the file moves or its title changes.
-- **`title` and `description`:** required, one line each. Do not repeat the title as a `#` heading in the body. Write the description so that the list (`docs list`) tells what the document is without opening it.
-- **`order`:** requirements only. Number them in the order of the feature's use; two in one feature may not share a number. `docs new` uses the folder's highest value plus 10, leaving room to insert between.
+- **`title` and `description`:** required, one line each. Do not repeat the title as a `#` heading in the body. Write the description so that the list (`specs list`) tells what the document is without opening it.
+- **`order`:** requirements only. Number them in the order of the feature's use; two in one feature may not share a number. `specs new` uses the folder's highest value plus 10, leaving room to insert between.
 - **Body:** required. Do not use a `#` heading or gitifact comments (`<!-- gitifact-… -->`). The body of a feature's `index.md` states in a paragraph or two what the feature is and where it ends.
 
 Put no other keys in the frontmatter. Relations between documents are expressed by a design's `requirements` and `sources`; the folder decides which feature a requirement belongs to.
 
-Links to other documents are relative to this file (from a requirement to an asset: `../../../assets/flow.png`). The browser opens their destinations. `docs check` and `changes list` report a missing target as a `MISSING_LINK_TARGET` warning. Warnings do not block a commit.
+Links to other documents are relative to this file (from a requirement to an asset: `../../../assets/flow.png`). The browser opens their destinations. `check` and `changes list` report a missing target as a `MISSING_LINK_TARGET` warning. Warnings do not block a commit.
 
 ## Reading
 
 | Command | When |
 | :--- | :--- |
-| `gitifact docs list [--feature <feature>]` | IDs, titles and descriptions of features, requirements, designs and instructions, without bodies |
-| `gitifact docs search <query>` | Finding text in bodies that titles and descriptions do not mention |
-| `gitifact docs show <ID…>` | The source of the chosen documents and the designs that point to them. `--ref <commit>` shows them as of that commit |
-| `gitifact docs history <ID>` | Why a document changed over time, with its records and commits |
+| `gitifact specs list [--feature <feature>]` | IDs, titles and descriptions of features, requirements and designs, without bodies |
+| `gitifact specs list --uncovered` | Requirements no design covers. `--without-design` finds features without a design, `--draft` documents still marked draft |
+| `gitifact specs list --changed-since <date\|commit>` | Documents changed since then. Combine with `--author` and `--sort updated` |
+| `gitifact specs list --q <query>` | Finding text in bodies that titles and descriptions do not mention |
+| `gitifact specs show <ID…>` | The source of the chosen documents and the designs that point to them. `--ref <commit>` shows them as of that commit |
+| `gitifact records list --doc <ID>` | Why a document changed over time, with its records and commits |
 
-Choose with the list and search, then `show` only the documents you need. This reads far less than grepping or opening every file.
+Choose with the list's conditions, then `show` only the documents you need. A list also gives only the columns you ask for (`--fields id,title`) or JSON (`--format json`). This reads far less than grepping or opening every file.
 
 ## Editing, moving and deleting
 
-Edit the files directly; there is no save command. Afterwards run `gitifact docs check` to verify format and references.
+Edit the files directly; there is no save command. Afterwards run `gitifact check` to verify format and references.
 
 | Task | How |
 | :--- | :--- |
 | Change content | Edit `title`, `description` and the body. Keep the ID |
 | Move to another feature | Move the file into that feature's `requirements/`, keep the ID, and adjust `order` to its place there |
 | Rename the slug | Rename the file only. ID and content stay |
-| Delete | Delete the file. Remove its ID from the `requirements` of any design that pointed to it, or `docs check` fails |
+| Delete | Delete the file. Remove its ID from the `requirements` of any design that pointed to it, or `check` fails |
 | Rename a feature (folder) | Move the folder. The S- ID in `index.md` stays |
 
-Do not duplicate a document under a new ID when moving or renaming it, and do not reuse a deleted ID. When a requirement changes, review the designs that point to it (“Referenced by” in `docs show <R-ID>`).
+Do not duplicate a document under a new ID when moving or renaming it, and do not reuse a deleted ID. When a requirement changes, review the designs that point to it (“Referenced by” in `specs show <R-ID>`).
 
 ## Grouping features
 

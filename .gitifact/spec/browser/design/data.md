@@ -106,7 +106,7 @@ gitGraph
 
 ## 캐시
 
-이력과 작업 폴더 문서는 SQLite 캐시 `.gitifact/cache/index.db`에서 거르고 세고 찾는다(`apps/cli/src/adapters/cache/`). 브라우저 서버와 CLI의 조회 명령(`docs list`·`search`·`show`·`history` 등)이 같은 파일을 쓰고, 질의는 SQL이며 git을 부르지 않는다. SQLite는 Node 24에 내장된 `node:sqlite`다.
+이력과 작업 폴더 문서는 SQLite 캐시 `.gitifact/cache/index.db`에서 거르고 세고 찾는다(`apps/cli/src/adapters/cache/`). 브라우저 서버와 CLI의 조회 명령(`specs list`·`instructions list`·`records list`와 `show` 등)이 같은 파일을 쓰고, 질의는 SQL이며 git을 부르지 않는다. SQLite는 Node 24에 내장된 `node:sqlite`다.
 
 ### 이력과 계보
 

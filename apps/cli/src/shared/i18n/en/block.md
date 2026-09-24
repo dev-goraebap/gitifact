@@ -8,7 +8,7 @@ CLI: use `npx --yes gitifact@{version} <cmd>` by default. Below, `gitifact` stan
 
 - A global installation is optional. Version-pinned npx uses a matching project dependency or downloads the package to the npm cache. If execution or downloading is blocked, request the required approval and explain the cause. Do not issue document IDs, check documents or commit by hand instead of running the CLI, or claim that work is done without it.
 - Once per new session, run `gitifact update --check` with the pinned version. If the result is `available`, ask whether to update; run the suggested new-version `update` command only with consent. If declined, unavailable, or disabled, continue with the pinned version and do not ask again in that session. After updating, reread the block and use its new version. Commit and push only when separately authorized.
-- Run `gitifact docs list` to read the list of features, requirements, designs, and instructions. Check git status and existing staging. Read the documents you need with `gitifact docs show <ID>`.
+- Run `gitifact specs list` and `gitifact instructions list` to read the specs and instructions. Check git status and existing staging. Read the documents you need with `specs show <ID>` or `instructions show <name>`.
 - This block is a summary. Read `gitifact guide show <topic>` for detailed formats instead of relying on memory.
 
 ### What belongs in requirements
@@ -24,9 +24,9 @@ Record product behavior and constraints that must be maintained.
 
 ### Rules
 
-- Read `gitifact guide show spec` before creating documents. Create each new document with `gitifact docs new` to get its ID, edit the file directly, and verify with `gitifact docs check`.
+- Read `gitifact guide show spec` before creating documents. Create each new document with `gitifact specs new` or `instructions new` to get its ID, edit the file directly, and verify with `gitifact check`.
 - For a new feature, prepare requirements and designs together (`gitifact guide show design`). Follow a request for requirements only.
-- When an existing requirement, design or instruction changes, or one of several options is chosen, write a record then with `gitifact records new` (`gitifact guide show records`). Before changing a document, read how its decisions went with `gitifact docs history <ID>`.
+- When an existing requirement, design or instruction changes, or one of several options is chosen, write a record then with `gitifact records new` (`gitifact guide show records`). Before changing a document, read how its decisions went with `gitifact records list --doc <ID>`.
 - Before changing requirements, designs, or code, find the project instructions (`.gitifact/instructions/`) for the work in the index outside this block, read them and follow them. Rules that span features belong in instructions; read `gitifact guide show instructions` before changing instructions or the index outside this block.
 - Before writing instruction, requirement, or design content, follow `gitifact guide show writing`. Use the project's language for its documents, independently of the CLI display language.
 - When asked to commit, read `gitifact guide show commit`. By default, one decision is committed with its record, documents, code, and tests.
@@ -38,7 +38,7 @@ Record product behavior and constraints that must be maintained.
 ### Commands
 
 - `guide list`, `guide show <topic>`: writing guides ({topics})
-- `docs list`·`search`·`show <ID…>`·`new <kind> <path>`·`check`·`history <ID>`: list without bodies, search, a document with its references, ID and skeleton (`draft: true`), whole-set check, records and commits (options in `--help`)
+- `list`, `show`, `new` of `specs`, `instructions` and `records`: lists (filters by relation, history and state; `--fields`), a document with its references, ID and skeleton (`draft: true`). `records list --doc <ID>` is one document's decisions; `check` checks everything (options in `--help`)
 - `changes list`: documents changed since HEAD, uncommitted records, changes without a record, and the commit input path
 - `changes commit --file <json|-> [--dry-run]`: check documents, then commit the selected files and records
 - `browser`: run the read-only browser server; prints a URL and keeps running

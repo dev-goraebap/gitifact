@@ -22,7 +22,7 @@ Apply this to project instructions, requirements, and designs. Use the project's
 
 ## What is current and how it got there
 
-The body states only the behavior and rules that hold now. “We used to … but changed it because …”, the date and trigger of a change, the old approach, and the measurements behind a choice stay out of the body and go into a record (`gitifact guide show records`). Readers find reasons with `gitifact docs history <ID>` and old text with `gitifact docs show <ID> --ref <commit>`.
+The body states only the behavior and rules that hold now. “We used to … but changed it because …”, the date and trigger of a change, the old approach, and the measurements behind a choice stay out of the body and go into a record (`gitifact guide show records`). Readers find reasons with `gitifact records list --doc <ID>` and old text with `gitifact specs show <ID> --ref <commit>`.
 
 When revising, rewrite the sentences that changed instead of appending sentences about the old behavior. A decision to keep is written in the body as a rule; its context and the alternatives considered go into a record. Designs and instructions keep no decision tables of their own.
 

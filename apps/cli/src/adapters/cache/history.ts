@@ -1,5 +1,6 @@
 import type { DatabaseSync } from 'node:sqlite';
 import { createCommitChanges, type ChangeType, type CommitChanges, type CommitReader, type GitAccess, type HistoryEvent } from './commit-changes.js';
+import type { EventRecord } from './events.js';
 import { transaction, type CacheDatabase } from './database.js';
 import { containing, snippet } from './search-text.js';
 
@@ -117,11 +118,36 @@ export function createHistory(database: CacheDatabase, git: GitAccess) {
         return { total, events: rows.map(r => JSON.parse(r.row) as ListedEvent) };
       });
     },
-    /** Every change of one document, newest first: `docs history`. */
+    /** Every change of one document, newest first: `records list --doc`. */
     async ofDocument(head: string, id: string) {
       await ensure(head);
       return database.with(db => (db.prepare('SELECT c.row FROM lineage l JOIN changes c ON c.oid = l.oid WHERE l.head = ? AND c.id = ? ORDER BY l.pos, c.ord').all(head, id) as { row: string }[])
         .map(r => JSON.parse(r.row) as ListedEvent));
+    },
+    /** Who changed which document in which commit of `head`'s history, newest first: what the lists filter and sort by. */
+    async changesOf(head: string): Promise<{ id: string; commit: string; date: string; author: string; email: string }[]> {
+      await ensure(head);
+      return database.with(db => db.prepare(`SELECT c.id AS id, c.oid AS "commit", c.date AS date, json_extract(c.row, '$.author') AS author, c.email AS email
+        FROM lineage l JOIN changes c ON c.oid = l.oid WHERE l.head = ? ORDER BY l.pos, c.ord`).all(head) as { id: string; commit: string; date: string; author: string; email: string }[]);
+    },
+    /**
+     * Every record of `head`'s history, newest first, once each: the commit that carries it and the documents it
+     * explains there. A record reaches the cache through the changes it explains, so one row per change is folded.
+     */
+    async recordsOf(head: string) {
+      await ensure(head);
+      const rows = await database.with(db => db.prepare(`SELECT c.oid AS "commit", c.id AS doc, c.date AS date, json_extract(c.row, '$.author') AS author, c.email AS email,
+        json_extract(c.row, '$.message') AS message, r.value AS record
+        FROM lineage l JOIN changes c ON c.oid = l.oid, json_each(c.row, '$.records') r WHERE l.head = ? ORDER BY l.pos, c.ord`).all(head) as
+        { commit: string; doc: string; date: string; author: string; email: string; message: string; record: string }[]);
+      const records = new Map<string, { id: string; title: string; sections: EventRecord['sections']; commit: string; date: string; author: string; email: string; message: string; docs: string[] }>();
+      for (const row of rows) {
+        const record = JSON.parse(row.record) as EventRecord;
+        const known = records.get(record.id);
+        if (known) { if (known.commit === row.commit && !known.docs.includes(row.doc)) known.docs.push(row.doc); continue; }
+        records.set(record.id, { id: record.id, title: record.title, sections: record.sections, commit: row.commit, date: row.date, author: row.author, email: row.email, message: row.message, docs: [row.doc] });
+      }
+      return [...records.values()];
     },
     /** Counts over all of history and its newest commits, for the overview. */
     async summary(head: string) {

@@ -1,9 +1,12 @@
 import { Argument, Command, Option } from 'commander';
 import { runBrowser, parsePort } from './commands/browser.js';
 import { runInit } from './commands/init.js';
-import { newKinds, runDocsCheck, runDocsHistory, runDocsList, runDocsNew, runDocsSearch, runDocsShow } from './commands/docs.js';
+import { runSpecsList, runSpecsNew, runSpecsShow, specKinds, specSorts } from './commands/specs.js';
+import { instructionSorts, runInstructionsList, runInstructionsNew, runInstructionsShow } from './commands/instructions.js';
+import { runCheck } from './commands/check.js';
+import { parseFields, parseLimit } from './commands/list-options.js';
 import { runChangesCommit, runChangesList } from './commands/changes.js';
-import { runRecordsNew, runRecordsShow } from './commands/records.js';
+import { runRecordsList, runRecordsNew, runRecordsShow } from './commands/records.js';
 import { runGuideList, runGuideShow } from './commands/guide.js';
 import { formats } from './commands/output.js';
 import { runUpdate } from './commands/update.js';
@@ -58,30 +61,54 @@ program.command('update')
   .addOption(new Option('--check', t('help.updateCheck')).conflicts('commit'))
   .action(options => options.check ? runUpdateCheck(options.format, __CLI_VERSION__) : runUpdate(options, __CLI_VERSION__));
 
-const docs = program.command('docs').description(t('help.docs'));
-docs.command('list').description(t('help.docsList')).allowExcessArguments(false)
-  .option('--feature <name>', t('help.docsListFeature'))
-  .addOption(new Option('--kind <kind>', t('help.docsListKind')).choices(['spec', 'instruction']))
-  .addOption(format()).action(o => runDocsList(o));
-docs.command('search').description(t('help.docsSearch')).argument('<words...>', t('help.docsSearchWords'))
-  .addOption(format()).action((words: string[], o) => runDocsSearch(words.join(' '), o));
-docs.command('show').description(t('help.docsShow')).argument('<ids...>', t('help.docsShowIds'))
-  .option('--ref <commit>', t('help.docsShowRef')).addOption(format()).action((ids: string[], o) => runDocsShow(ids, o));
-docs.command('new').description(t('help.docsNew')).allowExcessArguments(false)
-  .addArgument(new Argument('<kind>', t('help.docsNewKind')).choices(newKinds))
-  .argument('<path>', t('help.docsNewPath'))
-  .requiredOption('--title <title>', t('help.docsNewTitle')).requiredOption('--description <text>', t('help.docsNewDescription'))
-  .addOption(format()).action((kind: typeof newKinds[number], path: string, o) => runDocsNew(kind, path, o));
-docs.command('check').description(t('help.docsCheck')).allowExcessArguments(false).addOption(format()).action(o => runDocsCheck(o));
-docs.command('history').description(t('help.docsHistory')).argument('<id>', t('help.docsHistoryId')).allowExcessArguments(false)
-  .addOption(format()).action((id: string, o) => runDocsHistory(id, o));
+// Every list takes the same options with the same meaning; each resource adds its own filters and sort keys.
+const listed = (command: Command, sorts?: readonly string[]) => {
+  command.allowExcessArguments(false)
+    .option('--q <words>', t('help.listQ'))
+    .option('--author <name>', t('help.listAuthor'));
+  if (sorts) command.addOption(new Option('--sort <key>', t('help.listSort')).choices([...sorts]).default(sorts[0]));
+  return command.option('--limit <n>', t('help.listLimit'), parseLimit)
+    .option('--fields <names>', t('help.listFields'), parseFields)
+    .addOption(format());
+};
+
+const specs = program.command('specs').description(t('help.specs'));
+listed(specs.command('list').description(t('help.specsList'))
+  .addOption(new Option('--type <kind>', t('help.specsListType')).choices([...specKinds]))
+  .option('--feature <folder>', t('help.specsListFeature'))
+  .option('--without-design', t('help.specsListWithoutDesign'))
+  .option('--uncovered', t('help.specsListUncovered'))
+  .option('--draft', t('help.specsListDraft'))
+  .option('--changed-since <date|commit>', t('help.specsListChangedSince')), specSorts).action(o => runSpecsList(o));
+specs.command('show').description(t('help.specsShow')).argument('<ids...>', t('help.specsShowIds'))
+  .option('--ref <commit>', t('help.showRef')).addOption(format()).action((ids: string[], o) => runSpecsShow(ids, o));
+specs.command('new').description(t('help.specsNew')).allowExcessArguments(false)
+  .addArgument(new Argument('<kind>', t('help.specsNewKind')).choices(specKinds))
+  .argument('<path>', t('help.specsNewPath'))
+  .requiredOption('--title <title>', t('help.newTitle')).requiredOption('--description <text>', t('help.newDescription'))
+  .addOption(format()).action((kind: typeof specKinds[number], path: string, o) => runSpecsNew(kind, path, o));
+
+const instructions = program.command('instructions').description(t('help.instructions'));
+listed(instructions.command('list').description(t('help.instructionsList')), instructionSorts).action(o => runInstructionsList(o));
+instructions.command('show').description(t('help.instructionsShow')).argument('<targets...>', t('help.instructionsShowTargets'))
+  .option('--ref <commit>', t('help.showRef')).option('--file <path>', t('help.instructionsShowFile'))
+  .addOption(format()).action((targets: string[], o) => runInstructionsShow(targets, o));
+instructions.command('new').description(t('help.instructionsNew')).allowExcessArguments(false)
+  .argument('<name>', t('help.instructionsNewName'))
+  .requiredOption('--title <title>', t('help.newTitle')).requiredOption('--description <text>', t('help.newDescription'))
+  .addOption(format()).action((name: string, o) => runInstructionsNew(name, o));
 
 const records = program.command('records').description(t('help.records'));
+listed(records.command('list').description(t('help.recordsList'))
+  .option('--doc <id>', t('help.recordsListDoc'))
+  .option('--since <date|commit>', t('help.recordsListSince'))).action(o => runRecordsList(o));
+records.command('show').description(t('help.recordsShow')).argument('<ids...>', t('help.recordsShowId'))
+  .addOption(format()).action((ids: string[], o) => runRecordsShow(ids, o));
 records.command('new').description(t('help.recordsNew')).allowExcessArguments(false)
   .requiredOption('--title <title>', t('help.recordsTitle')).requiredOption('--docs <ids...>', t('help.recordsDocs'))
   .addOption(format()).action(o => runRecordsNew(o));
-records.command('show').description(t('help.recordsShow')).argument('<ids...>', t('help.recordsShowId'))
-  .addOption(format()).action((ids: string[], o) => runRecordsShow(ids, o));
+
+program.command('check').description(t('help.check')).allowExcessArguments(false).addOption(format()).action(o => runCheck(o));
 
 const changes = program.command('changes').description(t('help.changes'));
 changes.command('list').description(t('help.changesList')).allowExcessArguments(false).addOption(format()).action(o => runChangesList(o));

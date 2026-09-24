@@ -89,7 +89,7 @@ test('a failing document check stops the commit before anything is written', t =
   const f = setup(t);
   writeFileSync(join(f.repo, docPaths[1]), readFileSync(join(f.repo, docPaths[1]), 'utf8').replace('order: 10\n', 'order: 10\ndraft: true\n'));
   // changes list shows the problem before a commit is tried.
-  assert.match(f.run(['changes', 'list']).stdout, /\n문서 검사: 문제 1개 \(docs check로 확인\)\n/);
+  assert.match(f.run(['changes', 'list']).stdout, /\n문서 검사: 문제 1개 \(check로 확인\)\n/);
   assert.deepEqual(f.ok(['changes', 'list']).problems.map(p => p.code), ['DOC_DRAFT']);
   const input = first(f); const before = fingerprint(f.repo);
   const result = f.commit(input);
@@ -150,7 +150,7 @@ test('unknown documents, the old reasons input and a message with trailers are r
   assert.equal(JSON.parse(f.run(['changes', 'commit', '--file', bad, '--format', 'json']).stderr).error.code, 'INVALID_INPUT');
 });
 
-test('a committed record cannot be edited or deleted; changes list and docs check name it before the commit is refused', t => {
+test('a committed record cannot be edited or deleted; changes list and check name it before the commit is refused', t => {
   const f = setup(t); f.done(f.commit(first(f)));
   const file = join(f.repo, recordPath(H)); const committed = readFileSync(file, 'utf8');
   f.write('app.js', 'export const save = title => title.length > 0;\n');
@@ -159,7 +159,7 @@ test('a committed record cannot be edited or deleted; changes list and docs chec
     edit();
     assert.deepEqual(f.ok(['changes', 'list']).alteredRecords, [recordPath(H)]);
     assert.match(f.run(['changes', 'list']).stdout, new RegExp(`\\n커밋된 결정기록이 바뀌거나 지워짐\\(커밋이 거부됨\\): ${recordPath(H)}\\n`));
-    assert.deepEqual(JSON.parse(f.run(['docs', 'check', '--format', 'json']).stdout).problems.map(p => p.code), ['RECORD_ALTERED']);
+    assert.deepEqual(JSON.parse(f.run(['check', '--format', 'json']).stdout).problems.map(p => p.code), ['RECORD_ALTERED']);
     const before = fingerprint(f.repo); const head = f.git(['rev-parse', 'HEAD']).stdout;
     const refused = f.commit(next);
     assert.equal(refused.status, 1); const { error } = JSON.parse(refused.stderr);
@@ -265,7 +265,7 @@ test('a migration commit removes the 0.7 files, moves the wiki and the reasons t
   mkdirSync(join(f.repo, '.gitifact/wiki'));
   f.write('.gitifact/wiki/guide.md', '---\nid: W-dddddddddd\n---\n\n# 안내\n\n규칙.\n'); f.write('.gitifact/wiki/history.jsonl', '{}\n');
   f.git(['add', '-A']); f.git(['commit', '-m', '0.7 records']);
-  assert.equal(f.run(['docs', 'check']).status, 1);
+  assert.equal(f.run(['check']).status, 1);
   unlinkSync(join(f.repo, '.gitifact/spec/posts/requirements.md')); unlinkSync(join(f.repo, '.gitifact/spec/posts/history.jsonl'));
   put(f, { kind: 'feature', path: docPaths[0], id: S, feature: 'posts', title: '게시물', description: '게시물 작성과 조회', body: '게시물 기능.' });
   put(f, { kind: 'requirement', path: docPaths[1], id: R, feature: 'posts', order: 10, title: '저장', description: '제목을 입력해 저장한다', body: '작성자로서 게시물을 저장하고 싶다.' });
@@ -285,5 +285,5 @@ test('a migration commit removes the 0.7 files, moves the wiki and the reasons t
   assert.ok(result.trailers.includes('Gitifact-Migration: 0.8.0'));
   assert.match(f.git(['log', '-1', '--format=%B']).stdout, /\nGitifact-Migration: 0\.8\.0\n/);
   assert.equal(f.git(['status', '--porcelain']).stdout, '');
-  assert.deepEqual(f.ok(['docs', 'history', R]).events, []);
+  assert.deepEqual(f.ok(['records', 'list', '--doc', R]).events, []);
 });

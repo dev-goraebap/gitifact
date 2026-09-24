@@ -120,12 +120,12 @@ npx gitifact browser
 
 | 명령 | 용도 |
 | :--- | :--- |
-| `npx gitifact docs list` | 기능·요구사항·설계·지침 목록(본문 없이 ID·제목·설명) |
-| `npx gitifact docs search <검색어>` | 문서 본문 검색 |
-| `npx gitifact docs show <ID>` | 문서 원문과 그 문서를 가리키는 설계. `--ref <커밋>`으로 과거 원문 |
-| `npx gitifact docs history <ID>` | 문서의 결정기록과 커밋 |
-| `npx gitifact docs new requirement <기능>/<이름>` | ID를 발급하고 뼈대를 채운 새 문서 생성 |
-| `npx gitifact docs check` | 모든 문서의 형식·ID·참조 검사 |
+| `npx gitifact specs list` | 기능·요구사항·설계 목록(본문 없이 ID·제목·설명). `--uncovered`·`--changed-since`·`--q` 등으로 거른다 |
+| `npx gitifact instructions list` | AGENTS.md와 프로젝트 지침 목록 |
+| `npx gitifact specs show <ID>` | 문서 원문과 그 문서를 가리키는 설계. `--ref <커밋>`으로 과거 원문 |
+| `npx gitifact records list --doc <ID>` | 문서의 결정기록과 커밋 |
+| `npx gitifact specs new requirement <기능>/<이름>` | ID를 발급하고 뼈대를 채운 새 문서 생성 |
+| `npx gitifact check` | 모든 문서의 형식·ID·참조 검사 |
 | `npx gitifact changes list` | HEAD 이후 바뀐 문서, 커밋하지 않은 결정기록, 기록 없는 변경 |
 | `npx gitifact changes commit --file <입력 파일> --dry-run` | 파일을 바꾸지 않고 커밋 계획 확인 |
 | `npx gitifact changes commit --file <입력 파일>` | 고른 문서·결정기록·관련 파일 커밋 |

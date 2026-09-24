@@ -26,8 +26,8 @@ requirements:
 | `packages/core/src/use-cases/check-documents.ts` | 문서 전체 검사(`checkDocuments`) |
 | `apps/cli/src/adapters/filesystem/document-file.ts` | ID 발급(`generateId`), 새 문서 파일 쓰기 |
 | `apps/cli/src/adapters/cache/documents.ts` | 작업 폴더 문서 읽기와 캐시, 크기·링크 파일 판정 |
-| `apps/cli/src/commands/docs.ts` | `docs list`·`search`·`show`·`new`·`check`·`history` |
-| `apps/cli/src/commands/records.ts` | `records new`·`show` |
+| `apps/cli/src/commands/specs.ts`·`check.ts` | `specs list`·`show`·`new`, `check`. 명령 체계와 목록 옵션은 [문서 명령](interface.md) |
+| `apps/cli/src/commands/records.ts` | `records list`·`show`·`new` |
 
 기능 응집은 사용자의 제품 맥락으로 정하고 코드 모듈이나 DDD 계층을 강제하지 않는다. 설계는 기본 작성 대상으로 안내하되 빈 설계 파일을 만들게 하지 않는다. 별도 요구사항 목록, docs/specs 복사본, tasks.md는 두지 않는다.
 
@@ -77,7 +77,7 @@ erDiagram
 
 ## ID
 
-ID는 종류 접두어(S·R·D·I·W, 결정기록은 H)와 소문자 base32 10자다. `generateId`만 발급하며 `docs new`와 `records new`는 이미 쓰인 ID와 겹치지 않을 때까지 다시 뽑는다. ID는 이름·폴더와 독립적이어서 제목 변경, 파일 이동, 다른 기능 폴더로의 이동에도 유지한다. 이름 변경을 다른 요구사항 생성으로 처리하지 않으며, 설계의 `requirements`는 현재 전체 문서에서 찾으므로 다른 기능으로 옮긴 요구사항도 계속 가리킨다.
+ID는 종류 접두어(S·R·D·I·W, 결정기록은 DR)와 소문자 base32 10자다. `generateId`만 발급하며 `specs new`·`instructions new`·`records new`는 이미 쓰인 ID와 겹치지 않을 때까지 다시 뽑는다. ID는 이름·폴더와 독립적이어서 제목 변경, 파일 이동, 다른 기능 폴더로의 이동에도 유지한다. 이름 변경을 다른 요구사항 생성으로 처리하지 않으며, 설계의 `requirements`는 현재 전체 문서에서 찾으므로 다른 기능으로 옮긴 요구사항도 계속 가리킨다.
 
 ## 작성 흐름
 
@@ -95,20 +95,20 @@ flowchart TD
 
 | 단계 | 명령 | 하는 일 |
 | :--- | :--- | :--- |
-| 목록과 원문 읽기 | `docs list [--feature <기능>]`, `docs show <ID…>` | 목록은 프론트매터만, `show`는 파일 원문과 가리키는·가리켜지는 문서 |
-| 새 문서 만들기 | `docs new <종류> <경로> --title … --description …` | ID 발급, 프론트매터와 종류별 본문 뼈대, `order`는 같은 폴더의 최댓값+10, `draft: true` |
+| 목록과 원문 읽기 | `specs list`, `specs show <ID…>` | 목록은 프론트매터만, `show`는 파일 원문과 가리키는·가리켜지는 문서 |
+| 새 문서 만들기 | `specs new <종류> <경로> --title … --description …` | ID 발급, 프론트매터와 종류별 본문 뼈대, `order`는 같은 폴더의 최댓값+10, `draft: true` |
 | 파일 편집 | (직접 편집) | 본문을 채우고 `draft: true` 줄을 지운다 |
-| 검사 | `docs check` | 아래 "검사" |
+| 검사 | `check` | 아래 "검사" |
 | 커밋 | `changes commit` | 커밋 직전에 같은 검사를 다시 돌려 문제가 있으면 커밋하지 않는다 |
 
-`docs new`는 같은 경로에 파일이 있으면 거부하고, 링크를 거쳐 폴더를 만들지 않아 문서가 프로젝트 밖에 생기지 않는다. 설계의 `requirements`에는 `docs new`가 발급한 실제 R-ID만 적고 아직 없는 ID를 지어내지 않는다. 요구사항 이동·삭제와 기능 폴더 개명은 파일을 직접 옮기거나 지워서 하며, ID가 파일 안에 있어 옮긴 뒤에도 같은 문서로 추적한다.
+`specs new`는 같은 경로에 파일이 있으면 거부하고, 링크를 거쳐 폴더를 만들지 않아 문서가 프로젝트 밖에 생기지 않는다. 설계의 `requirements`에는 `specs new`가 발급한 실제 R-ID만 적고 아직 없는 ID를 지어내지 않는다. 요구사항 이동·삭제와 기능 폴더 개명은 파일을 직접 옮기거나 지워서 하며, ID가 파일 안에 있어 옮긴 뒤에도 같은 문서로 추적한다.
 
 > [!NOTE]
 > 저장 명령이 없어 "읽은 뒤 바뀐 파일의 저장 거부" 같은 보호는 없다. 문서 파일은 일반 코드 파일과 같은 수준으로 보호된다.
 
 ## 검사
 
-`docs check`는 작업 폴더의 문서 전체와 아직 커밋하지 않은 결정기록을 읽고, 첫 오류에서 멈추지 않고 모든 문제를 보인 뒤 문제가 있으면 종료 코드 1로 끝난다. 읽지 못한 파일은 문제로 보고하고 나머지끼리 계속 대조한다.
+`check`는 작업 폴더의 문서 전체와 아직 커밋하지 않은 결정기록을 읽고, 첫 오류에서 멈추지 않고 모든 문제를 보인 뒤 문제가 있으면 종료 코드 1로 끝난다. 읽지 못한 파일은 문제로 보고하고 나머지끼리 계속 대조한다.
 
 | 범위 | 문제 코드 | 조건 |
 | :--- | :--- | :--- |
@@ -125,7 +125,7 @@ flowchart TD
 | 전체 | `MISSING_REFERENCE` | `requirements`가 요구사항이 아닌 ID를, `sources`가 없는 문서나 자기 자신을 가리킴 |
 | 전체 | `FEATURE_INDEX_REQUIRED`·`DESIGN_OVERVIEW_REQUIRED` | `index.md`·`design/overview.md` 누락 |
 
-깨진 상대 링크와 권장 범위 밖의 에셋은 문제 뒤에 경고로 보이며 종료 코드와 커밋을 막지 않는다. `docs list`는 읽지 못한 파일 수와 `index.md`가 없는 기능 폴더를 함께 알려, 손상을 빈 정상 결과로 보이지 않게 한다. 설정의 `schemaVersion`이 2면 0.7 형식으로 보고 변환하지 않은 채 `guide show migrate`를 안내하며 거부한다.
+깨진 상대 링크와 권장 범위 밖의 에셋은 문제 뒤에 경고로 보이며 종료 코드와 커밋을 막지 않는다. `specs list`는 읽지 못한 파일 수와 `index.md`가 없는 기능 폴더를 함께 알려, 손상을 빈 정상 결과로 보이지 않게 한다. 설정의 `schemaVersion`이 2면 0.7 형식으로 보고 변환하지 않은 채 `guide show migrate`를 안내하며 거부한다.
 
 형식 고정 자료와 독립 저장소로 파싱·렌더링·검사와 명령 동작을 시험한다(`packages/core/test/documents.test.mjs`, `apps/cli/test/docs-commands.test.mjs`). 명세 구조가 유효하다는 결과를 제품 의미나 코드 구현의 검증으로 해석하지 않는다.
 
@@ -156,7 +156,7 @@ core `documentWarnings`(`use-cases/document-warnings.ts`)가 모든 문서 본�
 | `ASSETS_TOTAL_SIZE` | 에셋 전체가 50MB 초과 |
 | `UNREFERENCED_ASSET` | 어떤 본문도 가리키지 않는 에셋 |
 
-`docs check`는 문제 목록 뒤에 경고를 따로 보이고, `changes list`는 경고 수를 알린다. 브라우저 서버는 `/api/v1/assets/<경로>`로 에셋을 제공한다. 이미지는 inline, 그 밖은 attachment다.
+`check`는 문제 목록 뒤에 경고를 따로 보이고, `changes list`는 경고 수를 알린다. 브라우저 서버는 `/api/v1/assets/<경로>`로 에셋을 제공한다. 이미지는 inline, 그 밖은 attachment다.
 
 > [!IMPORTANT]
 > 경고는 종료 코드를 바꾸지 않고 `changes commit`도 막지 않는다. 한도는 core 상수(`ASSET_SIZE_LIMIT`, `ASSETS_TOTAL_LIMIT`, `RECOMMENDED_ASSET_EXTENSIONS`)다.

@@ -102,7 +102,7 @@
   "doc.FEATURE_INDEX_REQUIRED": "The feature folder needs an index.md: {feature}",
   "doc.DESIGN_OVERVIEW_REQUIRED": "A feature with a design needs design/overview.md: {feature}",
   "doc.FILE_TOO_LARGE": "The document file exceeds 1 MB and was not read: {path}",
-  "doc.DOC_DRAFT": "The draft mark docs new added is still there. Remove the draft: true line once the body is written: {path}",
+  "doc.DOC_DRAFT": "The draft mark a new command added is still there. Remove the draft: true line once the body is written: {path}",
   "doc.INSTRUCTION_INDEX_REQUIRED": "An instruction folder needs an index.md: {path}",
   "doc.WIKI_REMOVED": "The wiki became project instructions in 0.8.0. Move this page to .gitifact/instructions/ (gitifact guide show migrate): {path}",
   "doc.INSTRUCTION_SPEC_LINK": "An instruction does not point at specs; designs name the instructions they follow in sources: {path}: {link}",

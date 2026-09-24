@@ -24,7 +24,7 @@ flowchart LR
   L --> C["changes commit<br/>고른 파일"]
   C --> G["Git 커밋<br/>Gitifact-Record"]
   G --> H["이력 캐시<br/>더한 기록만 읽음"]
-  H --> V["docs history · 결정기록 화면"]
+  H --> V["records list --doc · 결정기록 화면"]
 ```
 
 | 파일 | 다루는 것 |
@@ -40,7 +40,7 @@ flowchart LR
 | core `domain/record.ts` | 종류, 섹션 키와 두 언어의 제목, 섹션 한도 |
 | core `use-cases/check-documents.ts` | 넘겨받은 기록의 검사, 초안 표시, ID 중복, 작업 폴더의 이유 파일 |
 | CLI `adapters/git/pending-records.ts` | `git status`로 새 기록과 바뀐·지워진 커밋된 기록 찾기 |
-| CLI `commands/records.ts` | `records new`·`records show` |
+| CLI `commands/records.ts` | `records list`·`show`·`new` |
 | CLI `commands/changes.ts` | 기록별 문서 보이기, 고른 파일 커밋, 트레일러 |
 | CLI `adapters/cache/commit-changes.ts`·`record-events.ts` | 커밋이 더한 기록 읽기, 과거 이유를 기록으로 읽기 |
 | 브라우저 `widgets/activity-timeline` | 목록의 기록 단위 묶음, 기록 제목과 결정의 첫 줄 |

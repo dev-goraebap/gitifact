@@ -10,7 +10,7 @@ import { t } from '../shared/i18n/index.js';
 const operations = ['MERGE_HEAD', 'CHERRY_PICK_HEAD', 'REVERT_HEAD', 'rebase-merge', 'rebase-apply', 'sequencer', 'BISECT_START', 'index.lock'];
 
 /**
- * The project a `docs` or `changes` command works on: where the repository is, its configuration in the current
+ * The project a document, record or `changes` command works on: where the repository is, its configuration in the current
  * format, and the cache. Writing commands also refuse to run while Git is in the middle of another operation.
  */
 export async function openProject(cwd: string, options: { writing?: boolean } = {}) {
@@ -39,7 +39,7 @@ export type Project = Awaited<ReturnType<typeof openProject>>;
 export function documentsOf(files: ReadonlyMap<string, string>): Doc[] {
   const docs: Doc[] = [];
   for (const [path, source] of files) {
-    try { if (classifyDocPath(path).type === 'doc') docs.push(parseDocumentFile(path, source)); } catch { /* reported by docs check */ }
+    try { if (classifyDocPath(path).type === 'doc') docs.push(parseDocumentFile(path, source)); } catch { /* reported by check */ }
   }
   return docs;
 }

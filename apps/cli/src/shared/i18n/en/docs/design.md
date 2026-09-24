@@ -21,7 +21,7 @@ Do not write the same content in two files. `overview.md` does not repeat the de
 
 ## File structure
 
-Create a file with `gitifact docs new design <feature>/<axis> --title "<title>" --description "<one line>"`. The CLI issues a D- ID, sets `order` to the highest in the folder plus 10, and adds `draft: true`. After writing the body, delete the `draft: true` line and check with `gitifact docs check`. Do not make up IDs.
+Create a file with `gitifact specs new design <feature>/<axis> --title "<title>" --description "<one line>"`. The CLI issues a D- ID, sets `order` to the highest in the folder plus 10, and adds `draft: true`. After writing the body, delete the `draft: true` line and check with `gitifact check`. Do not make up IDs.
 
 ```markdown
 ---
@@ -54,7 +54,7 @@ Relative links in the body (such as `../../../assets/flow.png`) are relative to 
 
 Follow `gitifact guide show writing` for style. The body describes the current structure and behavior. Separate what is decided, what was observed in the implementation, and what is proposed.
 
-A design keeps no decision table. A choice among options goes into a record with its context and the alternatives considered, and the body states only the result as a rule (`gitifact guide show records`). Before changing a design, read how its decisions went with `gitifact docs history <D-ID>` so an option already passed over is not proposed again. How it changed, when, and the old approach go into records too, not the body.
+A design keeps no decision table. A choice among options goes into a record with its context and the alternatives considered, and the body states only the result as a rule (`gitifact guide show records`). Before changing a design, read how its decisions went with `gitifact records list --doc <D-ID>` so an option already passed over is not proposed again. How it changed, when, and the old approach go into records too, not the body.
 
 For diagrams, follow `gitifact guide show writing` for choosing the kind and drawing it, and place each in the file for the axis it explains. Each axis has kinds that suit it: `erDiagram` and a `flowchart` of cache or read flows for data, a `sequenceDiagram` of requests between components for interface, a `stateDiagram-v2` of screen states for ui, and failure and recovery flows for errors.
 
@@ -66,6 +66,6 @@ When shaping a new feature, write requirements and design together by default. I
 
 ## Revisions
 
-Before revising, read the feature's design files and the related requirements, and change only the files affected. Rewrite the sentences that changed instead of appending “previously we …” sentences. How it changed goes into a record, and Git keeps the old text. When a decision changes, change the rule in the body and write a new record. When a requirement changes, review the designs that point to it ("Referenced by" in `gitifact docs show <R-ID>`); when only the design changes, do not force changes to requirements.
+Before revising, read the feature's design files and the related requirements, and change only the files affected. Rewrite the sentences that changed instead of appending “previously we …” sentences. How it changed goes into a record, and Git keeps the old text. When a decision changes, change the rule in the body and write a new record. When a requirement changes, review the designs that point to it ("Referenced by" in `gitifact specs show <R-ID>`); when only the design changes, do not force changes to requirements.
 
 When splitting a large file into axes or merging files, only move sentences; do not edit content in the same commit. After moving, check that every sentence of the old file is present in the new files. Keep IDs when moving files, and make sure the `requirements` of a deleted file moved to the remaining files. A commit that only moves sentences needs no record.

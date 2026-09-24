@@ -53,7 +53,7 @@ test('CLI help, documentation and errors follow language without changing contra
   assert.match(success(f, ['guide', 'show', 'spec'], '', { LC_ALL: 'ja_JP.UTF-8' }), /title: Requirement format/);
   assert.match(success(f, ['--lang', 'ko', 'guide', 'list']), /^spec +요구사항 형식 — /m);
   for (const args of [['--lang', 'ja', 'guide', 'list'], ['--lang'], ['--lang=']]) assert.notEqual(run(f, args).status, 0);
-  const errors = ['ko', 'en'].map(lang => JSON.parse(run(f, ['--lang', lang, 'docs', 'list', '--format', 'json']).stderr));
+  const errors = ['ko', 'en'].map(lang => JSON.parse(run(f, ['--lang', lang, 'specs', 'list', '--format', 'json']).stderr));
   assert.equal(errors[0].error.code, errors[1].error.code);
   assert.match(errors[0].error.message, /[가-힣]/);
   assert.doesNotMatch(errors[1].error.message, /[가-힣]/);
@@ -82,13 +82,13 @@ test('English setup ships complete assets and preserves user text', t => {
   assert.match(readFileSync(join(f.repo, 'AGENTS.md'), 'utf8'), /· en ·/);
   assert.equal(existsSync(join(f.repo, '.gitifact/wiki')), false);
   // The CLI language changes labels and skeletons, never what the user wrote.
-  success(f, ['docs', 'new', 'feature', 'original', '--title', '원래 기능', '--description', '사용자가 쓴 기능'], 'en');
-  const created = JSON.parse(success(f, ['docs', 'new', 'requirement', 'original/first', '--title', '원래 요구사항', '--description', '사용자가 쓴 설명', '--format', 'json'], 'en'));
+  success(f, ['specs', 'new', 'feature', 'original', '--title', '원래 기능', '--description', '사용자가 쓴 기능'], 'en');
+  const created = JSON.parse(success(f, ['specs', 'new', 'requirement', 'original/first', '--title', '원래 요구사항', '--description', '사용자가 쓴 설명', '--format', 'json'], 'en'));
   assert.match(readFileSync(join(f.repo, created.path), 'utf8'), /\ntitle: 원래 요구사항\ndescription: 사용자가 쓴 설명\norder: 10\ndraft: true\n---\n\nAs \(a user\)/);
-  const ko = JSON.parse(success(f, ['docs', 'show', created.id, '--format', 'json'], 'ko'));
-  const en = JSON.parse(success(f, ['docs', 'show', created.id, '--format', 'json'], 'en'));
+  const ko = JSON.parse(success(f, ['specs', 'show', created.id, '--format', 'json'], 'ko'));
+  const en = JSON.parse(success(f, ['specs', 'show', created.id, '--format', 'json'], 'en'));
   assert.deepEqual(en.documents, ko.documents);
-  assert.match(success(f, ['docs', 'list'], 'en'), /\(draft\)/); assert.match(success(f, ['docs', 'list'], 'ko'), /\(초안\)/);
+  assert.match(success(f, ['specs', 'list'], 'en'), /\(draft\)/); assert.match(success(f, ['specs', 'list'], 'ko'), /\(초안\)/);
   const notes = lang => parseChangelog(readFileSync(join(root, 'apps/cli/dist/i18n', lang, 'changelog.md'), 'utf8'));
   assert.deepEqual(notes('en').map(n => [n.version, n.date]), notes('ko').map(n => [n.version, n.date]));
   assert.deepEqual(readdirSync(join(root, 'apps/cli/dist/i18n/en/docs')).sort(), readdirSync(join(root, 'apps/cli/dist/i18n/ko/docs')).sort());

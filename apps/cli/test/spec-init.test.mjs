@@ -45,7 +45,7 @@ test('init refuses legacy records and malformed config without mutation', async 
 test('init writes no document, and the documents check accepts the new project', async t => {
   const f = fixture(t); call(f, ['init', '--skip-agents']);
   assert.deepEqual(readdirSync(join(f.repo, '.gitifact')).sort(), ['config.json']);
-  const check = spawnSync(process.execPath, [cli, 'docs', 'check'], { cwd: f.repo, env: { ...f.env, GITIFACT_LANG: 'ko' }, encoding: 'utf8' });
+  const check = spawnSync(process.execPath, [cli, 'check'], { cwd: f.repo, env: { ...f.env, GITIFACT_LANG: 'ko' }, encoding: 'utf8' });
   assert.equal(check.status, 0, check.stdout + check.stderr); assert.equal(check.stdout, '문제 없음 (문서 0개)\n');
 });
 test('interrupted init before publication cleans temp and can retry', async t => {

@@ -145,7 +145,7 @@ export async function commitChanges(cwd: string, input: unknown, dryRun: boolean
   if (pending.altered.length) fail(t('commit.recordAltered', { paths: pending.altered.join(', ') }));
   const chosen = new Map([...pending.files].filter(([path]) => selected.includes(path)));
 
-  // The same check as `docs check`, with the records this commit carries; records left for later commits may still be drafts.
+  // The same check as `check`, with the records this commit carries; records left for later commits may still be drafts.
   const checked = checkDocuments(new Map([...working.files, ...chosen]));
   const problems = [...working.problems, ...pending.problems.filter(p => chosen.has(p.path)), ...checked.problems];
   if (problems.length) throw new CommandError('DOCS_CHECK_FAILED', t('commit.checkFailed', { count: problems.length }), { problems }, problemLines(problems));

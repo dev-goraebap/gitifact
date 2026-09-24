@@ -2,7 +2,7 @@ import { lstat, readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { INSTRUCTION_FILE } from '@gitifact/core';
 
-// The files of one instruction folder in the working tree, for `docs show` and the browser. Links are neither listed
+// The files of one instruction folder in the working tree, for `instructions show` and the browser. Links are neither listed
 // nor followed: a folder that points elsewhere would let a read leave the project.
 
 /** How many files a folder lists; an instruction with more is marked as limited. */

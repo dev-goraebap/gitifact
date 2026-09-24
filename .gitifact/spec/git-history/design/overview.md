@@ -27,7 +27,7 @@ requirements:
 
 결정기록 하나는 `.gitifact/records/<yyyymmdd>/<DR-ID>.md` 파일 하나다. 프론트매터는 `id`(DR-)·`title`·`docs`와 선택 키 `draft`이고, 본문은 맥락·결정(필수)과 검토한 대안(선택) `##` 섹션뿐이다. 기록에는 종류가 없다(형식은 `gitifact guide show records`). 작성자·시각은 파일에 두지 않고 기록을 더한 커밋에서 읽는다. 기록은 결정한 때 `records new`가 초안(`draft: true`)으로 만들고 에이전트가 채운다. 기록이 파일마다 따로 있어 두 브랜치가 함께 기록을 더해도 병합 규칙 없이 합쳐진다.
 
-CLI는 HEAD와 작업 폴더의 문서를 파싱해 ID로 비교한다(core `compareDocumentSets`). 경로가 바뀌면 이동, 내용이 바뀌면 변경이며, 파일을 옮겨도 ID가 같으면 같은 문서다. 내용 비교는 CRLF를 LF로 맞춘 원문으로 한다. 아직 커밋하지 않은 기록은 모든 기록 파일을 읽지 않고 `.gitifact/records/`의 `git status`로 찾는다(`adapters/git/pending-records.ts`). 추적하지 않거나 새로 더한 파일이 새 기록이고, 커밋된 기록이 바뀌거나 사라졌으면 `RECORD_ALTERED`다. `docs check`는 이것을 문제로 알리고 `changes commit`은 거부한다.
+CLI는 HEAD와 작업 폴더의 문서를 파싱해 ID로 비교한다(core `compareDocumentSets`). 경로가 바뀌면 이동, 내용이 바뀌면 변경이며, 파일을 옮겨도 ID가 같으면 같은 문서다. 내용 비교는 CRLF를 LF로 맞춘 원문으로 한다. 아직 커밋하지 않은 기록은 모든 기록 파일을 읽지 않고 `.gitifact/records/`의 `git status`로 찾는다(`adapters/git/pending-records.ts`). 추적하지 않거나 새로 더한 파일이 새 기록이고, 커밋된 기록이 바뀌거나 사라졌으면 `RECORD_ALTERED`다. `check`는 이것을 문제로 알리고 `changes commit`은 거부한다.
 
 > [!IMPORTANT]
 > 커밋한 기록은 고치거나 지우지 않는다. 결정이 바뀌면 새 기록을 쓴다.
@@ -66,7 +66,7 @@ sequenceDiagram
 
 | 단계 | 내용 |
 | :--- | :--- |
-| 문서 검사 | 커밋될 파일에 `docs check`와 같은 검사를 돌린다. 문서와 선택한 기록에 남은 `draft: true`도 실패다. 기록이 가리키는 문서는 작업 폴더나 HEAD에 있어야 한다(이번 커밋이 지우는 문서는 가리킬 수 있다) |
+| 문서 검사 | 커밋될 파일에 `check`와 같은 검사를 돌린다. 문서와 선택한 기록에 남은 `draft: true`도 실패다. 기록이 가리키는 문서는 작업 폴더나 HEAD에 있어야 한다(이번 커밋이 지우는 문서는 가리킬 수 있다) |
 | 선택 확인 | 옮긴 문서는 옛 경로와 새 경로가 함께 `paths`에 있어야 한다. `.gitifact` 안에서는 문서·결정기록·`config.json`·에셋(core `isAssetPath`)만 커밋한다 |
 | 커밋 잠금 | `.git/gitifact-changes-commit.lock` 폴더를 만들고 `.git/index.lock`을 잡는다. `recovery.json`에 실행 전 HEAD·index·선택 경로·메시지를 적는다 |
 | 재확인 | 실제 index가 처음 읽은 것과 같고 staging이 비었는지, 선택 경로와 정책 파일(`AGENTS.md`·`CLAUDE.md`·`.gitignore`·`.gitattributes`와 각 상위 폴더의 같은 이름, `.gitifact/config.json`)이 입력을 받은 뒤 바뀌지 않았는지 본다 |
@@ -100,7 +100,7 @@ flowchart TD
 
 ## 이력 읽기
 
-`docs history`와 브라우저 결정기록 화면은 커밋별 문서 변경을 캐시(`.gitifact/cache/index.db`)에 한 번 계산해 둔 것을 읽는다. 커밋 100개 단위로 `git log --raw`와 `git cat-file --batch`로 읽고, 결정기록은 그 커밋이 더한 기록 파일만 읽는다. 읽는 방식은 [브라우저 데이터 설계](../../browser/design/data.md)에 있다.
+`records list`와 브라우저 결정기록 화면은 커밋별 문서 변경을 캐시(`.gitifact/cache/index.db`)에 한 번 계산해 둔 것을 읽는다. 커밋 100개 단위로 `git log --raw`와 `git cat-file --batch`로 읽고, 결정기록은 그 커밋이 더한 기록 파일만 읽는다. 읽는 방식은 [브라우저 데이터 설계](../../browser/design/data.md)에 있다.
 
 마이그레이션 커밋 이전 커밋은 0.7 파서로 읽고 0.7 이유를 그 커밋의 기록으로 보인다. 마이그레이션 커밋 자체는 결정기록 화면에 보이지 않는다. 기록 도입 전 이 저장소의 커밋이 `history.jsonl`에 더한 줄도 읽어, 첫 문장을 제목으로 하고 맥락 섹션만 있는 기록으로 보인다. 남은 0.7 코드는 읽기뿐이다. core `formats/store.ts`의 파서와 CLI `adapters/git/store-reader.ts`·`adapters/cache/legacy-changes.ts`다.
 

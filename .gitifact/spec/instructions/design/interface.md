@@ -1,24 +1,26 @@
 ---
 id: D-lapfibde2z
 title: 지침 명령과 API
-description: docs 명령의 지침, 체크아웃의 지침과 AGENTS.md, 지침 파일 API
+description: instructions 명령, 체크아웃의 지침과 AGENTS.md, 지침 파일 API
 order: 30
 requirements:
   - R-y5tidh72gk
   - R-hjteu77gki
+  - R-qrny2tacwz
 ---
 
 ## 명령
 
-지침은 다른 문서와 같은 `docs` 명령으로 다룬다. 지침만을 위한 명령은 없다.
+지침은 `instructions` 명령으로 다룬다. 목록의 공통 옵션(`--q`·`--sort`·`--limit`·`--fields`·`--format`)은 [문서 명령](../../specification/design/interface.md)과 같은 뜻이다.
 
-| 명령 | 지침에 대한 동작 |
+| 명령 | 동작 |
 | :--- | :--- |
-| `docs new instruction <이름> --title … --description …` | 폴더와 `index.md` 뼈대를 만들고 `I-` ID를 발급한다. 초안 표시는 `draft: true` |
-| `docs list [--kind instruction]` | 지침마다 ID·제목·폴더 이름·설명 |
-| `docs show <I-ID>` | `index.md` 원문, 가리키는 설계, 폴더의 다른 파일 목록(작업 트리에서만) |
-| `docs search` | 지침도 다른 문서와 함께 찾는다 |
-| `docs check`·`docs history <I-ID>` | data 설계의 검사와 이력 |
+| `instructions new <이름> --title … --description …` | 폴더와 `index.md` 뼈대를 만들고 `I-` ID를 발급한다. 초안 표시는 `draft: true` |
+| `instructions list` | 맨 앞에 루트 AGENTS.md가 있는지와 그 역할(어떤 작업에 어느 지침을 읽을지 알리는 색인), 이어서 지침마다 ID·제목·폴더 이름·설명과 `index.md` 밖 파일 수. `--sort`는 `name`(기본)·`updated` |
+| `instructions show <이름\|I-ID…>` | `index.md` 원문, 그 지침을 `sources`로 가리키는 설계, 폴더의 다른 파일 목록(작업 트리에서만). 이름은 폴더 이름이다. `--ref <커밋>`은 그 커밋의 원문 |
+| `instructions show <이름\|I-ID> --file <경로>` | 지침 폴더 안의 파일 하나(예: `references/code-style.md`)의 원문. 링크는 따라가지 않고, 512KB를 넘거나 텍스트가 아니면 원문 없이 크기만 알린다 |
+
+목록의 열은 `id`·`name`·`path`·`title`·`description`·`draft`·`files`(`index.md` 밖 파일 수)·`updated`·`line`이다. JSON은 `agents`(`{path, exists}`)와 `instructions`(행 목록), `problems`(읽지 못한 지침 파일)를 싣는다. 검사는 최상위 `check`, 결정 흐름은 `records list --doc <I-ID>`가 맡는다.
 
 AGENTS.md는 gitifact 문서가 아니다. 프로젝트가 블록 밖에 지침 색인을 쓰고, gitifact는 블록만 관리한다. 지침 형식과 색인 쓰는 법은 `guide show instructions`가 안내하며, 블록은 작업 전에 색인의 지침을 읽고 지침을 고치기 전에 이 안내를 읽으라고 알린다.
 

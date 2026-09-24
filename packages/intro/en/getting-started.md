@@ -122,12 +122,12 @@ Requirements, designs and instructions are Markdown files under `.gitifact/` tha
 
 | Command | Purpose |
 | :--- | :--- |
-| `npx gitifact docs list` | Features, requirements, designs and instructions (IDs, titles, descriptions, no bodies) |
-| `npx gitifact docs search <query>` | Search document bodies |
-| `npx gitifact docs show <ID>` | A document's source and the designs pointing to it; `--ref <commit>` for past text |
-| `npx gitifact docs history <ID>` | Decision records and commits for a document |
-| `npx gitifact docs new requirement <feature>/<name>` | Create a document with an issued ID and a skeleton |
-| `npx gitifact docs check` | Check format, IDs and references across all documents |
+| `npx gitifact specs list` | Features, requirements and designs (IDs, titles, descriptions, no bodies); filter with `--uncovered`, `--changed-since`, `--q` and more |
+| `npx gitifact instructions list` | AGENTS.md and the project instructions |
+| `npx gitifact specs show <ID>` | A document's source and the designs pointing to it; `--ref <commit>` for past text |
+| `npx gitifact records list --doc <ID>` | Decision records and commits for a document |
+| `npx gitifact specs new requirement <feature>/<name>` | Create a document with an issued ID and a skeleton |
+| `npx gitifact check` | Check format, IDs and references across all documents |
 | `npx gitifact changes list` | Documents changed since HEAD, uncommitted records, and changes without a record |
 | `npx gitifact changes commit --file <input-file> --dry-run` | Preview the commit without changing files |
 | `npx gitifact changes commit --file <input-file>` | Commit the selected documents, records and related files |

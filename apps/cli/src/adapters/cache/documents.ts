@@ -2,7 +2,7 @@ import { lstat, readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { DocumentError, classifyDocPath, docProblem, isWikiPage, parseDocumentFile, HISTORY_PATH, INSTRUCTIONS_ROOT, SPEC_ROOT, WIKI_ROOT, type Doc, type DocProblem } from '@gitifact/core';
 import { transaction, type CacheDatabase } from './database.js';
-import { plain } from './search-text.js';
+import { containing, plain, snippet } from './search-text.js';
 
 // A document file larger than this is not read; the check reports it instead. The walk stops at these many files.
 const FILE_LIMIT = 1024 * 1024;
@@ -133,6 +133,24 @@ export function createDocumentCache(root: string, database: CacheDatabase) {
         documents: (db.prepare('SELECT doc FROM documents ORDER BY path').all() as { doc: string }[]).map(r => JSON.parse(r.doc) as Doc),
         problems: (db.prepare('SELECT problem FROM files WHERE problem IS NOT NULL ORDER BY path').all() as { problem: string }[]).map(r => JSON.parse(r.problem) as DocProblem),
       }));
+    },
+    /**
+     * Every working document whose title, place, description or text holds the query, by ID with the line that
+     * matched: what `--q` of the lists filters by. The same search rows as the browser's search box.
+     */
+    async matching(raw: string): Promise<Map<string, string>> {
+      const query = raw.trim().toLowerCase();
+      if (!query) return new Map();
+      await sync();
+      return database.with(db => {
+        // Pattern characters are matched literally with instr, which scans but is never wrong; LIKE uses the index.
+        const literal = /[\\%_]/.test(query);
+        const match = (column: string) => literal ? `instr(${column}, ?) > 0` : `${column} LIKE ?`;
+        const needle = literal ? query : containing(query);
+        const rows = db.prepare(`SELECT payload FROM search WHERE scope = 'checkout' AND (${match('title')} OR ${match('place')} OR ${match('body')})`)
+          .all(needle, needle, needle) as { payload: string }[];
+        return new Map(rows.map(r => { const p = JSON.parse(r.payload) as { id: string; body: string }; return [p.id, snippet(p.body, query)]; }));
+      });
     },
     /** Documents that refer to `id` from their frontmatter: designs naming a requirement or a source. */
     async referencing(id: string): Promise<{ from: string; type: string }[]> {

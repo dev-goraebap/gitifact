@@ -28,7 +28,7 @@ sources:
 
 기록 파일은 모두 읽지 않는다. `git status --porcelain -z --untracked-files=all -- .gitifact/records`에서 추적되지 않거나 추가된 파일만 읽어 검사에 넘기고, 수정·삭제된 파일은 커밋된 기록이 바뀐 것으로 본다(`RECORD_ALTERED`). ID 중복은 새 기록의 ID가 다른 날짜 폴더에 있는지만 본다. 1MB를 넘는 기록, 링크, UTF-8이 아닌 파일은 문제로 알린다.
 
-`docs check`와 `changes list`는 커밋 전 기록을 모두 검사해 초안도 보인다. `changes commit`은 고른 기록만 검사하므로 다음 커밋을 기다리는 초안이 커밋을 막지 않는다. 작업 폴더에 `.gitifact/history.jsonl`이 있으면 `REASONS_FILE_REMOVED`다.
+`check`와 `changes list`는 커밋 전 기록을 모두 검사해 초안도 보인다. `changes commit`은 고른 기록만 검사하므로 다음 커밋을 기다리는 초안이 커밋을 막지 않는다. 작업 폴더에 `.gitifact/history.jsonl`이 있으면 `REASONS_FILE_REMOVED`다.
 
 ## 이력 캐시
 
@@ -41,4 +41,4 @@ sources:
 | 결정기록 이전 커밋 | 이유 파일에 더한 줄을 맥락 섹션만 있는 기록으로 읽는다. ID는 그 이유의 `H-` ID, 제목은 첫 문장(80자에서 자름), 본문은 맥락 섹션 |
 | 0.7 커밋 | 0.7 파서가 읽은 이유를 같은 방식으로 기록으로 바꾼다 |
 
-기록을 싣는 형식이 바뀌어 캐시 형식 번호를 올렸다. 검색 색인의 이력 행은 기록의 제목과 섹션 본문으로 찾는다. 기록 상세가 묻는 기록의 커밋(`history.commitOfRecord`)은 그 HEAD 계보의 이력 행 중 그 ID의 기록을 싣는 커밋이다. 커밋 전체 트리를 읽는 경로(`filesAt`, `docs show --ref`)는 기록 폴더를 읽지 않는다.
+기록을 싣는 형식이 바뀌어 캐시 형식 번호를 올렸다. 검색 색인의 이력 행은 기록의 제목과 섹션 본문으로 찾는다. 기록 상세가 묻는 기록의 커밋(`history.commitOfRecord`)은 그 HEAD 계보의 이력 행 중 그 ID의 기록을 싣는 커밋이다. 커밋 전체 트리를 읽는 경로(`filesAt`, `specs show --ref`)는 기록 폴더를 읽지 않는다.
