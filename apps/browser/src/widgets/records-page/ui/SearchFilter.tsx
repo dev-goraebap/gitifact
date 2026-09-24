@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { TextInput } from '@astryxdesign/core/TextInput';
 import { typingDelay } from '../../../shared/lib/search';
+import { SearchIcon } from '../../../shared/ui/icons/filter-icons';
 
 // The field owns what is typed and mirrors it to the URL. Bound straight to the URL, the router's asynchronous update
 // wrote an older value back while a Korean syllable was still being composed, which dropped or split the letters.
@@ -18,7 +19,7 @@ export function SearchFilter({ label, placeholder, value, onChange }: { label: s
     if (index >= 0) { pending.current.splice(0, index + 1); return; }
     pending.current = []; typed.current = value; setText(value);
   }, [value]);
-  return <TextInput label={label} isLabelHidden placeholder={placeholder} value={text} hasClear onChange={next => {
+  return <TextInput label={label} isLabelHidden placeholder={placeholder} value={text} startIcon={SearchIcon} hasClear onChange={next => {
     typed.current = next; setText(next);
     clearTimeout(send.current);
     send.current = setTimeout(() => { pending.current.push(next); onChange(next); }, typingDelay);
