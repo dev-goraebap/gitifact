@@ -1,3 +1,27 @@
+## 0.8.0 - 2026-09-24
+### Added
+- 프로젝트 지침: 아키텍처 규칙·검증 절차처럼 여러 기능에 걸친 일하는 방식을 `.gitifact/instructions/<이름>/`에 지침으로 두고, AGENTS.md 색인이 어떤 작업에 어느 지침을 읽을지 알립니다. 브라우저의 프로젝트 지침 화면에서 AGENTS.md와 지침, 지침 폴더의 파일을 읽습니다.
+- 결정기록: 기존 문서를 바꾸거나 여러 안 중 하나를 고르면 에이전트가 `records new`로 맥락·결정·검토한 대안을 `.gitifact/records/`에 남기고 문서와 함께 커밋합니다. 브라우저의 결정기록 화면에서 커밋·기록별로 읽고, `records list --doc <ID>`로 한 문서의 결정 흐름을 봅니다.
+- 문서 목록이 grep으로 알 수 없는 것을 골라 줍니다. `specs list`는 `--uncovered`(어떤 설계도 다루지 않는 요구사항), `--without-design`, `--draft`, `--changed-since <날짜|커밋>`, `--author`, `--q`로 거르고, 모든 목록은 `--fields`로 필요한 열만, `--format json`으로도 줍니다.
+- `feedback`: Gitifact의 버그나 개선을 말하면 에이전트가 초안을 보여 주고 확인받은 뒤 Gitifact 저장소에 이슈로 보냅니다. GitHub CLI(`gh`)가 없으면 내용을 채운 이슈 작성 페이지 주소를 알려 줍니다.
+- 브라우저 대시보드가 프로젝트 규모와 최신 결정기록을 보이고, 커밋 페이지가 문서 변경을 git 형식 비교로, 커밋이 바꾼 소스 파일과 함께 보입니다.
+- `guide show migrate`가 0.7 프로젝트를 새 문서 형식으로 옮기는 절차를 안내하고, `update`가 0.7 프로젝트에 전환이 필요하다고 알립니다.
+- 작업을 마치고 커밋하지 않은 채 다음 작업으로 넘어가면 에이전트가 커밋을 한 번 제안합니다.
+### Changed
+- 문서 형식(저장 규약 schemaVersion 3): 문서 하나가 파일 하나입니다. 기능 폴더에 `index.md`·`requirements/`·`design/`을 두고 ID·제목·관계는 프론트매터에 둡니다. 에이전트가 파일을 직접 고치고 `check`로 확인합니다. 0.7로 기록한 프로젝트는 `guide show migrate`로 한 번 옮겨야 합니다.
+- 명령을 리소스별로 정리했습니다: `specs`·`instructions`·`records`의 `list`·`show`·`new`, 전체 검사 `check`, 커밋 `changes list`·`commit`, 작성 지침 `guide list`·`show`.
+- 에이전트는 블록에 적힌 버전의 전역 `gitifact`를 씁니다. 명령이 없거나 버전이 다르면 설치를 제안하고, 그전에는 같은 버전의 npx로 실행합니다.
+- 브라우저의 제품 개요는 대시보드, 활동은 결정기록이 됐고 옛 주소(`/product`·`/activity`)는 없어졌습니다. 문서 목록과 본문의 글꼴을 Pretendard로 맞췄습니다.
+- 이력 색인을 작업 폴더의 `.gitifact/cache/index.db`에 둡니다. 커밋에서 빠지며 지워도 다시 만들어집니다.
+### Removed
+- 위키(`.gitifact/wiki/`): 프로젝트 지침으로 대신합니다. 남은 위키 페이지는 `check`가 알립니다.
+- `spec working`·`save`·`read`·`diff`·`changes`·`commit`, `docs <topic>`, `status`: 문서를 직접 고치는 방식과 `specs`·`changes`·`guide` 명령으로 대신합니다.
+- 변경 이유 파일 `history.jsonl`: 결정기록으로 대신합니다. 0.7 커밋의 이유는 이력에서 계속 읽습니다.
+- Tryce 시절 형식(`.tryce` 경로, `tryce-*` 마커, schemaVersion 1)과 이를 옮기던 `migrate` 명령.
+### Fixed
+- 브라우저의 좁은 화면에서 좌우 여백이 화면마다 달랐고, 필터와 기능 목록이 한 줄로 밀려 잘리던 문제를 고쳤습니다.
+- 한 커밋에서 여러 문서를 설명한 0.7 변경 이유가 결정기록 목록에 문서마다 되풀이되던 문제를 고쳤습니다.
+
 ## 0.7.1 - 2026-09-21
 ### Added
 - 에이전트가 새 세션에서 업데이트를 확인하고 사용자 동의 후 지침을 갱신하도록 안내합니다. 직접 확인할 때는 파일을 바꾸지 않는 `update --check`를 사용할 수 있습니다.

@@ -1,3 +1,27 @@
+## 0.8.0 - 2026-09-24
+### Added
+- Project instructions: ways of working that span features, such as architecture rules or verification steps, live as instructions under `.gitifact/instructions/<name>/`, and the AGENTS.md index says which one to read for which work. The browser's project instructions page shows AGENTS.md, the instructions and the files in their folders.
+- Decision records: when an existing document changes or one of several options is chosen, the agent writes the context, decision and alternatives considered under `.gitifact/records/` with `records new` and commits them with the documents. The browser's decision records page reads them by commit and record, and `records list --doc <ID>` shows one document's decisions.
+- Document lists pick what grep cannot see. `specs list` filters with `--uncovered` (requirements no design covers), `--without-design`, `--draft`, `--changed-since <date|commit>`, `--author` and `--q`, and every list gives only the columns you ask for with `--fields`, or JSON with `--format json`.
+- `feedback`: tell your agent about a Gitifact bug or idea and it shows you a draft, then sends it as an issue to the Gitifact repository once you confirm. Without the GitHub CLI (`gh`), you get the new-issue page with everything filled in.
+- The browser dashboard shows the project's size and latest decision records, and a commit page shows document changes as a git-style diff together with the source files the commit changed.
+- `guide show migrate` walks agents through moving a 0.7 project to the new document format, and `update` tells a 0.7 project that it needs the move.
+- When a task is finished but not committed and the next one begins, the agent suggests a commit once.
+### Changed
+- Document format (storage schemaVersion 3): one document per file. A feature folder holds `index.md`, `requirements/` and `design/`, and IDs, titles and relations live in the frontmatter. Agents edit the files directly and verify with `check`. Projects recorded with 0.7 need to be moved once with `guide show migrate`.
+- Commands are organized by resource: `list`, `show` and `new` of `specs`, `instructions` and `records`, the whole-set `check`, `changes list` and `commit`, and `guide list` and `show`.
+- Agents use the global `gitifact` at the version in the block. If it is missing or another version, they suggest installing it and run the same version through npx until then.
+- The browser's product overview became the dashboard and activity became decision records; the old addresses (`/product`, `/activity`) are gone. Document lists and bodies are set in Pretendard.
+- The history index lives in the working tree at `.gitifact/cache/index.db`. It stays out of commits and is rebuilt when deleted.
+### Removed
+- The wiki (`.gitifact/wiki/`), replaced by project instructions. `check` reports pages left there.
+- `spec working`, `save`, `read`, `diff`, `changes` and `commit`, `docs <topic>` and `status`, replaced by editing files directly and the `specs`, `changes` and `guide` commands.
+- The reason file `history.jsonl`, replaced by decision records. Reasons in 0.7 commits still show in the history.
+- The Tryce-era formats (`.tryce` paths, `tryce-*` markers, schemaVersion 1) and the `migrate` command that moved them.
+### Fixed
+- On narrow browser screens, the side gutters differed between screens and the filters and feature list overflowed a single row.
+- A 0.7 reason that explained several documents in one commit repeated once per document in the decision record list.
+
 ## 0.7.1 - 2026-09-21
 ### Added
 - Agent instructions now ask agents to check for updates at the start of a session and refresh the instructions with the user's consent. The new `update --check` command checks for updates without changing files.
