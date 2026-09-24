@@ -71,6 +71,12 @@ test('an instruction opens on index.md, reads the other files of its folder, and
   await expect(page.getByRole('region', { name: '이 지침을 따르는 설계' })).toContainText('검색 흐름');
   await article.getByRole('link', { name: '상시 지침' }).click();
   await expect(page).toHaveURL(/\/instructions\/agents$/);
+  // Both detail pages lead back to the list, as the other detail pages do.
+  await page.getByRole('article', { name: 'AGENTS.md' }).getByRole('link', { name: '← 프로젝트 지침' }).click();
+  await expect(page).toHaveURL(/\/instructions$/);
+  await page.goto('/instructions/' + I1);
+  await article.getByRole('link', { name: '← 프로젝트 지침' }).click();
+  await expect(page).toHaveURL(/\/instructions$/);
 });
 
 test('an unknown instruction says so and leads back; the search finds instructions', async ({ page }) => {

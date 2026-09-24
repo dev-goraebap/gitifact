@@ -25,6 +25,9 @@
 
 /* Detail: the heading, then the file list beside the file being read. */
 .heading { padding-block:var(--spacing-2) var(--spacing-6); }
+/* One way back to the list, as on the other detail pages. */
+.back { align-self:flex-start; font-size:.8125rem; text-decoration:none; color:var(--color-text-secondary); }
+.back:hover { text-decoration:underline; }
 .heading h1 { font-size:1.75rem; line-height:1.4; letter-spacing:-.025em; }
 .activity { font-size:.8125rem; }
 .reader { align-items:flex-start; border-top:1px solid var(--color-border); padding-top:var(--spacing-5); }

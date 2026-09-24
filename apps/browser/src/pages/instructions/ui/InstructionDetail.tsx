@@ -45,6 +45,7 @@ export function InstructionDetail({ instruction, color, file, features, session 
   const fileHref = (path?: string) => `/instructions/${encodeURIComponent(instruction.id)}${path ? '?file=' + encodeURIComponent(path) : ''}`;
   return <VStack as="article" gap={0} aria-label={instruction.title}>
     <VStack gap={3} className={styles.heading}>
+      <Link to="/instructions" className={styles.back}>{t('instructions.back')}</Link>
       <HStack gap={3} vAlign="center">
         <InstructionMark color={color} title={instruction.title} size="lg"/>
         <Heading level={1}>{instruction.title}</Heading>

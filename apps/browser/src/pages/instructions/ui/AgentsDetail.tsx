@@ -5,6 +5,7 @@ import { Heading } from '@astryxdesign/core/Heading';
 import { Text } from '@astryxdesign/core/Text';
 import { MetadataList, MetadataListItem } from '@astryxdesign/core/MetadataList';
 import { Timestamp } from '@astryxdesign/core/Timestamp';
+import { Link } from '@tanstack/react-router';
 import { DocumentBody } from '../../../shared/ui/document';
 import { InstructionMark } from './InstructionMark';
 import styles from './instructions.module.css';
@@ -18,6 +19,7 @@ export function AgentsDetail({ agents }: { agents: AgentsFile }) {
   useLanguage();
   return <VStack as="article" gap={0} aria-label="AGENTS.md">
     <VStack gap={3} className={styles.heading}>
+      <Link to="/instructions" className={styles.back}>{t('instructions.back')}</Link>
       <HStack gap={3} vAlign="center">
         <InstructionMark color="agents" title="AGENTS.md" size="lg"/>
         <Heading level={1}>AGENTS.md</Heading>
