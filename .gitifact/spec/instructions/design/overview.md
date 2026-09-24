@@ -20,6 +20,8 @@ sources:
 
 프로젝트 지침은 이 프로젝트에서 어떻게 일하는지를 담는 문서다. 지침 하나는 `.gitifact/instructions/<이름>/` 폴더이고 본문은 `index.md`, 긴 내용은 `references/` 아래 파일로 나눈다. AGENTS.md는 모든 세션이 읽는 상시 지침으로, 어떤 작업 때 어느 지침을 읽을지 짧게 알린다. gitifact는 지침의 ID·검사·이력·브라우저를 맡고, 지침을 읽고 따르는 일은 에이전트가 한다.
 
+에이전트가 지침을 읽게 하는 장치는 GITIFACT 블록의 규칙 한 줄, AGENTS.md 블록 밖 색인, `instructions list`(AGENTS.md와 지침마다 딸린 파일 수), 설계의 `sources`다. CLI는 작업 경로로 읽을 지침을 고르지 않고, 에이전트 훅으로 지침을 주입하지 않는다. 지침에는 경로 조건 같은 적용 조건 필드를 두지 않는다.
+
 ```mermaid
 flowchart LR
   A["AGENTS.md<br/>상시 지침 · 색인"] -->|"이 작업 때 읽는다"| I[".gitifact/instructions/&lt;이름&gt;/index.md"]
@@ -31,7 +33,7 @@ flowchart LR
 | 파일 | 다루는 것 |
 | :--- | :--- |
 | data | 폴더와 파일, 검사, 이력, 관계 |
-| interface | `docs` 명령, 체크아웃과 파일 API |
+| interface | `instructions` 명령, 체크아웃과 파일 API |
 | ui | 프로젝트 지침 화면 |
 
 ## 위키에서의 전환
