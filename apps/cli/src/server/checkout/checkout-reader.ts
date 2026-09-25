@@ -1,14 +1,16 @@
 import { StoreError, parseManagedConfig, docProblem, arrangeDocuments, INSTRUCTIONS_ROOT, type Doc, type DesignDoc } from '@gitifact/core';
-import { browserSpecsV6, type BrowserSpecsV6, type DesignSource } from '@gitifact/contracts';
+import { browserSpecsV7, type BrowserSpecsV7, type DesignSource } from '@gitifact/contracts';
 import { createGitRunner } from '../../adapters/git/run-git.js';
 import { storeReader } from '../../adapters/git/store-reader.js';
 import { readConfigFile } from '../../adapters/filesystem/config-file.js';
 import { readInstructionFiles } from '../../adapters/filesystem/instruction-folder.js';
 import { readAgentsFile } from '../../adapters/filesystem/agents-file.js';
 import { MIGRATION_TRAILER, type Cache } from '../../adapters/cache/index.js';
+import { documentStates, type DocumentStates } from '../../queries/document-states.js';
+import { createStampReader } from './stamp.js';
 import { t, getLanguage } from '../../shared/i18n/index.js';
 
-type Contributor = BrowserSpecsV6['contributors'][number];
+type Contributor = BrowserSpecsV7['contributors'][number];
 const tally = (people: Map<string, Contributor>, name: string, email: string, latest: string) => {
   const person = people.get(email); if (person) person.commits++; else people.set(email, { name, email, latest, commits: 1 });
 };
@@ -24,8 +26,13 @@ export async function settled<T extends readonly unknown[]>(reads: { [K in keyof
 }
 const folderOf = (path: string) => path.split('/').slice(0, 3).join('/');
 
-/** The documents in the shape the screens read: features with their requirements and designs in order, and the instructions. */
-function checkoutDocuments(documents: Doc[]) {
+/**
+ * The documents in the shape the screens read: features with their requirements and designs in order, and the
+ * instructions, each with where it stands against the last commit. Deleted documents are among them until committed.
+ */
+function checkoutDocuments(states: DocumentStates) {
+  const documents = states.documents;
+  const standing = (id: string) => { const previousPath = states.previousPath(id); return { state: states.state(id), ...(previousPath ? { previousPath } : {}) }; };
   const byId = new Map(documents.map(d => [d.id, d]));
   const source = (s: DesignDoc['sources'][number]): DesignSource => {
     if (!('id' in s)) return { title: s.title, url: s.url, ...(s.note ? { note: s.note } : {}) };
@@ -34,10 +41,11 @@ function checkoutDocuments(documents: Doc[]) {
   };
   const arranged = arrangeDocuments(documents);
   const features = arranged.features.map(({ index, requirements, designs }) => ({ id: index.id, path: index.path, title: index.title, description: index.description, body: index.body,
-    requirements: requirements.map(r => ({ id: r.id, path: r.path, title: r.title, description: r.description, order: r.order, body: r.body })),
+    ...standing(index.id),
+    requirements: requirements.map(r => ({ id: r.id, path: r.path, title: r.title, description: r.description, order: r.order, body: r.body, ...standing(r.id) })),
     designs: designs.map(d => ({ id: d.id, path: d.path, title: d.title, description: d.description, order: d.order, body: d.body,
-      requirements: d.requirements, sources: d.sources.map(source) })) }));
-  const instructions = arranged.instructions.map(k => ({ id: k.id, name: k.name, path: k.path, title: k.title, description: k.description, body: k.body }));
+      requirements: d.requirements, sources: d.sources.map(source), ...standing(d.id) })) }));
+  const instructions = arranged.instructions.map(k => ({ id: k.id, name: k.name, path: k.path, title: k.title, description: k.description, body: k.body, ...standing(k.id) }));
   return { features, instructions, orphans: arranged.orphans };
 }
 
@@ -55,7 +63,8 @@ export function createCheckoutReader(root: string, sessionId: string, cache: Cac
     if (!head) await reader.baseline();
     return head || null;
   };
-  const pending = new Map<string, Promise<{ checkout: BrowserSpecsV6; head: string | null }>>();
+  const pending = new Map<string, Promise<{ checkout: BrowserSpecsV7; head: string | null }>>();
+  const readStamp = createStampReader(root, inherited);
   // A format migration rewrites every document but is nobody's work on them: it counts toward no author or date.
   const notMigration = ['-E', '--invert-grep', `--grep=^${MIGRATION_TRAILER}: `];
 
@@ -94,6 +103,8 @@ export function createCheckoutReader(root: string, sessionId: string, cache: Cac
     if (!raw) throw new StoreError(t('specReader.schemaRequired'));
     parseManagedConfig(raw);
     const head = await readHead();
+    // Taken before the reads, so a change made while they run leaves the stamp behind and the browser says so.
+    const stamp = await readStamp();
     const [current, dirty, authors, everyone] = await settled([
       cache.documents.list(),
       head ? git(['status', '--porcelain=v1', '--', '.gitifact/spec', INSTRUCTIONS_ROOT]) : Promise.resolve(''),
@@ -107,20 +118,22 @@ export function createCheckoutReader(root: string, sessionId: string, cache: Cac
       const [name, email, latest] = line.split('\0'); if (!name || !email || !latest) throw new StoreError(t('specReader.authorUnreadable'));
       tally(people, name, email, latest);
     }
-    const arranged = checkoutDocuments(current.documents);
+    const states = await documentStates({ head: async () => head, reader }, current.documents);
+    const arranged = checkoutDocuments(states);
     const features = arranged.features.map(feature => {
       const entry = authors?.folders.get(folderOf(feature.path));
       return { ...feature, contributors: entry ? [...entry.people.values()].sort((a, b) => b.commits - a.commits) : [], updatedAt: entry?.latest ?? null };
     });
     const instructions = await Promise.all(arranged.instructions.map(async instruction => {
-      const { files, limited } = await readInstructionFiles(root, instruction.path);
+      // A deleted instruction's folder is gone; it lists no files until the commit takes it away.
+      const { files, limited } = instruction.state === 'deleted' ? { files: [], limited: false } : await readInstructionFiles(root, instruction.path);
       return { ...instruction, files, filesLimited: limited, updatedAt: authors?.instructions.get(instruction.path.split('/').slice(0, 3).join('/')) ?? null };
     }));
     const agentsText = await readAgentsFile(root);
     const agents = agentsText === null ? null : { path: 'AGENTS.md', body: agentsText, updatedAt: authors?.instructions.get('AGENTS.md') ?? null };
     const problems = [...current.problems, ...arranged.orphans.map(feature => docProblem('FEATURE_INDEX_REQUIRED', `.gitifact/spec/${feature}/index.md`, { feature }))];
     if (await readHead() !== head) throw new StoreError(t('specReader.projectChanged'));
-    const checkout = browserSpecsV6.parse({ contract: 'browser-specs', version: 6, sessionId, head, observedAt: new Date().toISOString(),
+    const checkout = browserSpecsV7.parse({ contract: 'browser-specs', version: 7, sessionId, head, observedAt: new Date().toISOString(), stamp,
       working: head ? !!dirty.trim() : features.length > 0 || instructions.length > 0, features, instructions, agents, problems,
       contributors: [...people.values()].sort((a, b) => b.commits - a.commits), contributorsLimited: lines.length > 10000 });
     return { checkout, head };

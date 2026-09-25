@@ -25,7 +25,7 @@ function payment(f) {
 }
 
 test('specs list shows frontmatter and referenced titles without bodies, narrowed by feature or type', t => {
-  const f = projectFixture(t); payment(f);
+  const f = projectFixture(t); payment(f); f.commit('Add payment');
   const spec = f.run(['specs', 'list']);
   assert.equal(spec.status, 0, spec.stderr);
   assert.equal(spec.stdout, [
@@ -54,6 +54,51 @@ test('specs list shows frontmatter and referenced titles without bodies, narrowe
   // A broken file is left out of the list and counted.
   writeFileSync(join(f.repo, paths.list), 'no frontmatter\n');
   assert.match(f.run(['specs', 'list']).stdout, /읽지 못한 문서 파일 1개/);
+});
+
+test('specs list says where each document stands against the last commit: a move by ID is one change, a deletion stays listed', t => {
+  const f = projectFixture(t); payment(f); f.commit('Add payment');
+  const R3 = 'R-hhhhhhhhhh';
+  writeFileSync(join(f.repo, paths.cancel), readFileSync(join(f.repo, paths.cancel), 'utf8').replace('7일', '14일'));
+  const moved = '.gitifact/spec/payment/requirements/search.md';
+  writeFileSync(join(f.repo, moved), readFileSync(join(f.repo, paths.list))); unlinkSync(join(f.repo, paths.list));
+  unlinkSync(join(f.repo, paths.overview));
+  put(f, { kind: 'requirement', path: '.gitifact/spec/payment/requirements/refund.md', id: R3, feature: 'payment', order: 30, title: '부분 환불', description: '일부 금액만 돌려준다', body: '구매자로서 일부만 환불받고 싶다.' });
+  const listed = f.ok(['specs', 'list']).documents;
+  assert.deepEqual(listed.map(d => [d.id, d.state, d.previousPath ?? null]),
+    [[S, 'committed', null], [R1, 'modified', null], [R2, 'modified', paths.list], [R3, 'added', null], [D1, 'deleted', null]]);
+  assert.equal(listed.find(d => d.id === D1).path, paths.overview);
+  const text = f.run(['specs', 'list']).stdout;
+  assert.match(text, new RegExp(`10 ${R1} 결제 취소 — 승인된 결제를 취소한다 \\(커밋 전: 변경\\)`));
+  assert.match(text, new RegExp(`30 ${R3} 부분 환불 — 일부 금액만 돌려준다 \\(커밋 전: 추가\\)`));
+  assert.match(text, new RegExp(`10 ${D1} 개요 — 취소 처리 흐름 \\(커밋 전: 삭제 예정\\)`));
+  assert.doesNotMatch(text, new RegExp(`\\[기능\\] ${S} 결제 \\(커밋`));
+  // The same states come out of a subfolder, where Git's own paths would be relative to it.
+  assert.deepEqual(f.ok(['specs', 'list'], { cwd: join(f.repo, '.gitifact') }).documents.map(d => d.state), ['committed', 'modified', 'modified', 'added', 'deleted']);
+  f.commit('Settle payment');
+  assert.deepEqual(f.ok(['specs', 'list']).documents.map(d => [d.id, d.state]), [[S, 'committed'], [R1, 'committed'], [R2, 'committed'], [R3, 'committed']]);
+});
+
+test('lists page by cursor: twenty by default, features whole, the next page after the cursor, a stale cursor refused', t => {
+  const f = projectFixture(t); payment(f);
+  put(f, { kind: 'feature', path: '.gitifact/spec/refund/index.md', id: 'S-ffffffffff', feature: 'refund', title: '환불', description: '환불 요청', body: '환불.' });
+  for (let i = 0; i < 22; i++) put(f, { kind: 'requirement', path: `.gitifact/spec/refund/requirements/r${i}.md`, id: 'R-' + 'k'.repeat(8) + 'a' + 'abcdefghijklmnopqrstuv'[i], feature: 'refund', order: 10 + i, title: '요구사항 ' + i, description: '설명', body: '구매자로서 원한다.' });
+  const first = f.ok(['specs', 'list', '--limit', '1']);
+  assert.deepEqual([first.documents.map(d => d.feature).filter((v, i, a) => a.indexOf(v) === i), first.page], [['payment'], { total: 2, next: S, unit: 'feature' }]);
+  assert.match(f.run(['specs', 'list', '--limit', '1']).stdout, new RegExp(`\\n기능 1/2개\\. 다음 페이지: 같은 명령에 --after ${S}\\n$`));
+  const second = f.ok(['specs', 'list', '--limit', '1', '--after', S]);
+  // A page of features carries all their documents, even past twenty.
+  assert.deepEqual([second.documents.length, second.page.next], [23, null]);
+  const flat = f.ok(['specs', 'list', '--sort', 'title']);
+  assert.deepEqual([flat.documents.length, flat.page.total, flat.page.unit], [20, 27, 'document']);
+  assert.equal(f.ok(['specs', 'list', '--sort', 'title', '--after', flat.page.next]).documents.length, 7);
+  assert.equal(f.ok(['specs', 'list', '--sort', 'title', '--all']).documents.length, 27);
+  // The line that says more follow stays off a tab-separated answer and goes to stderr.
+  const fields = f.run(['specs', 'list', '--sort', 'title', '--fields', 'id']);
+  assert.equal(fields.stdout.split('\n').filter(Boolean).length, 20); assert.match(fields.stderr, /항목 20\/27개/);
+  const stale = f.run(['specs', 'list', '--after', 'S-zzzzzzzzzz', '--format', 'json']);
+  assert.equal(stale.status, 1); assert.equal(JSON.parse(stale.stderr).error.code, 'INVALID_VALUE');
+  assert.notEqual(f.run(['specs', 'list', '--all', '--limit', '3']).status, 0);
 });
 
 test('specs list picks rows by relation, state and history, sorts them and prints only the fields asked for', t => {
@@ -224,6 +269,14 @@ test('records new writes a draft; records list --doc reads the records behind a 
   assert.deepEqual(f.ok(['records', 'list', '--author', 'fixture']).records.map(r => r.id), [extend.id, made.id]);
   assert.deepEqual(f.ok(['records', 'list', '--since', 'HEAD~1']).records.map(r => r.id), [pending.id, extend.id]);
   assert.equal(f.run(['records', 'list', '--fields', 'id,docs', '--limit', '1']).stdout, `${pending.id}\t${R2}\n`);
+  // Pages run from the records not committed yet on into the committed ones, the cursor being the last ID shown.
+  const page1 = f.ok(['records', 'list', '--limit', '2']);
+  assert.deepEqual([page1.records.map(r => r.id), page1.page], [[pending.id, extend.id], { total: 3, next: extend.id, unit: 'record' }]);
+  const page2 = f.ok(['records', 'list', '--limit', '2', '--after', page1.page.next]);
+  assert.deepEqual([page2.records.map(r => r.id), page2.page.next], [[made.id], null]);
+  assert.match(f.run(['records', 'list', '--limit', '2']).stdout, new RegExp(`결정기록 2/3개\\. 다음 페이지: 같은 명령에 --after ${extend.id}\\n$`));
+  assert.equal(f.ok(['records', 'list', '--limit', '1', '--after', pending.id]).records[0].id, extend.id);
+  assert.equal(JSON.parse(f.run(['records', 'list', '--after', 'DR-zzzzzzzzzz', '--format', 'json']).stderr).error.code, 'INVALID_VALUE');
   rmSync(join(f.repo, pending.path));
   const shown = f.run(['records', 'list', '--doc', R1]);
   assert.equal(shown.status, 0, shown.stderr);

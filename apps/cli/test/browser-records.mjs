@@ -18,10 +18,13 @@ export function openRecords(root, env, limit = 100) {
   async function read() {
     const { checkout: current } = await checkout();
     if (!current.head) return { ...current, events: [], total: 0 };
-    const page = await cache.history.page(current.head, {}, 0, limit);
-    return { ...current, events: page.events, total: page.total };
+    // History comes a page of whole commits at a time; the fixture reads on until it has `limit` changes.
+    let events = []; let after; let total = 0;
+    do { const page = await cache.history.commits(current.head, {}, after, 50); total = page.total; events.push(...page.events); after = page.next ?? undefined; }
+    while (after && events.length < limit);
+    return { ...current, events: events.slice(0, limit), total };
   }
-  read.change = async key => (await cache.history.ofCommit(key.slice(0, key.indexOf(':')))).find(c => c.event.key === key);
+  read.change = key => cache.history.commitChange(key.slice(0, key.indexOf(':')), key.slice(key.indexOf(':') + 1));
   read.history = cache.history;
   read.cache = cache;
   read.checkout = checkout;

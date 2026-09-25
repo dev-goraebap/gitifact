@@ -3,6 +3,8 @@ import type { ReactNode } from 'react';
 import { VStack } from '@astryxdesign/core/VStack';
 import { HStack } from '@astryxdesign/core/HStack';
 import { Text } from '@astryxdesign/core/Text';
+import type { DocumentState } from '@gitifact/contracts';
+import { StateToken } from '../../../entities/document';
 import { PageState } from '../../../shared/ui/page-state';
 import { RouterLink } from '../../../shared/ui/router-link/RouterLink';
 import { InstructionMark } from './InstructionMark';
@@ -28,18 +30,19 @@ export function InstructionList({ instructions, agents }: { instructions: SpecIn
     <Text type="supporting" color="secondary" className={styles.groupLabel}>{t('instructions.byWork', { count: instructions.length })}</Text>
     {instructions.length ? <VStack as="ul" gap={0} aria-label={t('instructions.byWorkLabel')} className={styles.rows}>
       {[...instructions].sort((a, b) => a.name.localeCompare(b.name)).map(instruction => <Row key={instruction.id} href={`/instructions/${encodeURIComponent(instruction.id)}`}
-        color={colors.get(instruction.id)} title={instruction.title} name={instruction.name} description={instruction.description}/>)}
+        color={colors.get(instruction.id)} title={instruction.title} name={instruction.name} description={instruction.description} state={instruction.state}/>)}
     </VStack> : <Text type="supporting" color="secondary">{t('instructions.noneYet')}</Text>}
   </VStack>;
 }
 
-function Row({ href, color, title, name, description }: { href: string; color: InstructionColor | 'agents' | undefined; title: string; name?: string; description: ReactNode }) {
-  return <li>
+function Row({ href, color, title, name, description, state = 'committed' }: { href: string; color: InstructionColor | 'agents' | undefined; title: string; name?: string; description: ReactNode; state?: DocumentState }) {
+  return <li data-state={state === 'committed' ? undefined : state}>
     <RouterLink href={href} className={styles.row}>
       <InstructionMark color={color} title={title} size="lg"/>
       <VStack gap={0.5} className={styles.rowText}>
         <HStack gap={2} className={styles.rowHead}>
-          <Text weight="semibold" className={styles.rowTitle}>{title}</Text>
+          <Text weight="semibold" className={styles.rowTitle} data-state-title>{title}</Text>
+          <StateToken state={state}/>
           {name && name !== title && <Text type="supporting" color="secondary" className={styles.clip}>{name}</Text>}
         </HStack>
         <Text type="supporting" color="secondary" className={styles.clip}>{description}</Text>

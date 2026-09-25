@@ -28,7 +28,7 @@ test('0.7 activity stays in the history after a migration, the migration itself 
   const bob = commit('Bob', 'Refine');
   // A cache built before the migration reads these commits as the current format and finds nothing in them.
   const early = openRecords(f.repo, f.env);
-  assert.equal((await early.history.page(bob, {}, 0, 50)).total, 0);
+  assert.equal((await early.history.commits(bob, {}, undefined, 50)).total, 0);
 
   // The migration: the old files go, the new ones keep the IDs, the wiki page becomes an instruction, and the commit carries the trailer.
   rmSync(join(f.repo, '.gitifact/wiki'), { recursive: true });
@@ -52,7 +52,7 @@ test('0.7 activity stays in the history after a migration, the migration itself 
   const legacy = await read.change(bob + ':' + R);
   assert.deepEqual([legacy.before.body, legacy.after.body, legacy.after.kind, legacy.after.specId], ['First', 'Second', 'requirement', S]);
   // The same cache that read these commits before the migration reads them again with the 0.7 parser.
-  assert.equal((await early.history.page(carol, {}, 0, 50)).total, 4);
+  assert.equal((await early.history.commits(carol, {}, undefined, 50)).total, 4);
   // Authors and dates leave the migration out: the maintainer did not write these documents.
   assert.deepEqual(result.features[0].contributors.map(p => p.name).sort(), ['Ann', 'Bob', 'Carol']);
   assert.equal(result.contributors.some(p => p.name === 'Maintainer'), false);

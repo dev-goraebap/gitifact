@@ -17,13 +17,27 @@ test('dry-run is read-only; unborn init is complete, repeatable and preserves by
   assert.equal((await init(f, { dryRun: true })).outcome, 'planned');
   assert.deepEqual(fingerprint(f.repo), before);
   const created = await init(f);
-  assert.equal(created.outcome, 'created'); assert.equal(created.version, 7); assert.deepEqual(created.baseline, { kind: 'empty' });
+  assert.equal(created.outcome, 'created'); assert.equal(created.version, 8); assert.deepEqual(created.baseline, { kind: 'empty' });
   assert.deepEqual(created.agentDocs, { mode: 'skip', paths: [] });
+  assert.deepEqual(created.lineEndings, { path: '.gitifact/.gitattributes', created: true });
   preserved(before, fingerprint(f.repo));
-  assert.deepEqual(readdirSync(join(f.repo, '.gitifact')), ['config.json']);
+  assert.deepEqual(readdirSync(join(f.repo, '.gitifact')).sort(), ['.gitattributes', 'config.json']);
+  assert.match(readFileSync(join(f.repo, '.gitifact', '.gitattributes'), 'utf8'), /^\* text=auto eol=lf$/m);
   const bytes = readFileSync(path(f));
-  assert.equal((await init(f)).outcome, 'already-initialized');
+  const again = await init(f);
+  assert.equal(again.outcome, 'already-initialized'); assert.equal(again.lineEndings.created, false);
   assert.deepEqual(readFileSync(path(f)), bytes);
+});
+
+test('line endings: an existing attributes file is kept, a missing one is written on the next init', async t => {
+  const f = fixture(t);
+  await init(f); writeFileSync(join(f.repo, '.gitifact', '.gitattributes'), '*.md text\n');
+  assert.equal((await init(f)).lineEndings.created, false);
+  assert.equal(readFileSync(join(f.repo, '.gitifact', '.gitattributes'), 'utf8'), '*.md text\n');
+  unlinkSync(join(f.repo, '.gitifact', '.gitattributes'));
+  assert.equal((await init(f, { dryRun: true })).lineEndings.created, false);
+  assert.equal(existsSync(join(f.repo, '.gitifact', '.gitattributes')), false);
+  assert.equal((await init(f)).lineEndings.created, true);
 });
 
 test('agent docs block is planned, created, refreshed and removed through init', async t => {
@@ -114,7 +128,7 @@ test('parallel init publishes one config', async t => {
   const f = fixture(t);
   const results = await Promise.all([init(f), init(f)]);
   assert.deepEqual(results.map(r => r.outcome).sort(), ['already-initialized', 'created']);
-  assert.deepEqual(readdirSync(join(f.repo, '.gitifact')), ['config.json']);
+  assert.deepEqual(readdirSync(join(f.repo, '.gitifact')).sort(), ['.gitattributes', 'config.json']);
   assert.equal(JSON.parse(readFileSync(path(f), 'utf8')).schemaVersion, 3);
   // Records are one file each and merge without a rule, so init leaves .gitattributes alone.
   assert.equal(existsSync(join(f.repo, '.gitattributes')), false);

@@ -53,7 +53,7 @@ for (const format of ['sha1', 'sha256']) test(`merged wiki, design and requireme
   assert.ok(edits.every(e => e.author === 'Sujeong' && e.email === 'Sujeong@example.invalid'));
   assert.deepEqual(reasonsOf(edits.find(e => e.id === wid)), ['Guide reason']);
   assert.deepEqual(reasonsOf(edits.find(e => e.id === rid)), ['Original reason']);
-  assert.equal((await records.history.page(merge, { author: 'Sujeong@example.invalid' }, 0, 50)).total, 3);
+  assert.equal((await records.history.commits(merge, { author: 'Sujeong@example.invalid' }, undefined, 50)).total, 3);
   assert.equal((await records.history.summary(merge)).recent[0].commit, original);
   assert.equal((await records.cache.search(merge, 'Guide reason')).find(h => h.kind === 'history').key, original + ':' + wid);
   assert.equal((await records.change(original + ':' + rid)).after.body, 'Sujeong change');
@@ -63,8 +63,8 @@ for (const format of ['sha1', 'sha256']) test(`merged wiki, design and requireme
   const db = new DatabaseSync(join(f.repo, '.gitifact/cache/index.db'));
   db.exec("UPDATE changes SET email = 'wrong@example.invalid'; PRAGMA user_version = 0"); db.close();
   const fresh = openRecords(f.repo, f.env).history;
-  assert.equal((await fresh.page(merge, { author: 'Sujeong@example.invalid' }, 0, 50)).total, 3);
-  assert.equal((await fresh.page(merge, { author: 'wrong@example.invalid' }, 0, 50)).total, 0);
+  assert.equal((await fresh.commits(merge, { author: 'Sujeong@example.invalid' }, undefined, 50)).total, 3);
+  assert.equal((await fresh.commits(merge, { author: 'wrong@example.invalid' }, undefined, 50)).total, 0);
 });
 
 test('automatic combinations within one requirement are not attributed to the merger', async t => {

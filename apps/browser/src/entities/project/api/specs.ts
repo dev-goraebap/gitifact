@@ -1,5 +1,6 @@
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
-import { browserSpecsV6, browserHistoryV5, browserHistorySummaryV4, browserSearchV2, browserCommitFilesV1, browserCommitFileV1, browserCommitV3, browserInstructionFileV1, browserRecordV1, type BrowserSessionV3 } from '@gitifact/contracts';
+import { browserSpecsV7, browserHistoryV6, browserHistorySummaryV4, browserSearchV2, browserCommitFilesV1, browserCommitFileV1, browserCommitV4, browserCommitChangeV1, browserInstructionFileV1,
+  browserRecordV1, browserStampV1, browserWorkingV1, browserWorkingChangeV1, type BrowserSessionV3 } from '@gitifact/contracts';
 import { requestJson, ApiError } from '../../../shared/api/client';
 import { httpFailure } from './repository';
 import { t } from '../../../shared/i18n';
@@ -23,25 +24,50 @@ const scope = (session: BrowserSessionV3) => [window.location.origin, session.se
  * that shows specs shares it, and the header's refresh button is how this project says an observation is explicit.
  */
 export const specsOptions = (session: BrowserSessionV3) => queryOptions({
-  queryKey: ['browser-specs', 6, ...scope(session)],
+  queryKey: ['browser-specs', 7, ...scope(session)],
   staleTime: Infinity, retry: false,
-  queryFn: ({ signal }) => read(session, '/api/v1/specs', browserSpecsV6, signal),
+  queryFn: ({ signal }) => read(session, '/api/v1/specs', browserSpecsV7, signal),
 });
 
 /**
- * Changes of `head`'s history that match the filters, fifty at a time. The server filters and counts over all of
- * history, so a filter finds what was never loaded and `total` is the whole count. A HEAD's history never changes,
- * so its pages are kept for the session.
+ * A fingerprint of HEAD and the uncommitted documents, asked for when the reader comes back to the tab. Never kept:
+ * each question is a new answer, compared with the stamp the checkout was read at.
  */
-export const historyOptions = (session: BrowserSessionV3, head: string, filter: HistoryFilter, limit = 50) => infiniteQueryOptions({
-  queryKey: ['browser-history', 4, ...scope(session), head, filter, limit],
-  initialPageParam: 0, staleTime: Infinity, retry: false,
+export const stampOptions = (session: BrowserSessionV3) => queryOptions({
+  queryKey: ['browser-stamp', 1, ...scope(session)],
+  staleTime: 0, gcTime: 0, retry: false,
+  queryFn: ({ signal }) => read(session, '/api/v1/stamp', browserStampV1, signal),
+});
+
+/** What is not committed yet: records and changed documents. Worked out anew by the server; kept like the checkout. */
+export const workingOptions = (session: BrowserSessionV3) => queryOptions({
+  queryKey: ['browser-working', 1, ...scope(session)],
+  staleTime: Infinity, retry: false,
+  queryFn: ({ signal }) => read(session, '/api/v1/working', browserWorkingV1, signal),
+});
+
+/** One uncommitted change with the document at HEAD and as the file is now, read when the reader opens it. */
+export const workingChangeOptions = (session: BrowserSessionV3, id: string) => queryOptions({
+  queryKey: ['browser-working-change', 1, ...scope(session), id],
+  staleTime: Infinity, retry: false,
+  queryFn: ({ signal }) => read(session, '/api/v1/working/change?id=' + encodeURIComponent(id), browserWorkingChangeV1, signal),
+});
+
+/**
+ * Changes of `head`'s history that match the filters, twenty commits at a time, each commit whole. The server filters
+ * and counts over all of history, so a filter finds what was never loaded and `total` is the whole count. Each page
+ * starts after the last commit of the one before. A HEAD's history never changes, so its pages are kept for the session.
+ */
+export const historyOptions = (session: BrowserSessionV3, head: string, filter: HistoryFilter, limit = 20) => infiniteQueryOptions({
+  queryKey: ['browser-history', 6, ...scope(session), head, filter, limit],
+  initialPageParam: undefined as string | undefined, staleTime: Infinity, retry: false,
   queryFn: ({ signal, pageParam }) => {
-    const query = new URLSearchParams({ head, offset: String(pageParam), limit: String(limit) });
+    const query = new URLSearchParams({ head, limit: String(limit) });
+    if (pageParam) query.set('after', pageParam);
     for (const [key, value] of Object.entries(filter)) if (value) query.set(key, value);
-    return read(session, '/api/v1/history?' + query, browserHistoryV5, signal);
+    return read(session, '/api/v1/history?' + query, browserHistoryV6, signal);
   },
-  getNextPageParam: last => last.offset + last.events.length < last.total ? last.offset + last.events.length : undefined,
+  getNextPageParam: last => last.next ?? undefined,
 });
 
 /** Counts over all of `head`'s history and its newest commits, for the overview. */
@@ -51,11 +77,26 @@ export const summaryOptions = (session: BrowserSessionV3, head: string) => query
   queryFn: ({ signal }) => read(session, '/api/v1/history/summary?head=' + head, browserHistorySummaryV4, signal),
 });
 
-/** One commit with every document it changed and the text on both sides: what its page reads. A commit never changes. */
-export const commitOptions = (session: BrowserSessionV3, commit: string) => queryOptions({
-  queryKey: ['browser-commit', 2, ...scope(session), commit],
+/**
+ * One commit and the documents it changed, twenty at a time and without their text: what its page lists. `limit`
+ * reads more at once, as the record page does to find every document its record explains. A commit never changes.
+ */
+export const commitOptions = (session: BrowserSessionV3, commit: string, limit = 20) => infiniteQueryOptions({
+  queryKey: ['browser-commit', 4, ...scope(session), commit, limit],
+  initialPageParam: undefined as string | undefined, staleTime: Infinity, retry: false,
+  queryFn: ({ signal, pageParam }) => {
+    const query = new URLSearchParams({ commit, limit: String(limit) });
+    if (pageParam) query.set('after', pageParam);
+    return read(session, '/api/v1/commit?' + query, browserCommitV4, signal);
+  },
+  getNextPageParam: last => last.next ?? undefined,
+});
+
+/** One document a commit changed with the text on both sides, read from Git when the reader opens it. */
+export const commitChangeOptions = (session: BrowserSessionV3, commit: string, id: string) => queryOptions({
+  queryKey: ['browser-commit-change', 1, ...scope(session), commit, id],
   staleTime: Infinity, retry: false,
-  queryFn: ({ signal }) => read(session, '/api/v1/commit?commit=' + commit, browserCommitV3, signal),
+  queryFn: ({ signal }) => read(session, '/api/v1/commit/change?' + new URLSearchParams({ commit, id }), browserCommitChangeV1, signal),
 });
 
 /** Which commit of `head` added a record. History of one HEAD never changes, so the answer is kept. */

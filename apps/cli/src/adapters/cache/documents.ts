@@ -21,20 +21,27 @@ const place = (doc: Doc) => doc.path.replace(/^\.gitifact\//, '');
 export function createDocumentCache(root: string, database: CacheDatabase) {
   let syncing: Promise<void> | undefined;
 
+  /**
+   * Every file under the document roots with its modification time and size. The entries of a folder are looked at
+   * side by side: opening files is what a walk costs, and asking for many at once is about three times faster than
+   * one after another. The result is sorted by path, so it does not depend on which answer came first.
+   */
   async function walk(): Promise<Map<string, Seen>> {
-    const found = new Map<string, Seen>();
-    async function visit(relative: string, depth: number) {
+    const found: [string, Seen][] = [];
+    async function visit(relative: string, depth: number): Promise<void> {
       const info = await lstat(join(root, ...relative.split('/'))).catch(error => { if (error.code === 'ENOENT') return undefined; throw error; });
-      if (!info || found.size >= COUNT_LIMIT) return;
+      // Past the limit the walk keeps going a little so the files kept are the first by path, not the first to answer.
+      if (!info || found.length >= 2 * COUNT_LIMIT) return;
       if (info.isDirectory() && !info.isSymbolicLink()) {
         if (depth > 10) return;
-        for (const name of (await readdir(join(root, ...relative.split('/')))).sort()) await visit(relative + '/' + name, depth + 1);
+        await Promise.all((await readdir(join(root, ...relative.split('/')))).map(name => visit(relative + '/' + name, depth + 1)));
         return;
       }
-      found.set(relative, { mtime: info.mtimeMs, size: info.size, link: info.isSymbolicLink() || !info.isFile() });
+      found.push([relative, { mtime: info.mtimeMs, size: info.size, link: info.isSymbolicLink() || !info.isFile() }]);
     }
-    await visit(SPEC_ROOT, 0); await visit(WIKI_ROOT, 0); await visit(INSTRUCTIONS_ROOT, 0);
-    return found;
+    await Promise.all([visit(SPEC_ROOT, 0), visit(WIKI_ROOT, 0), visit(INSTRUCTIONS_ROOT, 0)]);
+    found.sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0);
+    return new Map(found.slice(0, COUNT_LIMIT));
   }
 
   async function read(path: string, seen: Seen): Promise<{ doc?: Doc; problem?: DocProblem }> {
@@ -112,18 +119,20 @@ export function createDocumentCache(root: string, database: CacheDatabase) {
       const seen = await walk();
       const history = await lstat(join(root, ...HISTORY_PATH.split('/'))).catch(error => { if (error.code === 'ENOENT') return undefined; throw error; });
       if (history) seen.set(HISTORY_PATH, { mtime: history.mtimeMs, size: history.size, link: history.isSymbolicLink() || !history.isFile() });
-      const files = new Map<string, string>(); const problems: DocProblem[] = [];
-      for (const [path, s] of seen) {
-        if (!readable(path)) continue;
+      // Read side by side, then gathered in path order so the result does not depend on which read finished first.
+      const read = await Promise.all([...seen].map(async ([path, s]): Promise<{ path: string; text?: string; problem?: DocProblem }> => {
+        if (!readable(path)) return { path };
         // The other files of an instruction folder are references and images: the check needs their paths, and the
         // text of the Markdown ones only, for the links an instruction must not make.
-        if (instructionFile(path) && !path.endsWith('.md')) { files.set(path, ''); continue; }
-        if (s.link) { problems.push(docProblem('PATH_UNSUPPORTED', path)); continue; }
+        if (instructionFile(path) && !path.endsWith('.md')) return { path, text: '' };
+        if (s.link) return { path, problem: docProblem('PATH_UNSUPPORTED', path) };
         // The reason file grows with every commit, so it alone may pass the one-document limit.
-        if (s.size > (path === HISTORY_PATH ? 64 * FILE_LIMIT : FILE_LIMIT)) { problems.push(docProblem('FILE_TOO_LARGE', path)); continue; }
-        try { files.set(path, decode(await readFile(join(root, ...path.split('/'))))); }
-        catch (error) { if (error instanceof TypeError) problems.push(docProblem('INVALID_CHARACTERS', path)); else throw error; }
-      }
+        if (s.size > (path === HISTORY_PATH ? 64 * FILE_LIMIT : FILE_LIMIT)) return { path, problem: docProblem('FILE_TOO_LARGE', path) };
+        try { return { path, text: decode(await readFile(join(root, ...path.split('/')))) }; }
+        catch (error) { if (error instanceof TypeError) return { path, problem: docProblem('INVALID_CHARACTERS', path) }; throw error; }
+      }));
+      const files = new Map<string, string>(); const problems: DocProblem[] = [];
+      for (const r of read) { if (r.text !== undefined) files.set(r.path, r.text); if (r.problem) problems.push(r.problem); }
       return { files, problems };
     },
     /** Every readable document of the working tree and the files that could not be read, after a sync. */

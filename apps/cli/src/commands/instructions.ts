@@ -2,25 +2,29 @@ import { lstat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { INSTRUCTIONS_ROOT, type InstructionDoc } from '@gitifact/core';
 import { readInstructionFile, readInstructionFiles } from '../adapters/filesystem/instruction-folder.js';
-import { committed, createDocument, draftMark, fileLine, showDocuments, working } from './documents.js';
-import { byAuthor, checkFields, selected, type Change, type ListOptions } from './list-options.js';
+import { committed, createDocument, draftMark, fileLine, showDocuments, stateMark, working } from './documents.js';
+import { documentStates } from '../queries/document-states.js';
+import { byAuthor, checkFields, aside, pageLine, paginate, selected, type Change, type ListOptions } from './list-options.js';
 import { CommandError, runCommand, text, type Format } from './output.js';
 import { openProject, type Project } from './project.js';
 import { t } from '../shared/i18n/index.js';
 
 export const instructionSorts = ['name', 'updated'] as const;
-const columns = ['id', 'name', 'path', 'title', 'description', 'draft', 'files', 'updated', 'line'] as const;
+const columns = ['id', 'name', 'path', 'title', 'description', 'draft', 'state', 'previousPath', 'files', 'updated', 'line'] as const;
 const AGENTS = 'AGENTS.md';
 
 /**
  * `instructions list`: where AGENTS.md is, since its index says which instruction a kind of work reads, then each
  * instruction with the files of its folder besides index.md, each by its title and description, so an agent opens
- * only the ones the work needs.
+ * only the ones the work needs. Each says where it stands against the last commit, and an instruction deleted since is
+ * listed as to be deleted; its folder is gone, so it lists no files.
  */
 export const runInstructionsList = (options: ListOptions & { sort: typeof instructionSorts[number] }) => runCommand('instructions', options.format, async () => {
   const fields = checkFields(options.fields, columns);
   const project = await openProject(process.cwd());
-  const { documents, problems } = await project.cache.documents.list();
+  const listed = await project.cache.documents.list(); const problems = listed.problems;
+  const states = await documentStates(project, listed.documents);
+  const documents = states.documents;
   const agents = { path: AGENTS, exists: !!(await lstat(join(project.root, AGENTS)).catch(() => undefined))?.isFile() };
   const historyNeeded = options.sort === 'updated' || options.author !== undefined || !!fields?.includes('updated');
   const latest = new Map<string, Change>();
@@ -38,31 +42,36 @@ export const runInstructionsList = (options: ListOptions & { sort: typeof instru
     .filter(d => (!touched || touched.has(d.id)) && (!matched || matched.has(d.id)))
     .sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
   const rows = await Promise.all(instructions.map(async d => {
-    const { files, limited } = await readInstructionFiles(project.root, d.path);
+    const state = states.state(d.id);
+    const { files, limited } = state === 'deleted' ? { files: [], limited: false } : await readInstructionFiles(project.root, d.path);
     return {
       id: d.id, name: d.name, path: d.path, title: d.title, description: d.description, ...(d.draft ? { draft: true } : {}),
+      state, ...(states.previousPath(d.id) ? { previousPath: states.previousPath(d.id) } : {}),
       files, ...(limited ? { filesLimited: true } : {}),
       ...(historyNeeded ? { updated: latest.get(d.id) ?? null } : {}),
       ...(matched ? { line: matched.get(d.id)! } : {}),
     };
   }));
   if (options.sort === 'updated') rows.sort((a, b) => (newest.get(a.id) ?? Infinity) - (newest.get(b.id) ?? Infinity));
-  const shown = options.limit === undefined ? rows : rows.slice(0, options.limit);
+  const page = paginate(rows, r => r.id, options); const shown = page.rows;
+  const paging = { total: page.total, next: page.next, unit: 'instruction' as const };
   const unreadable = problems.filter(p => p.path.startsWith(INSTRUCTIONS_ROOT + '/'));
   if (fields) {
     // A text cell names the files by path; JSON keeps them whole.
     const picked = selected(shown, fields);
-    return { json: { agents, instructions: picked.json, problems: unreadable }, text: selected(shown.map(r => ({ ...r, files: r.files.map(f => f.path) })), fields).text };
+    return { json: { agents, instructions: picked.json, problems: unreadable, page: paging },
+      text: selected(shown.map(r => ({ ...r, files: r.files.map(f => f.path) })), fields).text + aside(options.format, pageLine(page)) };
   }
   const out = [agents.exists ? t('instructions.agents') : t('instructions.noAgents')];
   for (const r of shown) {
     const when = r.updated ? ` · ${r.updated.date.slice(0, 10)} ${r.updated.author}` : '';
-    out.push(`${r.id} ${r.title}${draftMark(r as { draft?: true })} (${r.name}) — ${r.description}${when}`, ...(r.line ? ['  ' + r.line] : []));
+    out.push(`${r.id} ${r.title}${draftMark(r as { draft?: true })}${stateMark(r.state)} (${r.name}) — ${r.description}${when}`, ...(r.line ? ['  ' + r.line] : []));
     out.push(...r.files.map(f => '  ' + fileLine(f)), ...(r.filesLimited ? ['  ' + t('instructions.filesLimited', { count: r.files.length })] : []));
   }
   if (!shown.length) out.push(options.q !== undefined || options.author !== undefined ? t('docs.noMatch') : t('instructions.empty'));
+  out.push(...pageLine(page));
   if (unreadable.length) out.push(t('docs.unreadable', { count: unreadable.length }));
-  return { json: { agents, instructions: shown, problems: unreadable }, text: text(out) };
+  return { json: { agents, instructions: shown, problems: unreadable, page: paging }, text: text(out) };
 });
 
 /** An instruction named by its I- ID or by its folder name, resolved to the ID. */

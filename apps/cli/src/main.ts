@@ -68,7 +68,9 @@ const listed = (command: Command, sorts?: readonly string[]) => {
     .option('--q <words>', t('help.listQ'))
     .option('--author <name>', t('help.listAuthor'));
   if (sorts) command.addOption(new Option('--sort <key>', t('help.listSort')).choices([...sorts]).default(sorts[0]));
-  return command.option('--limit <n>', t('help.listLimit'), parseLimit)
+  return command.addOption(new Option('--limit <n>', t('help.listLimit')).argParser(parseLimit).conflicts('all'))
+    .option('--all', t('help.listAll'))
+    .option('--after <cursor>', t('help.listAfter'))
     .option('--fields <names>', t('help.listFields'), parseFields)
     .addOption(format());
 };

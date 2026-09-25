@@ -1,4 +1,14 @@
 ## 0.8.1 - 2026-09-25
+### Added
+- Lists show where each document stands against the last commit. A document not committed yet ends its line (in the browser, a light background and a badge) with added, modified or to be deleted, and a deleted document stays listed as to be deleted until the commit. A moved document is one modified line.
+- The browser's decision records list starts with a "Not committed yet" entry. `/records/working` compares the uncommitted records and changed documents with the last commit, and an uncommitted record opens at its record address too.
+- Coming back to the browser tab after documents or commits changed shows a notice with a refresh.
+- `init` writes `.gitifact/.gitattributes` so documents are stored and checked out with LF on every OS. The root `.gitattributes` is left alone.
+### Changed
+- Every list shows 20 at a time; read on with the `--after <value>` printed at the end (`--all` shows everything). Specs page by feature and the history by commit, and JSON carries `page`.
+- Agents read every instruction at the start of a session and read specs when product behavior comes up or before changing code. Run `update` to refresh the block.
+- The history index no longer holds document texts; they are read from Git when a comparison is opened, which halves its size. Existing indexes rebuild themselves, and a first build reads files side by side.
+- The browser loads the decision records twenty commits at a time and a commit page twenty documents at a time without their text, reading only the text of the document opened.
 ### Fixed
 - A migration commit for a 0.7 project hit the 128-path limit and could not finish as one commit. A commit with `migration: true` now takes up to 5,000 paths, and a long selection no longer runs into the command-line length limit.
 - The migration notice `update` shows in a 0.7 project named the removed `docs` command.

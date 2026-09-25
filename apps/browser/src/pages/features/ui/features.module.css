@@ -73,6 +73,10 @@
    divider; the gap is not hatched, so the band starting again is what separates the two. */
 .featureTable tbody tr[data-row=requirement]:has(+ tr[data-row=feature]) td,
 .featureTable tbody tr[data-row=more]:has(+ tr[data-row=feature]) td { padding-bottom:var(--spacing-6); }
+/* An uncommitted last row keeps its wash to the row's own height; the space under it stays the gap between groups. */
+.featureTable tbody tr[data-row=requirement][data-state]:has(+ tr[data-row=feature]) td { background-color:transparent;
+  background-image:linear-gradient(var(--gitifact-state-wash), var(--gitifact-state-wash)); background-repeat:no-repeat;
+  background-size:100% calc(100% - var(--spacing-6) + var(--spacing-2)); }
 .requirementRow { align-items:baseline; min-width:0; flex-wrap:nowrap; width:100%; }
 .requirementNumber { flex:0 0 auto; font-variant-numeric:tabular-nums; }
 .requirementLink { flex:0 1 auto; min-width:0; color:var(--color-text-primary); text-decoration:none; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }

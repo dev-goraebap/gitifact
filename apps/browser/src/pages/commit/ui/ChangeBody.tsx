@@ -9,7 +9,10 @@ import styles from './commit.module.css';
 import { DocumentBody } from '../../../shared/ui/document';
 import { t, useLanguage } from '../../../shared/i18n';
 
-export type Change = { event: SpecEvent; before: SpecSnapshot | null; after: SpecSnapshot | null };
+/** What names a changed document in a list: enough to show it, whether it comes from a commit or from the working tree. */
+export type ListedChange = Pick<SpecEvent, 'key' | 'id' | 'kind' | 'types'> & { title: string };
+/** One changed document with the text on both sides, read when it is opened. */
+export type Change = { event: Pick<SpecEvent, 'key' | 'id' | 'kind' | 'types'>; before: SpecSnapshot | null; after: SpecSnapshot | null };
 
 /**
  * What a changed document shows under its title: where it is, links to it now and to its history, then its

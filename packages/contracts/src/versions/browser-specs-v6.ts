@@ -2,16 +2,22 @@ import { z } from 'zod';
 
 // The browser's records in the 0.8.0 document model: every document is one file with its own ID, and a feature holds
 // its requirements and design documents in `order`. Project instructions joined as a document kind in specs v6 and
-// search v2, and records replaced reasons in history v5, summary v4 and commit v3; the versions before them had no
-// consumers outside the CLI and were removed.
+// search v2, and records replaced reasons in history v5, summary v4 and commit v3. Specs v7 says where each document
+// stands against the last commit; history v6 pages by commit with a cursor; commit v4 lists changes without their text,
+// which commit change v1 reads when one is opened. The versions before them had no consumers outside the CLI and were
+// removed.
 
+// Where a document stands against the last commit. A deleted one is still listed until the commit that removes it.
+const state = z.enum(['committed', 'added', 'modified', 'deleted']);
+// `previousPath`: where a moved document was at the last commit.
+const standing = { state, previousPath: z.string().optional() };
 const contributor = z.strictObject({ email: z.string(), name: z.string(), commits: z.number().int().nonnegative(), latest: z.string() });
 // A document the design drew on: another document by ID (its title and path resolved when it exists) or an outside page.
 const source = z.strictObject({ id: z.string().optional(), title: z.string().optional(), path: z.string().optional(), url: z.string().optional(), note: z.string().optional() });
-const requirement = z.strictObject({ id: z.string(), path: z.string(), title: z.string(), description: z.string(), order: z.number().int().nonnegative(), body: z.string() });
+const requirement = z.strictObject({ id: z.string(), path: z.string(), title: z.string(), description: z.string(), order: z.number().int().nonnegative(), body: z.string(), ...standing });
 const design = z.strictObject({ id: z.string(), path: z.string(), title: z.string(), description: z.string(), order: z.number().int().nonnegative(), body: z.string(),
-  requirements: z.array(z.string()), sources: z.array(source) });
-const feature = z.strictObject({ id: z.string(), path: z.string(), title: z.string(), description: z.string(), body: z.string(),
+  requirements: z.array(z.string()), sources: z.array(source), ...standing });
+const feature = z.strictObject({ id: z.string(), path: z.string(), title: z.string(), description: z.string(), body: z.string(), ...standing,
   requirements: z.array(requirement), designs: z.array(design),
   // Authors of commits touching the feature folder and the latest such commit; empty until first committed.
   contributors: z.array(contributor), updatedAt: z.string().nullable() });
@@ -19,7 +25,7 @@ const feature = z.strictObject({ id: z.string(), path: z.string(), title: z.stri
 // `title` and `description` come from a reference file's frontmatter; the browser names the file by the title instead of
 // its file name. Files that are not Markdown, or whose frontmatter cannot be read, have neither.
 const instructionFile = z.strictObject({ path: z.string(), size: z.number().int().nonnegative(), title: z.string().optional(), description: z.string().optional() });
-const instruction = z.strictObject({ id: z.string(), name: z.string(), path: z.string(), title: z.string(), description: z.string(), body: z.string(),
+const instruction = z.strictObject({ id: z.string(), name: z.string(), path: z.string(), title: z.string(), description: z.string(), body: z.string(), ...standing,
   // Paths relative to the instruction folder, index.md left out; `limited` when the folder holds more than the list carries.
   files: z.array(instructionFile), filesLimited: z.boolean(), updatedAt: z.string().nullable() });
 // AGENTS.md at the repository root: the instructions every session loads, which point at the ones above.
@@ -28,10 +34,14 @@ const agents = z.strictObject({ path: z.string(), body: z.string(), updatedAt: z
 const problem = z.strictObject({ code: z.string(), path: z.string(), message: z.string() });
 const oid = z.string().regex(/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/);
 
-/** The checkout: the current features, instructions and AGENTS.md, the contributors, and whether anything is uncommitted. */
-export const browserSpecsV6 = z.strictObject({
-  contract: z.literal('browser-specs'), version: z.literal(6), sessionId: z.string(),
-  head: oid.nullable(), observedAt: z.string(), working: z.boolean(),
+/**
+ * The checkout: the current features, instructions and AGENTS.md with where each stands against the last commit, the
+ * contributors, and whether anything is uncommitted. `stamp` changes whenever HEAD or the uncommitted documents do; the
+ * browser compares it with `/api/v1/stamp` to tell the reader the screen is behind.
+ */
+export const browserSpecsV7 = z.strictObject({
+  contract: z.literal('browser-specs'), version: z.literal(7), sessionId: z.string(),
+  head: oid.nullable(), observedAt: z.string(), working: z.boolean(), stamp: z.string(),
   features: z.array(feature), instructions: z.array(instruction), agents: agents.nullable(), problems: z.array(problem),
   contributors: z.array(contributor), contributorsLimited: z.boolean(),
 });
@@ -51,11 +61,14 @@ const event = z.strictObject({ key: z.string(), commit: oid, date: z.string(), a
   committer: z.string(), message: z.string(), id: z.string(), kind, types: z.array(changeType),
   before: reference, after: reference, records: z.array(record) });
 
-/** Changes matching the query over the whole history of `head`, newest first, one page of them. */
-export const browserHistoryV5 = z.strictObject({
-  contract: z.literal('browser-history'), version: z.literal(5), sessionId: z.string(), head: oid,
-  // Matching changes in all of history, not in this page; `offset` is where this page starts among them.
-  total: z.number().int().nonnegative(), offset: z.number().int().nonnegative(), events: z.array(event),
+/**
+ * Changes matching the query over the whole history of `head`, newest first, a page of whole commits: a commit is never
+ * split between two pages. `next` is the last commit of this page, where the next one starts, or null at the end.
+ */
+export const browserHistoryV6 = z.strictObject({
+  contract: z.literal('browser-history'), version: z.literal(6), sessionId: z.string(), head: oid,
+  // Matching changes and the commits that hold them in all of history, not in this page.
+  total: z.number().int().nonnegative(), commits: z.number().int().nonnegative(), next: oid.nullable(), events: z.array(event),
 });
 /** What the product overview draws from history: counts over all of it and its newest commits. */
 export const browserHistorySummaryV4 = z.strictObject({
@@ -76,8 +89,9 @@ export const browserSearchV2 = z.strictObject({
     featureId: z.string().optional(), documentId: z.string().optional(), key: z.string().optional(),
   })),
 });
-export type BrowserSpecsV6 = z.infer<typeof browserSpecsV6>;
-export type BrowserHistoryV5 = z.infer<typeof browserHistoryV5>;
+export type BrowserSpecsV7 = z.infer<typeof browserSpecsV7>;
+export type DocumentState = z.infer<typeof state>;
+export type BrowserHistoryV6 = z.infer<typeof browserHistoryV6>;
 export type BrowserHistorySummaryV4 = z.infer<typeof browserHistorySummaryV4>;
 export type BrowserSearchV2 = z.infer<typeof browserSearchV2>;
 export type SpecEvent = z.infer<typeof event>;
@@ -94,9 +108,9 @@ export type DesignSource = z.infer<typeof source>;
 // Query strings the browser API accepts. Every value arrives as text; a key given twice is refused before these run.
 const headQuery = oid;
 const count = (max: number) => z.string().regex(/^(0|[1-9]\d{0,6})$/).transform(Number).pipe(z.number().int().min(0).max(max));
-/** `/api/v1/history`: which HEAD, which page, and the filters, all optional but the HEAD. */
-export const browserHistoryQueryV3 = z.strictObject({
-  head: headQuery, offset: count(1_000_000).optional(), limit: count(100).pipe(z.number().min(1)).optional(),
+/** `/api/v1/history`: which HEAD, the commit the page starts after, how many commits, and the filters, all optional but the HEAD. */
+export const browserHistoryQueryV4 = z.strictObject({
+  head: headQuery, after: oid.optional(), limit: count(50).pipe(z.number().min(1)).optional(),
   kind: changeType.optional(), document: kind.optional(),
   feature: z.string().regex(/^S-[a-z2-7]{10}$/).optional(), author: z.string().min(1).max(320).optional(), q: z.string().max(200).optional(),
 });
@@ -130,14 +144,25 @@ export type BrowserCommitFilesV1 = z.infer<typeof browserCommitFilesV1>;
 export type BrowserCommitFileV1 = z.infer<typeof browserCommitFileV1>;
 export type CommitFile = z.infer<typeof commitFile>;
 
-/** One commit as its page reads it: who made it, why, and every document it changed with both sides. */
-export const browserCommitV3 = z.strictObject({
-  contract: z.literal('browser-commit'), version: z.literal(3), sessionId: z.string(), commit: oid,
+/**
+ * One commit as its page reads it: who made it, why, and the documents it changed, a page of them without their text.
+ * `total` counts them all; `next` is the key of the last change of this page, where the next one starts, or null.
+ */
+export const browserCommitV4 = z.strictObject({
+  contract: z.literal('browser-commit'), version: z.literal(4), sessionId: z.string(), commit: oid,
   author: z.string(), email: z.string(), committer: z.string(), date: z.string(), message: z.string(),
-  changes: z.array(z.strictObject({ event, before: snapshot, after: snapshot })),
+  total: z.number().int().nonnegative(), next: z.string().nullable(), changes: z.array(event),
 });
-export const browserCommitQueryV1 = z.strictObject({ commit: oid });
-export type BrowserCommitV3 = z.infer<typeof browserCommitV3>;
+/** `/api/v1/commit`: the commit, the change the page starts after, and how many changes. */
+export const browserCommitQueryV2 = z.strictObject({ commit: oid, after: z.string().min(1).max(200).optional(), limit: count(500).pipe(z.number().min(1)).optional() });
+export type BrowserCommitV4 = z.infer<typeof browserCommitV4>;
+/** One change of a commit with both sides' text, read from Git when the reader opens it. */
+export const browserCommitChangeV1 = z.strictObject({
+  contract: z.literal('browser-commit-change'), version: z.literal(1), sessionId: z.string(), commit: oid,
+  event, before: snapshot, after: snapshot,
+});
+export const browserCommitChangeQueryV1 = z.strictObject({ commit: oid, id: z.string().min(1).max(100) });
+export type BrowserCommitChangeV1 = z.infer<typeof browserCommitChangeV1>;
 
 // A decision record is `DR-`; a reason from before decision records (a reason line, a 0.7 reason) keeps its `H-` ID.
 const recordId = z.string().regex(/^(?:DR|H)-[A-Za-z0-9_-]{1,64}$/);
@@ -154,3 +179,24 @@ export const browserInstructionFileV1 = z.strictObject({
   text: z.string().nullable(), size: z.number().int().nonnegative(), binary: z.boolean(), tooLarge: z.boolean(),
 });
 export type BrowserInstructionFileV1 = z.infer<typeof browserInstructionFileV1>;
+
+// What is not committed yet, as `changes list` sees it: the records written for the next commit and the documents that
+// differ from HEAD. It is worked out on every request and never kept.
+const workingChange = z.strictObject({ id: z.string(), kind, title: z.string(), path: z.string(), previousPath: z.string().optional(), types: z.array(changeType) });
+const pendingRecord = z.strictObject({ id: z.string(), title: z.string(), docs: z.array(z.string()), sections: z.array(recordSection), draft: z.boolean() });
+/** The uncommitted work: records not committed yet, changed documents, and the changes no record explains. */
+export const browserWorkingV1 = z.strictObject({
+  contract: z.literal('browser-working'), version: z.literal(1), sessionId: z.string(), head: oid.nullable(),
+  records: z.array(pendingRecord), changes: z.array(workingChange), withoutRecord: z.array(z.string()),
+});
+/** One uncommitted change with both sides: the document at HEAD and the file as it is now. */
+export const browserWorkingChangeV1 = z.strictObject({
+  contract: z.literal('browser-working-change'), version: z.literal(1), sessionId: z.string(), change: workingChange, before: snapshot, after: snapshot,
+});
+export const browserWorkingChangeQueryV1 = z.strictObject({ id: z.string().regex(/^[SRDWI]-[a-z2-7]{10}$/) });
+/** Whether the screen is behind: HEAD and a fingerprint of the uncommitted documents, compared with the checkout's. */
+export const browserStampV1 = z.strictObject({ contract: z.literal('browser-stamp'), version: z.literal(1), sessionId: z.string(), stamp: z.string() });
+export type BrowserWorkingV1 = z.infer<typeof browserWorkingV1>;
+export type BrowserWorkingChangeV1 = z.infer<typeof browserWorkingChangeV1>;
+export type WorkingChange = z.infer<typeof workingChange>;
+export type PendingRecord = z.infer<typeof pendingRecord>;

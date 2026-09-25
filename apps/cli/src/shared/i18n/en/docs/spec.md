@@ -66,7 +66,7 @@ Links to other documents are relative to this file (from a requirement to an ass
 | `gitifact specs show <ID…>` | The source of the chosen documents and the designs that point to them. `--ref <commit>` shows them as of that commit |
 | `gitifact records list --doc <ID>` | Why a document changed over time, with its records and commits |
 
-Choose with the list's conditions, then `show` only the documents you need. A list also gives only the columns you ask for (`--fields id,title`) or JSON (`--format json`). This reads far less than grepping or opening every file.
+Lists show 20 at a time (the default order 20 features with all their documents). Read the next page with the `--after <value>` printed at the end, or everything with `--all`. A document not committed yet ends its line with added, modified or to be deleted, and a deleted one stays listed as to be deleted until the commit. Choose with the list's conditions, then `show` only the documents you need. A list also gives only the columns you ask for (`--fields id,title`) or JSON (`--format json`). This reads far less than grepping or opening every file.
 
 ## Editing, moving and deleting
 

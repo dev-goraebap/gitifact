@@ -47,7 +47,7 @@ requirements:
 | :--- | :--- | :--- |
 | `update-check` | v1 | `update --check`의 읽기 전용 결과: `cliVersion`, `update`, `available`일 때만 `command` |
 | `update` | v5 | 확인 결과, `install`(`npx`·`npmGlobal`), `agentDocs`, `commit`, `migrationRequired`. `install.npx`는 v4, `migrationRequired`는 v5에서 더했다 |
-| `project-init` | v7 | `init` 결과와 같은 확인 결과·`install`. `install.npx`는 v6, `schemaVersion` 3은 v7에서 더했다 |
+| `project-init` | v8 | `init` 결과와 같은 확인 결과·`install`. `install.npx`는 v6, `schemaVersion` 3은 v7, `lineEndings`는 v8에서 더했다 |
 | `browser-session` | v3 | 세션 식별자와 `cliVersion`. v3에서 `update` 필드를 뺐다 |
 | `changelog` | v1 | 패치노트 응답 |
 

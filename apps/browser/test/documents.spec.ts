@@ -105,9 +105,12 @@ test('a commit that touched a great many documents shows three under its record 
   const more = activity.getByRole('link', { name: '문서 15건 더 →' });
   await expect(more).toHaveCount(1);
   await more.click();
-  // The rest of that commit is its own page, whose documents tab carries every document it changed.
+  // The rest of that commit is its own page, whose documents tab lists every document it changed.
   await expect(page).toHaveURL(new RegExp('/records/commits/'+ specs.head + '\\?tab=documents$'));
   const commitPage = page.getByRole('article', { name: '커밋 상세' });
+  // Twenty come with the page and the rest with "more", each without its text.
+  await expect(commitPage.getByRole('navigation', { name: '바뀐 문서' }).getByRole('listitem')).toHaveCount(20);
+  await commitPage.getByRole('navigation', { name: '바뀐 문서' }).getByRole('button', { name: '문서 더 보기' }).click();
   await expect(commitPage.getByRole('navigation', { name: '바뀐 문서' }).getByRole('listitem')).toHaveCount(25);
   // One document is read at a time beside the list: the first, until another is chosen.
   await expect(commitPage.getByRole('region', { name: /도입 기록/ })).toHaveCount(1);

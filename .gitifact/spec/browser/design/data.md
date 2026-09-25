@@ -134,7 +134,7 @@ pull 뒤에는 새 커밋만 읽고, 브랜치를 오가면 대개 아무것도 
 
 ### 작업 폴더 문서
 
-에이전트가 파일을 직접 고치므로, 읽을 때마다 `.gitifact/spec`·`.gitifact/instructions`·`.gitifact/wiki` 아래 파일의 수정 시각·크기를 캐시가 마지막에 본 값과 견주어 달라진 파일만 다시 파싱한다(`documents.ts`). 1MB를 넘는 문서 파일은 읽지 않고 문제로 알리며, 파일 2만 개에서 훑기를 멈춘다. 위키 아래 Markdown은 문서로 읽지 않고 `WIKI_REMOVED` 문제로만 남긴다.
+에이전트가 파일을 직접 고치므로, 읽을 때마다 `.gitifact/spec`·`.gitifact/instructions`·`.gitifact/wiki` 아래 파일의 수정 시각·크기를 캐시가 마지막에 본 값과 견주어 달라진 파일만 다시 파싱한다(`documents.ts`). 훑기와 읽기는 폴더의 항목을 동시에 묻고 결과를 경로순으로 모은다. 파일을 여는 횟수가 비용이라, 파일 5,000개를 하나씩 읽으면 2,150ms, 동시에 읽으면 677ms였다. 1MB를 넘는 문서 파일은 읽지 않고 문제로 알리며, 파일 2만 개에서 훑기를 멈춘다. 위키 아래 Markdown은 문서로 읽지 않고 `WIKI_REMOVED` 문제로만 남긴다.
 
 ### 표
 
@@ -143,6 +143,7 @@ erDiagram
   heads ||--o{ lineage : "HEAD별 순서"
   commits ||--o{ lineage : "oid"
   commits ||--o{ changes : "oid"
+  commits ||--o{ records : "oid"
   files ||--o| documents : "path"
   documents ||--o{ doc_references : "from_id"
   changes ||--o| search : "지난 변경"
@@ -155,10 +156,15 @@ erDiagram
 | documents | 작업 폴더 문서의 프론트매터와 파싱한 문서 |
 | doc_references | 설계의 `requirements`·`sources` 같은 ID 참조(역조회용) |
 | commits | 읽은 커밋과 읽은 방식(현재 형식·0.7·마이그레이션) |
-| changes | 변경별 목록 JSON·전후 본문 JSON·필터 열 |
+| changes | 변경별 목록 JSON(결정기록은 ID만)·양쪽 원문을 다시 읽을 커밋과 경로·필터 열 |
+| records | 커밋이 더한 결정기록의 제목과 섹션. 커밋마다 한 번씩 |
 | lineage | HEAD별 커밋 순서 |
 | heads | 계보를 둔 HEAD |
 | search | 제목·위치·설명·본문의 FTS5 색인 |
+
+### 원문을 두지 않는 까닭
+
+캐시는 변경의 원문을 담지 않는다. 변경 행은 양쪽을 읽은 커밋(첫 부모와 그 커밋)과 경로만 두고, 비교를 열 때 `cat-file --batch` 한 번으로 두 blob을 읽어 파싱한다. 원문은 Git에 이미 있고, 캐시에 두면 커밋마다 약 150KB씩 늘었다. 결정기록도 그 기록이 설명하는 문서 수만큼 되풀이하지 않고 `records` 표에 커밋마다 한 번 둔다. 0.8.0 전 이력은 0.7 파서가 저장소 전체로 만든 것이라 되읽을 파일이 없어 원문을 그대로 둔다.
 
 ### 파일과 동시 사용
 

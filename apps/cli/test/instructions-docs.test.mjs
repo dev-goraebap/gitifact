@@ -37,11 +37,11 @@ test('instructions are listed with AGENTS.md and their files by title, shown wit
   put(f, '.gitifact/instructions/cli-rules/references/decisions.md', decisions);
   put(f, '.gitifact/instructions/cli-rules/scripts/check.sh', 'echo ok\n');
   // init ran with --skip-agents, so there is no AGENTS.md yet: the list says so before the instructions.
-  assert.equal(f.run(['instructions', 'list']).stdout, `AGENTS.md 없음 — 지침을 언제 읽을지 알리는 색인이 없습니다\n${I} CLI 규칙 (cli-rules) — CLI 계층 규칙. apps/cli를 고칠 때 읽는다\n  references/decisions.md 결정 표 — 계층 결정. 계층을 바꿀 때 읽는다\n  scripts/check.sh\n`);
+  assert.equal(f.run(['instructions', 'list']).stdout, `AGENTS.md 없음 — 지침을 언제 읽을지 알리는 색인이 없습니다\n${I} CLI 규칙 (커밋 전: 추가) (cli-rules) — CLI 계층 규칙. apps/cli를 고칠 때 읽는다\n  references/decisions.md 결정 표 — 계층 결정. 계층을 바꿀 때 읽는다\n  scripts/check.sh\n`);
   writeFileSync(join(f.repo, 'AGENTS.md'), '# Agents\n');
   const listed = f.ok(['instructions', 'list']);
   assert.deepEqual([listed.contract, listed.agents, listed.problems], ['instructions', { path: 'AGENTS.md', exists: true }, []]);
-  assert.deepEqual(listed.instructions, [{ id: I, name: 'cli-rules', path: '.gitifact/instructions/cli-rules/index.md', title: 'CLI 규칙', description: 'CLI 계층 규칙. apps/cli를 고칠 때 읽는다',
+  assert.deepEqual(listed.instructions, [{ id: I, name: 'cli-rules', path: '.gitifact/instructions/cli-rules/index.md', title: 'CLI 규칙', description: 'CLI 계층 규칙. apps/cli를 고칠 때 읽는다', state: 'added',
     files: [{ path: 'references/decisions.md', size: Buffer.byteLength(decisions), title: '결정 표', description: '계층 결정. 계층을 바꿀 때 읽는다' }, { path: 'scripts/check.sh', size: 8 }] }]);
   assert.match(f.run(['instructions', 'list']).stdout, /^AGENTS\.md — /);
   assert.equal(f.run(['instructions', 'list', '--fields', 'name,files']).stdout, 'cli-rules\treferences/decisions.md,scripts/check.sh\n');

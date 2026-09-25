@@ -13,7 +13,7 @@ export interface SplitItem { key: string; label: string; description?: string | 
  * them. Each file has its own address, so the list is links. A narrow screen has no room for the list beside the
  * text and no reason to push the text below it, so there the list gives way to one selector over the text.
  */
-export function SplitReader({ label, summary, items, children }: { label: string; summary?: ReactNode; items: SplitItem[]; children: ReactNode }) {
+export function SplitReader({ label, summary, footer, items, children }: { label: string; summary?: ReactNode; footer?: ReactNode; items: SplitItem[]; children: ReactNode }) {
   const navigate = useNavigate();
   const selected = items.find(item => item.selected);
   return <HStack gap={0} className={styles.split}>
@@ -23,6 +23,7 @@ export function SplitReader({ label, summary, items, children }: { label: string
         {items.map(item => <ListItem key={item.key} label={item.label} description={item.description} href={item.href} isSelected={item.selected}
           startContent={item.start} endContent={item.end}/>)}
       </List>
+      {footer}
     </VStack>
     <VStack gap={3} className={styles.splitContent}>
       <VStack gap={0} className={styles.splitPicker}>
@@ -30,6 +31,7 @@ export function SplitReader({ label, summary, items, children }: { label: string
           options={items.map(item => ({ value: item.key, label: item.label, ...(item.description ? { description: item.description } : {}) }))}
           onChange={key => { const item = items.find(i => i.key === key); if (item) void navigate({ href: item.href }); }}/>
       </VStack>
+      {footer && <VStack gap={0} className={styles.splitPickerMore}>{footer}</VStack>}
       {children}
     </VStack>
   </HStack>;

@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import type { BrowserSessionV3, SpecFeature } from '@gitifact/contracts';
 import { VStack } from '@astryxdesign/core/VStack';
 import { HStack } from '@astryxdesign/core/HStack';
@@ -10,6 +10,8 @@ import { commitFilesOptions, commitOptions } from '../../../entities/project';
 import { KindToken } from '../../../entities/document';
 import { decisionPreview, groupRecords } from '../../../widgets/activity-timeline';
 import { RecordDocuments } from './RecordDocuments';
+import { LoadMore } from './LoadMore';
+import { commitChange, listed, loadedCommit } from '../model/commit-changes';
 import { CommitCode } from './CommitCode';
 import { CommitHeading } from './CommitHeading';
 import { CommitSkeleton } from './CommitSkeleton';
@@ -22,15 +24,16 @@ import { t, useLanguage } from '../../../shared/i18n';
 /**
  * One commit, read as it was made: who wrote it, then its three parts as tabs — the records it added, the documents it
  * changed with their differences, and its source code. Each part has its own address, so a record page can send the
- * reader straight to the code, and a link that names a document opens the documents at that section.
+ * reader straight to the code, and a link that names a document opens the documents at that section. The documents
+ * come twenty at a time without their text; the chosen one's text is read when it is opened.
  */
 export function CommitView({ commit, search, documentId, session, features, head }: { commit: string; search: CommitSearch; documentId?: string | undefined; session: BrowserSessionV3; features: SpecFeature[]; head: string | null }) {
   useLanguage();
   const navigate = useNavigate();
-  const query = useQuery(commitOptions(session, commit));
+  const query = useInfiniteQuery(commitOptions(session, commit));
   const files = useQuery(commitFilesOptions(session, commit));
-  const data = query.data;
-  const groups = data ? groupRecords(data.changes.map(c => c.event)) : [];
+  const data = loadedCommit(query);
+  const groups = data ? groupRecords(data.changes) : [];
   const recorded = groups.filter(group => group.record);
   const tab: CommitTab = search.tab ?? (documentId || !recorded.length ? 'documents' : 'records');
   // An address typed or shared from outside names its section before the page has drawn it, so the page lands on it.
@@ -46,7 +49,7 @@ export function CommitView({ commit, search, documentId, session, features, head
 
     <TabList role="tablist" value={tab} onChange={choose} hasDivider>
       <Tab value="records" label={t('commit.tab.records') + count(recorded.length)} panelId="commit-records"/>
-      <Tab value="documents" label={t('commit.tab.documents') + count(data.changes.length)} panelId="commit-documents"/>
+      <Tab value="documents" label={t('commit.tab.documents') + count(data.total)} panelId="commit-documents"/>
       <Tab value="code" label={t('commit.tab.code') + count(files.data?.total)} panelId="commit-code"/>
     </TabList>
 
@@ -61,6 +64,7 @@ export function CommitView({ commit, search, documentId, session, features, head
             {preview && <Text type="supporting" color="secondary">{preview}</Text>}
           </VStack>; })}
       </VStack> : <Text color="secondary">{t('event.noRecords')}</Text>}
+      <LoadMore label={t('commit.moreRecords')} query={query}/>
       {bare && <VStack gap={2}>
         <Text color="secondary">{t('event.noRecord')}</Text>
         <HStack gap={2} wrap="wrap" className={styles.reasonRecords}>
@@ -72,7 +76,8 @@ export function CommitView({ commit, search, documentId, session, features, head
     </VStack>}
 
     {tab === 'documents' && <VStack id="commit-documents" role="tabpanel" aria-label={t('commit.documents')} gap={0} className={styles.commitPanel}>
-      {data.changes.length ? <RecordDocuments label={t('commit.documents')} changes={data.changes} features={features} head={head} documentId={documentId}
+      {data.changes.length ? <RecordDocuments label={t('commit.documents')} changes={data.changes.map(listed)} useChange={commitChange(session, commit)}
+        features={features} head={head} documentId={documentId} more={<LoadMore label={t('commit.moreDocuments')} query={query}/>}
         href={id => `/records/commits/${encodeURIComponent(commit)}?tab=documents#${encodeURIComponent(id)}`}/>
         : <PageState isCompact title={t('commit.noDocuments')} description={t('commit.noDocumentsDescription')}/>}
     </VStack>}

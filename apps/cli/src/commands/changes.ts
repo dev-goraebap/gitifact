@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { mkdir, open, readFile, rename, rmdir, unlink, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { checkDocuments, compareDocumentSets, kindOfId, HISTORY_PATH, SPEC_ROOT, WIKI_ROOT,
+import { checkDocuments, kindOfId, HISTORY_PATH, SPEC_ROOT, WIKI_ROOT,
   type DecisionRecord, type DocChange, type DocProblem } from '@gitifact/core';
 import { createGitRunner } from '../adapters/git/run-git.js';
 import { initRepository } from '../adapters/git/init-repository.js';
@@ -12,6 +12,7 @@ import { checkStoreSelection, fail, fingerprint, hash, info, object, optional, p
 import { readJsonInput } from './input.js';
 import { CommandError, runCommand, section, text, type Format } from './output.js';
 import { documentsOf, openProject, type Project } from './project.js';
+import { uncovered, workingChanges } from '../queries/working-changes.js';
 import { t } from '../shared/i18n/index.js';
 
 const fields = ['paths', 'message', 'authorization', 'migration'];
@@ -25,20 +26,8 @@ const problemLines = (problems: DocProblem[]) => problems.map(p => '  ' + p.code
 /** Old files a migration removes (0.7 requirements.md, design.md, per-folder history.jsonl, the wiki, the reason file): deletions there may be committed. */
 const underDocuments = (path: string) => path.startsWith(SPEC_ROOT + '/') || path.startsWith(WIKI_ROOT + '/') || path === HISTORY_PATH;
 
-/** The documents that differ from HEAD, and the records written but not yet committed. */
-async function pendingChanges(project: Project, head: string | null) {
-  const headFiles = head ? await project.cache.history.filesAt(head) : new Map<string, string>();
-  const [working, records] = await Promise.all([project.cache.documents.files(), project.pendingRecords()]);
-  return { headFiles, working, records, ...compareDocumentSets(headFiles, working.files) };
-}
-/**
- * The changes a record should explain and no record does. A new document carries its own why (a requirement's user
- * story), so only changing, moving or deleting what was there calls for one.
- */
-const uncovered = (changes: DocChange[], records: DecisionRecord[]) => {
-  const covered = new Set(records.flatMap(r => r.docs));
-  return changes.filter(c => c.types.some(type => type !== 'created') && !covered.has(c.id)).map(c => c.id);
-};
+/** The documents that differ from HEAD, and the records written but not yet committed (the same query as the browser's). */
+const pendingChanges = (project: Project, head: string | null) => workingChanges(project, head);
 /** Changed documents two records explain: those records go into one commit, since a file cannot be split between two. */
 const shared = (changes: DocChange[], records: DecisionRecord[]) =>
   changes.map(c => c.id).filter(id => records.filter(r => r.docs.includes(id)).length > 1);

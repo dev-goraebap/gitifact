@@ -5,7 +5,7 @@ import type { GitAccess } from './commit-changes.js';
 
 export type { GitAccess, DocSnapshot, HistoryEvent, ChangeType, CommitReader } from './commit-changes.js';
 export { MIGRATION_TRAILER } from './commit-changes.js';
-export type { HistoryFilter, ListedEvent, SearchHit } from './history.js';
+export type { HistoryFilter, ListedEvent, RecordFilter, SearchHit } from './history.js';
 export { CACHE_DIR, CACHE_FORMAT } from './database.js';
 
 /**

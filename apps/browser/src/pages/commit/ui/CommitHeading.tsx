@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { BrowserCommitV3 } from '@gitifact/contracts';
+import type { BrowserCommitV4 } from '@gitifact/contracts';
 import { VStack } from '@astryxdesign/core/VStack';
 import { HStack } from '@astryxdesign/core/HStack';
 import { Heading } from '@astryxdesign/core/Heading';
@@ -13,7 +13,7 @@ import { t, useLanguage } from '../../../shared/i18n';
  * The head of a commit or record page: its title, then who made the commit and when. `hash` replaces the plain commit
  * hash — the record page makes it a link to the commit — and `children` add lines under the meta.
  */
-export function CommitHeading({ title, commit, hash, children }: { title: string; commit: Pick<BrowserCommitV3, 'commit' | 'author' | 'email' | 'committer' | 'date'>; hash?: ReactNode; children?: ReactNode }) {
+export function CommitHeading({ title, commit, hash, children }: { title: string; commit: Pick<BrowserCommitV4, 'commit' | 'author' | 'email' | 'committer' | 'date'>; hash?: ReactNode; children?: ReactNode }) {
   useLanguage();
   return <VStack gap={4} className={styles.commitHeading}>
     <Heading level={1}>{title}</Heading>

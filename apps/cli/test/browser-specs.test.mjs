@@ -54,6 +54,35 @@ test('the browser reads the checkout and history without touching the project, a
   assert.deepEqual(broken.features[0].requirements.map(r => r.id), [R2]);
 });
 
+test('the checkout says where each document stands, keeps a deleted one until the commit, and its stamp follows every edit', async t => {
+  const { f, d } = await adopted(t);
+  d.feature('posts', S, { title: 'Posts' }); d.requirement('posts', 'save', R, { title: 'Save', body: 'First' }); d.requirement('posts', 'list', R2, { title: 'List' });
+  d.instruction('guide', I, { title: 'Guide' }); f.commit('Create');
+  const server = await startBrowserServer({ cwd: f.repo, env: f.env, assetsDirectory: fileURLToPath(new URL('../../browser/dist/', import.meta.url)) }); t.after(() => server.close());
+  const get = async path => (await fetch(server.url + path, { headers: { 'X-Gitifact-Session': server.session.sessionId } })).json();
+  const clean = await get('/api/v1/specs');
+  assert.deepEqual(clean.features[0].requirements.map(r => [r.id, r.state]), [[R2, 'committed'], [R, 'committed']]);
+  const stamp = (await get('/api/v1/stamp')).stamp; assert.equal(stamp, clean.stamp);
+  d.requirement('posts', 'save', R, { title: 'Save', body: 'Second' });
+  unlinkSync(join(f.repo, '.gitifact/spec/posts/requirements/list.md'));
+  const edited = (await get('/api/v1/stamp')).stamp; assert.notEqual(edited, stamp);
+  // Editing a file that is already modified moves the stamp on too.
+  d.requirement('posts', 'save', R, { title: 'Save', body: 'Third' }); utimesSync(join(f.repo, '.gitifact/spec/posts/requirements/save.md'), new Date(), new Date(Date.now() + 5000));
+  assert.notEqual((await get('/api/v1/stamp')).stamp, edited);
+  const changed = await get('/api/v1/specs');
+  assert.deepEqual(changed.features[0].requirements.map(r => [r.id, r.state]).sort(), [[R, 'modified'], [R2, 'deleted']].sort());
+  assert.equal(changed.stamp, (await get('/api/v1/stamp')).stamp);
+  // The uncommitted work: the two changes, one with no record, and each read with the document at HEAD and now.
+  d.record({ id: 'DR-aaaaaaaaaa', docs: [R], reason: '저장 규칙을 바꿨다' });
+  const working = await get('/api/v1/working');
+  assert.deepEqual([working.records.map(r => [r.id, r.docs, r.draft]), working.changes.map(c => [c.id, c.types]).sort(), working.withoutRecord],
+    [[['DR-aaaaaaaaaa', [R], false]], [[R, ['modified']], [R2, ['deleted']]].sort(), [R2]]);
+  const one = await get('/api/v1/working/change?id=' + R);
+  assert.deepEqual([one.before.body, one.after.body, one.before.specId], ['First', 'Third', S]);
+  const gone = await get('/api/v1/working/change?id=' + R2);
+  assert.deepEqual([gone.before.title, gone.after], ['List', null]);
+});
+
 test('the server refuses bad queries, missing sessions and other methods on every records route', async t => {
   const { f } = await adopted(t); f.commit('init');
   const server = await startBrowserServer({ cwd: f.repo, env: f.env, assetsDirectory: fileURLToPath(new URL('../../browser/dist/', import.meta.url)) }); t.after(() => server.close());
@@ -69,31 +98,42 @@ test('the server refuses bad queries, missing sessions and other methods on ever
   assert.equal(await status('/api/v1/history?head=nope'), 400);
   assert.equal(await status('/api/v1/history?head=' + head + '&head=' + head), 400);
   assert.equal(await status('/api/v1/history?head=' + head + '&limit=0'), 400);
-  assert.equal(await status('/api/v1/history?head=' + head + '&limit=101'), 400);
+  assert.equal(await status('/api/v1/history?head=' + head + '&limit=51'), 400);
+  assert.equal(await status('/api/v1/history?head=' + head + '&after=nope'), 400);
+  assert.equal(await status('/api/v1/history?head=' + head + '&offset=0'), 400);
+  // A cursor that is not a commit of this history is refused rather than read as the start.
+  assert.equal(await status('/api/v1/history?head=' + head + '&after=' + '0'.repeat(40)), 404);
   assert.equal(await status('/api/v1/history?head=' + head + '&kind=renamed'), 400);
   assert.equal(await status('/api/v1/history?head=' + head + '&unknown=1'), 400);
-  assert.equal(await status('/api/v1/history?head=' + head + '&kind=created&document=feature&offset=0&limit=10&q=x'), 200);
+  assert.equal(await status('/api/v1/history?head=' + head + '&kind=created&document=feature&limit=10&q=x'), 200);
   assert.equal(await status('/api/v1/history?head=' + head + '&id=R-aaaaaaaaaa'), 400);
   assert.equal(await status('/api/v1/history/summary?head=' + head), 200);
+  assert.equal(await status('/api/v1/stamp'), 200);
+  assert.equal(await status('/api/v1/working'), 200);
+  assert.equal(await status('/api/v1/working/change?id=nope'), 400);
+  assert.equal(await status('/api/v1/working/change?id=R-zzzzzzzzzz'), 404);
+  assert.equal(await status('/api/v1/commit/change?commit=' + head), 400);
   assert.equal(await status('/api/v1/change?key=' + head + ':D-zzzzzzzzzz'), 404);
   assert.equal(await status('/api/v1/search'), 400);
   assert.equal(await status('/api/v1/search?q=x&head=' + head), 200);
   assert.equal(await status('/api/v1/nothing'), 404);
 });
 
-test('a page holds fifty changes and may end inside a commit, and the pages cover history exactly once', async t => {
+test('a page holds whole commits, never ends inside one, and the pages cover history exactly once', async t => {
   const { f, d } = await adopted(t);
   const alphabet = 'abcdefghijklmnopqrstuvwxyz234567';
   const ids = Array.from({ length: 70 }, (_, i) => 'R-abcdefgh' + alphabet[i >> 5] + alphabet[i & 31]);
-  // One commit creates seventy requirements; it is split across the first two pages.
+  // One commit creates seventy requirements; it comes whole in one page, however many changes it holds.
   d.feature('posts', S); ids.forEach((id, i) => d.requirement('posts', 'r' + i, id, { order: i })); f.commit('Adopt');
   f.write('unrelated.txt', 'code only'); f.commit('Code');
   for (let i = 1; i <= 3; i++) { d.requirement('posts', 'r' + i, ids[i], { order: i, body: 'v' + i }); f.commit('Edit ' + i); }
   const { history } = openRecords(f.repo, f.env); const head = f.git(['rev-parse', 'HEAD']).stdout.trim();
-  const first = await history.page(head, {}, 0, 50); assert.equal(first.events.length, 50); assert.equal(first.total, 74);
-  // Three edit commits come first (newest first), then 47 of the adoption commit's 71 creations.
-  assert.deepEqual(first.events.slice(0, 3).map(e => e.types), [['modified'], ['modified'], ['modified']]);
-  const second = await history.page(head, {}, 50, 50); assert.equal(second.events.length, 24);
+  const first = await history.commits(head, {}, undefined, 3); assert.equal(first.events.length, 3); assert.deepEqual([first.total, first.commits], [74, 4]);
+  // Three edit commits come first (newest first); the code-only commit changed no document and is not in the history.
+  assert.deepEqual(first.events.map(e => e.types), [['modified'], ['modified'], ['modified']]);
+  assert.equal(first.next, first.events[2].commit);
+  const second = await history.commits(head, {}, first.next, 3); assert.deepEqual([second.events.length, second.next], [71, null]);
+  assert.equal(await history.commits(head, {}, '0'.repeat(40), 3), undefined);
   const keys = [...first.events, ...second.events].map(e => e.key); assert.equal(new Set(keys).size, 74);
 });
 
@@ -105,22 +145,26 @@ test('filters and the search word apply to all of history, and the count is the 
   f.git(['add', '-A']); f.git(['commit', '-m', 'tags', '--author', 'Bob <bob@example.invalid>']);
   for (let i = 2; i <= 60; i++) { d.requirement('posts', 'main', R, { title: 'posts 요구사항', body: String(i) }); f.commit('posts ' + i); }
   const { history } = openRecords(f.repo, f.env); const head = f.git(['rev-parse', 'HEAD']).stdout.trim();
-  const all = await history.page(head, {}, 0, 100); assert.equal(all.total, 63);
-  // Bob's changes are older than a first page of fifty, and the filter still finds them.
-  assert.equal((await history.page(head, {}, 0, 50)).events.some(e => e.email === 'bob@example.invalid'), false);
-  const bob = await history.page(head, { author: 'bob@example.invalid' }, 0, 50); assert.equal(bob.total, 2);
-  assert.equal((await history.page(head, { feature: 'S-bbbbbbbbbb' }, 0, 50)).total, 2);
-  assert.equal((await history.page(head, { kind: 'created' }, 0, 50)).total, 4);
-  assert.equal((await history.page(head, { kind: 'modified' }, 0, 50)).total, 59);
-  assert.equal((await history.page(head, { document: 'feature' }, 0, 50)).total, 2);
-  assert.equal((await history.page(head, { document: 'wiki' }, 0, 50)).total, 0);
-  assert.equal((await history.page(head, { q: 'tags 요구' }, 0, 50)).total, 1);
+  const all = await history.commits(head, {}, undefined, 50); assert.equal(all.total, 63);
+  const page = (filter, limit = 20) => history.commits(head, filter, undefined, limit);
+  // Bob's changes are older than a first page of twenty commits, and the filter still finds them.
+  assert.equal((await page({})).events.some(e => e.email === 'bob@example.invalid'), false);
+  const bob = await page({ author: 'bob@example.invalid' }); assert.deepEqual([bob.total, bob.commits], [2, 1]);
+  assert.equal((await page({ feature: 'S-bbbbbbbbbb' })).total, 2);
+  assert.equal((await page({ kind: 'created' })).total, 4);
+  assert.equal((await page({ kind: 'modified' })).total, 59);
+  assert.equal((await page({ document: 'feature' })).total, 2);
+  assert.equal((await page({ document: 'wiki' })).total, 0);
+  assert.equal((await page({ q: 'tags 요구' })).total, 1);
   // One document's changes (`docs history`): R2 was created once; R changed in every posts commit.
   assert.equal((await history.ofDocument(head, R2)).length, 1);
   assert.equal((await history.ofDocument(head, R)).length, 60);
   // Each filter's pages together are exactly the matching changes of the whole list.
-  const created = []; for (let i = 0; i < 4; i++) created.push(...(await history.page(head, { kind: 'created' }, i, 1)).events);
-  assert.deepEqual(created.map(e => e.key), all.events.filter(e => e.types.includes('created')).map(e => e.key));
+  const created = []; let after;
+  do { const next = await history.commits(head, { kind: 'created' }, after, 1); created.push(...next.events); after = next.next ?? undefined; } while (after);
+  const everything = []; after = undefined;
+  do { const next = await history.commits(head, {}, after, 50); everything.push(...next.events); after = next.next ?? undefined; } while (after);
+  assert.deepEqual(created.map(e => e.key), everything.filter(e => e.types.includes('created')).map(e => e.key));
   const summary = await history.summary(head);
   assert.equal(summary.total, 63); assert.deepEqual(summary.byType, { created: 4, modified: 59, moved: 0, deleted: 0 });
   assert.equal(summary.recent.length, 3); assert.equal(summary.recent[0].events[0].key, all.events[0].key);
@@ -132,7 +176,7 @@ test('the cache is kept between readers, grows with new commits, and rebuilds wh
   d.feature('posts', S); d.requirement('posts', 'save', R, { body: 'One' }); f.commit('One');
   d.requirement('posts', 'save', R, { body: 'Two' }); f.commit('Two');
   const head = () => f.git(['rev-parse', 'HEAD']).stdout.trim();
-  const keys = async () => (await openRecords(f.repo, f.env).history.page(head(), {}, 0, 50)).events.map(e => e.key);
+  const keys = async () => (await openRecords(f.repo, f.env).history.commits(head(), {}, undefined, 50)).events.map(e => e.key);
   const first = await keys(); assert.equal(first.length, 3);
   const stored = () => { const db = new DatabaseSync(cacheFile(f)); try { return db.prepare('SELECT count(*) AS n FROM commits').get().n; } finally { db.close(); } };
   assert.equal(stored(), 2);
@@ -291,9 +335,19 @@ test('a commit answers with every document it changed, and with its author when 
   const get = async path => { const response = await fetch(server.url + path, { headers: { 'X-Gitifact-Session': server.session.sessionId } }); return { status: response.status, body: await response.json() }; };
   const commit = (await get('/api/v1/commit?commit=' + withDocuments)).body;
   assert.deepEqual([commit.contract, commit.message, commit.author], ['browser-commit', 'Refine', 'Tryce fixture']);
-  // Both documents of the commit come with the text on both sides, in the order the timeline lists them.
-  assert.deepEqual(commit.changes.map(c => [c.event.id, c.event.types, c.before?.body ?? null, c.after?.body ?? null]), [[R, ['modified'], 'First', 'Second'], [W, ['created'], null, 'Guide 본문']]);
-  assert.deepEqual(reasonsOf(commit.changes[0].event), ['정리했다']);
+  // Both documents of the commit come in the order the timeline lists them, without their text.
+  assert.deepEqual([commit.version, commit.total, commit.next, commit.changes.map(e => [e.id, e.types])], [4, 2, null, [[R, ['modified']], [W, ['created']]]]);
+  assert.deepEqual(reasonsOf(commit.changes[0]), ['정리했다']);
+  // The text of one document is read from Git when it is opened: both sides, as they were at the commit and its parent.
+  const opened = async id => (await get('/api/v1/commit/change?commit=' + withDocuments + '&id=' + id)).body;
+  assert.deepEqual([(await opened(R)).before.body, (await opened(R)).after.body], ['First', 'Second']);
+  assert.deepEqual([(await opened(W)).before, (await opened(W)).after.body], [null, 'Guide 본문']);
+  assert.equal((await get('/api/v1/commit/change?commit=' + withDocuments + '&id=R-zzzzzzzzzz')).status, 404);
+  // A page of one change carries the cursor to the next.
+  const paged = (await get('/api/v1/commit?commit=' + withDocuments + '&limit=1')).body;
+  assert.deepEqual([paged.changes.length, paged.next], [1, paged.changes[0].key]);
+  const rest = (await get('/api/v1/commit?commit=' + withDocuments + '&limit=1&after=' + encodeURIComponent(paged.next))).body;
+  assert.deepEqual([rest.changes.map(e => e.id), rest.next], [[W], null]);
   // A commit that changed no document is still a page: Git names its author and the source list carries the rest.
   const source = (await get('/api/v1/commit?commit=' + sourceOnly)).body;
   assert.deepEqual([source.changes.length, source.message], [0, 'Source only']);
@@ -350,15 +404,17 @@ test('instructions and AGENTS.md come in the checkout, instructions in history, 
   const server = await startBrowserServer({ cwd: f.repo, env: f.env, assetsDirectory: fileURLToPath(new URL('../../browser/dist/', import.meta.url)) }); t.after(() => server.close());
   const get = async path => { const response = await fetch(server.url + path, { headers: { 'X-Gitifact-Session': server.session.sessionId } }); return { status: response.status, body: await response.json() }; };
   const specs = (await get('/api/v1/specs')).body;
-  assert.equal(specs.version, 6);
+  assert.equal(specs.version, 7);
+  assert.deepEqual([specs.instructions[0].state, typeof specs.stamp], ['committed', 'string']);
   assert.deepEqual(specs.instructions.map(k => [k.id, k.name, k.title, k.files, k.filesLimited, !!k.updatedAt]),
     [['I-aaaaaaaaaa', 'cli-rules', 'CLI rules', [{ path: 'assets/logo.png', size: 4 }, { path: 'references/decisions.md', size: 22 },
       { path: 'references/layers.md', size: layers.length, title: 'Layer rules', description: 'Which layer may call which. Read when adding a module.' }], false, true]]);
   assert.deepEqual([specs.agents.path, specs.agents.body, !!specs.agents.updatedAt], ['AGENTS.md', '# Agents\n\nRead the CLI rules first.\n', true]);
   const history = await get('/api/v1/history?head=' + head + '&document=instruction');
-  assert.deepEqual([history.status, history.body.version, history.body.events.map(e => [e.id, e.kind])], [200, 5, [['I-aaaaaaaaaa', 'instruction']]]);
+  assert.deepEqual([history.status, history.body.version, history.body.events.map(e => [e.id, e.kind])], [200, 6, [['I-aaaaaaaaaa', 'instruction']]]);
   const commit = await get('/api/v1/commit?commit=' + head);
-  assert.deepEqual([commit.body.version, commit.body.changes.map(c => [c.event.kind, c.after.body])], [3, [['instruction', 'Rules about layers']]]);
+  assert.deepEqual([commit.body.version, commit.body.changes.map(e => e.kind)], [4, ['instruction']]);
+  assert.equal((await get('/api/v1/commit/change?commit=' + head + '&id=I-aaaaaaaaaa')).body.after.body, 'Rules about layers');
   const search = await get('/api/v1/search?q=layers&head=' + head);
   assert.deepEqual(search.body.hits.filter(h => h.kind === 'instruction').map(h => h.id), ['I-aaaaaaaaaa']);
   // A file of the folder is read on its own; a binary file comes without text, and nothing outside the folder is served.

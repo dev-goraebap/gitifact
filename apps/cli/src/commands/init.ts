@@ -1,5 +1,5 @@
 import { InitError, RepositoryReadError } from '@gitifact/core';
-import { projectInitV7 } from '@gitifact/contracts';
+import { projectInitV8 } from '@gitifact/contracts';
 import { initializeSpecProject } from './spec-init.js';
 import type { AgentPreset } from './agent-block.js';
 import { fetchLatestVersion } from '../adapters/registry/latest-version.js';
@@ -19,16 +19,18 @@ export async function runInit(options: InitOptions, version: string) {
     if (!dto.ok) throw new Error('unreachable');
     const docs = dto.agentDocs.mode === 'skip' ? t('init.text.skipped')
       : dto.agentDocs.paths.join(', ') + (dto.agentDocs.mode === 'remove' ? ' (' + t('init.text.blockRemoved') + ')' : dto.outcome === 'planned' ? ' (' + t('init.text.blockPlanned') + ')' : ' (' + t('init.text.blockUpdated') + ')');
+    // A project that already had documents may see them as changed once LF applies; one renormalize settles that.
+    const lineEndings = dto.lineEndings.created ? t('init.text.lineEndings', { path: dto.lineEndings.path }) + '\n' : '';
     const newer = dto.install ? t('init.text.updateAvailable', { version: dto.update.latestVersion, command: dto.install.npx }) + '\n' : '';
     process.stdout.write(options.format === 'text'
-      ? `${dto.outcome}: ${dto.rootPath}/.gitifact/config.json\n${t('init.text.storage')}: schemaVersion ${dto.schemaVersion}\n${t('init.text.agentDocs')}: ${docs}\n${newer}`
+      ? `${dto.outcome}: ${dto.rootPath}/.gitifact/config.json\n${t('init.text.storage')}: schemaVersion ${dto.schemaVersion}\n${t('init.text.agentDocs')}: ${docs}\n${lineEndings}${newer}`
       : JSON.stringify(dto) + '\n');
   } catch (error) {
     cancel.abort();
     const known = error instanceof InitError || error instanceof RepositoryReadError;
     const failure = { code: known ? error.code : 'INIT_FAILED', message: known ? error.message : t('init.failed') };
     process.stderr.write(options.format === 'text' ? failure.code + ': ' + failure.message + '\n'
-      : JSON.stringify(projectInitV7.parse({ contract: 'project-init', version: 7, ok: false, error: failure })) + '\n');
+      : JSON.stringify(projectInitV8.parse({ contract: 'project-init', version: 8, ok: false, error: failure })) + '\n');
     process.exitCode = 1;
   }
 }

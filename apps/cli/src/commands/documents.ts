@@ -5,6 +5,7 @@ import { createDocumentFile, generateId } from '../adapters/filesystem/document-
 import { readInstructionFiles, type InstructionFile } from '../adapters/filesystem/instruction-folder.js';
 import { CommandError, section, text, type CommandResult } from './output.js';
 import { documentsOf, type Project } from './project.js';
+import type { DocState } from '../queries/document-states.js';
 import { t } from '../shared/i18n/index.js';
 
 // What `specs` and `instructions` share: reading documents as written with the documents on either side, and
@@ -13,6 +14,11 @@ import { t } from '../shared/i18n/index.js';
 export type NewKind = 'feature' | 'requirement' | 'design' | 'instruction';
 
 export const draftMark = (doc: { draft?: true }) => doc.draft ? ' (' + t('docs.draft') + ')' : '';
+/** A document not committed as it is says so at the end of its line; a committed one says nothing. */
+const stateLabel: Record<Exclude<DocState, 'committed'>, () => string> = {
+  added: () => t('docs.state.added'), modified: () => t('docs.state.modified'), deleted: () => t('docs.state.deleted'),
+};
+export const stateMark = (state: DocState) => state === 'committed' ? '' : ' (' + stateLabel[state]() + ')';
 /** The path people type and the viewer shows: inside `.gitifact`, without that prefix. */
 export const place = (path: string) => path.replace(/^\.gitifact\//, '');
 export const line = (doc: Doc) => `${doc.id} ${doc.title}${draftMark(doc)} — ${doc.description}`;

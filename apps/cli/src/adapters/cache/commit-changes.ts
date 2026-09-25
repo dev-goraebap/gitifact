@@ -154,9 +154,11 @@ export function createCommitChanges(git: GitAccess) {
     });
   }
 
+  // Both sides are read at the commit and its first parent, which is where the text is read again when it is asked for.
   const eventsOf = (c: RawCommit, changes: ReturnType<typeof compare>, records: AttachedRecord[]): HistoryEvent[] => changes.map(change => ({
     key: c.commit + ':' + change.id, commit: c.commit, author: c.author, email: c.email, date: c.date, committer: c.committer, message: c.message,
     id: change.id, kind: change.kind, types: change.types, before: change.before, after: change.after, records: recordsFor(records, change.id),
+    source: { before: c.parent ?? null, after: c.commit },
   }));
   const newReasons = (before: Side[], after: Side) => [...after.reasons.values()].filter(r => before.every(b => !b.reasons.has(r.id))).map(r => reasonRecord(r.id, r.docs, r.reason));
   /** The records among `paths` read at `rev`; a record that does not parse is left out like any unreadable file. */
@@ -222,6 +224,17 @@ export function createCommitChanges(git: GitAccess) {
   return {
     /** Every document and reason file of a commit (path → text): what `specs show --ref` and `changes` compare against. */
     tree,
+    /**
+     * Documents read again at the commits and paths a change was read at, by one `cat-file --batch`: the text a
+     * change's detail shows, which the cache does not keep. A place that no longer reads is null.
+     */
+    async sides(places: { rev: string; path: string; specId: string }[]): Promise<(DocSnapshot | null)[]> {
+      const blobs = await readBlobs([...new Set(places.map(p => p.rev + ':' + p.path))]);
+      return places.map(p => {
+        const text = blobs.get(p.rev + ':' + p.path);
+        try { return text === undefined ? null : snapshot(parseDocumentFile(p.path, text), p.specId); } catch { return null; }
+      });
+    },
     /** All reachable record commits, children before parents even when author clocks differ. */
     async lineage(head: string): Promise<string[]> {
       return git.decode(await git.run(['rev-list', '--full-history', '--date-order', head, '--', ...HISTORY_PATHSPECS])).split('\n').filter(Boolean);

@@ -5,6 +5,7 @@ import { Text } from '@astryxdesign/core/Text';
 import { Button } from '@astryxdesign/core/Button';
 import { historyOptions } from '../../../entities/project';
 import { ActivityTimeline, TimelineSkeleton } from '../../../widgets/activity-timeline';
+import { WorkingEntry } from './WorkingEntry';
 import type { RecordSearch } from '../../../widgets/records-page';
 import { PageState } from '../../../shared/ui/page-state';
 import { RequestState } from '../../../shared/ui/request-state';
@@ -13,7 +14,8 @@ import { t, useLanguage } from '../../../shared/i18n';
 
 /**
  * The activity timeline. Filters and the search word go to the server, which answers from all of history — a filter
- * finds changes that were never loaded, and the count is the whole count — fifty at a time.
+ * finds changes that were never loaded, and the count is the whole count — twenty commits at a time, each whole.
+ * The work not committed yet comes first while no filter is set.
  */
 export function HistoryView({features,search,session,head}: {features:SpecFeature[];search:RecordSearch;session:BrowserSessionV3;head:string|null}) {
   useLanguage();
@@ -28,6 +30,7 @@ export function HistoryView({features,search,session,head}: {features:SpecFeatur
  if(query.isPending) return <VStack gap={0}><TimelineSkeleton/></VStack>;
  if(query.error&&!first) return <RequestState error={query.error} retry={()=>{void query.refetch();}}/>;
  return <VStack gap={0}>
+  {!filtering&&<WorkingEntry session={session}/>}
   {!!events.length&&<ActivityTimeline events={events} features={features}/>}
   {!events.length&&<PageState kind={filtering?'search':'empty'} title={t('history.emptyTitle')} description={filtering?t('history.changeFilters'):t('history.emptyDescription')}/>}
   {first&&!!first.total&&<VStack gap={3} padding={5} className={styles.historyPagination}>

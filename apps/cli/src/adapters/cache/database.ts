@@ -6,7 +6,7 @@ import { join } from 'node:path';
  * Bumped whenever what is stored changes meaning — a column, or how a commit's changes are computed. A file written
  * under another number is dropped and rebuilt; everything in it can be read again from the files and from Git.
  */
-export const CACHE_FORMAT = 8;
+export const CACHE_FORMAT = 9;
 export const CACHE_DIR = '.gitifact/cache';
 
 const SCHEMA = `
@@ -22,13 +22,17 @@ const SCHEMA = `
   CREATE INDEX doc_references_to ON doc_references (to_id);
   -- Commits already read, and with which parser: 'current', 'legacy' (0.7, before a migration) or 'migration' (hidden).
   CREATE TABLE commits (oid TEXT PRIMARY KEY, reader TEXT NOT NULL);
-  -- One row per change. 'row' is the list shape as JSON; 'detail' the text on both sides.
+  -- One row per change. 'row' is the list shape as JSON with its records by ID; 'detail' where each side's text is read
+  -- again from Git (commit and path), or the text itself for 0.7 history, which has no files to read again.
   CREATE TABLE changes (
     key TEXT PRIMARY KEY, oid TEXT NOT NULL, ord INTEGER NOT NULL,
     id TEXT NOT NULL, kind TEXT NOT NULL, types TEXT NOT NULL, email TEXT NOT NULL, date TEXT NOT NULL,
     before_spec TEXT, after_spec TEXT, needle TEXT NOT NULL, row TEXT NOT NULL, detail TEXT NOT NULL);
   CREATE INDEX changes_by_commit ON changes (oid, ord);
   CREATE INDEX changes_by_id ON changes (id);
+  -- The records each commit added, once each; change rows name them by ID.
+  CREATE TABLE records (oid TEXT NOT NULL, id TEXT NOT NULL, title TEXT NOT NULL, sections TEXT NOT NULL, PRIMARY KEY (oid, id));
+  CREATE INDEX records_by_id ON records (id);
   -- All reachable record commits of one HEAD, children before parents (pos 0 is newest).
   CREATE TABLE lineage (head TEXT NOT NULL, pos INTEGER NOT NULL, oid TEXT NOT NULL, PRIMARY KEY (head, pos));
   CREATE INDEX lineage_by_commit ON lineage (head, oid);
@@ -53,6 +57,9 @@ function prepare(db: DatabaseSync) {
     db.exec(`PRAGMA user_version = ${CACHE_FORMAT}`);
     db.exec('COMMIT');
   } catch (error) { db.exec('ROLLBACK'); throw error; }
+  // Dropped tables leave their pages in the file; the new, empty tables make giving them back cheap. A process that
+  // holds the file open keeps the pages, which the cache reuses as it fills.
+  try { db.exec('VACUUM'); } catch { /* busy */ }
 }
 
 /**

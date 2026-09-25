@@ -1,4 +1,4 @@
-import type { SpecEvent, SpecFeature, BrowserSessionV3, BrowserSpecsV6, BrowserHistorySummaryV4 } from '@gitifact/contracts';
+import type { SpecEvent, SpecFeature, BrowserSessionV3, BrowserSpecsV7, BrowserHistorySummaryV4 } from '@gitifact/contracts';
 import { useQuery } from '@tanstack/react-query';
 import { VStack } from '@astryxdesign/core/VStack';
 import { HStack } from '@astryxdesign/core/HStack';
@@ -15,7 +15,7 @@ import { statusOptions, summaryOptions } from '../../../entities/project';
 import styles from './overview.module.css';
 import { t, useLanguage, getLanguage } from '../../../shared/i18n';
 
-type Contributor = NonNullable<BrowserSpecsV6['contributors']>[number];
+type Contributor = NonNullable<BrowserSpecsV7['contributors']>[number];
 type ChangeType = SpecEvent['types'][number];
 
 // Categorical hues in a fixed order validated for adjacent-pair CVD separation (blue → orange → purple → green); gray closes a tail.

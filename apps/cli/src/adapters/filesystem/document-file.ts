@@ -19,3 +19,16 @@ export async function createDocumentFile(root: string, path: string, text: strin
   }
   await writeFile(join(root, ...parts), text, { flag: 'wx' });
 }
+
+/** The attributes file init writes: every text file under .gitifact is stored and checked out with LF. */
+export const LINE_ENDINGS_PATH = '.gitifact/.gitattributes';
+const LINE_ENDINGS = '# Written by gitifact init: documents keep LF on every OS, so what Git holds and the files read the same.\n* text=auto eol=lf\n';
+
+/**
+ * Writes `.gitifact/.gitattributes` when it is missing. It applies inside .gitifact only, so the project's own
+ * attributes stay as they are; an existing file is the user's and is kept. Answers whether the file was written.
+ */
+export async function writeLineEndings(root: string): Promise<boolean> {
+  try { await createDocumentFile(root, LINE_ENDINGS_PATH, LINE_ENDINGS); return true; }
+  catch (error) { if ((error as NodeJS.ErrnoException).code === 'EEXIST') return false; throw error; }
+}

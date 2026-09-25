@@ -36,3 +36,6 @@
 .page:has([data-page-footer]) .column, .page:has([data-page-footer]) .content { flex:1 0 auto; }
 /* A screen that compares two versions side by side needs more than the reading column; it still centres. */
 .wide { max-width:96rem; }
+
+/* The notice that the project changed since the checkout was read, above the page's content. */
+.staleNotice { padding-top:var(--spacing-4); }

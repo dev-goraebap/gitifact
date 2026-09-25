@@ -138,3 +138,4 @@ export function storeReader(cwd: string) {
     },
   };
 }
+export type StoreReader = ReturnType<typeof storeReader>;

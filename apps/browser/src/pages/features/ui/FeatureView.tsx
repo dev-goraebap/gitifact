@@ -15,7 +15,7 @@ import { Avatar } from '@astryxdesign/core/Avatar';
 import { AvatarGroup, AvatarGroupOverflow } from '@astryxdesign/core/AvatarGroup';
 import { useMediaQuery } from '@astryxdesign/core/hooks';
 import { Link, useNavigate } from '@tanstack/react-router';
-import { DesignDocument } from '../../../entities/document';
+import { DesignDocument, StateToken } from '../../../entities/document';
 import { avatarSource, contributorHref } from '../../../entities/contributor';
 import type { RecordSearch } from '../../../widgets/records-page';
 import { designsByRequirement } from '../model/design-sections';
@@ -97,7 +97,8 @@ function FeatureList({ features, search, change }: { features: SpecFeature[]; se
       ? <HStack gap={4} className={styles.featureTitleRow}>
         <VStack gap={0} className={styles.featureHeading}>
           <HStack gap={2} className={styles.featureNameLine}>
-            <Link to="/features/$featureId" params={{ featureId: row.feature.id }} search={carried} className={styles.featureTitle}>{row.feature.title}</Link>
+            <Link to="/features/$featureId" params={{ featureId: row.feature.id }} search={carried} className={styles.featureTitle} data-state-title>{row.feature.title}</Link>
+            <StateToken state={row.feature.state}/>
             {!row.feature.designs.length && <Token label={t('features.noDesignMark')} color="yellow" size="sm"/>}
           </HStack>
           {/* The second line is kept even without a description, so every feature row has the same height. */}
@@ -109,7 +110,8 @@ function FeatureList({ features, search, change }: { features: SpecFeature[]; se
         ? <Link to="/features/$featureId" params={{ featureId: row.feature.id }} search={carried} className={styles.requirementMore}>{t('features.moreRequirements', { count: row.hidden! })}</Link>
         : <HStack gap={3} className={styles.requirementRow}>
           <Text type="supporting" color="secondary" className={styles.requirementNumber}>{String(row.number!).padStart(2, '0')}</Text>
-          <Link to="/features/$featureId" params={{ featureId: row.feature.id }} search={{ ...carried, selected: row.requirement!.id, tab: 'requirements' }} hash={row.requirement!.id} className={styles.requirementLink}>{row.requirement!.title}</Link>
+          <Link to="/features/$featureId" params={{ featureId: row.feature.id }} search={{ ...carried, selected: row.requirement!.id, tab: 'requirements' }} hash={row.requirement!.id} className={styles.requirementLink} data-state-title>{row.requirement!.title}</Link>
+          <StateToken state={row.requirement!.state}/>
           {row.requirement!.description && <Text type="supporting" color="secondary" className={`${styles.requirementDescription} ${styles.oneLine}`}>{oneLine(row.requirement!.description)}</Text>}
           {uncovered(row) && <Text type="supporting" color="secondary" className={styles.requirementNoDesign}>{t('features.noDesignMark')}</Text>}
         </HStack> },
@@ -131,7 +133,9 @@ function FeatureList({ features, search, change }: { features: SpecFeature[]; se
     onSortChange: next => { const entry = next[0]; if (!entry) return;
       const way = entry.sortKey === key ? entry.direction : opens[entry.sortKey];
       change({ ...search, sort: entry.sortKey === 'updatedAt' ? undefined : entry.sortKey, dir: way === opens[entry.sortKey] ? undefined : way === 'ascending' ? 'asc' : 'desc', page: undefined }); } });
-  const interaction: TablePlugin<FeatureRow> = { transformBodyRow: (props, item) => ({ ...props, htmlProps: { ...props.htmlProps, tabIndex: 0, 'data-row': item.kind,
+  // A row not committed as it is carries its state, which draws the bar at its start (global.css).
+  const stateOf = (row: FeatureRow) => { const state = row.kind === 'feature' ? row.feature.state : row.kind === 'requirement' ? row.requirement!.state : undefined; return state === 'committed' ? undefined : state; };
+  const interaction: TablePlugin<FeatureRow> = { transformBodyRow: (props, item) => ({ ...props, htmlProps: { ...props.htmlProps, tabIndex: 0, 'data-row': item.kind, 'data-state': stateOf(item),
     // Links inside the row (title, contributor avatars) navigate on their own; only bare surface clicks open it.
     onClick: (event: { target: EventTarget | null }) => { if (!(event.target as HTMLElement | null)?.closest('a, button')) open(item); }, onKeyDown: event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); open(item); } } } }) };
   if (!groups.length) return <PageState kind={features.length ? 'search' : 'empty'} title={t('features.emptyTitle')} description={features.length ? t('features.changeFilters') : t('features.emptyDescription')}/>;
@@ -160,7 +164,7 @@ function FeatureDetail({ feature: selected, features, search, change }: { featur
   return <VStack as="article" aria-label={t('features.detail')} gap={0} className={styles.featureDetail}>
     <Link to="/features" search={{ q: search.q, design: search.design, author: search.author, sort: search.sort }} className={styles.featureBack}>{t('features.back')}</Link>
     <VStack gap={4} className={styles.documentHeading}>
-      <Heading level={1}>{selected.title}</Heading>
+      <HStack gap={3} vAlign="center" wrap="wrap"><Heading level={1}>{selected.title}</Heading><StateToken state={selected.state}/></HStack>
       {selected.description && <Markdown>{selected.description}</Markdown>}
       <HStack gap={4} wrap="wrap" className={styles.entryLine}>
         <Text type="supporting" color="secondary">{selected.id}</Text>
@@ -177,9 +181,9 @@ function FeatureDetail({ feature: selected, features, search, change }: { featur
     {tab === 'design' ? (designs.length ? <VStack id="feature-design" role="tabpanel" aria-label={t('features.tab.design')} gap={0} className={styles.requirementLayout}>
       <DocumentIndex label={t('features.designIndex')} title={t('features.designIndexTitle')} documents={designs} reading={reading}/>
       <VStack gap={0} className={styles.requirementList}>
-        {designs.map((d, index) => <VStack key={d.id} id={d.id} gap={0} className={styles.requirementSection} {...(d.id === target ? { 'aria-current': 'location' as const } : {})}>
+        {designs.map((d, index) => <VStack key={d.id} id={d.id} gap={0} className={styles.requirementSection} data-state={d.state === 'committed' ? undefined : d.state} {...(d.id === target ? { 'aria-current': 'location' as const } : {})}>
           <DesignDocument design={d} path={d.path} features={features}
-            eyebrow={<NumberLine label={t('features.designNumber', { number: number(index) })} id={d.id}/>}
+            eyebrow={<HStack gap={2} vAlign="center"><NumberLine label={t('features.designNumber', { number: number(index) })} id={d.id}/><StateToken state={d.state}/></HStack>}
             footer={<RelatedList label={t('features.requirementHistoryLabel')}>
               <RelatedItem title={<Link to="/records" search={{ feature: selected.id, q: d.id }}>{t('features.designHistory')}</Link>}/>
             </RelatedList>}/>
@@ -195,11 +199,11 @@ function FeatureDetail({ feature: selected, features, search, change }: { featur
       <VStack gap={0} className={styles.featureIntro}><DocumentBody headingLevelStart={3} path={selected.path}>{selected.body}</DocumentBody></VStack>
       {selected.requirements.map((r, index) => {
         const explained = (designSections.get(r.id) ?? []).map(id => designs.find(d => d.id === id)!);
-        return <VStack key={r.id} id={r.id} gap={4} className={styles.requirementSection} {...(r.id === target ? { 'aria-current': 'location' as const } : {})}>
+        return <VStack key={r.id} id={r.id} gap={4} className={styles.requirementSection} data-state={r.state === 'committed' ? undefined : r.state} {...(r.id === target ? { 'aria-current': 'location' as const } : {})}>
           <VStack gap={2}>
-            <NumberLine label={t('features.requirementNumber', { number: number(index) })} id={r.id}/>
+            <HStack gap={2} vAlign="center"><NumberLine label={t('features.requirementNumber', { number: number(index) })} id={r.id}/><StateToken state={r.state}/></HStack>
             {/* Every title carries the highlighter; the one the reader was sent to lies on hatching instead (the section above). */}
-            <Heading level={3}><mark className={styles.titleMark}>{r.title}</mark></Heading>
+            <Heading level={3}><mark className={styles.titleMark} data-state-title>{r.title}</mark></Heading>
           </VStack>
           {/* Each requirement is its own file one folder below index.md; its links start from there. */}
           <DocumentBody headingLevelStart={4} path={r.path}>{r.body}</DocumentBody>

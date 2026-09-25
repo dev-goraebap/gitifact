@@ -41,7 +41,8 @@ flowchart TD
 | `adapters/registry/` | npm 최신 버전 조회 |
 | `adapters/github/` | `feedback`의 `gh` 실행과 이슈 작성 주소 |
 | `output/` | core 결과를 버전 있는 DTO로 변환 |
-| `server/` | `browser-server`(수명), `http/`(검사·라우터·응답·앱 파일), `routes/`(경로 표), `checkout/`(작업 폴더 체크아웃), `commit/`(커밋의 소스 변경) |
+| `server/` | `browser-server`(수명), `http/`(검사·라우터·응답·앱 파일), `routes/`(경로 표), `checkout/`(작업 폴더 체크아웃과 지문), `commit/`(커밋의 소스 변경) |
+| `queries/` | CLI 명령과 브라우저 서버가 함께 부르는 조회: 문서마다 마지막 커밋 대비 상태(`document-states.ts`), 커밋 전 변경(`working-changes.ts`). 같은 조회를 두 곳에 따로 짓지 않는다 |
 | `shared/i18n/` | 사용자에게 보이는 문구와 언어별 Markdown |
 | `packages/core/src/domain/` | 문서·저장소 상태·읽기 오류 |
 | `formats/` | 공개 형식별 파싱·검증(문서·이유·0.7 저장소·패치노트) |
@@ -111,7 +112,8 @@ stdout에는 선택한 출력 형식만 내보내고 로그·진행 상황은 st
 - **개요 파일:** 요구사항이나 설계가 있는 기능은 `index.md`, 설계가 하나라도 있으면 `design/overview.md`가 필수다.
 - **결정기록:** 기록 하나가 파일 하나다. 기록에는 종류가 없고 맥락·결정(필수)과 검토한 대안(선택)을 섹션으로 두며, 섹션은 한국어나 영어 제목으로 쓰며 500자까지다. `docs`는 지워진 문서도 가리킬 수 있다. 작성자·시각은 기록을 더한 커밋에서 읽는다. 아직 커밋하지 않은 기록은 `.gitifact/records/`의 `git status`로 찾고, 이력은 커밋이 더한 기록 파일만 읽는다. 모든 기록 파일을 읽는 경로를 만들지 않는다. 작업 폴더에 남은 `.gitifact/history.jsonl`은 `REASONS_FILE_REMOVED` 문제다.
 - **에셋:** `.gitifact/assets/` 아래 파일이며 ID가 없다. 권장 크기(파일당 1MB, 전체 50MB)와 확장자를 넘거나 참조가 없으면 경고만 낸다.
-- **캐시:** `.gitifact/cache/index.db`는 문서·참조·검색·이력의 파생물이다. 원본은 파일과 Git이며 지우거나 형식 번호가 다르면 다시 만든다. 폴더 안의 `.gitignore`(`*`)로 커밋에서 빠진다.
+- **캐시:** `.gitifact/cache/index.db`는 문서·참조·검색·이력의 파생물이다. 원본은 파일과 Git이며 지우거나 형식 번호가 다르면 다시 만든다. 폴더 안의 `.gitignore`(`*`)로 커밋에서 빠진다. Git에 있는 원문은 담지 않고 다시 읽을 커밋과 경로만 둔다(0.7 이력은 예외).
+- **줄바꿈:** `init`이 쓰는 `.gitifact/.gitattributes`(`* text=auto eol=lf`)가 `.gitifact` 아래 텍스트를 LF로 저장하고 꺼낸다. Git에서 읽은 원문과 작업 폴더 파일이 같다는 가정은 이 파일에 기댄다.
 
 > [!IMPORTANT]
 > 커밋된 결정기록은 수정·삭제하지 않는다(`RECORD_ALTERED`). 결정이 바뀌면 새 기록을 쓴다.
@@ -123,7 +125,7 @@ stdout에는 선택한 출력 형식만 내보내고 로그·진행 상황은 st
 
 ## 조회와 커밋 흐름
 
-문서는 에이전트가 파일을 직접 고치며 저장 명령은 없다. 명령은 리소스마다 `list`·`show`·`new`를 둔다(`specs`·`instructions`·`records`). 새 문서는 `specs new`·`instructions new`가, 결정기록은 결정한 때 `records new`가 ID를 발급하고 뼈대를 쓴다. 검사는 최상위 `check` 하나다. 최상위에는 리소스와 `check` 밖에 시스템 명령(`init`·`update`·`browser`·`guide`)만 둔다. 목록은 같은 공통 옵션(`--q`·`--author`·`--sort`·`--limit`·`--fields`·`--format`)을 같은 뜻으로 받는다. 모든 조회는 캐시를 거치며, 캐시는 명령마다 수정 시각·크기가 바뀐 문서만 다시 읽는다.
+문서는 에이전트가 파일을 직접 고치며 저장 명령은 없다. 명령은 리소스마다 `list`·`show`·`new`를 둔다(`specs`·`instructions`·`records`). 새 문서는 `specs new`·`instructions new`가, 결정기록은 결정한 때 `records new`가 ID를 발급하고 뼈대를 쓴다. 검사는 최상위 `check` 하나다. 최상위에는 리소스와 `check` 밖에 시스템 명령(`init`·`update`·`browser`·`guide`)만 둔다. 목록은 같은 공통 옵션(`--q`·`--author`·`--sort`·`--limit`·`--after`·`--all`·`--fields`·`--format`)을 같은 뜻으로 받는다. 목록은 기본 20개씩이고 커서(`--after`, JSON `page.next`)로 넘기며, 명세는 기능 단위, 이력은 커밋 단위로 자른다. 상세는 본문과 딸린 목록의 첫 20개를 주고, 원문처럼 무거운 것은 고를 때 읽는다. 모든 조회는 캐시를 거치며, 캐시는 명령마다 수정 시각·크기가 바뀐 문서만 다시 읽는다.
 
 커밋은 `changes list`로 바뀐 문서와 입력 파일 경로를 받고, 에이전트가 그 파일에 JSON(`paths`·`message`·`authorization`, 마이그레이션이면 `migration: true`)을 써서 `changes commit --file`로 넘긴다.
 

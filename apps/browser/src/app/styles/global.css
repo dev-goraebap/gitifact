@@ -83,3 +83,13 @@ a {
 @media (prefers-reduced-motion: reduce) {
   .astryx-skeleton { animation: none; }
 }
+
+/* A row whose document is not committed as it is lies on a light wash of its state's colour, and a document to be
+   deleted is struck through; the badge beside the title names the state. Rows set data-state. A table row paints its
+   cells, so the cells carry the wash and the row does not. --gitifact-state-wash names the colour for a screen that
+   paints only part of a cell (the feature list keeps the gap under a group's last row clear). */
+[data-state="added"] { --gitifact-state-wash: color-mix(in srgb, var(--color-background-green) 45%, transparent); }
+[data-state="modified"] { --gitifact-state-wash: color-mix(in srgb, var(--color-background-blue) 45%, transparent); }
+[data-state="deleted"] { --gitifact-state-wash: color-mix(in srgb, var(--color-background-red) 45%, transparent); }
+[data-state]:not(tr), tr[data-state] > td { background-color: var(--gitifact-state-wash); }
+[data-state="deleted"] [data-state-title] { text-decoration: line-through; }

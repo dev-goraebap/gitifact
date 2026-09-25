@@ -51,12 +51,12 @@
 .splitList :global(.astryx-list-item) { position:relative; }
 .splitList :global(.astryx-list-item) > a::after { content:''; position:absolute; inset:0; border-radius:inherit; }
 .splitContent { flex:1 1 0; min-width:0; }
-.splitPicker { display:none; }
+.splitPicker, .splitPickerMore { display:none; }
 /* The chosen document heads the text beside the list; the page's own sections carry the rule between them. */
 .splitContent .change { border-top:none; padding-top:0; }
 @media(width<64rem) {
   .splitList { display:none; }
-  .splitPicker { display:flex; }
+  .splitPicker, .splitPickerMore { display:flex; }
 }
 /* A record's head: what its commit holds besides the record, as a line of links. */
 .recordCommitLinks { font-size:.8125rem; }

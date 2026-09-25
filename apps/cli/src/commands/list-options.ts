@@ -4,7 +4,7 @@ import type { Project } from './project.js';
 import { t } from '../shared/i18n/index.js';
 
 /** The options every `list` takes, with the same meaning in each resource. */
-export interface ListOptions { format: Format; q?: string; author?: string; limit?: number; fields?: string[] }
+export interface ListOptions { format: Format; q?: string; author?: string; limit?: number; all?: boolean; after?: string; fields?: string[] }
 
 /** Commander parser for `--limit`: a positive whole number. */
 export function parseLimit(value: string): number {
@@ -49,6 +49,22 @@ export async function since(project: Project, value: string | undefined, head: s
   return change => after.has(change.commit);
 }
 
+/**
+ * The same `--since` as a filter the cache applies in SQL: a first moment for a date, or the commits of `<commit>..HEAD`.
+ */
+export async function sinceRange(project: Project, value: string | undefined, head: string | null): Promise<{ from?: number; commits?: string[] }> {
+  if (value === undefined) return {};
+  if (/^\d{4}-\d\d-\d\d/.test(value)) {
+    const from = Date.parse(value);
+    if (!Number.isFinite(from)) throw new CommandError('INVALID_VALUE', t('list.since', { value }));
+    return { from };
+  }
+  let commit: string;
+  try { commit = await project.reader.resolve(value); } catch { throw new CommandError('INVALID_VALUE', t('list.since', { value })); }
+  if (!head) return { commits: [] };
+  return { commits: project.reader.decode(await project.reader.run(['rev-list', `${commit}..${head}`, '--'])).split('\n').filter(Boolean) };
+}
+
 /** Case-insensitive containment, for the filters that run over text the cache does not index. */
 export const contains = (query: string | undefined) => {
   const wanted = query?.trim().toLowerCase();
@@ -72,4 +88,38 @@ export function selected<T extends Record<string, unknown>>(rows: T[], fields: s
     json: rows.map(row => Object.fromEntries(fields.map(f => [f, row[f] ?? null]))),
     text: rows.length ? text(rows.map(row => fields.map(f => cell(row[f])).join('\t'))) : '',
   };
+}
+
+/** How many items a list shows when neither `--limit` nor `--all` is given. */
+export const PAGE_SIZE = 20;
+/** One page of a list: the items shown, how many there are in all, and where the next page starts (null at the end). */
+export interface Page<T> { rows: T[]; total: number; next: string | null }
+
+/**
+ * One page of rows already in list order. The cursor is the key of the last item shown, so the next page starts
+ * after that item even if items before it came or went; a key that is no longer listed is refused, and the list is
+ * read again from the start. `--all` shows every item.
+ */
+export function paginate<T>(rows: readonly T[], keyOf: (row: T) => string, options: Pick<ListOptions, 'after' | 'limit' | 'all'>): Page<T> {
+  let start = 0;
+  if (options.after !== undefined) {
+    const at = rows.findIndex(row => keyOf(row) === options.after);
+    if (at < 0) throw new CommandError('INVALID_VALUE', t('list.after', { cursor: options.after }));
+    start = at + 1;
+  }
+  const size = options.all ? rows.length : options.limit ?? PAGE_SIZE;
+  const shown = rows.slice(start, start + size);
+  const more = start + shown.length < rows.length && shown.length > 0;
+  return { rows: shown, total: rows.length, next: more ? keyOf(shown[shown.length - 1]!) : null };
+}
+/** The last line of a page that is not the end: how many are shown of how many, and the option that reads on. */
+export const pageLine = (page: Page<unknown>, before = 0, unit = t('list.items')) =>
+  page.next === null ? [] : [t('list.more', { shown: before + page.rows.length, total: page.total, unit, cursor: page.next })];
+/**
+ * Lines beside a tab-separated `--fields` answer: stdout keeps the rows only, so the line that says more pages follow
+ * goes to stderr, where a person running the command still sees it. Adds nothing to stdout.
+ */
+export function aside(format: Format, lines: string[]): '' {
+  if (format === 'text' && lines.length) process.stderr.write(lines.join('\n') + '\n');
+  return '';
 }

@@ -25,22 +25,23 @@ test('mobile dark theme preserves safe Markdown and navigation',async({page})=>{
  await page.getByRole('button',{name:'탐색 열기',exact:true}).click();await page.getByRole('link',{name:'참여자',exact:true}).click();await expect(page).toHaveURL(/contributors/);
 });
 
-// Fifty-one changes: the server answers fifty, and the last one comes with "load more".
+// Twenty-one commits of one change each: the server answers twenty commits, and the oldest comes with "load more".
 function longHistory(){
  const data=structuredClone(specs);
  const base=data.events[0]!;
- data.events=[base,...Array.from({length:50},(_,i)=>({...base,key:'d'.repeat(40)+':R-'+'abcdefgh'+'abcdefghijklmnopqrstuvwxyz234567'[i>>5]+'abcdefghijklmnopqrstuvwxyz234567'[i&31],id:'R-abcdefgh'+'abcdefghijklmnopqrstuvwxyz234567'[i>>5]+'abcdefghijklmnopqrstuvwxyz234567'[i&31],after:{...base.after!,title:i===49?'이전 검색 요구사항':'이전 변경 '+i},records:[]}))];
+ data.events=[base,...Array.from({length:20},(_,i)=>{const commit='d'.repeat(38)+i.toString(16).padStart(2,'0');const id='R-abcdefgh'+'abcdefghijklmnopqrstuvwxyz234567'[i>>5]+'abcdefghijklmnopqrstuvwxyz234567'[i&31];
+  return {...base,commit,key:commit+':'+id,id,after:{...base.after!,title:i===19?'이전 검색 요구사항':'이전 변경 '+i},records:[]};})];
  return data;
 }
 test('load more retains rows, appends the next page and shows completion', async ({page}) => {
  await mockApi(page, longHistory());
  await page.goto('/records');
  await expect(page.getByText('검색어 입력',{exact:true})).toBeVisible();
- await expect(page.getByText('전체 51건 중 50건을 보고 있습니다.',{exact:false})).toBeVisible();
+ await expect(page.getByText('전체 21건 중 20건을 보고 있습니다.',{exact:false})).toBeVisible();
  await page.getByRole('button',{name:'이전 이력 더 보기',exact:true}).click();
  await expect(page.getByText('이전 검색 요구사항',{exact:true})).toBeVisible();
  await expect(page.getByText('검색어 입력',{exact:true})).toBeVisible();
- await expect(page.getByText('전체 51건 중 51건을 보고 있습니다. 마지막 이력까지 확인했습니다.')).toBeVisible();
+ await expect(page.getByText('전체 21건 중 21건을 보고 있습니다. 마지막 이력까지 확인했습니다.')).toBeVisible();
  await expect(page.getByRole('button',{name:'이전 이력 더 보기',exact:true})).toHaveCount(0);
 });
 
@@ -215,20 +216,20 @@ test('a reason is written once over the records it explains, and each day is mar
  await expect(detail.getByRole('region',{name:'같은 커밋의 다른 기록'})).toHaveCount(0);
 });
 
-test('a list row carries no body; the commit is read once and shows the text of its documents', async ({page}) => {
+test('a list row carries no body; the text of a document is read once, when it is opened', async ({page}) => {
  await mockApi(page);
  let reads = 0;
- await page.route(url => url.pathname === '/api/v1/commit', async route => { reads++;
+ await page.route(url => url.pathname === '/api/v1/commit/change', async route => { reads++;
   const event = specs.events[0]!;
-  await route.fulfill({json:{contract:'browser-commit',version:3,sessionId:specs.sessionId,commit:event.commit,author:event.author,email:event.email,committer:event.committer,date:event.date,message:event.message,
-   changes:[{event,before:null,after:{id:'R-abcdefghij',kind:'requirement',title:'검색어 입력',description:'검색어 입력',body:'본문은 **열 때** 읽습니다.',specId:'S-abcdefghij',path:'.gitifact/spec/search/requirements/r-abcdefghij.md'}}]}}); });
+  await route.fulfill({json:{contract:'browser-commit-change',version:1,sessionId:specs.sessionId,commit:event.commit,event,
+   before:null,after:{id:'R-abcdefghij',kind:'requirement',title:'검색어 입력',description:'검색어 입력',body:'본문은 **열 때** 읽습니다.',specId:'S-abcdefghij',path:'.gitifact/spec/search/requirements/r-abcdefghij.md'}}}); });
  await page.goto('/records');
  await expect(page.getByRole('list',{name:'결정기록 목록'})).not.toContainText('본문은 열 때 읽습니다.');
  await page.getByText('검색어 입력',{exact:true}).click();
  const article = page.getByRole('article',{name:'결정기록 상세'});
  await expect(article).toContainText('본문은 열 때 읽습니다.');
  await expect(article).toContainText('사용자가 검색을 요청했습니다.');
- // The commit page reads the same commit, and coming back does not ask again: a commit never changes.
+ // The commit page opens the same document, and coming back does not ask again: a commit never changes.
  await article.getByRole('link',{name:specs.events[0]!.message}).click();
  await page.getByRole('article',{name:'커밋 상세'}).getByRole('tab',{name:/문서/}).click();
  await expect(page.getByRole('article',{name:'커밋 상세'})).toContainText('본문은 열 때 읽습니다.');
@@ -248,9 +249,9 @@ test('a commit that cannot be read says so on its page instead of leaving it bla
 test('a filter and a search word find changes that were never loaded, with the whole count', async ({page}) => {
  await mockApi(page, longHistory());
  await page.goto('/records');
- await expect(page.getByText('전체 51건 중 50건을 보고 있습니다.',{exact:false})).toBeVisible();
+ await expect(page.getByText('전체 21건 중 20건을 보고 있습니다.',{exact:false})).toBeVisible();
  await expect(page.getByText('이전 검색 요구사항',{exact:true})).toHaveCount(0);
- // The fifty-first change is not on screen, and the word still finds it: the server searches all of history.
+ // The oldest commit is not on screen, and the word still finds it: the server searches all of history.
  await page.getByRole('textbox',{name:'검색',exact:true}).fill('이전 검색');
  await expect(page.getByText('이전 검색 요구사항',{exact:true})).toBeVisible();
  await expect(page.getByText('전체 1건 중 1건을 보고 있습니다.',{exact:false})).toBeVisible();
@@ -269,7 +270,7 @@ test('a link to any commit opens its page, whether the list loaded it or not', a
 test('the overview counts all of history, and a contributor page asks for that person\'s changes', async ({page}) => {
  await mockApi(page, longHistory());
  await page.goto('/dashboard');
- await expect(page.getByText('전체 활동 51건').first()).toBeVisible();
+ await expect(page.getByText('전체 활동 21건').first()).toBeVisible();
  await page.goto('/contributors/' + encodeURIComponent('fixture@example.test'));
  const person = page.getByRole('article', { name: '참여자 상세' });
  await expect(person.getByRole('link', { name: '검색어 입력' })).toBeVisible();

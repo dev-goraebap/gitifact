@@ -59,7 +59,8 @@ try {
   assert.deepEqual(JSON.parse(npx('check', '--format', 'json')).problems, []);
   assert.equal(initialized.outcome, 'created');
   assert.equal(initialized.schemaVersion, 3);
-  assert.deepEqual([initialized.version, initialized.update, initialized.install], [7, { status: 'disabled', latestVersion: null }, null]);
+  assert.deepEqual([initialized.version, initialized.update, initialized.install], [8, { status: 'disabled', latestVersion: null }, null]);
+  assert.deepEqual(initialized.lineEndings, { path: '.gitifact/.gitattributes', created: true });
   assert.deepEqual(initialized.baseline, { kind: 'empty' });
   const configBefore = await readFile(join(temporaryRoot, '.gitifact', 'config.json'));
   assert.equal(JSON.parse(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', 'init'], temporaryRoot, noRegistry)).outcome, 'already-initialized');

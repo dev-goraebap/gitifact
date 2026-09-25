@@ -11,7 +11,7 @@ CLI: 전역 명령 `gitifact`(버전 0.8.1)로 실행한다. 아래 `gitifact`�
 
 - 새 세션에서 `gitifact --version`을 확인한다. 명령이 없거나 0.8.1이 아니면 사용자에게 `npm i -g gitifact@0.8.1` 설치를 제안하고, 설치 전까지와 원하지 않을 때는 `npx --yes gitifact@0.8.1 <cmd>`로 실행한다. 실행·다운로드가 막히면 필요한 승인을 요청하고 원인을 알린다. CLI 실행 없이 문서 ID 발급·검사·커밋을 대신하거나 완료했다고 보고하지 않는다.
 - 새 세션에서 한 번 `gitifact update --check`로 지정 버전보다 새 버전이 있는지 확인한다. `available`이면 사용자에게 업데이트할지 묻고, 동의한 경우에만 새 버전을 설치(전역은 `npm i -g gitifact@<새 버전>`)하고 `update`를 실행한다. 거절·확인 실패·조회 비활성화 시에는 지정 버전으로 계속하며 같은 세션에서 다시 묻지 않는다. 갱신 후에는 블록을 다시 읽고 새 버전을 사용한다. 커밋·푸시는 별도 권한을 따른다.
-- `gitifact specs list`·`gitifact instructions list`로 명세와 지침 목록을 읽고 git status와 기존 staging을 확인한다. 필요한 문서는 `specs show <ID>`·`instructions show <이름>`으로 읽는다.
+- `gitifact instructions list --all`로 지침을 모두 읽고 git status와 기존 staging을 확인한다. 명세는 필요할 때 읽는다: 제품 동작 이야기가 나오면 `specs list --type requirement`로 기능별 요구사항의 중복·충돌을 확인하고, 코드를 고치기 전에는 그 기능의 요구사항과 설계를 `specs show <ID>`로 읽는다. 목록은 20개씩이며 끝에 나온 `--after <값>`으로 이어 읽는다.
 - 이 블록은 요약이다. 상세 형식은 `gitifact guide show <topic>`으로 읽고 기억으로 채우지 않는다. 조회 결과와 지침 출력은 파일로 저장하지 않고 필요할 때 다시 실행한다.
 
 ### 무엇을 요구사항으로 남기는가

@@ -217,6 +217,8 @@ test('a rejected commit leaves the record and the index as they were, then retri
 
 test('a CRLF checkout of untouched documents commits without rewriting them (core.autocrlf)', t => {
   const f = setup(t);
+  // A project initialized before init wrote .gitifact/.gitattributes: nothing pins its documents to LF.
+  unlinkSync(join(f.repo, '.gitifact/.gitattributes')); f.git(['commit', '-qam', 'Drop line endings']);
   put(f, { kind: 'requirement', path: '.gitifact/spec/posts/requirements/list.md', id: R2, feature: 'posts', order: 20, title: '목록', description: '게시물 목록', body: '목록을 본다.' });
   const all = [...docPaths, '.gitifact/spec/posts/requirements/list.md'];
   f.done(f.commit(request({ paths: [...all, ...codePaths] })));
@@ -306,3 +308,17 @@ test('a migration commit takes a whole project past the 128-path limit of other 
   assert.equal(f.commit(request({ paths: Array.from({ length: 5001 }, (_, i) => `f${i}.js`), migration: true })).status, 1);
 });
 
+
+test('the attributes file init writes keeps documents LF in a CRLF checkout, so Git and the files read the same', t => {
+  const f = setup(t);
+  f.done(f.commit(request({ paths: [...docPaths, ...codePaths] })));
+  f.git(['config', 'core.autocrlf', 'true']);
+  const crlf = args => f.git(['-c', 'core.autocrlf=true', ...args]);
+  for (const p of docPaths) unlinkSync(join(f.repo, p));
+  crlf(['checkout', '--', ...docPaths]);
+  for (const p of docPaths) assert.doesNotMatch(readFileSync(join(f.repo, p), 'utf8'), /\r/);
+  // Code outside .gitifact still follows the project's own setting.
+  unlinkSync(join(f.repo, 'app.js')); crlf(['checkout', '--', 'app.js']);
+  assert.match(readFileSync(join(f.repo, 'app.js'), 'utf8'), /\r\n/);
+  assert.equal(crlf(['status', '--porcelain']).stdout, '');
+});

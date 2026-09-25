@@ -24,7 +24,7 @@ description: 브라우저 React 앱의 경로·코드 구성·데이터 흐름·
 
 ## 코드 구성
 
-FSD의 계층·의존 방향·공개 API 규칙은 [프론트엔드 코드 스타일](references/code-style.md)을 따른다. 단일 화면의 api/model/ui는 그 page에 두고, 여러 화면이 공유하는 조회·도메인 표현만 entities, 공통 화면 블록은 widgets에 둔다. `features`에는 사용자 동작인 문서 검색(`search-palette`)이 있고, 셸과 머리 막대 위젯이 가져다 쓴다. 주요 슬라이스의 의존은 아래와 같다.
+FSD의 계층·의존 방향·공개 API 규칙은 [프론트엔드 코드 스타일](references/code-style.md)을 따른다. 단일 화면의 api/model/ui는 그 page에 두고, 여러 화면이 공유하는 조회·도메인 표현만 entities, 공통 화면 블록은 widgets에 둔다. `features`에는 사용자 동작인 문서 검색(`search-palette`)과 뒤처진 화면의 새로 고침 알림(`stale-notice`)이 있고, 셸·머리 막대 위젯과 `records-page`가 가져다 쓴다. 주요 슬라이스의 의존은 아래와 같다.
 
 ```mermaid
 flowchart TD
@@ -38,14 +38,16 @@ flowchart TD
   P --> RP & PH & AT & DV
   subgraph F["features"]
     SP["search-palette"]
+    SN["stale-notice"]
   end
   PH --> SP
+  RP --> SN
   subgraph E["entities"]
     EP["project"]
     EC["contributor"]
     ED["document"]
   end
-  RP & PH & SP --> EP
+  RP & PH & SP & SN --> EP
   AT --> EC
   P --> ED
   E --> S["shared"]
@@ -54,14 +56,15 @@ flowchart TD
 | 슬라이스 | 맡는 것 |
 | :--- | :--- |
 | `app/routes` | 라우트 파일과 search params 검증. 화면 컴포넌트는 pages에 둔다 |
-| `pages/*` | 화면마다 하나: overview·features·instructions·activity·commit·contributors·git-status·settings·about·getting-started·changelog·not-found. `commit`은 커밋 페이지와 기록 상세를 함께 맡는다 |
+| `pages/*` | 화면마다 하나: overview·features·instructions·activity·commit·contributors·git-status·settings·about·getting-started·changelog·not-found. `commit`은 커밋 페이지, 기록 상세, 커밋 전 페이지(`/records/working`)를 함께 맡는다 |
 | `widgets/records-page` | 명세·문서 화면이 함께 쓰는 틀: 세션·명세 조회, 머리 막대, 골격, 오류, 검색 인자 |
 | `widgets/activity-timeline` | 결정기록 목록·대시보드가 쓰는 타임라인. 커밋 페이지와 기록 상세도 그 기록 묶기(`groupRecords`)를 쓴다 |
 | `widgets/diff-view` | 줄 단위 diff(`LineDiff`) |
 | `widgets/page-header`·`app-shell` | 머리 막대, 셸 |
 | `features/search-palette` | 검색창(`SearchPalette`)과 머리의 검색 버튼(`SearchTrigger`) |
-| `entities/project` | 세션·명세·이력 Query와 미커밋 여부 훅(`useWorkingChanges`) |
-| `entities/contributor`·`document` | 작성자 표시, 설계 문서 표시 |
+| `features/stale-notice` | 탭으로 돌아올 때 지문을 물어 화면이 뒤처졌는지 보는 훅(`useBehind`)과 알림(`StaleNotice`) |
+| `entities/project` | 세션·명세·이력·커밋 전 작업·지문 Query와 미커밋 여부 훅(`useWorkingChanges`) |
+| `entities/contributor`·`document` | 작성자 표시, 설계 문서 표시와 문서의 커밋 상태 Token(`StateToken`) |
 
 틀(`records-page`)은 다른 위젯을 직접 부르지 않도록 머리 막대 부품(`PageHeader`)을 화면에서 받는다. CSS 모듈은 파일마다 클래스 이름을 바꾸므로 한 선택자에 다른 슬라이스의 클래스를 섞지 않는다. 틀이 화면의 요소를 알아봐야 하면 속성(`data-page-footer`)으로 표시한다.
 

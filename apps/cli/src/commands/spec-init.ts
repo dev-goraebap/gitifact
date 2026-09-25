@@ -1,9 +1,10 @@
 import { InitError, parseManagedConfig, SCHEMA_VERSION, type SpecProjectConfig } from '@gitifact/core';
-import { projectInitV7, type UpdateStateV1 } from '@gitifact/contracts';
+import { projectInitV8, type UpdateStateV1 } from '@gitifact/contracts';
 import { readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { initRepository } from '../adapters/git/init-repository.js';
 import { publishConfig, readConfigFile } from '../adapters/filesystem/config-file.js';
+import { LINE_ENDINGS_PATH, writeLineEndings } from '../adapters/filesystem/document-file.js';
 import { applyAgentDocs, planAgentDocs, skippedAgentDocs, type AgentDocsOptions } from './agent-docs.js';
 import { disabledUpdate, npmGlobalInstall, npxUpdate } from '../shared/update-check.js';
 import { t } from '../shared/i18n/index.js';
@@ -13,11 +14,11 @@ export async function initializeSpecProject(cwd: string, dryRun = false, env = p
   const repo = initRepository(cwd, env); const first = await repo.inspect(); const root = first.state.repository.rootPath;
   // Agent-doc targets are read and validated first so malformed markers refuse the run before any write.
   const docsPlan = agentDocs ? await planAgentDocs(root, agentDocs) : skippedAgentDocs;
-  const result = async (config: SpecProjectConfig, outcome: 'planned' | 'created' | 'already-initialized') => {
+  const result = async (config: SpecProjectConfig, outcome: 'planned' | 'created' | 'already-initialized', lineEndings = false) => {
     const checked = await update;
-    return projectInitV7.parse({ contract: 'project-init', version: 7, ok: true, outcome,
+    return projectInitV8.parse({ contract: 'project-init', version: 8, ok: true, outcome,
       rootPath: root, configPath: '.gitifact/config.json', schemaVersion: config.schemaVersion, baseline: config.baseline,
-      agentDocs: { mode: docsPlan.mode, paths: docsPlan.paths }, update: checked,
+      agentDocs: { mode: docsPlan.mode, paths: docsPlan.paths }, lineEndings: { path: LINE_ENDINGS_PATH, created: lineEndings }, update: checked,
       install: checked.status === 'available' ? { npx: npxUpdate(checked.latestVersion!), npmGlobal: npmGlobalInstall(checked.latestVersion!) } : null });
   };
   const existing = async (text: string) => {
@@ -27,8 +28,9 @@ export async function initializeSpecProject(cwd: string, dryRun = false, env = p
       if ((await repo.inspect()).stamp !== first.stamp || await readConfigFile(root) !== text) throw new InitError('INPUT_CHANGED', t('init.inputChanged'));
     };
     await unchanged();
-    if (!dryRun) await applyAgentDocs(root, docsPlan, unchanged);
-    return result(config, 'already-initialized');
+    if (dryRun) return result(config, 'already-initialized');
+    await applyAgentDocs(root, docsPlan, unchanged);
+    return result(config, 'already-initialized', await writeLineEndings(root));
   };
   const config: SpecProjectConfig = { schemaVersion: SCHEMA_VERSION, baseline: first.state.head.commit
     ? { kind: 'commit', objectFormat: first.state.repository.objectFormat, commit: first.state.head.commit } : { kind: 'empty' } };
@@ -39,7 +41,7 @@ export async function initializeSpecProject(cwd: string, dryRun = false, env = p
     };
     await published();
     await applyAgentDocs(root, docsPlan, published);
-    return result(config, outcome);
+    return result(config, outcome, await writeLineEndings(root));
   };
   const old = await readConfigFile(root);
   if (old !== undefined) return existing(old);

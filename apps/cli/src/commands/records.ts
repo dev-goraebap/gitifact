@@ -4,9 +4,10 @@ import { docIdPattern, parseRecordFile, recordDayOf, recordPathOf, renderRecordF
   type DecisionRecord, type RecordSectionKey } from '@gitifact/core';
 import { createDocumentFile, generateId } from '../adapters/filesystem/document-file.js';
 import { findRecord } from '../adapters/git/pending-records.js';
-import { byAuthor, checkFields, contains, selected, since, type ListOptions } from './list-options.js';
+import { byAuthor, checkFields, contains, aside, pageLine, paginate, PAGE_SIZE, selected, since, sinceRange, type ListOptions } from './list-options.js';
 import { CommandError, runCommand, text, type Format } from './output.js';
-import { openProject } from './project.js';
+import { openProject, type Project } from './project.js';
+import type { RecordFilter } from '../adapters/cache/index.js';
 import { getLanguage, t } from '../shared/i18n/index.js';
 
 type Options = { format: Format };
@@ -67,27 +68,29 @@ const recordColumns = ['id', 'title', 'commit', 'date', 'author', 'docs', 'secti
 const eventColumns = ['commit', 'date', 'author', 'types', 'path', 'records', 'message'] as const;
 
 /**
- * `records list`: the records of HEAD's history, newest first, after the ones not committed yet. With `--doc`, the
- * decision flow of one document instead: each commit that changed it with the records that explain it, and a change
- * a record should have explained says it has none.
+ * `records list`: the records of HEAD's history, newest first, after the ones not committed yet, twenty at a time.
+ * With `--doc`, the decision flow of one document instead: each commit that changed it with the records that explain
+ * it, and a change a record should have explained says it has none. Committed records are filtered and paged in the
+ * cache; the cursor is the ID of the last record shown, or the commit of the last change for `--doc`.
  */
 export const runRecordsList = (options: ListOptions & { doc?: string; since?: string }) => runCommand('records', options.format, async () => {
   const fields = checkFields(options.fields, options.doc === undefined ? recordColumns : eventColumns);
   const project = await openProject(process.cwd());
   const head = await project.head();
-  const after = await since(project, options.since, head); const by = byAuthor(options.author); const has = contains(options.q);
-  const limit = <T>(rows: T[]) => options.limit === undefined ? rows : rows.slice(0, options.limit);
   const sectionText = (sections: { body: string }[]) => sections.map(s => s.body);
 
   if (options.doc !== undefined) {
+    const after = await since(project, options.since, head); const by = byAuthor(options.author); const has = contains(options.q);
     const id = options.doc;
     const events = head ? await project.cache.history.ofDocument(head, id) : [];
     const { documents } = await project.cache.documents.list();
     const title = documents.find(d => d.id === id)?.title ?? events.map(e => (e.after ?? e.before)?.title).find(Boolean) ?? null;
     if (!title && !events.length) throw new CommandError('UNKNOWN_DOCUMENT', t('docs.unknownDocument', { ids: id }));
-    const rows = limit(events.filter(e => after(e) && by(e) && has(e.message, ...e.records.flatMap(r => [r.title, ...sectionText(r.sections)]))).map(e => ({
-      commit: e.commit, date: e.date, author: e.author, email: e.email, message: e.message, types: e.types, path: (e.after ?? e.before)?.path ?? null, records: e.records })));
-    if (fields) { const picked = selected(rows, fields); return { json: { doc: { id, title }, events: picked.json }, text: picked.text }; }
+    const page = paginate(events.filter(e => after(e) && by(e) && has(e.message, ...e.records.flatMap(r => [r.title, ...sectionText(r.sections)]))).map(e => ({
+      commit: e.commit, date: e.date, author: e.author, email: e.email, message: e.message, types: e.types, path: (e.after ?? e.before)?.path ?? null, records: e.records })), e => e.commit, options);
+    const rows = page.rows; const paging = { total: page.total, next: page.next, unit: 'commit' as const };
+    const more = pageLine(page, 0, t('list.commits'));
+    if (fields) { const picked = selected(rows, fields); return { json: { doc: { id, title }, events: picked.json, page: paging }, text: picked.text + aside(options.format, more) }; }
     const out = [`${id} ${title ?? ''}`.trimEnd()];
     for (const e of rows) {
       out.push('', `${e.date.slice(0, 10)} ${e.commit.slice(0, 7)} ${e.types.join(',')} — ${e.author}`);
@@ -99,21 +102,45 @@ export const runRecordsList = (options: ListOptions & { doc?: string; since?: st
       out.push('  ' + t('docs.commit') + ': ' + e.message);
     }
     if (!rows.length) out.push(events.length ? t('docs.noMatch') : t('docs.noHistory'));
-    return { json: { doc: { id, title }, events: rows }, text: text(out) };
+    if (more.length) out.push('', ...more);
+    return { json: { doc: { id, title }, events: rows, page: paging }, text: text(out) };
   }
 
   // Records not committed yet have no commit, author or date: they come first and only while no author is asked for.
-  const pending = options.author !== undefined ? [] : [...(await project.pendingRecords()).files].flatMap(([path, source]) => {
+  const has = contains(options.q);
+  const pending = (options.author !== undefined ? [] : [...(await project.pendingRecords()).files].flatMap(([path, source]) => {
     try { return [parseRecordFile(path, source)]; } catch { return []; }
-  }).map(r => ({ id: r.id, title: r.title, commit: null, date: null, author: null, docs: r.docs, sections: r.sections.map(s => ({ key: s.key, body: s.body })) }));
-  const committed = (head ? await project.cache.history.recordsOf(head) : []).filter(r => after(r) && by(r) && has(r.title, r.message, ...sectionText(r.sections)))
-    .map(r => ({ id: r.id, title: r.title, commit: r.commit, date: r.date, author: r.author, docs: r.docs, sections: r.sections }));
-  const rows = limit([...pending.filter(r => has(r.title, ...sectionText(r.sections))).sort((a, b) => a.id < b.id ? -1 : 1), ...committed]);
-  if (fields) { const picked = selected(rows, fields); return { json: { records: picked.json }, text: picked.text }; }
+  }).map(r => ({ id: r.id, title: r.title, commit: null, date: null, author: null, docs: r.docs, sections: r.sections.map(s => ({ key: s.key, body: s.body })) })))
+    .filter(r => has(r.title, ...sectionText(r.sections))).sort((a, b) => a.id < b.id ? -1 : 1);
+  // A page runs through the records not committed yet first, then on into the committed ones.
+  const size = options.all ? undefined : options.limit ?? PAGE_SIZE;
+  const inPending = options.after === undefined ? 0 : pending.findIndex(r => r.id === options.after) + 1;
+  const afterCommitted = options.after !== undefined && !inPending ? options.after : undefined;
+  const pendingShown = afterCommitted !== undefined ? [] : pending.slice(inPending, size === undefined ? undefined : inPending + size);
+  const filter: RecordFilter = { author: options.author, q: options.q, ...await sinceRange(project, options.since, head) };
+  const room = size === undefined ? undefined : size - pendingShown.length;
+  const found = head ? await project.cache.history.records(head, filter, afterCommitted, room) : { records: [], total: 0 };
+  if (!found) throw new CommandError('INVALID_VALUE', t('list.after', { cursor: options.after! }));
+  const committed = found.records.map(r => ({ id: r.id, title: r.title, commit: r.commit, date: r.date, author: r.author, docs: r.docs, sections: r.sections }));
+  const rows = [...pendingShown, ...committed];
+  const total = pending.length + found.total;
+  // How many come before this page, so the last line can say how far the list has been read.
+  const before = afterCommitted === undefined ? inPending : pending.length + await readThrough(project, head, filter, afterCommitted);
+  const next = before + rows.length < total && rows.length ? rows[rows.length - 1]!.id : null;
+  const paging = { total, next, unit: 'record' as const };
+  const more = pageLine({ rows, total, next }, before, t('list.records'));
+  if (fields) { const picked = selected(rows, fields); return { json: { records: picked.json, page: paging }, text: picked.text + aside(options.format, more) }; }
   // A record that explains many documents names the first few; JSON and --fields docs carry them all.
   const docs = (ids: string[]) => ids.slice(0, 5).join(', ') + (ids.length > 5 ? ' ' + t('records.moreDocs', { count: ids.length - 5 }) : '');
   const out = rows.flatMap(r => [`${r.id} ${r.title}`,
     `  ${r.commit ? `${r.date!.slice(0, 10)} ${r.commit.slice(0, 7)} ${r.author}` : t('records.uncommitted')} · ${docs(r.docs)}`]);
   const filtered = options.since !== undefined || options.author !== undefined || options.q !== undefined;
-  return { json: { records: rows }, text: text(out.length ? out : [filtered ? t('docs.noMatch') : t('records.empty')]) };
+  return { json: { records: rows, page: paging }, text: text(out.length ? [...out, ...more] : [filtered ? t('docs.noMatch') : t('records.empty')]) };
 });
+
+/** How many committed records that match come up to and including `id`: the part of the list already read. */
+async function readThrough(project: Project, head: string | null, filter: RecordFilter, id: string): Promise<number> {
+  if (!head) return 0;
+  const all = await project.cache.history.records(head, filter, undefined, undefined);
+  return (all?.records.findIndex(r => r.id === id) ?? -1) + 1;
+}
