@@ -14,6 +14,7 @@ import { RequestState } from '../../../shared/ui/request-state';
 import { useLoadingHold } from '../../../shared/ui/request-state/useLoadingHold';
 import { t, tNodes, useLanguage, getLanguage } from '../../../shared/i18n';
 import { DocumentIndexProvider } from '../../../shared/ui/document';
+import { DescriptionHelp } from '../../../shared/ui/description-help';
 
 export type Crumb = { label: string; to?: string };
 export interface RecordsPageProps {
@@ -21,6 +22,8 @@ export interface RecordsPageProps {
   header: ComponentType<{ trail: Crumb[]; actions?: ReactNode }>;
   /** The screen's name, first in the trail and its heading when `hasTitle`. */
   title: string;
+  /** Short explanation shown from the list page title. */
+  description?: string;
   /** Where the first crumb leads. */
   root: string;
   /** Crumbs after the screen's own once the checkout is read: the feature, the person or the page being shown. */
@@ -47,7 +50,7 @@ export function RecordsPage(props: RecordsPageProps) {
   return <RecordsPanel key={session.data.sessionId} session={session.data} {...props}/>;
 }
 
-function RecordsPanel({ session, header: Header, title, root, trail, hasTitle, isWide = false, filters, skeleton, children }: RecordsPageProps & { session: BrowserSessionV3 }) {
+function RecordsPanel({ session, header: Header, title, description, root, trail, hasTitle, isWide = false, filters, skeleton, children }: RecordsPageProps & { session: BrowserSessionV3 }) {
   useLanguage();
   const query = useQuery(specsOptions(session));
   const disconnected = query.error instanceof ApiError && query.error.code === 'SESSION_CHANGED';
@@ -63,7 +66,7 @@ function RecordsPanel({ session, header: Header, title, root, trail, hasTitle, i
   return <VStack gap={0} className={styles.page}>
     <Header trail={crumbs} actions={actions}/>
     <VStack gap={0} className={isWide ? `${styles.column} ${styles.wide}` : styles.column}>
-      {hasTitle && <VStack gap={1} className={styles.pageTitle}><Heading level={1}>{title}</Heading></VStack>}
+      {hasTitle && <HStack gap={2} vAlign="center" className={styles.pageTitle}><Heading level={1}>{title}</Heading>{description && <DescriptionHelp title={title} description={description}/>}</HStack>}
       {query.error && first && <VStack padding={4} role="alert"><Text>{query.error.message}</Text><Text>{t('history.staleData')}</Text></VStack>}
       {!first && query.error && <RequestState error={query.error} retry={() => { if (disconnected) window.location.reload(); else void query.refetch(); }}/>}
       {loading && skeleton}

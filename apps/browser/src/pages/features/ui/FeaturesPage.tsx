@@ -8,7 +8,7 @@ import { t, useLanguage } from '../../../shared/i18n';
 /** The features and their requirements as a list, or one feature's requirements and designs when `featureId` is set. */
 export function FeaturesPage({ featureId, search, change }: { featureId?: string | undefined; search: RecordSearch; change: ChangeSearch }) {
   useLanguage();
-  return <RecordsPage header={PageHeader} title={t('nav.features')} root="/features" hasTitle={!featureId} skeleton={<ListSkeleton/>}
+  return <RecordsPage header={PageHeader} title={t('nav.features')} description={t('pageDescription.features')} root="/features" hasTitle={!featureId} skeleton={<ListSkeleton/>}
     trail={checkout => { const feature = featureId ? checkout.features.find(f => f.id === featureId) : undefined; return feature ? [{ label: feature.title }] : []; }}
     {...(featureId ? {} : { filters: checkout => <>
       <SearchFilter label={t('filters.search')} placeholder={t('filters.searchFeatures')} value={search.q ?? ''} onChange={q => change({ ...search, q: q || undefined }, true)}/>

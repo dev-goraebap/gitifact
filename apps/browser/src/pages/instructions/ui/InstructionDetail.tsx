@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
-import type { BrowserSessionV3, SpecFeature, SpecInstruction } from '@gitifact/contracts';
+import type { BrowserSessionV3, SpecInstruction } from '@gitifact/contracts';
 import { VStack } from '@astryxdesign/core/VStack';
 import { HStack } from '@astryxdesign/core/HStack';
 import { Heading } from '@astryxdesign/core/Heading';
@@ -11,10 +11,11 @@ import { Timestamp } from '@astryxdesign/core/Timestamp';
 import { Link } from '@tanstack/react-router';
 import { instructionFileOptions } from '../../../entities/project';
 import { DocumentBody } from '../../../shared/ui/document';
-import { RelatedList, RelatedItem } from '../../../shared/ui/related-list';
+import { HgiBook } from '../../../shared/ui/icons/HgiBook';
+import { HgiFolder } from '../../../shared/ui/icons/HgiFolder';
 import { InstructionMark } from './InstructionMark';
+import { FileIcon } from './FileIcon';
 import { InstructionFileView } from './InstructionFileView';
-import { DescriptionHelp } from './DescriptionHelp';
 import type { InstructionColor } from '../model/instruction-color';
 import styles from './instructions.module.css';
 import { t, useLanguage } from '../../../shared/i18n';
@@ -32,14 +33,13 @@ function byFolder(files: SpecInstruction['files']) {
 const sizeOf = (bytes: number) => bytes < 1024 ? `${bytes} B` : `${(bytes / 1024).toFixed(bytes < 10240 ? 1 : 0)} KB`;
 
 /**
- * One instruction: its heading, the files of its folder beside the one being read (index.md unless `file` names
- * another), and the designs that say they follow it.
+ * One instruction: its heading and the files of its folder beside the one being read
+ * (index.md unless `file` names another).
  */
-export function InstructionDetail({ instruction, color, file, features, session }: { instruction: SpecInstruction; color: InstructionColor | undefined; file: string | undefined; features: SpecFeature[]; session: BrowserSessionV3 }) {
+export function InstructionDetail({ instruction, color, file, session }: { instruction: SpecInstruction; color: InstructionColor | undefined; file: string | undefined; session: BrowserSessionV3 }) {
   useLanguage();
   const chosen = file && instruction.files.find(f => f.path === file);
   const folder = instruction.path.slice(0, -INDEX.length);
-  const followedBy = features.flatMap(feature => feature.designs.filter(d => d.sources.some(s => s.id === instruction.id)).map(design => ({ feature, design })));
   // A file is read as the pointer or focus reaches its row, so opening it swaps the text instead of dropping to a
   // skeleton first: the drop and regrowth shook the page on every switch.
   const client = useQueryClient();
@@ -51,8 +51,8 @@ export function InstructionDetail({ instruction, color, file, features, session 
       <HStack gap={3} vAlign="center">
         <InstructionMark color={color} title={instruction.title} size="lg"/>
         <Heading level={1}>{instruction.title}</Heading>
-        <DescriptionHelp title={instruction.title} description={instruction.description}/>
       </HStack>
+      <Text color="secondary" className={styles.summary}>{instruction.description}</Text>
       <MetadataList orientation="horizontal">
         <MetadataListItem label={t('instructions.folder')}><Text type="code">{instruction.name}</Text></MetadataListItem>
         <MetadataListItem label="ID">{instruction.id}</MetadataListItem>
@@ -63,42 +63,36 @@ export function InstructionDetail({ instruction, color, file, features, session 
 
     <HStack gap={0} className={styles.reader}>
       <VStack as="nav" gap={1} aria-label={t('instructions.files')} className={styles.files}>
-        <Text type="supporting" color="secondary">{t('instructions.files')}</Text>
+        <Text type="supporting" color="secondary" className={styles.filesHeading}>{t('instructions.files')}</Text>
         <List density="compact">
-          <ListItem label={instruction.title} href={fileHref()} isSelected={!chosen}/>
+          <ListItem label={instruction.title} href={fileHref()} isSelected={!chosen} startContent={<HgiBook/>}/>
         </List>
         {byFolder(instruction.files).map(([name, files]) => {
           // A reference file goes by the title in its frontmatter; the file name stays for files without one.
           const list = <List density="compact" aria-label={name || INDEX}>
             {files.map(f => <ListItem key={f.path} label={f.title ?? f.path.slice(name ? name.length + 1 : 0)} href={fileHref(f.path)} isSelected={chosen === f}
-              onMouseEnter={() => prefetch(f)} onFocus={() => prefetch(f)}
+              onMouseEnter={() => prefetch(f)} onFocus={() => prefetch(f)} startContent={<FileIcon path={f.path}/>}
               endContent={<Text type="supporting" color="secondary">{sizeOf(f.size)}</Text>}/>)}
           </List>;
-          // Folders start open and fold away when a long list gets in the way.
+          // Folders start open and fold away when a long list gets in the way; their files sit under the folder name.
           return name ? <VStack key={name} gap={0} className={styles.fileGroup}>
-            <Collapsible chevronPosition="start" trigger={<Text type="supporting" color="secondary" className={styles.folder}>{name}/</Text>}>{list}</Collapsible>
+            <Collapsible chevronPosition="start" trigger={<HStack gap={2} vAlign="center" className={styles.folder}>
+              <HgiFolder/><Text type="supporting" color="secondary" className={styles.folderName}>{name}/</Text>
+            </HStack>}><VStack gap={0} className={styles.folderFiles}>{list}</VStack></Collapsible>
           </VStack> : <VStack key={name} gap={0}>{list}</VStack>;
         })}
         {instruction.filesLimited && <Text type="supporting" color="secondary">{t('instructions.filesLimited')}</Text>}
       </VStack>
       <VStack gap={0} className={styles.content}>
         <Text type="supporting" color="secondary" className={styles.filePath}>{folder + (chosen ? chosen.path : INDEX)}</Text>
-        {chosen && chosen.title && <HStack gap={1} vAlign="center" className={styles.fileTitle}>
+        {chosen && chosen.title && <VStack gap={1} className={styles.fileTitle}>
           <Heading level={2}>{chosen.title}</Heading>
-          {chosen.description && <DescriptionHelp title={chosen.title} description={chosen.description}/>}
-        </HStack>}
+          {chosen.description && <Text color="secondary">{chosen.description}</Text>}
+        </VStack>}
         {file && !chosen ? <Text color="secondary">{t('instructions.fileMissing', { path: file })}</Text>
           : chosen ? <InstructionFileView session={session} instruction={instruction} file={chosen}/>
           : <DocumentBody path={instruction.path}>{instruction.body}</DocumentBody>}
       </VStack>
     </HStack>
-
-    {followedBy.length > 0 && <VStack gap={0} className={styles.related}>
-      <RelatedList label={t('instructions.followedBy')}>
-        {followedBy.map(({ feature, design }) => <RelatedItem key={design.id}
-          title={<Link to="/features/$featureId" params={{ featureId: feature.id }} search={{ tab: 'design' }} hash={design.id}>{design.title}</Link>}
-          description={feature.title}/>)}
-      </RelatedList>
-    </VStack>}
   </VStack>;
 }

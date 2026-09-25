@@ -61,6 +61,12 @@ test('an instruction opens on index.md, reads the other files of its folder, and
   await expect(files.getByRole('link', { name: '결정 모음' })).toBeHidden();
   await files.getByRole('button', { name: 'references/' }).click();
   await expect(files.getByRole('link', { name: '결정 모음' })).toBeVisible();
+  // The whole row opens the file, not just its label: a press on the size at the row's end does too.
+  const row = files.getByRole('listitem').filter({ hasText: 'check.sh' });
+  const box = (await row.boundingBox())!;
+  await row.click({ position: { x: box.width - 4, y: box.height / 2 } });
+  await expect(page).toHaveURL(/\?file=scripts%2Fcheck\.sh$/);
+  await page.goBack();
   await article.getByRole('link', { name: '결정 표' }).click();
   await expect(page).toHaveURL(/\/instructions\/I-aaaaaaaaaa\?file=references%2Fdecisions\.md$/);
   await expect(article.getByRole('table')).toContainText('계층을 나눈다');
@@ -70,12 +76,12 @@ test('an instruction opens on index.md, reads the other files of its folder, and
   await expect(article.locator('pre')).toContainText('echo checked');
   await files.getByRole('link', { name: 'logo.png' }).click();
   await expect(article).toContainText('텍스트가 아닌 파일이라');
-  // Links reach other instructions and AGENTS.md; designs that follow the instruction are listed below.
+  // Links reach other instructions and AGENTS.md.
   await files.getByRole('link', { name: 'CLI 규칙' }).click();
   await article.getByRole('link', { name: '문체' }).click();
   await expect(page).toHaveURL(/\/instructions\/I-bbbbbbbbbb$/);
   await page.goBack();
-  await expect(page.getByRole('region', { name: '이 지침을 따르는 설계' })).toContainText('검색 흐름');
+  await expect(article).not.toContainText('이 지침을 따르는 설계');
   await article.getByRole('link', { name: '상시 지침' }).click();
   await expect(page).toHaveURL(/\/instructions\/agents$/);
   // Both detail pages lead back to the list, as the other detail pages do.
@@ -86,26 +92,51 @@ test('an instruction opens on index.md, reads the other files of its folder, and
   await expect(page).toHaveURL(/\/instructions$/);
 });
 
-test('descriptions open from the ? beside the instruction title and a reference file title, not under them', async ({ page }) => {
+test('the project instructions list explains its title, while instruction and file descriptions stay visible', async ({ page }) => {
+  await mockApi(page, withInstructions); await page.goto('/instructions');
+  await page.getByRole('button', { name: '프로젝트 지침 설명' }).hover();
+  await expect(page.getByRole('dialog', { name: '프로젝트 지침' })).toContainText('작업할 때 따르는 지침');
+  await page.getByRole('button', { name: '프로젝트 지침 설명' }).click();
+  await expect(page.getByRole('dialog', { name: '프로젝트 지침' })).toBeVisible();
+  await page.getByRole('button', { name: '프로젝트 지침 설명' }).click();
+  await expect(page.getByRole('dialog', { name: '프로젝트 지침' })).toBeHidden();
+  await page.getByRole('button', { name: '프로젝트 지침 설명' }).click();
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog', { name: '프로젝트 지침' })).toBeHidden();
+  await page.getByRole('button', { name: '프로젝트 지침 설명' }).click();
+  await page.getByRole('heading', { level: 1, name: '프로젝트 지침' }).click();
+  await expect(page.getByRole('dialog', { name: '프로젝트 지침' })).toBeHidden();
   await mockApi(page, withInstructions); await page.goto('/instructions/' + I1);
   const article = page.getByRole('article', { name: 'CLI 규칙' });
-  await expect(page.getByText('CLI 계층 규칙. apps/cli를 고칠 때 읽는다')).toBeHidden();
-  await article.getByRole('button', { name: 'CLI 규칙 설명' }).click();
-  await expect(page.getByRole('dialog', { name: 'CLI 규칙' })).toContainText('CLI 계층 규칙. apps/cli를 고칠 때 읽는다');
-  await page.keyboard.press('Escape');
-  await expect(page.getByRole('dialog', { name: 'CLI 규칙' })).toBeHidden();
+  await expect(article.getByText('CLI 계층 규칙. apps/cli를 고칠 때 읽는다')).toBeVisible();
+  await expect(article.getByRole('button', { name: 'CLI 규칙 설명' })).toHaveCount(0);
+  await expect(article).not.toContainText('이 지침을 따르는 설계');
   // A reference file shows the title of its frontmatter over its text, and the frontmatter itself is not drawn.
   await page.getByRole('navigation', { name: '파일' }).getByRole('link', { name: '결정 모음' }).click();
   await expect(article.getByRole('heading', { level: 2, name: '결정 모음' })).toBeVisible();
   await expect(article.getByRole('table')).toContainText('계층을 나눈다');
   await expect(article).not.toContainText('title:');
-  await article.getByRole('button', { name: '결정 모음 설명' }).click();
-  await expect(page.getByRole('dialog', { name: '결정 모음' })).toContainText('계층을 나눈 이유');
-  await page.keyboard.press('Escape');
-  // A file without a description has no ? of its own.
+  await expect(article.getByText('계층을 나눈 이유. 계층을 바꿀 때 읽는다')).toBeVisible();
+  // A file without a description has no description row.
   await page.getByRole('navigation', { name: '파일' }).getByRole('link', { name: 'check.sh' }).click();
   await expect(article.locator('pre')).toContainText('echo checked');
-  await expect(article.getByRole('button', { name: /설명$/ })).toHaveCount(1);
+  await expect(article.getByRole('button', { name: /설명$/ })).toHaveCount(0);
+});
+
+test('only the three document lists show page descriptions beside their titles', async ({ page }) => {
+  await mockApi(page, withInstructions);
+  for (const [path, title, summary] of [
+    ['/features', '기능별 요구사항', '최신 요구사항'],
+    ['/records', '결정기록', '왜 바뀌었는지'],
+    ['/instructions', '프로젝트 지침', '작업할 때 따르는 지침'],
+  ] as const) {
+    await page.goto(path);
+    await expect(page.getByRole('heading', { level: 1, name: title })).toBeVisible();
+    await page.getByRole('button', { name: `${title} 설명` }).click();
+    await expect(page.getByRole('dialog', { name: title })).toContainText(summary);
+  }
+  await page.goto('/instructions/' + I1);
+  await expect(page.getByRole('button', { name: /설명$/ })).toHaveCount(0);
 });
 
 test('an unknown instruction says so and leads back; the search finds instructions', async ({ page }) => {

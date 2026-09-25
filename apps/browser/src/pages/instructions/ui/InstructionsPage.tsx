@@ -15,7 +15,7 @@ import { t, useLanguage } from '../../../shared/i18n';
 export function InstructionsPage({ instructionId, agents, file }: { instructionId?: string | undefined; agents?: boolean; file?: string | undefined }) {
   useLanguage();
   const detail = agents || !!instructionId;
-  return <RecordsPage header={PageHeader} title={t('nav.instructions')} root="/instructions" hasTitle={!detail} skeleton={<ListSkeleton/>}
+  return <RecordsPage header={PageHeader} title={t('nav.instructions')} description={t('pageDescription.instructions')} root="/instructions" hasTitle={!detail} skeleton={<ListSkeleton/>}
     trail={checkout => {
       if (agents) return checkout.agents ? [{ label: 'AGENTS.md' }] : [];
       const instruction = instructionId ? checkout.instructions.find(s => s.id === instructionId) : undefined;
@@ -26,7 +26,7 @@ export function InstructionsPage({ instructionId, agents, file }: { instructionI
       if (agents) return checkout.agents ? <AgentsDetail agents={checkout.agents}/> : notFound(t('instructions.agentsMissingTitle'), t('instructions.agentsMissingDescription'));
       if (!instructionId) return <InstructionList instructions={checkout.instructions} agents={checkout.agents}/>;
       const instruction = checkout.instructions.find(s => s.id === instructionId);
-      return instruction ? <InstructionDetail instruction={instruction} color={instructionColorsOf(checkout.instructions).get(instruction.id)} file={file} features={checkout.features} session={session}/>
+      return instruction ? <InstructionDetail instruction={instruction} color={instructionColorsOf(checkout.instructions).get(instruction.id)} file={file} session={session}/>
         : notFound(t('instructions.notFoundTitle'), t('instructions.notFoundDescription', { id: instructionId }));
     }}
   </RecordsPage>;

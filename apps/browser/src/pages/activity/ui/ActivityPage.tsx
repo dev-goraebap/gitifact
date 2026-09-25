@@ -9,7 +9,7 @@ import { t, useLanguage } from '../../../shared/i18n';
 /** The decision records: every committed change of the documents by the record that explains it, filtered by the server over all of history. */
 export function ActivityPage({ search, change }: { search: RecordSearch; change: ChangeSearch }) {
   useLanguage();
-  return <RecordsPage header={PageHeader} title={t('nav.history')} root="/records" hasTitle
+  return <RecordsPage header={PageHeader} title={t('nav.history')} description={t('pageDescription.history')} root="/records" hasTitle
     skeleton={<ListSkeleton selectors={4}><TimelineSkeleton/></ListSkeleton>}
     filters={checkout => <>
       <SearchFilter label={t('filters.search')} placeholder={t('filters.searchEvents')} value={search.q ?? ''} onChange={q => change({ ...search, q: q || undefined }, true)}/>

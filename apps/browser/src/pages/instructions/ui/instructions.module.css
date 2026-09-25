@@ -24,25 +24,35 @@
 .clip { min-width:0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
 
 /* Detail: the heading, then the file list beside the file being read. */
-.heading { padding-block:var(--spacing-2) var(--spacing-6); }
+.heading { padding-block:var(--spacing-2) var(--spacing-5); }
 /* One way back to the list, as on the other detail pages. */
 .back { align-self:flex-start; font-size:.8125rem; text-decoration:none; color:var(--color-text-secondary); }
 .back:hover { text-decoration:underline; }
 .heading h1 { font-size:1.75rem; line-height:1.4; letter-spacing:-.025em; }
+.summary { max-width:60ch; }
 .activity { font-size:.8125rem; }
 .reader { align-items:flex-start; border-top:1px solid var(--color-border); padding-top:var(--spacing-5); }
-.files { flex:0 0 14rem; min-width:0; position:sticky; top:calc(var(--gitifact-topbar-height) + var(--spacing-4)); padding-inline-end:var(--spacing-4); overflow-wrap:anywhere; }
+.files { flex:0 0 15rem; min-width:0; position:sticky; top:calc(var(--gitifact-topbar-height) + var(--spacing-4)); padding-inline-end:var(--spacing-4); margin-inline-end:var(--spacing-5); overflow-wrap:anywhere; }
+.filesHeading { padding-inline:var(--spacing-2); padding-block:var(--spacing-1) var(--spacing-3); font-weight:600; }
 .content { flex:1 1 0; min-width:0; overflow-wrap:anywhere; }
-.fileGroup { padding-top:var(--spacing-3); }
-.folder { font-family:var(--font-family-code); padding-inline:var(--spacing-2); padding-bottom:var(--spacing-1); }
+.fileGroup { padding-top:var(--spacing-4); }
+/* A folder heading: folder icon and name on the chevron's line, the name the same height as the chevron. */
+.folder { min-width:0; color:var(--color-text-secondary); }
+.folderName { display:block; font-family:var(--font-family-code); line-height:1.5; }
+/* A folder's files sit under its name, past the chevron. */
+.folderFiles { padding-inline-start:var(--spacing-4); }
+/* The whole row opens the file, not just its label: the row's link covers it. */
+.files :global(.astryx-list-item) { position:relative; }
+.files :global(.astryx-list-item) > a::after { content:''; position:absolute; inset:0; border-radius:inherit; }
+.files :global(.astryx-list-item) svg { color:var(--color-text-secondary); }
+.files :global(.astryx-list-item)[aria-current="true"] svg { color:var(--color-text-primary); }
 .filePath { font-family:var(--font-family-code); padding-bottom:var(--spacing-3); }
 /* A reference file's title from its frontmatter, over its text; the body's own headings stay smaller. */
 .fileTitle { padding-bottom:var(--spacing-4); }
-.related { padding-top:var(--spacing-8); }
 /* Narrow screens: the files come above the file being read. */
 @media(width<64rem) {
   .reader { flex-direction:column; gap:var(--spacing-5); }
-  .files { position:static; flex-basis:auto; width:100%; padding-inline-end:0; }
+  .files { position:static; flex-basis:auto; width:100%; padding-inline-end:0; margin-inline-end:0; border-bottom:1px solid var(--color-border); padding-bottom:var(--spacing-4); }
   .heading h1 { font-size:1.5rem; }
 }
 /* AGENTS.md has no colour of its own: it is the index every session loads, set apart from the instructions it lists. */
