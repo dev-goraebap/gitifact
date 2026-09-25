@@ -69,7 +69,7 @@ CLI: 전역 명령 `gitifact`(버전 0.8.1)로 실행한다. 아래 `gitifact`�
 
 1. `git status`와 현재 브랜치·작업 경로를 확인한다. 기존 변경과 다른 에이전트의 작업을 보존한다.
 2. [README](README.md)의 제품 소개를 읽고 이번 작업이 제품의 목적·원칙·범위 안에 있는지 확인한다. 관련 기능 명세(`.gitifact/spec/`)도 읽는다.
-   구현 규칙과 결정은 프로젝트 지침(`.gitifact/instructions/`)에 있다. CLI 작업은 [CLI 아키텍처](.gitifact/instructions/cli-architecture/index.md), 브라우저 작업은 [브라우저 아키텍처](.gitifact/instructions/browser-architecture/index.md)와 그 references, [apps/browser/AGENTS.md](apps/browser/AGENTS.md)의 Astryx 생성 지침, 문서 작업은 [문서 작성](.gitifact/instructions/writing-docs/index.md), 검증과 커밋 전에는 [검증](.gitifact/instructions/verification/index.md)을 직접 읽는다. 규칙을 정한 맥락과 검토한 대안은 결정기록에 있으므로 명세·지침을 바꾸기 전에 `pnpm cli records list --doc <ID>`로 읽는다. 자동 첨부 여부에 의존하지 않고, 사용할 컴포넌트의 설치 버전 API를 Astryx CLI로 확인한다.
+   구현 규칙과 결정은 프로젝트 지침(`.gitifact/instructions/`)에 있다. CLI 작업은 [CLI 아키텍처](.gitifact/instructions/cli-architecture/index.md), 브라우저 작업은 [브라우저 아키텍처](.gitifact/instructions/browser-architecture/index.md)와 그 references, [apps/browser/AGENTS.md](apps/browser/AGENTS.md)의 Astryx 생성 지침, 문서 작업은 [문서 작성](.gitifact/instructions/writing-docs/index.md), 검증과 커밋 전에는 [검증](.gitifact/instructions/verification/index.md)을 직접 읽는다. 사용자가 피드백이나 GitHub 이슈를 봐 달라고 하면 [서비스데스크](.gitifact/instructions/service-desk/index.md)를 읽는다. 규칙을 정한 맥락과 검토한 대안은 결정기록에 있으므로 명세·지침을 바꾸기 전에 `pnpm cli records list --doc <ID>`로 읽는다. 자동 첨부 여부에 의존하지 않고, 사용할 컴포넌트의 설치 버전 API를 Astryx CLI로 확인한다.
 3. 실제 파일과 실행 가능한 명령을 확인한다. README나 설계 문서에 등장한다는 이유만으로 기능이 구현됐다고 가정하지 않는다.
    실행 방법과 검증 범위는 [개발 환경](docs/development.md)을 확인한다. 현재 통합 검증 명령은 `pnpm check`다.
 4. 이번 작업의 범위, 관련 문서, 검증 방법을 정하고 진행한다.
