@@ -392,3 +392,19 @@ Markdown 명세·변경 이유·Git 커밋 연결과 요구사항 이력·제품
 새 임시 폴더에 레지스트리의 0.8.0을 설치했다. dist 213개 파일이 검증 빌드와 같고 CLI SHA-256도 같다. version, init과 v0.8.0 블록, `specs new`·`specs list`·`instructions list`·`check`·`records list`, `guide list`, `feedback --help`를 확인했다. 실제 이슈 전송은 하지 않았다. 사용자 프로젝트와 전역 설치는 바꾸지 않았다.
 
 릴리스 커밋 6bf29f4에 주석 태그 v0.8.0을 만들고 origin에 푸시했으며, 원격 태그가 해당 커밋을 가리키는 것을 확인했다. 이 게시 결과를 남기는 후속 문서 커밋으로 태그를 옮기지 않는다.
+
+## 0.8.1 배포 준비
+
+2026-09-25, 목록의 커서 페이징(기본 20개, 명세는 기능·이력은 커밋 단위)과 문서마다 마지막 커밋 대비 상태 표시, 브라우저의 커밋 전 항목(`/records/working`)과 탭 복귀 변경 알림, 원문을 담지 않는 이력 색인(캐시 형식 9), `init`의 `.gitifact/.gitattributes`, 지침 참고 파일의 `title`·`description` 필수, 짧게 정리한 지침 블록과 세션 시작에 지침만 읽기, 브라우저 커밋 페이지의 탭과 목록 제목의 설명, 0.7 전환 커밋의 경로 한도 수정을 0.8.1로 준비했다. 한국어·영어 패치노트와 AGENTS.md 블록의 버전을 함께 맞췄다.
+
+작업 폴더에 사용자의 추적하지 않는 파일(`docs/assets/gitifact-mascot*`)이 있어, 릴리스 커밋 02f2e86eaab2619b430b8cf10767dc525c3efc0b만 담은 별도 worktree에서 `pnpm install --frozen-lockfile`과 `pnpm check`를 돌려 통과했다(contracts 9, core 43, intro 2, 브라우저 98, CLI 155, 패키지 오프라인 설치·실행). 모의 게시는 218개 파일, 압축 4,349,922바이트, integrity sha512-iO1+RflFAQZxC8ImtEohZGSkQRbPsjll1aAYl8BEU3kYRa2agrdOw68/BEqYcV6+RIrfNjPTffFBm5uGLz2mmQ==, shasum f8efe16ea65eb8aa002368dde4cea1cb5abdf738이다. CLI 번들 SHA-256은 9897a2adc7250d94f6618feded1f0d5bf97569a7f041ee9a9fa2ac2c7f0f4ae7이다. 게시 결과는 아래에 이어서 기록한다.
+
+## 0.8.1 게시 결과
+
+2026-09-25, 사용자가 worktree에서 `--no-git-checks`로 게시했다. 첫 시도는 npm 로그인이 만료돼 게시(PUT)가 404로 거부됐고, 다시 로그인한 뒤 게시했다. 몇 분 뒤 레지스트리의 버전과 latest가 0.8.1로 반영됐다. integrity는 sha512-oPMvy2WPcDurh6XT2mMnMW/vVlxfY29y8t462ezlsjkSUoc5JGBVJr6QdGsxb2oHePdvW1C5x60v2eBBppLc3w==, shasum은 8ab23de95f56fd75816787bb20963df8e3512d93이다.
+
+모의 실행과 integrity가 달라 레지스트리 압축 파일을 풀어 비교했다. 파일 218개와 풀었을 때의 크기(9,437,892바이트)가 같고, dist 전체·README·LICENSE가 검증 빌드와 바이트 단위로 같으며 CLI SHA-256도 9897a2adc7250d94f6618feded1f0d5bf97569a7f041ee9a9fa2ac2c7f0f4ae7로 같다. package.json은 두 쪽 모두 pnpm이 `workspace:*`를 바꾼 같은 크기의 파일이다. 달라진 것은 압축 파일 자체이며 내용은 같다.
+
+새 임시 폴더에 레지스트리의 0.8.1을 설치해 version, init과 `.gitifact/.gitattributes`·줄바꿈 안내·새 지침 블록, `specs new`와 `specs list`의 상태 표시·`page`, `instructions list --all`, `records list`, `check`를 확인했다. 사용자 프로젝트와 전역 설치는 바꾸지 않았다.
+
+main을 02f2e86까지 푸시하고, 릴리스 커밋 02f2e86에 주석 태그 v0.8.1을 만들어 origin에 푸시했으며 원격 태그가 해당 커밋을 가리키는 것을 확인했다. 이 게시 결과를 남기는 후속 문서 커밋으로 태그를 옮기지 않는다.
