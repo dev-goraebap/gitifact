@@ -38,5 +38,27 @@
 /* A document a record explains, closed to its badge and title; the row's anchor is the document ID. */
 .documentRow { align-items:center; min-width:0; scroll-margin-top:calc(var(--gitifact-topbar-height) + var(--spacing-4)); }
 .documentTitle { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+/* The commit page's tabs and what each shows under them. */
+.commitPanel { padding-block:var(--spacing-5); min-width:0; }
+.recordEntry { min-width:0; padding-block:var(--spacing-3); border-bottom:1px solid var(--color-border); }
+.recordEntry:last-child { border-bottom:none; }
+.recordItemHead { align-items:baseline; justify-content:space-between; min-width:0; }
+/* Changed files read one at a time: the files down the side, the chosen one beside them. A narrow screen hides the
+   list and picks the file with one selector over the text instead. */
+.split { align-items:flex-start; min-width:0; }
+.splitList { flex:0 0 18rem; min-width:0; position:sticky; top:calc(var(--gitifact-topbar-height) + var(--spacing-4));
+  max-height:calc(100vh - var(--gitifact-topbar-height) - var(--spacing-8)); overflow:auto; padding-inline-end:var(--spacing-4); margin-inline-end:var(--spacing-5); }
+.splitList :global(.astryx-list-item) { position:relative; }
+.splitList :global(.astryx-list-item) > a::after { content:''; position:absolute; inset:0; border-radius:inherit; }
+.splitContent { flex:1 1 0; min-width:0; }
+.splitPicker { display:none; }
+/* The chosen document heads the text beside the list; the page's own sections carry the rule between them. */
+.splitContent .change { border-top:none; padding-top:0; }
+@media(width<64rem) {
+  .splitList { display:none; }
+  .splitPicker { display:flex; }
+}
+/* A record's head: what its commit holds besides the record, as a line of links. */
+.recordCommitLinks { font-size:.8125rem; }
 .commitBack { align-self:flex-start; margin-top:var(--spacing-5); font-size:.8125rem; text-decoration:none; color:var(--color-text-secondary); }
 .commitBack:hover { text-decoration:underline; }

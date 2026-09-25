@@ -9,7 +9,7 @@ test('wiki changes from before the wiki left the browser stay in the activity wi
     after: { id: 'W-bbbbbbbbbb', title: '레이아웃 지침', specId: 'wiki', path: '.gitifact/wiki/frontend/layout.md' }, records:[{id:'H-wwwwwwwwww',title:'폴더를 정리했습니다.',sections:[{key:'context' as const,body:'폴더를 정리했습니다.'}]}] }] };
   await serve(page, data);
   await page.goto('/records?document=wiki');
-  const rows = page.getByRole('list', { name: '이 기록이 설명하는 문서' }).getByRole('listitem'); await expect(rows).toHaveCount(1);
+  const rows = page.getByRole('list', { name: '이 결정으로 바뀐 문서' }).getByRole('listitem'); await expect(rows).toHaveCount(1);
   await expect(rows.first()).toContainText('위키 페이지');
   // A wiki page is named by its title alone; no feature stands before it and no path after it.
   await expect(rows.first()).not.toContainText('frontend/layout.md');
@@ -43,7 +43,7 @@ test('the product page leads with what changed and why', async ({ page }) => {
   await page.goBack();
   // The overview draws the activity screen's own timeline, so its parts are here too.
   await expect(reasons.getByRole('list', { name: '결정기록 목록' })).toHaveCount(1);
-  await expect(reasons.getByRole('list', { name: '이 기록이 설명하는 문서' })).toHaveCount(1);
+  await expect(reasons.getByRole('list', { name: '이 결정으로 바뀐 문서' })).toHaveCount(1);
   // One way into the activity timeline, not two.
   await expect(article.getByRole('link', { name: '결정기록 →' })).toHaveCount(1);
   await expect(page.getByRole('textbox', { name: '검색', exact: true })).toHaveCount(0);
@@ -92,21 +92,28 @@ test('a commit that touched a great many documents shows three under its record 
   // One introducing commit with 25 records; the server sends the first twelve and the whole count.
   const data = { ...structuredClone(specs), events: Array.from({ length: 25 }, (_, i) =>
     ({ ...event, key: specs.head + ':R-' + 'abcdefghij'.slice(0, 8) + 'abcdefghijklmnopqrstuvwxyz234567'[i >> 5] + 'abcdefghijklmnopqrstuvwxyz234567'[i & 31],
+      id: 'R-' + 'abcdefghij'.slice(0, 8) + 'abcdefghijklmnopqrstuvwxyz234567'[i >> 5] + 'abcdefghijklmnopqrstuvwxyz234567'[i & 31],
       after: { ...event.after!, title: '도입 기록 ' + i } })) };
   await serve(page, data);
   await page.goto('/dashboard');
   const activity = page.getByRole('article', { name: '대시보드' }).getByLabel('최신 활동');
   // The record lists three of the ten documents the overview holds and leaves the rest to its page.
-  await expect(activity.getByRole('list', { name: '이 기록이 설명하는 문서' }).getByRole('listitem')).toHaveCount(3);
+  await expect(activity.getByRole('list', { name: '이 결정으로 바뀐 문서' }).getByRole('listitem')).toHaveCount(3);
   await expect(activity.getByRole('link', { name: '문서 7건 더 →' })).toHaveAttribute('href', /\/records\/H-aaaaaaaaaa$/);
   // The count names every document of the commit, and the link accounts for the ones the overview did not load.
   await expect(activity).toContainText('문서 25건');
   const more = activity.getByRole('link', { name: '문서 15건 더 →' });
   await expect(more).toHaveCount(1);
   await more.click();
-  // The rest of that commit is its own page, which carries every record it changed.
-  await expect(page).toHaveURL(new RegExp('/records/commits/'+ specs.head + '$'));
-  await expect(page.getByRole('article', { name: '커밋 상세' }).getByRole('region', { name: /도입 기록/ })).toHaveCount(25);
+  // The rest of that commit is its own page, whose documents tab carries every document it changed.
+  await expect(page).toHaveURL(new RegExp('/records/commits/'+ specs.head + '\\?tab=documents$'));
+  const commitPage = page.getByRole('article', { name: '커밋 상세' });
+  await expect(commitPage.getByRole('navigation', { name: '바뀐 문서' }).getByRole('listitem')).toHaveCount(25);
+  // One document is read at a time beside the list: the first, until another is chosen.
+  await expect(commitPage.getByRole('region', { name: /도입 기록/ })).toHaveCount(1);
+  await commitPage.getByRole('navigation', { name: '바뀐 문서' }).getByRole('link', { name: /도입 기록 24/ }).click();
+  await expect(page).toHaveURL(/\?tab=documents#R-/);
+  await expect(commitPage.getByRole('region', { name: '도입 기록 24' })).toBeVisible();
 });
 
 test('while history is still being counted the overview says nothing about zero or emptiness', async ({ page }) => {

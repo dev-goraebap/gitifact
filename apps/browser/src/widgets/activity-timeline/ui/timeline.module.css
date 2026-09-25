@@ -14,6 +14,9 @@
 .commitAuthor { color:var(--color-text-primary); font-weight:600; text-decoration:none; }
 .commitAuthor:hover { text-decoration:underline; }
 .commitMeta { align-items:baseline; min-width:0; }
+/* The hash and message open the commit page; they keep their quiet colour and underline on hover. */
+.commitMetaLink { min-width:0; color:inherit; text-decoration:none; }
+.commitMetaLink:hover span { text-decoration:underline; }
 /* Where a shortened list stops: the overview shows a few of a large commit and this carries on to the activity. */
 .commitMore { align-self:flex-start; color:var(--color-text-secondary); font-size:.8125rem; text-decoration:none; }
 .commitMore:hover { text-decoration:underline; }

@@ -2,7 +2,7 @@
   "gettingStarted.title": "시작하기",
   "nav.gettingStarted": "시작하기",
   "about.title": "Gitifact 소개",
-  "activity.changedRecords": "이 기록이 설명하는 문서",
+  "activity.changedRecords": "이 결정으로 바뀐 문서",
   "activity.list": "결정기록 목록",
   "activity.moreRecords": "문서 {count}건 더 →",
   "activity.recent": "최근 명세 활동",
@@ -310,9 +310,13 @@
   "activity.commitRecords": "기록 {count}건",
   "activity.moreCommitRecords": "기록 {count}건 더 →",
   "commit.documents": "바뀐 문서",
+  "commit.tab.records": "결정기록",
+  "commit.tab.documents": "문서",
+  "commit.tab.code": "코드",
   "record.title": "결정기록 상세",
   "record.loading": "결정기록을 불러오는 중",
   "record.missing": "이 커밋에서 결정기록을 찾지 못했습니다.",
-  "record.documents": "이 기록이 설명하는 문서",
-  "record.others": "같은 커밋의 다른 기록"
+  "record.documents": "이 결정으로 바뀐 문서",
+  "record.otherRecords": "같은 커밋의 다른 기록 {count}건 →",
+  "record.codeFiles": "코드 변경 {count}개 파일 →"
 }

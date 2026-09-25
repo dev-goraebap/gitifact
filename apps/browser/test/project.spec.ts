@@ -29,7 +29,7 @@ test('mobile dark theme preserves safe Markdown and navigation',async({page})=>{
 function longHistory(){
  const data=structuredClone(specs);
  const base=data.events[0]!;
- data.events=[base,...Array.from({length:50},(_,i)=>({...base,key:'d'.repeat(40)+':R-'+'abcdefgh'+'abcdefghijklmnopqrstuvwxyz234567'[i>>5]+'abcdefghijklmnopqrstuvwxyz234567'[i&31],id:'R-x',after:{...base.after!,title:i===49?'이전 검색 요구사항':'이전 변경 '+i},records:[]}))];
+ data.events=[base,...Array.from({length:50},(_,i)=>({...base,key:'d'.repeat(40)+':R-'+'abcdefgh'+'abcdefghijklmnopqrstuvwxyz234567'[i>>5]+'abcdefghijklmnopqrstuvwxyz234567'[i&31],id:'R-abcdefgh'+'abcdefghijklmnopqrstuvwxyz234567'[i>>5]+'abcdefghijklmnopqrstuvwxyz234567'[i&31],after:{...base.after!,title:i===49?'이전 검색 요구사항':'이전 변경 '+i},records:[]}))];
  return data;
 }
 test('load more retains rows, appends the next page and shows completion', async ({page}) => {
@@ -92,16 +92,21 @@ test('a record opens on a page of its own with the documents it explains, its co
  await expect(record.getByRole('heading',{level:1})).toHaveText('사용자가 검색을 요청했습니다.');
  await expect(record.getByRole('heading',{name:'맥락'})).toBeVisible();
  // One document: it starts open with its text.
- await expect(record.getByRole('region',{name:'이 기록이 설명하는 문서'})).toContainText('검색어 입력');
- await record.getByRole('link',{name:specs.head!.slice(0,12)}).click();
+ await expect(record.getByRole('region',{name:'이 결정으로 바뀐 문서'})).toContainText('검색어 입력');
+ // The commit is a line of the record's head: its message and hash both lead to its page.
+ await expect(record.getByRole('link',{name:specs.events[0]!.message})).toHaveAttribute('href',new RegExp('/records/commits/'+specs.head+'$'));
+ await record.getByRole('link',{name:specs.head!.slice(0,12)}).first().click();
  await expect(page).toHaveURL(new RegExp('/records/commits/'+ specs.head + '$'));
  const article=page.getByRole('article',{name:'커밋 상세'});
  await expect(article.getByRole('heading',{level:1})).toHaveText(specs.events[0]!.message);
+ // A commit with records opens on them; a link that names a document opens its documents at that section.
+ await expect(article.getByRole('tab',{name:/결정기록/})).toHaveAttribute('aria-selected','true');
  await expect(article.getByRole('link',{name:'사용자가 검색을 요청했습니다.'})).toHaveAttribute('href',/\/records\/H-aaaaaaaaaa$/);
- // A link that names a document opens the commit page at that section.
  await page.goto('/records/commits/'+ specs.head + '#R-abcdefghij');
- await expect(article.locator('[aria-current=location]')).toHaveCount(1);
- await expect(article.locator('[aria-current=location]')).toContainText('검색어 입력');
+ // The named document is the one read beside the list, and the list marks it.
+ await expect(article.getByRole('tab',{name:/문서/})).toHaveAttribute('aria-selected','true');
+ await expect(article.getByRole('region',{name:'검색어 입력'})).toBeVisible();
+ await expect(article.getByRole('navigation',{name:'바뀐 문서'}).locator('[aria-current=true]')).toContainText('검색어 입력');
  await page.getByRole('navigation',{name:'이동 경로'}).getByRole('link',{name:'결정기록',exact:true}).click();
  await expect(page).toHaveURL(/\/records$/);
 });
@@ -124,7 +129,9 @@ test('history rows preview change reasons and mark missing ones', async ({page})
  // change no record explains is marked.
  const commits=page.getByRole('list',{name:'결정기록 목록'}).locator('> li');await expect(commits).toHaveCount(1);
  await expect(commits.first()).toContainText('문서 2건');
- const reasons=commits.first().getByRole('list',{name:'이 기록이 설명하는 문서'});await expect(reasons).toHaveCount(3);
+ // Two records each list what they changed; the change no record explains is listed as the commit's.
+ const reasons=commits.first().getByRole('list',{name:'이 결정으로 바뀐 문서'});await expect(reasons).toHaveCount(2);
+ await expect(commits.first().getByRole('list',{name:'바뀐 문서',exact:true})).toContainText('이유 없는 변경');
  await expect(commits.first().getByRole('link',{name:'응답 순서 고정'})).toHaveAttribute('href',new RegExp('/records/H-2222222222$'));
  // A record shows the first line of its decision; its context is read on its page.
  await expect(commits.first()).not.toContainText('같은 검색에 다른 순서가 나오면 헷갈린다.');
@@ -152,7 +159,7 @@ test('history rows preview change reasons and mark missing ones', async ({page})
  await expect(body.locator('tr',{hasText:'날짜순으로'})).not.toContainText('이름순으로');
 });
 
-test('the commit page lists the source the same commit changed, and a file opens to its own diff', async ({page}) => {
+test('the commit page reads its code as files down the side and the chosen file\'s diff beside them', async ({page}) => {
  await mockApi(page);
  const event=specs.events[0]!;
  commitSources[event.commit]=[
@@ -161,15 +168,18 @@ test('the commit page lists the source the same commit changed, and a file opens
  ];
  await serve(page, specs);
  await page.goto('/records/commits/'+event.commit);
- const source=page.getByRole('region',{name:'같은 커밋의 소스 변경'});
- await expect(source).toContainText('파일 2개');
- await expect(source).toContainText('+1');
- // Nothing is read until a row opens; then that file's lines compare with the changed word marked.
- await source.getByRole('button',{name:/src\/search\.ts/}).click();
- const diff=source.getByRole('table',{name:'src/search.ts 변경'});
- await expect(diff.locator('mark')).toHaveText(['date','name']);
- await source.getByRole('button',{name:/assets\/logo\.png/}).click();
- await expect(source).toContainText('텍스트가 아닌 파일이라');
+ const article=page.getByRole('article',{name:'커밋 상세'});
+ await article.getByRole('tab',{name:/코드 2/}).click();
+ await expect(page).toHaveURL(/\?tab=code$/);
+ const files=article.getByRole('navigation',{name:'같은 커밋의 소스 변경'});
+ await expect(files).toContainText('파일 2개');
+ await expect(files).toContainText('+1');
+ // The first file opens when none is named: its lines compare with the changed word marked.
+ const panel=article.getByRole('tabpanel',{name:'같은 커밋의 소스 변경'});
+ await expect(panel.getByRole('table',{name:'src/search.ts 변경'}).locator('mark')).toHaveText(['date','name']);
+ await files.getByRole('link',{name:/logo\.png/}).click();
+ await expect(page).toHaveURL(/file=assets%2Flogo\.png$/);
+ await expect(panel).toContainText('텍스트가 아닌 파일이라');
  delete commitSources[event.commit];
 });
 
@@ -192,7 +202,7 @@ test('a reason is written once over the records it explains, and each day is mar
  const commits=page.getByRole('list',{name:'결정기록 목록'}).locator('> li');await expect(commits).toHaveCount(2);
  // The same sentence is stored against all three records. Printing it per record is what made the timeline unreadable.
  await expect(page.getByText(shared,{exact:true})).toHaveCount(1);
- await expect(commits.first().getByRole('list',{name:'이 기록이 설명하는 문서'}).getByRole('listitem')).toHaveCount(3);
+ await expect(commits.first().getByRole('list',{name:'이 결정으로 바뀐 문서'}).getByRole('listitem')).toHaveCount(3);
  await expect(commits.first()).toContainText('문서 3건');
  // Each calendar day is named where it turns over, and a commit alone on its day carries no count.
  await expect(commits.first()).toContainText('2026년 9월 14일');
@@ -219,9 +229,11 @@ test('a list row carries no body; the commit is read once and shows the text of 
  await expect(article).toContainText('본문은 열 때 읽습니다.');
  await expect(article).toContainText('사용자가 검색을 요청했습니다.');
  // The commit page reads the same commit, and coming back does not ask again: a commit never changes.
- await article.getByRole('link',{name:specs.head!.slice(0,12)}).click();
+ await article.getByRole('link',{name:specs.events[0]!.message}).click();
+ await page.getByRole('article',{name:'커밋 상세'}).getByRole('tab',{name:/문서/}).click();
  await expect(page.getByRole('article',{name:'커밋 상세'})).toContainText('본문은 열 때 읽습니다.');
- await page.goBack();
+ // Back past the tab and the commit page to the record.
+ await page.goBack(); await page.goBack();
  await expect(page.getByRole('article',{name:'결정기록 상세'})).toContainText('본문은 열 때 읽습니다.');
  expect(reads).toBe(1);
 });
@@ -248,7 +260,7 @@ test('a link to any commit opens its page, whether the list loaded it or not', a
  const data = longHistory(); const last = data.events.at(-1)!;
  changeBodies[last.key] = { before: null, after: { ...last.after!, body: '오래된 변경의 본문' } };
  await mockApi(page, data);
- await page.goto('/records/commits/'+ last.commit);
+ await page.goto('/records/commits/'+ last.commit + '?tab=documents#' + last.id);
  const article = page.getByRole('article', { name: '커밋 상세' });
  await expect(article).toContainText('오래된 변경의 본문');
  await expect(article).toContainText('이전 검색 요구사항');
@@ -265,11 +277,34 @@ test('the overview counts all of history, and a contributor page asks for that p
 
 test('a record reads as its feature and then the document, and only the document is a link', async ({page}) => {
  await mockApi(page);await page.goto('/records');
- const row=page.getByRole('list',{name:'이 기록이 설명하는 문서'}).getByRole('listitem').first();
+ const row=page.getByRole('list',{name:'이 결정으로 바뀐 문서'}).getByRole('listitem').first();
  const feature=specs.features.find(f=>f.id===specs.events[0]!.after!.specId)!;
  await expect(row).toContainText(new RegExp(feature.title+'\s*·\s*검색어 입력'));
  // The feature is context, not a way out; the document opens its part of the record's page.
  await expect(row.getByRole('link')).toHaveText(['검색어 입력']);
  await row.getByRole('link').click();
  await expect(page).toHaveURL(/\/records\/H-aaaaaaaaaa#R-abcdefghij$/);
+});
+
+test('a list row opens its commit from the hash and message, and a narrow screen picks files from one selector', async ({page}) => {
+ await mockApi(page);
+ const event=specs.events[0]!;
+ await page.goto('/records');
+ await page.getByRole('list',{name:'결정기록 목록'}).getByRole('link',{name:new RegExp(event.commit.slice(0,7))}).first().click();
+ await expect(page).toHaveURL(new RegExp('/records/commits/'+event.commit+'$'));
+ commitSources[event.commit]=[
+  {file:{path:'src/search.ts',status:'modified',additions:1,deletions:1},before:'a\n',after:'b\n'},
+  {file:{path:'src/order.ts',status:'added',additions:1,deletions:0},before:null,after:'c\n'},
+ ];
+ await serve(page, specs);
+ await page.setViewportSize({width:390,height:844});
+ await page.goto('/records/commits/'+event.commit+'?tab=code');
+ const article=page.getByRole('article',{name:'커밋 상세'});
+ // The list of files gives way to a selector over the diff.
+ await expect(article.getByRole('navigation',{name:'같은 커밋의 소스 변경'})).toBeHidden();
+ await article.getByRole('combobox',{name:'같은 커밋의 소스 변경'}).click();
+ await page.getByRole('option',{name:/order\.ts/}).click();
+ await expect(page).toHaveURL(/file=src%2Forder\.ts$/);
+ expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+ delete commitSources[event.commit];
 });

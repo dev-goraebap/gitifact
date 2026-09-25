@@ -11,7 +11,7 @@ import { groupRecords } from '../../../widgets/activity-timeline';
 import { RecordDocuments } from './RecordDocuments';
 import { CommitHeading } from './CommitHeading';
 import { CommitSkeleton } from './CommitSkeleton';
-import { CommitSource } from './CommitSource';
+import { RecordCommit } from './RecordCommit';
 import { RecordSections } from './RecordSections';
 import styles from './commit.module.css';
 import { PageState } from '../../../shared/ui/page-state';
@@ -19,9 +19,10 @@ import { RequestState } from '../../../shared/ui/request-state';
 import { t, useLanguage } from '../../../shared/i18n';
 
 /**
- * One record as its own page: its title and sections, the commit that added it, each document it explains with its
- * differences, the other records of that commit, and the commit's source. The record is found through the history of
- * the HEAD the reader is on, then read from its commit, which the commit page shares.
+ * One record as its own page: its title and sections, each document it explains with its differences, and a card for
+ * the commit that added it. The commit's other records and its source code belong to the commit, so the card links to
+ * them on the commit page. The record is found through the history of the HEAD the reader is on, then read from its
+ * commit, which the commit page shares.
  */
 export function RecordView({ recordId, documentId, session, features, head }: { recordId: string; documentId?: string | undefined; session: BrowserSessionV3; features: SpecFeature[]; head: string }) {
   useLanguage();
@@ -46,27 +47,17 @@ export function RecordView({ recordId, documentId, session, features, head }: { 
       <HStack gap={2} className={styles.recordCommit}>
         <Text type="supporting" color="secondary">{record.id}</Text>
         <Text type="supporting" color="secondary" aria-hidden>·</Text>
-        <Text type="supporting" color="secondary" className={styles.recordCommitMessage}>{data.message}</Text>
+        <Link to="/records/commits/$commit" params={{ commit }} className={styles.recordCommitMessage}>{data.message}</Link>
       </HStack>
+      <RecordCommit session={session} commit={commit} others={others.length}/>
     </CommitHeading>
 
     <RecordSections record={record}/>
 
     <VStack as="section" gap={3} aria-label={t('record.documents')} className={styles.commitSection}>
       <Heading level={2}>{t('record.documents')}</Heading>
-      <RecordDocuments changes={explained} features={features} head={head} documentId={documentId}/>
+      <RecordDocuments label={t('record.documents')} changes={explained} features={features} head={head} documentId={documentId}
+        href={id => `/records/${encodeURIComponent(recordId)}#${encodeURIComponent(id)}`}/>
     </VStack>
-
-    {!!others.length && <VStack as="section" gap={3} aria-label={t('record.others')} className={styles.commitSection}>
-      <Heading level={2}>{t('record.others')}</Heading>
-      <VStack as="ul" gap={0} className={styles.recordList}>
-        {others.map(other => <HStack as="li" key={other.key} gap={3} className={styles.recordItem}>
-          <Link to="/records/$recordId" params={{ recordId: other.key }} className={styles.recordLink}>{other.record!.title}</Link>
-          <Text type="supporting" color="secondary" className={styles.recordItemMeta}>{t('activity.recordCount', { count: other.events.length })}</Text>
-        </HStack>)}
-      </VStack>
-    </VStack>}
-
-    <CommitSource session={session} commit={commit}/>
   </VStack>;
 }

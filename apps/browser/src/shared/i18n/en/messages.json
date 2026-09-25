@@ -2,7 +2,7 @@
   "gettingStarted.title": "Get started",
   "nav.gettingStarted": "Get started",
   "about.title": "About Gitifact",
-  "activity.changedRecords": "Documents this record explains",
+  "activity.changedRecords": "Documents this decision changed",
   "activity.list": "Decision record list",
   "activity.moreRecords": "{count} more documents →",
   "activity.recent": "Recent specification activity",
@@ -310,9 +310,13 @@
   "activity.commitRecords": "Records: {count}",
   "activity.moreCommitRecords": "{count} more records →",
   "commit.documents": "Changed documents",
+  "commit.tab.records": "Records",
+  "commit.tab.documents": "Documents",
+  "commit.tab.code": "Code",
   "record.title": "Decision record",
   "record.loading": "Loading the decision record",
   "record.missing": "This commit does not hold that decision record.",
-  "record.documents": "Documents this record explains",
-  "record.others": "Other records of this commit"
+  "record.documents": "Documents this decision changed",
+  "record.otherRecords": "{count} other records in this commit →",
+  "record.codeFiles": "Code changes in {count} files →"
 }

@@ -1,34 +1,24 @@
-import { useState } from 'react';
 import type { SpecFeature } from '@gitifact/contracts';
-import { HStack } from '@astryxdesign/core/HStack';
-import { Text } from '@astryxdesign/core/Text';
-import { Collapsible, CollapsibleGroup } from '@astryxdesign/core/Collapsible';
-import { ChangeBadge } from '../../../entities/document';
-import { ChangeBody, type Change } from './ChangeBody';
-import styles from './commit.module.css';
-import { useLanguage } from '../../../shared/i18n';
-
-/** A record explaining more documents than this starts with them closed, so the page opens on the record itself. */
-const OPEN_UP_TO = 3;
+import { KindToken } from '../../../entities/document';
+import { ChangeSection } from './ChangeSection';
+import type { Change } from './ChangeBody';
+import { SplitReader } from './SplitReader';
+import { t, useLanguage } from '../../../shared/i18n';
 
 /**
- * The documents a record explains, a row each that opens to its differences. A few start open; a record that swept
- * twenty documents lists their titles and the reader opens the ones they came for. A document the address names
- * starts open, and a closed row reads nothing.
+ * Changed documents read one at a time, as the code is: the documents down the side — what kind each is, its title and
+ * what happened to it — and the chosen one's differences beside them. The address names the chosen document in its
+ * fragment, as links from elsewhere already write it; without one the first opens. The record page and the commit's
+ * documents tab both read documents this way.
  */
-export function RecordDocuments({ changes, features, head, documentId }: { changes: Change[]; features: SpecFeature[]; head: string | null; documentId?: string | undefined }) {
+export function RecordDocuments({ label, changes, features, head, documentId, href }: { label: string; changes: Change[]; features: SpecFeature[]; head: string | null; documentId?: string | undefined; href: (id: string) => string }) {
   useLanguage();
-  const [open, setOpen] = useState<string[]>(() => changes.length <= OPEN_UP_TO ? changes.map(c => c.event.key)
-    : changes.filter(c => c.event.id === documentId).map(c => c.event.key));
-  return <CollapsibleGroup type="multiple" hasDividers chevronPosition="start" value={open} onChange={value => setOpen(Array.isArray(value) ? value : [value])}>
-    {changes.map(change => {
-      const spec = change.after ?? change.before;
-      return <Collapsible key={change.event.key} value={change.event.key} trigger={<HStack id={change.event.id} gap={2} className={styles.documentRow}>
-        <ChangeBadge event={change.event}/>
-        <Text weight="semibold" className={styles.documentTitle}>{spec?.title ?? change.event.id}</Text>
-      </HStack>}>
-        {open.includes(change.event.key) && <ChangeBody change={change} features={features} head={head}/>}
-      </Collapsible>;
-    })}
-  </CollapsibleGroup>;
+  const chosen = changes.find(c => c.event.id === documentId) ?? changes[0];
+  if (!chosen) return null;
+  return <SplitReader label={label}
+    items={changes.map(change => { const spec = change.after ?? change.before;
+      return { key: change.event.key, label: spec?.title ?? change.event.id, description: change.event.types.map(type => t(`change.${type}`)).join(' · '),
+        start: <KindToken kind={change.event.kind}/>, href: href(change.event.id), selected: change === chosen }; })}>
+    <ChangeSection key={chosen.event.key} change={chosen} features={features} head={head} current={false}/>
+  </SplitReader>;
 }

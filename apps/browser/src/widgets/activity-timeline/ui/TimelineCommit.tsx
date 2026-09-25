@@ -55,22 +55,24 @@ export const TimelineCommit = memo(function TimelineCommit({events,day,features,
        <Timestamp value={first.date} format="relative"/>
       </HStack>
      </HStack>
-     <HStack gap={2} className={styles.commitMeta}>
-      <Text type="code" color="secondary">{first.commit.slice(0,7)}</Text>
-      <Text type="supporting" color="secondary" className={styles.oneLine}>{first.message}</Text>
-     </HStack>
+     <Link to="/records/commits/$commit" params={{commit:first.commit}} className={styles.commitMetaLink}>
+      <HStack gap={2} className={styles.commitMeta}>
+       <Text type="code" color="secondary">{first.commit.slice(0,7)}</Text>
+       <Text type="supporting" color="secondary" className={styles.oneLine}>{first.message}</Text>
+      </HStack>
+     </Link>
     </VStack>
     {!!recorded.length&&<VStack as="ul" gap={0} className={styles.recordRows} aria-label={t('event.records')}>
      {recorded.slice(0,RECORDS_SHOWN).map(group=><RecordRow key={group.key} record={group.record!} events={group.events} features={features}/>)}
     </VStack>}
-    {recorded.length>RECORDS_SHOWN&&<Link to="/records/commits/$commit" params={{commit:first.commit}} className={styles.commitMore}>{t('activity.moreCommitRecords', { count: recorded.length-RECORDS_SHOWN })}</Link>}
+    {recorded.length>RECORDS_SHOWN&&<Link to="/records/commits/$commit" params={{commit:first.commit}} search={{tab:'records'}} className={styles.commitMore}>{t('activity.moreCommitRecords', { count: recorded.length-RECORDS_SHOWN })}</Link>}
     {bare&&<VStack gap={2} className={styles.reasonGroup}>
      {bare.missing&&<Text color="secondary">{t('activity.noRecord')}</Text>}
-     <VStack as="ul" gap={0} className={styles.records} aria-label={t('activity.changedRecords')}>
+     <VStack as="ul" gap={0} className={styles.records} aria-label={t('commit.documents')}>
       {bare.events.map(event=><TimelineRecord key={event.key} event={event} features={features}/>)}
      </VStack>
     </VStack>}
-    {hidden>0&&<Link to="/records/commits/$commit" params={{commit:first.commit}} className={styles.commitMore}>{t('activity.moreRecords', { count: hidden })}</Link>}
+    {hidden>0&&<Link to="/records/commits/$commit" params={{commit:first.commit}} search={{tab:'documents'}} className={styles.commitMore}>{t('activity.moreRecords', { count: hidden })}</Link>}
    </VStack>
   </HStack>
  </VStack>;

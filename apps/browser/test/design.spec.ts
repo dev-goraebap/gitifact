@@ -20,12 +20,12 @@ test('design tab, explicit references and URL restoration',async({page})=>{
 test('mixed commit history, design filter and before/after panel',async({page})=>{
  await mockApi(page);await serve(page, data());await page.goto('/records');
  await expect(page.getByText('ccccccc',{exact:true})).toHaveCount(1);
- await expect(page.getByRole('list',{name:'이 기록이 설명하는 문서'})).toHaveCount(2);
+ await expect(page.getByRole('list',{name:'이 결정으로 바뀐 문서'})).toHaveCount(2);
  await page.getByRole('link',{name:'검색 구현 설계',exact:true}).click();
  const detail=page.getByRole('article',{name:'결정기록 상세'});await expect(detail).toContainText('검색 부하를 줄입니다.');
  await expect(detail.getByRole('table',{name:'본문 변경'})).toContainText('이전 설계');
  await detail.getByRole('link',{name:'현재 기능 명세 보기 →'}).click();await expect(page.getByRole('tab',{name:'설계',exact:true})).toHaveAttribute('aria-selected','true');
- const rows=page.getByRole('list',{name:'이 기록이 설명하는 문서'}).getByRole('listitem');
+ const rows=page.getByRole('list',{name:'이 결정으로 바뀐 문서'}).getByRole('listitem');
  await page.goto('/records?document=design');await expect(rows).toHaveCount(1);await expect(rows.first()).toContainText('설계');await expect(page.getByRole('link',{name:'검색 구현 설계',exact:true})).toBeVisible();
  await page.goto('/records?document=requirement');await expect(rows).toHaveCount(1);await expect(page.getByText('검색어 입력',{exact:true})).toBeVisible();
 });
