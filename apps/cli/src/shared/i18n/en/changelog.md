@@ -4,8 +4,11 @@
 - The browser's decision records list starts with a "Not committed yet" entry. `/records/working` compares the uncommitted records and changed documents with the last commit, and an uncommitted record opens at its record address too.
 - Coming back to the browser tab after documents or commits changed shows a notice with a refresh.
 - `init` writes `.gitifact/.gitattributes` so documents are stored and checked out with LF on every OS. The root `.gitattributes` is left alone.
+- The browser's commit page splits into records, documents and code tabs; documents and code show the chosen file's comparison beside the file list. A record's page leads from its head to the commit, the commit's other records and its code.
+- A `?` beside the titles of the feature requirements, decision records and project instructions lists shows what the screen is for.
 ### Changed
-- Every list shows 20 at a time; read on with the `--after <value>` printed at the end (`--all` shows everything). Specs page by feature and the history by commit, and JSON carries `page`.
+- A reference file of an instruction folder (Markdown other than `index.md`) must carry `title` and `description` in its frontmatter; `check` reports one without them. `instructions list` and `show` print each file's path, title and description, and the browser names files by that title.
+- The browser's instruction sidebar gives files an icon for their kind and folds folders, and a press anywhere on a row opens it.- Every list shows 20 at a time; read on with the `--after <value>` printed at the end (`--all` shows everything). Specs page by feature and the history by commit, and JSON carries `page`.
 - Agents read every instruction at the start of a session and read specs when product behavior comes up or before changing code. Run `update` to refresh the block.
 - The instruction block is shorter: what to read and do in each situation is one table, and overlapping rules are merged.
 - The history index no longer holds document texts; they are read from Git when a comparison is opened, which halves its size. Existing indexes rebuild themselves, and a first build reads files side by side.
@@ -13,6 +16,7 @@
 ### Fixed
 - A migration commit for a 0.7 project hit the 128-path limit and could not finish as one commit. A commit with `migration: true` now takes up to 5,000 paths, and a long selection no longer runs into the command-line length limit.
 - The migration notice `update` shows in a 0.7 project named the removed `docs` command.
+- In the browser, a file or screen opened while the wheel was still gliding was pulled back to the old scroll position.
 
 ## 0.8.0 - 2026-09-25
 ### Added
