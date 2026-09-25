@@ -7,7 +7,7 @@ description: 작업별 지침 폴더의 형식, AGENTS.md 색인, 명세와의 �
 
 ## 폴더와 파일
 
-지침 하나는 `.gitifact/instructions/<이름>/` 폴더다. 이름은 소문자·숫자·하이픈 80자까지다. 폴더의 `index.md`가 지침 문서이고, 긴 내용은 같은 폴더의 `references/` 아래 파일로 나눈다. `index.md`는 필요한 references를 상대 링크로 가리킨다.
+지침 하나는 `.gitifact/instructions/<이름>/` 폴더다. 이름은 소문자·숫자·하이픈 80자까지다. 폴더의 `index.md`가 지침 문서이고, 긴 내용은 같은 폴더의 `references/` 아래 참고 파일로 나눈다. `index.md`에는 늘 지킬 짧은 규칙과, 어떤 작업 때 어느 참고 파일을 읽을지의 색인을 상대 링크로 둔다. 에이전트는 `index.md`와 목록의 제목·설명만 보고 이번 작업에 필요한 참고 파일만 연다.
 
 ```text
 .gitifact/instructions/
@@ -35,7 +35,20 @@ description: 리뷰에서 확인할 것과 보고 형식. 변경을 리뷰할 �
 규칙과 이유. 긴 목록은 [references/checklist.md](references/checklist.md)에 둔다.
 ```
 
-위 ID와 문장은 구조 설명이다. `index.md`의 프론트매터는 `id`·`title`·`description`만 두고 모두 필수다. `description`에는 무엇을 담는지와 어떤 작업 때 읽는지를 함께 쓴다. 제목은 본문에 `#`로 다시 쓰지 않으며, 본문 절은 `##`부터 쓰고 gitifact 주석을 넣지 않는다. references 파일은 문서로 파싱하지 않으므로 프론트매터와 ID가 없고 형식이 자유롭다. 본문의 문체는 `gitifact guide show writing`을 따른다.
+위 ID와 문장은 구조 설명이다. `index.md`의 프론트매터는 `id`·`title`·`description`만 두고 모두 필수다. `description`에는 무엇을 담는지와 어떤 작업 때 읽는지를 함께 쓴다. 제목은 본문에 `#`로 다시 쓰지 않으며, 본문 절은 `##`부터 쓰고 gitifact 주석을 넣지 않는다. 본문의 문체는 `gitifact guide show writing`을 따른다.
+
+`index.md`가 아닌 Markdown 파일(참고 파일)은 프론트매터에 `title`과 `description`만 두며 둘 다 필수다. ID·`order`·`draft`는 없다. 소속은 폴더가, 순서는 경로가 정한다. 참고 파일은 CLI 명령 없이 직접 만든다. `description`에는 무엇을 담는지와 어떤 작업 때 읽는지를 쓴다. 프론트매터가 없거나 다른 키가 있으면 `check`의 문제다. 본문은 검사하지 않는다.
+
+```markdown
+---
+title: 리뷰 체크리스트
+description: 리뷰에서 확인할 항목 전체. 큰 변경이나 보안에 닿는 변경을 리뷰할 때 읽는다.
+---
+
+항목들
+```
+
+이미지 같은 Markdown이 아닌 파일은 프론트매터 없이 둔다.
 
 이미 있는 지침은 파일을 직접 고친다. 이름을 바꿀 때는 폴더를 옮기고 ID를 유지하며, 지울 때는 폴더를 지운다. 지운 지침을 설계의 `sources`가 가리키고 있으면 그 설계도 고쳐야 `check`가 통과한다. `index.md`가 없는 지침 폴더는 `INSTRUCTION_INDEX_REQUIRED` 문제다.
 
@@ -75,7 +88,7 @@ description: 리뷰에서 확인할 것과 보고 형식. 변경을 리뷰할 �
 ## 에이전트
 
 - 요구사항·설계·코드를 바꾸기 전에 AGENTS.md 색인에서 작업 영역에 맞는 지침을 찾아 읽고 따른다. 맞는 지침이 없으면 없다고 보고 진행한다.
-- `gitifact instructions list`는 AGENTS.md가 있는지와 지침마다 딸린 파일 수를 보인다. 지침은 `instructions show <이름>`으로 `index.md`를, `instructions show <이름> --file references/<파일>`로 딸린 파일을 읽는다.
+- `gitifact instructions list`는 AGENTS.md가 있는지와, 지침마다 딸린 파일의 경로·제목·설명을 보인다. 지침은 `instructions show <이름>`으로 `index.md`를, `instructions show <이름> --file references/<파일>`로 딸린 파일을 읽는다.
 - 요청이 지침과 어긋나면 진행 전에 알린다. 지침을 바꿀지는 사용자와 정한다.
 - 여러 기능에 걸친 규칙이나 결정을 새로 정하면 지침에 남길지 제안한다. 사용자가 동의하면 기존 지침을 고치거나 `gitifact instructions new`로 만들고 AGENTS.md 색인을 함께 고친다.
 - 0.7의 위키(`.gitifact/wiki/`)는 0.8.0에서 지침으로 바뀌었다. 위키 페이지가 남아 있으면 `check`가 `WIKI_REMOVED`로 알린다. 옮기는 절차는 `gitifact guide show migrate`를 따른다.

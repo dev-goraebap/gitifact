@@ -288,6 +288,7 @@
   "instructions.agentsMissingTitle": "AGENTS.md가 없습니다",
   "instructions.agentsMissingDescription": "저장소 루트에 AGENTS.md가 없거나 읽을 수 없습니다. gitifact init이 만듭니다.",
   "instructions.back": "← 프로젝트 지침",
+  "instructions.description": "{title} 설명",
   "instructions.backToList": "지침 목록으로",
   "instructions.folder": "폴더",
   "instructions.files": "파일",

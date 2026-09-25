@@ -7,7 +7,7 @@ Project instructions hold how work is done in this project: architecture rules, 
 
 ## Folders and files
 
-An instruction is a folder, `.gitifact/instructions/<name>/`. Names use lowercase letters, digits and hyphens, up to 80 characters. The folder's `index.md` is the instruction document; split long content into files under `references/` in the same folder, and link to them from `index.md` with relative links.
+An instruction is a folder, `.gitifact/instructions/<name>/`. Names use lowercase letters, digits and hyphens, up to 80 characters. The folder's `index.md` is the instruction document; split long content into reference files under `references/` in the same folder. `index.md` holds the short rules that always apply and an index, with relative links, of which reference file to read for which work. An agent opens only the reference files the task needs, going by `index.md` and the titles and descriptions in the list.
 
 ```text
 .gitifact/instructions/
@@ -35,7 +35,20 @@ description: What to check in a review and how to report it. Use when reviewing 
 Rules and reasons. Long lists go in [references/checklist.md](references/checklist.md).
 ```
 
-The ID and sentences above only show the structure. The frontmatter of `index.md` has only `id`, `title` and `description`, all required. The `description` says both what the instruction holds and for which work to read it. Do not repeat the title as a `#` heading in the body; start body sections at `##` and do not add gitifact comments. Reference files are not parsed as documents, so they have no frontmatter or ID and any format. Follow `gitifact guide show writing` for the prose.
+The ID and sentences above only show the structure. The frontmatter of `index.md` has only `id`, `title` and `description`, all required. The `description` says both what the instruction holds and for which work to read it. Do not repeat the title as a `#` heading in the body; start body sections at `##` and do not add gitifact comments. Follow `gitifact guide show writing` for the prose.
+
+A Markdown file other than `index.md` (a reference file) has only `title` and `description` in its frontmatter, both required. It has no ID, `order` or `draft`: the folder decides where it belongs and the path decides its order. Create reference files directly; there is no CLI command for them. The `description` says what the file holds and for which work to read it. A missing frontmatter or any other key is a `check` problem. The body is not checked.
+
+```markdown
+---
+title: Review checklist
+description: Every item to check in a review. Read when reviewing a large change or one that touches security.
+---
+
+The items
+```
+
+Files that are not Markdown, such as images, have no frontmatter.
 
 Edit existing instructions directly. To rename one, move the folder and keep the ID; to delete one, delete the folder. If a design's `sources` still names a deleted instruction, fix that design too or `check` fails. An instruction folder without `index.md` is an `INSTRUCTION_INDEX_REQUIRED` problem.
 
@@ -75,7 +88,7 @@ A change to an instruction is a change to its `index.md`; a record names it by i
 ## Agents
 
 - Before changing requirements, designs or code, find the instructions for the area of work in the AGENTS.md index, read them and follow them. If none fits, say so and proceed.
-- `gitifact instructions list` shows whether AGENTS.md exists and how many files each instruction folder holds. Read an instruction's `index.md` with `instructions show <name>` and a file of its folder with `instructions show <name> --file references/<file>`.
+- `gitifact instructions list` shows whether AGENTS.md exists and, for each instruction, the path, title and description of each file in its folder. Read an instruction's `index.md` with `instructions show <name>` and a file of its folder with `instructions show <name> --file references/<file>`.
 - If a request conflicts with an instruction, say so before proceeding. Whether to change the instruction is the user's call.
 - When a new rule or decision spans features, suggest recording it in an instruction. If the user agrees, edit an existing instruction or create one with `gitifact instructions new`, and update the AGENTS.md index.
 - The 0.7 wiki (`.gitifact/wiki/`) became instructions in 0.8.0. `check` reports any page left there as `WIKI_REMOVED`. Follow `gitifact guide show migrate` to move them.

@@ -36,6 +36,8 @@
 .fileGroup { padding-top:var(--spacing-3); }
 .folder { font-family:var(--font-family-code); padding-inline:var(--spacing-2); padding-bottom:var(--spacing-1); }
 .filePath { font-family:var(--font-family-code); padding-bottom:var(--spacing-3); }
+/* A reference file's title from its frontmatter, over its text; the body's own headings stay smaller. */
+.fileTitle { padding-bottom:var(--spacing-4); }
 .related { padding-top:var(--spacing-8); }
 /* Narrow screens: the files come above the file being read. */
 @media(width<64rem) {

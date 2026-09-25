@@ -1,6 +1,6 @@
 import { lstat, open, readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { INSTRUCTION_FILE } from '@gitifact/core';
+import { INSTRUCTION_FILE, isInstructionReference, parseInstructionFile } from '@gitifact/core';
 
 // The files of one instruction folder in the working tree, for `instructions show` and the browser. Links are neither listed
 // nor followed: a folder that points elsewhere would let a read leave the project.
@@ -30,32 +30,34 @@ export async function listInstructionFiles(root: string, instructionPath: string
   return { files, limited };
 }
 
-/** How much of a Markdown file is read to find its title: a title comes first, so the start of the file is enough. */
-const HEADING_WINDOW = 8 * 1024;
+/** How much of a reference file is read for its frontmatter, which comes first and holds two short lines. */
+const FRONTMATTER_WINDOW = 8 * 1024;
+
+export interface InstructionFile { path: string; size: number; title?: string; description?: string }
 
 /**
- * The title of each Markdown file in the list: its first `# ` heading, found in the first few kilobytes outside code
- * fences, or none. The browser names a reference by it instead of by its file name.
+ * Each reference file with the title and description of its frontmatter, read from its first few kilobytes. A file
+ * whose frontmatter cannot be read is listed by path and size only; the check says why.
  */
-export async function withTitles(root: string, instructionPath: string, files: { path: string; size: number }[]) {
+export async function describeFiles(root: string, instructionPath: string, files: { path: string; size: number }[]): Promise<InstructionFile[]> {
   const folder = folderOf(root, instructionPath);
   return Promise.all(files.map(async file => {
-    if (!file.path.toLowerCase().endsWith('.md')) return file;
+    if (!isInstructionReference(file.path)) return file;
     let handle;
     try {
       handle = await open(join(folder, ...file.path.split('/')), 'r');
-      const buffer = Buffer.alloc(Math.min(HEADING_WINDOW, file.size));
+      const buffer = Buffer.alloc(Math.min(FRONTMATTER_WINDOW, file.size));
       const { bytesRead } = await handle.read(buffer, 0, buffer.length, 0);
-      let fenced = false;
-      for (const line of buffer.subarray(0, bytesRead).toString('utf8').split(/\r?\n/)) {
-        if (/^\s{0,3}(```|~~~)/.test(line)) fenced = !fenced;
-        const heading = !fenced && /^#\s+(.+?)\s*#*\s*$/.exec(line);
-        if (heading) return { ...file, title: heading[1]!.slice(0, 200) };
-      }
-      return file;
+      return { ...file, ...parseInstructionFile(file.path, buffer.subarray(0, bytesRead).toString('utf8')) };
     } catch { return file; }
     finally { await handle?.close(); }
   }));
+}
+
+/** The files beside index.md with their titles and descriptions. */
+export async function readInstructionFiles(root: string, instructionPath: string): Promise<{ files: InstructionFile[]; limited: boolean }> {
+  const { files, limited } = await listInstructionFiles(root, instructionPath);
+  return { files: await describeFiles(root, instructionPath, files), limited };
 }
 
 /**

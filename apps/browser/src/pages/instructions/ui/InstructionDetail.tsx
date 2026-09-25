@@ -14,6 +14,7 @@ import { DocumentBody } from '../../../shared/ui/document';
 import { RelatedList, RelatedItem } from '../../../shared/ui/related-list';
 import { InstructionMark } from './InstructionMark';
 import { InstructionFileView } from './InstructionFileView';
+import { DescriptionHelp } from './DescriptionHelp';
 import type { InstructionColor } from '../model/instruction-color';
 import styles from './instructions.module.css';
 import { t, useLanguage } from '../../../shared/i18n';
@@ -50,8 +51,8 @@ export function InstructionDetail({ instruction, color, file, features, session 
       <HStack gap={3} vAlign="center">
         <InstructionMark color={color} title={instruction.title} size="lg"/>
         <Heading level={1}>{instruction.title}</Heading>
+        <DescriptionHelp title={instruction.title} description={instruction.description}/>
       </HStack>
-      <Text color="secondary">{instruction.description}</Text>
       <MetadataList orientation="horizontal">
         <MetadataListItem label={t('instructions.folder')}><Text type="code">{instruction.name}</Text></MetadataListItem>
         <MetadataListItem label="ID">{instruction.id}</MetadataListItem>
@@ -67,7 +68,7 @@ export function InstructionDetail({ instruction, color, file, features, session 
           <ListItem label={instruction.title} href={fileHref()} isSelected={!chosen}/>
         </List>
         {byFolder(instruction.files).map(([name, files]) => {
-          // A Markdown file goes by its first heading; the file name stays for files without one.
+          // A reference file goes by the title in its frontmatter; the file name stays for files without one.
           const list = <List density="compact" aria-label={name || INDEX}>
             {files.map(f => <ListItem key={f.path} label={f.title ?? f.path.slice(name ? name.length + 1 : 0)} href={fileHref(f.path)} isSelected={chosen === f}
               onMouseEnter={() => prefetch(f)} onFocus={() => prefetch(f)}
@@ -82,6 +83,10 @@ export function InstructionDetail({ instruction, color, file, features, session 
       </VStack>
       <VStack gap={0} className={styles.content}>
         <Text type="supporting" color="secondary" className={styles.filePath}>{folder + (chosen ? chosen.path : INDEX)}</Text>
+        {chosen && chosen.title && <HStack gap={1} vAlign="center" className={styles.fileTitle}>
+          <Heading level={2}>{chosen.title}</Heading>
+          {chosen.description && <DescriptionHelp title={chosen.title} description={chosen.description}/>}
+        </HStack>}
         {file && !chosen ? <Text color="secondary">{t('instructions.fileMissing', { path: file })}</Text>
           : chosen ? <InstructionFileView session={session} instruction={instruction} file={chosen}/>
           : <DocumentBody path={instruction.path}>{instruction.body}</DocumentBody>}

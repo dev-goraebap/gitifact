@@ -288,6 +288,7 @@
   "instructions.agentsMissingTitle": "No AGENTS.md",
   "instructions.agentsMissingDescription": "There is no readable AGENTS.md at the repository root. gitifact init writes it.",
   "instructions.back": "← Project instructions",
+  "instructions.description": "About {title}",
   "instructions.backToList": "Back to instructions",
   "instructions.folder": "Folder",
   "instructions.files": "Files",

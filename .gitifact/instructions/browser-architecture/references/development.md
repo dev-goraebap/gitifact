@@ -1,4 +1,7 @@
-# 프론트엔드 개발 환경
+---
+title: 프론트엔드 개발 환경
+description: 의존성, 개발 서버, Astryx API 확인, 화면 테스트. 브라우저 앱을 띄우거나 의존성을 바꿀 때 읽는다.
+---
 
 적용 대상은 apps/browser의 React·TypeScript·Vite CSR 앱이다.
 

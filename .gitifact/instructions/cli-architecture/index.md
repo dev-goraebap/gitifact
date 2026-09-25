@@ -101,7 +101,8 @@ stdout에는 선택한 출력 형식만 내보내고 로그·진행 상황은 st
 | `.gitifact/spec/<기능>/requirements/<slug>.md` | `id`(R-), `title`, `description`, `order` |
 | `.gitifact/spec/<기능>/design/<slug>.md` | `id`(D-), `title`, `description`, `order`, `requirements`, `sources` |
 | `.gitifact/wiki/**/*.md` | `id`(W-), `title`, `description` |
-| `.gitifact/instructions/<이름>/index.md` | `id`(I-), `title`, `description`. 폴더의 다른 파일(`references/` 등)은 그 지침에 딸리며 문서로 읽지 않는다 |
+| `.gitifact/instructions/<이름>/index.md` | `id`(I-), `title`, `description` |
+| `.gitifact/instructions/<이름>/**/*.md`(`index.md` 밖) | `title`, `description`. 그 지침에 딸린 참고 파일이며 ID가 없고 본문을 검사하지 않는다. Markdown이 아닌 파일은 프론트매터가 없다 |
 | `.gitifact/records/<yyyymmdd>/<DR-ID>.md` | `id`(DR-), `title`, `docs`, 선택 `draft`. 본문은 맥락·결정·검토한 대안 `##` 섹션뿐이다 |
 
 - **ID:** CLI가 발급하는 소문자 base32 10자다. 기능 S-, 요구사항 R-, 설계 D-, 위키 W-, 지침 I-, 결정기록 DR-(D-·R-와 겹치지 않게 두 글자). `H-`는 기록 도입 전 이유의 ID로, 과거 커밋에서 이력용으로만 읽으며 0.7 파서와 함께 1.0.0에서 지운다. 경로·제목과 독립적이며 파일을 옮겨도 바뀌지 않는다. 소속은 폴더 위치로만 정한다.

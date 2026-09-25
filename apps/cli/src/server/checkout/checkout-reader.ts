@@ -3,7 +3,7 @@ import { browserSpecsV6, type BrowserSpecsV6, type DesignSource } from '@gitifac
 import { createGitRunner } from '../../adapters/git/run-git.js';
 import { storeReader } from '../../adapters/git/store-reader.js';
 import { readConfigFile } from '../../adapters/filesystem/config-file.js';
-import { listInstructionFiles, withTitles } from '../../adapters/filesystem/instruction-folder.js';
+import { readInstructionFiles } from '../../adapters/filesystem/instruction-folder.js';
 import { readAgentsFile } from '../../adapters/filesystem/agents-file.js';
 import { MIGRATION_TRAILER, type Cache } from '../../adapters/cache/index.js';
 import { t, getLanguage } from '../../shared/i18n/index.js';
@@ -113,8 +113,8 @@ export function createCheckoutReader(root: string, sessionId: string, cache: Cac
       return { ...feature, contributors: entry ? [...entry.people.values()].sort((a, b) => b.commits - a.commits) : [], updatedAt: entry?.latest ?? null };
     });
     const instructions = await Promise.all(arranged.instructions.map(async instruction => {
-      const { files, limited } = await listInstructionFiles(root, instruction.path);
-      return { ...instruction, files: await withTitles(root, instruction.path, files), filesLimited: limited, updatedAt: authors?.instructions.get(instruction.path.split('/').slice(0, 3).join('/')) ?? null };
+      const { files, limited } = await readInstructionFiles(root, instruction.path);
+      return { ...instruction, files, filesLimited: limited, updatedAt: authors?.instructions.get(instruction.path.split('/').slice(0, 3).join('/')) ?? null };
     }));
     const agentsText = await readAgentsFile(root);
     const agents = agentsText === null ? null : { path: 'AGENTS.md', body: agentsText, updatedAt: authors?.instructions.get('AGENTS.md') ?? null };

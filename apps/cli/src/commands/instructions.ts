@@ -1,8 +1,8 @@
 import { lstat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { INSTRUCTIONS_ROOT, type InstructionDoc } from '@gitifact/core';
-import { listInstructionFiles, readInstructionFile } from '../adapters/filesystem/instruction-folder.js';
-import { committed, createDocument, draftMark, showDocuments, working } from './documents.js';
+import { readInstructionFile, readInstructionFiles } from '../adapters/filesystem/instruction-folder.js';
+import { committed, createDocument, draftMark, fileLine, showDocuments, working } from './documents.js';
 import { byAuthor, checkFields, selected, type Change, type ListOptions } from './list-options.js';
 import { CommandError, runCommand, text, type Format } from './output.js';
 import { openProject, type Project } from './project.js';
@@ -14,7 +14,8 @@ const AGENTS = 'AGENTS.md';
 
 /**
  * `instructions list`: where AGENTS.md is, since its index says which instruction a kind of work reads, then each
- * instruction with how many files its folder holds besides index.md, so an agent knows there is more to open.
+ * instruction with the files of its folder besides index.md, each by its title and description, so an agent opens
+ * only the ones the work needs.
  */
 export const runInstructionsList = (options: ListOptions & { sort: typeof instructionSorts[number] }) => runCommand('instructions', options.format, async () => {
   const fields = checkFields(options.fields, columns);
@@ -36,24 +37,28 @@ export const runInstructionsList = (options: ListOptions & { sort: typeof instru
   const instructions = documents.filter((d): d is InstructionDoc => d.kind === 'instruction')
     .filter(d => (!touched || touched.has(d.id)) && (!matched || matched.has(d.id)))
     .sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
-  const rows = await Promise.all(instructions.map(async d => ({
-    id: d.id, name: d.name, path: d.path, title: d.title, description: d.description, ...(d.draft ? { draft: true } : {}),
-    files: (await listInstructionFiles(project.root, d.path)).files.length,
-    ...(historyNeeded ? { updated: latest.get(d.id) ?? null } : {}),
-    ...(matched ? { line: matched.get(d.id)! } : {}),
-  })));
+  const rows = await Promise.all(instructions.map(async d => {
+    const { files, limited } = await readInstructionFiles(project.root, d.path);
+    return {
+      id: d.id, name: d.name, path: d.path, title: d.title, description: d.description, ...(d.draft ? { draft: true } : {}),
+      files, ...(limited ? { filesLimited: true } : {}),
+      ...(historyNeeded ? { updated: latest.get(d.id) ?? null } : {}),
+      ...(matched ? { line: matched.get(d.id)! } : {}),
+    };
+  }));
   if (options.sort === 'updated') rows.sort((a, b) => (newest.get(a.id) ?? Infinity) - (newest.get(b.id) ?? Infinity));
   const shown = options.limit === undefined ? rows : rows.slice(0, options.limit);
   const unreadable = problems.filter(p => p.path.startsWith(INSTRUCTIONS_ROOT + '/'));
   if (fields) {
+    // A text cell names the files by path; JSON keeps them whole.
     const picked = selected(shown, fields);
-    return { json: { agents, instructions: picked.json, problems: unreadable }, text: picked.text };
+    return { json: { agents, instructions: picked.json, problems: unreadable }, text: selected(shown.map(r => ({ ...r, files: r.files.map(f => f.path) })), fields).text };
   }
   const out = [agents.exists ? t('instructions.agents') : t('instructions.noAgents')];
   for (const r of shown) {
-    const files = r.files ? ' · ' + t('instructions.files', { count: r.files }) : '';
     const when = r.updated ? ` · ${r.updated.date.slice(0, 10)} ${r.updated.author}` : '';
-    out.push(`${r.id} ${r.title}${draftMark(r as { draft?: true })} (${r.name}) — ${r.description}${files}${when}`, ...(r.line ? ['  ' + r.line] : []));
+    out.push(`${r.id} ${r.title}${draftMark(r as { draft?: true })} (${r.name}) — ${r.description}${when}`, ...(r.line ? ['  ' + r.line] : []));
+    out.push(...r.files.map(f => '  ' + fileLine(f)), ...(r.filesLimited ? ['  ' + t('instructions.filesLimited', { count: r.files.length })] : []));
   }
   if (!shown.length) out.push(options.q !== undefined || options.author !== undefined ? t('docs.noMatch') : t('instructions.empty'));
   if (unreadable.length) out.push(t('docs.unreadable', { count: unreadable.length }));

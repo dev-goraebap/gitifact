@@ -165,6 +165,22 @@ export function parseDocumentFile(path: string, source: string): Doc {
   return { kind: 'design', feature: where.feature, order: order(), requirements: refs?.type === 'list' ? refs.items : [], sources: sources(fields, path), ...common };
 }
 
+/** Whether a file of an instruction folder is a reference: Markdown, which names itself in its frontmatter. */
+export const isInstructionReference = (path: string) => path.endsWith('.md');
+
+/**
+ * The title and description of a reference file (a Markdown file of an instruction folder other than its index.md).
+ * Only these two keys, both required: the folder says which instruction it belongs to and the path orders it. The body
+ * is the author's and is not checked. Throws DocumentError for the first problem.
+ */
+export function parseInstructionFile(path: string, source: string): { title: string; description: string } {
+  if (source.includes('\0') || /\r(?!\n)/.test(source) || source.charCodeAt(0) === 0xfeff) throw new DocumentError('INVALID_CHARACTERS', path, t('doc.INVALID_CHARACTERS', { path }));
+  const { fields } = parseFrontmatterBlock(source.replace(/\r\n/g, '\n'), path);
+  for (const key of fields.keys()) if (key !== 'title' && key !== 'description') throw new DocumentError('FRONTMATTER_UNKNOWN_KEY', path, t('doc.FRONTMATTER_UNKNOWN_KEY', { path, key }));
+  for (const key of ['title', 'description']) if (!fields.has(key)) throw new DocumentError('FRONTMATTER_MISSING_KEY', path, t('doc.FRONTMATTER_MISSING_KEY', { path, key }));
+  return { title: text(fields, 'title', path, 200), description: text(fields, 'description', path, 300) };
+}
+
 /** Canonical text of a document: frontmatter in a fixed key order (a draft mark last), a blank line, the body and a final newline. */
 export function renderDocumentFile(doc: Doc): string {
   const front = renderFrontmatterBlock([

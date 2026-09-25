@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { classifyDocPath, parseDocumentFile, renderDocumentFile, INSTRUCTION_FILE, INSTRUCTIONS_ROOT, SPEC_ROOT, type DesignDoc, type Doc, type DocKind } from '@gitifact/core';
 import { createDocumentFile, generateId } from '../adapters/filesystem/document-file.js';
-import { listInstructionFiles } from '../adapters/filesystem/instruction-folder.js';
+import { readInstructionFiles, type InstructionFile } from '../adapters/filesystem/instruction-folder.js';
 import { CommandError, section, text, type CommandResult } from './output.js';
 import { documentsOf, type Project } from './project.js';
 import { t } from '../shared/i18n/index.js';
@@ -16,6 +16,8 @@ export const draftMark = (doc: { draft?: true }) => doc.draft ? ' (' + t('docs.d
 /** The path people type and the viewer shows: inside `.gitifact`, without that prefix. */
 export const place = (path: string) => path.replace(/^\.gitifact\//, '');
 export const line = (doc: Doc) => `${doc.id} ${doc.title}${draftMark(doc)} — ${doc.description}`;
+/** One file of an instruction folder: its path, then the title and description of a reference file. */
+export const fileLine = (f: InstructionFile) => f.title ? `${f.path} ${f.title} — ${f.description}` : f.path;
 /** A design's sources with the titles of the documents they name. */
 export const titledSources = (d: DesignDoc, byId: ReadonlyMap<string, Doc>) =>
   d.sources.map(s => 'id' in s ? { id: s.id, title: byId.get(s.id)?.title ?? null, ...(s.note ? { note: s.note } : {}) } : s);
@@ -64,7 +66,7 @@ export async function showDocuments(project: Project, ids: string[], at: string 
     ] : [];
     const referencedBy = (await view.referencing(id)).map(from => ({ id: from, title: view.byId.get(from)?.title ?? null }));
     // An instruction is its folder: agents read the files beside index.md when the instruction points at them.
-    const files = doc.kind === 'instruction' && at === undefined ? { files: (await listInstructionFiles(project.root, doc.path)).files.map(f => f.path) } : {};
+    const files = doc.kind === 'instruction' && at === undefined ? { files: (await readInstructionFiles(project.root, doc.path)).files } : {};
     return { id, kind: doc.kind, path: doc.path, title: doc.title, text: await view.read(doc.path), references, referencedBy, ...files };
   }));
   const named = (r: { id?: string; title: string | null; url?: string }) => r.id ? r.id + ' ' + (r.title ?? '(' + t('docs.missing') + ')') : r.title + ' <' + r.url + '>';
@@ -73,7 +75,7 @@ export async function showDocuments(project: Project, ids: string[], at: string 
     d.text.replace(/\n$/, ''),
     ...section('-- ' + t('docs.references'), d.references.map(named)),
     ...section('-- ' + t('docs.referencedBy'), d.referencedBy.map(named)),
-    ...section('-- ' + t('docs.files'), d.files ?? []),
+    ...section('-- ' + t('docs.files'), (d.files ?? []).map(fileLine)),
   ].join('\n'));
   return { json: { ...(at ? { commit: at } : {}), documents: shown }, text: blocks.join('\n\n') + '\n' };
 }

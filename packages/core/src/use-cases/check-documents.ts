@@ -1,5 +1,5 @@
 import { DocumentError, docProblem, type Doc, type DocProblem, type DocProblemCode } from '../domain/document.js';
-import { classifyDocPath, isWikiPage, parseDocumentFile, INSTRUCTIONS_ROOT, INSTRUCTION_FILE, SPEC_ROOT } from '../formats/document-file.js';
+import { classifyDocPath, isInstructionReference, isWikiPage, parseDocumentFile, parseInstructionFile, INSTRUCTIONS_ROOT, INSTRUCTION_FILE, SPEC_ROOT } from '../formats/document-file.js';
 import { extractLinks, resolveLink } from '../formats/links.js';
 import { parseRecordFile } from '../formats/record-file.js';
 import type { DecisionRecord } from '../domain/record.js';
@@ -33,7 +33,7 @@ export function checkDocuments(files: ReadonlyMap<string, string>): DocumentSet 
       if (where.type === 'record') { records.push(parseRecordFile(path, source)); continue; }
       if (where.type === 'instruction-file') {
         instructionFolders.set(where.name, instructionFolders.get(where.name) === true);
-        if (path.endsWith('.md')) specLinks(path, source);
+        if (isInstructionReference(path)) { specLinks(path, source); parseInstructionFile(path, source); }
         continue;
       }
       if (where.kind === 'instruction') instructionFolders.set(where.name, true);

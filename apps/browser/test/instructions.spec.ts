@@ -9,12 +9,12 @@ const withInstructions: Fixture = {
   instructions: [
     { id: I1, name: 'cli-rules', title: 'CLI 규칙', description: 'CLI 계층 규칙. apps/cli를 고칠 때 읽는다',
       body: '계층을 지킨다. [결정 표](references/decisions.md) · [문체](../writing/index.md) · [상시 지침](../../../AGENTS.md)',
-      files: [{ path: 'references/decisions.md', size: 40, title: '결정 모음' }, { path: 'scripts/check.sh', size: 12 }, { path: 'assets/logo.png', size: 2048 }], updatedAt: '2026-09-14T00:00:00Z' },
+      files: [{ path: 'references/decisions.md', size: 40, title: '결정 모음', description: '계층을 나눈 이유. 계층을 바꿀 때 읽는다' }, { path: 'scripts/check.sh', size: 12 }, { path: 'assets/logo.png', size: 2048 }], updatedAt: '2026-09-14T00:00:00Z' },
     { id: I2, name: 'writing', title: '문체', description: '문서를 쓸 때 읽는다', body: '짧게 쓴다.' },
   ],
   agents,
 };
-instructionFiles[I1 + ':references/decisions.md'] = { text: '| 결정 | 이유 |\n| --- | --- |\n| 계층을 나눈다 | 경계가 보인다 |\n\n[지침으로 돌아가기](../index.md)' };
+instructionFiles[I1 + ':references/decisions.md'] = { text: '---\ntitle: 결정 모음\ndescription: 계층을 나눈 이유. 계층을 바꿀 때 읽는다\n---\n\n| 결정 | 이유 |\n| --- | --- |\n| 계층을 나눈다 | 경계가 보인다 |\n\n[지침으로 돌아가기](../index.md)' };
 instructionFiles[I1 + ':scripts/check.sh'] = { text: 'echo checked\n' };
 instructionFiles[I1 + ':assets/logo.png'] = { text: null, binary: true };
 
@@ -53,7 +53,7 @@ test('an instruction opens on index.md, reads the other files of its folder, and
   const article = page.getByRole('article', { name: 'CLI 규칙' });
   await expect(article).toContainText('계층을 지킨다.');
   const files = page.getByRole('navigation', { name: '파일' });
-  // Files go by their titles: index.md by the instruction's, a Markdown file by its first heading, anything else by its name.
+  // Files go by their titles: index.md by the instruction's, a reference file by its frontmatter, anything else by its name.
   await expect(files.getByRole('link', { name: 'CLI 규칙' })).toBeVisible(); await expect(files).toContainText('references/');
   await expect(files.getByRole('link', { name: '결정 모음' })).toBeVisible(); await expect(files).not.toContainText('decisions.md');
   // A folder starts open and folds away.
@@ -84,6 +84,28 @@ test('an instruction opens on index.md, reads the other files of its folder, and
   await page.goto('/instructions/' + I1);
   await article.getByRole('link', { name: '← 프로젝트 지침' }).click();
   await expect(page).toHaveURL(/\/instructions$/);
+});
+
+test('descriptions open from the ? beside the instruction title and a reference file title, not under them', async ({ page }) => {
+  await mockApi(page, withInstructions); await page.goto('/instructions/' + I1);
+  const article = page.getByRole('article', { name: 'CLI 규칙' });
+  await expect(page.getByText('CLI 계층 규칙. apps/cli를 고칠 때 읽는다')).toBeHidden();
+  await article.getByRole('button', { name: 'CLI 규칙 설명' }).click();
+  await expect(page.getByRole('dialog', { name: 'CLI 규칙' })).toContainText('CLI 계층 규칙. apps/cli를 고칠 때 읽는다');
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog', { name: 'CLI 규칙' })).toBeHidden();
+  // A reference file shows the title of its frontmatter over its text, and the frontmatter itself is not drawn.
+  await page.getByRole('navigation', { name: '파일' }).getByRole('link', { name: '결정 모음' }).click();
+  await expect(article.getByRole('heading', { level: 2, name: '결정 모음' })).toBeVisible();
+  await expect(article.getByRole('table')).toContainText('계층을 나눈다');
+  await expect(article).not.toContainText('title:');
+  await article.getByRole('button', { name: '결정 모음 설명' }).click();
+  await expect(page.getByRole('dialog', { name: '결정 모음' })).toContainText('계층을 나눈 이유');
+  await page.keyboard.press('Escape');
+  // A file without a description has no ? of its own.
+  await page.getByRole('navigation', { name: '파일' }).getByRole('link', { name: 'check.sh' }).click();
+  await expect(article.locator('pre')).toContainText('echo checked');
+  await expect(article.getByRole('button', { name: /설명$/ })).toHaveCount(1);
 });
 
 test('an unknown instruction says so and leads back; the search finds instructions', async ({ page }) => {
