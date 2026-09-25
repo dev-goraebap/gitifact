@@ -113,7 +113,7 @@ try {
   assert.match(agents, /^# AGENTS\.md\n\nProject-specific guidance for AI coding agents\.\n\n<!-- GITIFACT:START -->\n/);
   assert.ok(agents.includes('gitifact v' + version + ' · ko · 저장 규약 schemaVersion 3'), 'Block must carry the installed version.');
   assert.ok(agents.includes('npx --yes gitifact@' + version + ' <cmd>'), 'The generated invocation must pin the installed version.');
-  assert.ok(agents.includes('gitifact guide show spec'), 'Block must point at the bundled guides.');
+  assert.ok(agents.includes('gitifact guide show <topic>') && agents.includes('guide show spec'), 'Block must point at the bundled guides.');
   assert.match(agents, /<!-- GITIFACT:END -->\n$/);
   await writeFile(agentsPath, agents + '\n## Project rules\n\nKeep me.\n');
   assert.equal(JSON.parse(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', 'init'], temporaryRoot, noRegistry)).outcome, 'already-initialized');

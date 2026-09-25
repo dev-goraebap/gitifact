@@ -2,14 +2,13 @@
 
 gitifact v{version} · {language} · storage schemaVersion 3
 
-CLI: use the global `gitifact` command at version {version}. Below, `gitifact` stands for this invocation. Follow the project's instructions if they specify another method, such as a local installation.
+Product behavior (requirements and designs), instructions and decision records live in `.gitifact/` and are managed with the CLI `gitifact`. If the project specifies another way to run it, that is what `gitifact` means.
 
-### At the start
+### At the start of a session
 
-- In a new session, check `gitifact --version`. If the command is missing or not {version}, suggest `npm i -g gitifact@{version}` to the user, and until it is installed, or if they decline, run `npx --yes gitifact@{version} <cmd>`. If execution or downloading is blocked, request the required approval and explain the cause. Do not issue document IDs, check documents or commit by hand instead of running the CLI, or claim that work is done without it.
-- Once per new session, run `gitifact update --check` with the pinned version. If the result is `available`, ask whether to update; only with consent, install the new version (globally: `npm i -g gitifact@<new version>`) and run `update`. If declined, unavailable, or disabled, continue with the pinned version and do not ask again in that session. After updating, reread the block and use its new version. Commit and push only when separately authorized.
-- Read every instruction with `gitifact instructions list --all`, and check git status and existing staging. Read specs when the work needs them: when product behavior comes up, check the requirements by feature for duplicates and conflicts with `specs list --type requirement`; before changing code, read that feature's requirements and designs with `specs show <ID>`. Lists show 20 at a time; read on with the `--after <value>` printed at the end.
-- This block is a summary. Read `gitifact guide show <topic>` for detailed formats instead of relying on memory. Do not save query results or guide output to files; rerun them when needed.
+1. Check that `gitifact --version` is {version}. If it is missing or different, suggest `npm i -g gitifact@{version}`, and until then run `npx --yes gitifact@{version} <cmd>`. If execution is blocked, request approval.
+2. Run `gitifact update --check` once. If a newer version exists, ask whether to update; only with consent, install it, run `update` and reread this block.
+3. Read every instruction with `gitifact instructions list --all`, and check git status and existing staging.
 
 ### What belongs in requirements
 
@@ -22,27 +21,28 @@ Record product behavior and constraints that must be maintained.
 | Push now | A work instruction; do not register it |
 | It must work without external services | Record as a product constraint |
 
+### While working
+
+| Situation | First |
+| --- | --- |
+| Product behavior comes up | Check existing specs and conflicts with `specs list --type requirement` |
+| Before changing code or documents | Read the feature's requirements and designs (`specs show <ID>`), the instructions the index outside this block points to, and the document's decision flow (`records list --doc <ID>`) |
+| Writing a new document | Read `guide show spec` (`design` for designs, `instructions` for instructions) and `guide show writing`. Get IDs with `specs new` or `instructions new`, and verify with `gitifact check` after editing |
+| Changing a document or choosing between options | Write a decision record with `records new` (`guide show records`) |
+| Asked to commit | Read `guide show commit`, write the input to the file `changes list` names, then run `changes commit` |
+| Asked to show the records | Run `gitifact browser` in the background and give the URL |
+| Reporting a Gitifact bug or idea | Confirm a draft with the user and send it with `gitifact feedback` |
+
 ### Rules
 
-- Read `gitifact guide show spec` before creating documents. Create each new document with `gitifact specs new` or `instructions new` to get its ID, edit the file directly, and verify with `gitifact check`.
-- For a new feature, prepare requirements and designs together (`gitifact guide show design`). Follow a request for requirements only.
-- When an existing requirement, design or instruction changes, or one of several options is chosen, write a record then with `gitifact records new` (`gitifact guide show records`). Before changing a document, read how its decisions went with `gitifact records list --doc <ID>`.
-- Before changing requirements, designs, or code, find the project instructions (`.gitifact/instructions/`) for the work in the index outside this block, read them and follow them. Rules that span features belong in instructions; read `gitifact guide show instructions` before changing instructions or the index outside this block.
-- Before writing instruction, requirement, or design content, follow `gitifact guide show writing`. Use the project's language for its documents, independently of the CLI display language.
-- When asked to commit, read `gitifact guide show commit`. By default, one decision is committed with its record, documents, code, and tests. Write commit JSON to the input path reported by `changes list`; the CLI removes the file on success.
-- Automatic recording does not authorize commits. Commit only on user request or under an explicit project policy. Pushing requires separate authorization. When a task is finished but not committed and the next one begins, suggest a commit once (two tasks mixed in the same files are hard to commit decision by decision). If the user declines, do not ask again.
-- Ask only about unclear product behavior and continue independent work. Derive all existing features only when asked.
-- SELF-CHECK: before preparing documents or commit input, reread the relevant guide and compare formats. If unsure, run `gitifact guide show <topic>` instead of guessing.
-- When the user asks to see requirements, project status, or change history, start `gitifact browser` in the background and share its URL. Do not substitute a chat summary.
-- When the user wants to report a Gitifact bug or idea, show the draft, get confirmation, then send it with `gitifact feedback`.
+- Commit only on a user request or project policy; push only when asked separately. Commit each decision with its record, documents, code and tests, and suggest a commit once when work is finished and left uncommitted.
+- Do not issue IDs, check or commit without running the CLI, or report that as done.
+- Write requirements and designs together for a new feature, in the project's language. Ask only about unclear product behavior and carry on with the rest.
+- SELF-CHECK: this block is a summary. Before writing a document or commit input, check the format again with `gitifact guide show <topic>` instead of relying on memory. Do not save query results to files.
 
 ### Commands
 
-- `guide list`, `guide show <topic>`: writing guides ({topics})
-- `list`, `show`, `new` of `specs`, `instructions` and `records`: lists (filters by relation, history and state; `--fields`), a document with its references, ID and skeleton (`draft: true`). `records list --doc <ID>` is one document's decisions; `check` checks everything (options in `--help`)
-- `changes list`: documents changed since HEAD, uncommitted records, changes without a record, and the commit input path. `changes commit --file <json|-> [--dry-run]`: check documents, then commit the selected files and records
-- `browser`: run the read-only browser server; prints a URL and keeps running
-- `feedback --file <json|-> [--dry-run]`: send an issue to Gitifact's repository (`type`, `title`, `body`; a new-issue address without gh)
-- `update [--check | --commit]`: `--check` only checks versions. Without it, refresh this block to the running version; `--commit` commits block-only changes with a fixed message. `init`: create configuration and this block when adopting Gitifact
+- `specs`·`instructions`·`records`: `list`·`show`·`new`. `check`: whole check. `changes list`·`changes commit --file <json> [--dry-run]`
+- `browser`, `feedback`, `update [--check | --commit]`, `init`, `guide list`·`guide show <topic>` ({topics}). Lists show 20 at a time; read on with the `--after <value>` at the end (`--all` for everything). They take `--fields` and `--format json`; see `--help` for options.
 
 ---

@@ -7,6 +7,7 @@
 ### Changed
 - Every list shows 20 at a time; read on with the `--after <value>` printed at the end (`--all` shows everything). Specs page by feature and the history by commit, and JSON carries `page`.
 - Agents read every instruction at the start of a session and read specs when product behavior comes up or before changing code. Run `update` to refresh the block.
+- The instruction block is shorter: what to read and do in each situation is one table, and overlapping rules are merged.
 - The history index no longer holds document texts; they are read from Git when a comparison is opened, which halves its size. Existing indexes rebuild themselves, and a first build reads files side by side.
 - The browser loads the decision records twenty commits at a time and a commit page twenty documents at a time without their text, reading only the text of the document opened.
 ### Fixed

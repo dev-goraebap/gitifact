@@ -22,9 +22,9 @@ test('rendered block is versioned, marker-delimited, Markdown-structured and sho
   // A heading opens the block and a rule closes it, so it reads as its own section beside the user's text.
   assert.equal(lines[1], '## Gitifact Guide'); assert.equal(lines.at(-2), '---'); assert.equal(lines.at(-3), '');
   assert.equal(lines[3], 'gitifact v1.2.3 · ko · 저장 규약 schemaVersion 3');
-  // Markdown joins consecutive plain lines, so every non-blank line must be a heading, list item, table row or its own paragraph.
+  // Markdown joins consecutive plain lines, so every non-blank line must be a heading, list item (bullet or numbered), table row or its own paragraph.
   for (const [index, line] of lines.entries()) {
-    if (!line || /^(#{2,3} |- |\| |---$|<!--)/.test(line)) continue;
+    if (!line || /^(#{2,3} |- |\d+\. |\| |---$|<!--)/.test(line)) continue;
     assert.ok(!lines[index + 1] || /^\| /.test(line), 'plain line runs into the next: ' + line);
   }
   // The global command is checked against the block version, and npx at that version stands in until it is installed.
@@ -52,7 +52,10 @@ test('the block summary matches the workflow document it summarizes', () => {
   // exists in the block but not in the source table would teach agents a rule the full document never states.
   const workflow = readFileSync(fileURLToPath(new URL('../src/shared/i18n/ko/docs/workflow.md', import.meta.url)), 'utf8');
   const requests = text => text.split('\n').filter(line => line.startsWith('| ') && !line.startsWith('| ---')).map(line => line.split(' | ')[0]);
-  const rows = block.split('\n').filter(line => line.startsWith('| ') && !line.startsWith('| ---') && !line.startsWith('| 요청 '));
+  // Only the table under the requirements heading: the block has other tables.
+  const heading = block.indexOf('### 무엇을 요구사항으로 남기는가');
+  const section = block.slice(heading, block.indexOf('### ', heading + 4));
+  const rows = section.split('\n').filter(line => line.startsWith('| ') && !line.startsWith('| ---') && !line.startsWith('| 요청 '));
   assert.equal(rows.length, 4);
   const sourceRequests = requests(workflow);
   for (const request of requests(rows.join('\n'))) assert.ok(sourceRequests.includes(request), request);
