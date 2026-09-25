@@ -341,6 +341,8 @@ test('instructions and AGENTS.md come in the checkout, instructions in history, 
   d.instruction('cli-rules', 'I-aaaaaaaaaa', { title: 'CLI rules', body: 'Rules about layers' });
   d.put('.gitifact/instructions/cli-rules/references/decisions.md', '| decision | reason |\n');
   d.put('.gitifact/instructions/cli-rules/assets/logo.png', '\u0000PNG');
+  // A Markdown file's title is its first heading outside code; one without a heading has none.
+  d.put('.gitifact/instructions/cli-rules/references/layers.md', 'Intro\n\n```md\n# Not a title\n```\n\n# Layer rules\n\n# Second\n');
   f.write('AGENTS.md', '# Agents\n\nRead the CLI rules first.\n');
   f.commit('Add instruction');
   const head = f.git(['rev-parse', 'HEAD']).stdout.trim();
@@ -349,7 +351,8 @@ test('instructions and AGENTS.md come in the checkout, instructions in history, 
   const specs = (await get('/api/v1/specs')).body;
   assert.equal(specs.version, 6);
   assert.deepEqual(specs.instructions.map(k => [k.id, k.name, k.title, k.files, k.filesLimited, !!k.updatedAt]),
-    [['I-aaaaaaaaaa', 'cli-rules', 'CLI rules', [{ path: 'assets/logo.png', size: 4 }, { path: 'references/decisions.md', size: 22 }], false, true]]);
+    [['I-aaaaaaaaaa', 'cli-rules', 'CLI rules', [{ path: 'assets/logo.png', size: 4 }, { path: 'references/decisions.md', size: 22 },
+      { path: 'references/layers.md', size: 56, title: 'Layer rules' }], false, true]]);
   assert.deepEqual([specs.agents.path, specs.agents.body, !!specs.agents.updatedAt], ['AGENTS.md', '# Agents\n\nRead the CLI rules first.\n', true]);
   const history = await get('/api/v1/history?head=' + head + '&document=instruction');
   assert.deepEqual([history.status, history.body.version, history.body.events.map(e => [e.id, e.kind])], [200, 5, [['I-aaaaaaaaaa', 'instruction']]]);

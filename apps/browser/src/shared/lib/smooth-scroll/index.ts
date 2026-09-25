@@ -19,6 +19,12 @@ export function useSmoothWheel(ref: RefObject<HTMLElement | null>) {
     const pages = new MutationObserver(watch);
     pages.observe(wrapper, { childList: true });
     watch();
-    return () => { pages.disconnect(); measure.disconnect(); lenis.destroy(); };
+    // A click right after a wheel scroll lands while the glide still runs. The router starts the next page at the top,
+    // but the glide went on toward the old page's target and pulled the new page back down, so a press stops it first.
+    const halt = () => { if (lenis.isScrolling) lenis.scrollTo(wrapper.scrollTop, { immediate: true, force: true }); };
+    window.addEventListener('pointerdown', halt, true);
+    window.addEventListener('keydown', halt, true);
+    return () => { window.removeEventListener('pointerdown', halt, true); window.removeEventListener('keydown', halt, true);
+      pages.disconnect(); measure.disconnect(); lenis.destroy(); };
   }, [ref]);
 }

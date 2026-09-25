@@ -16,7 +16,8 @@ const feature = z.strictObject({ id: z.string(), path: z.string(), title: z.stri
   // Authors of commits touching the feature folder and the latest such commit; empty until first committed.
   contributors: z.array(contributor), updatedAt: z.string().nullable() });
 // A project instruction: its index.md and the other files of its folder, which the browser reads one at a time.
-const instructionFile = z.strictObject({ path: z.string(), size: z.number().int().nonnegative() });
+// `title` is a Markdown file's first `# ` heading, which the browser shows instead of the file name; other files have none.
+const instructionFile = z.strictObject({ path: z.string(), size: z.number().int().nonnegative(), title: z.string().optional() });
 const instruction = z.strictObject({ id: z.string(), name: z.string(), path: z.string(), title: z.string(), description: z.string(), body: z.string(),
   // Paths relative to the instruction folder, index.md left out; `limited` when the folder holds more than the list carries.
   files: z.array(instructionFile), filesLimited: z.boolean(), updatedAt: z.string().nullable() });

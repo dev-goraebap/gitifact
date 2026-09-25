@@ -9,7 +9,7 @@ const withInstructions: Fixture = {
   instructions: [
     { id: I1, name: 'cli-rules', title: 'CLI 규칙', description: 'CLI 계층 규칙. apps/cli를 고칠 때 읽는다',
       body: '계층을 지킨다. [결정 표](references/decisions.md) · [문체](../writing/index.md) · [상시 지침](../../../AGENTS.md)',
-      files: [{ path: 'references/decisions.md', size: 40 }, { path: 'scripts/check.sh', size: 12 }, { path: 'assets/logo.png', size: 2048 }], updatedAt: '2026-09-14T00:00:00Z' },
+      files: [{ path: 'references/decisions.md', size: 40, title: '결정 모음' }, { path: 'scripts/check.sh', size: 12 }, { path: 'assets/logo.png', size: 2048 }], updatedAt: '2026-09-14T00:00:00Z' },
     { id: I2, name: 'writing', title: '문체', description: '문서를 쓸 때 읽는다', body: '짧게 쓴다.' },
   ],
   agents,
@@ -53,7 +53,14 @@ test('an instruction opens on index.md, reads the other files of its folder, and
   const article = page.getByRole('article', { name: 'CLI 규칙' });
   await expect(article).toContainText('계층을 지킨다.');
   const files = page.getByRole('navigation', { name: '파일' });
-  await expect(files).toContainText('index.md'); await expect(files).toContainText('references/'); await expect(files).toContainText('decisions.md');
+  // Files go by their titles: index.md by the instruction's, a Markdown file by its first heading, anything else by its name.
+  await expect(files.getByRole('link', { name: 'CLI 규칙' })).toBeVisible(); await expect(files).toContainText('references/');
+  await expect(files.getByRole('link', { name: '결정 모음' })).toBeVisible(); await expect(files).not.toContainText('decisions.md');
+  // A folder starts open and folds away.
+  await files.getByRole('button', { name: 'references/' }).click();
+  await expect(files.getByRole('link', { name: '결정 모음' })).toBeHidden();
+  await files.getByRole('button', { name: 'references/' }).click();
+  await expect(files.getByRole('link', { name: '결정 모음' })).toBeVisible();
   await article.getByRole('link', { name: '결정 표' }).click();
   await expect(page).toHaveURL(/\/instructions\/I-aaaaaaaaaa\?file=references%2Fdecisions\.md$/);
   await expect(article.getByRole('table')).toContainText('계층을 나눈다');
@@ -64,7 +71,7 @@ test('an instruction opens on index.md, reads the other files of its folder, and
   await files.getByRole('link', { name: 'logo.png' }).click();
   await expect(article).toContainText('텍스트가 아닌 파일이라');
   // Links reach other instructions and AGENTS.md; designs that follow the instruction are listed below.
-  await files.getByRole('link', { name: 'index.md' }).click();
+  await files.getByRole('link', { name: 'CLI 규칙' }).click();
   await article.getByRole('link', { name: '문체' }).click();
   await expect(page).toHaveURL(/\/instructions\/I-bbbbbbbbbb$/);
   await page.goBack();

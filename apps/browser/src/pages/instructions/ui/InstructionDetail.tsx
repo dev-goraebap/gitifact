@@ -5,6 +5,7 @@ import { HStack } from '@astryxdesign/core/HStack';
 import { Heading } from '@astryxdesign/core/Heading';
 import { Text } from '@astryxdesign/core/Text';
 import { List, ListItem } from '@astryxdesign/core/List';
+import { Collapsible } from '@astryxdesign/core/Collapsible';
 import { MetadataList, MetadataListItem } from '@astryxdesign/core/MetadataList';
 import { Timestamp } from '@astryxdesign/core/Timestamp';
 import { Link } from '@tanstack/react-router';
@@ -63,16 +64,20 @@ export function InstructionDetail({ instruction, color, file, features, session 
       <VStack as="nav" gap={1} aria-label={t('instructions.files')} className={styles.files}>
         <Text type="supporting" color="secondary">{t('instructions.files')}</Text>
         <List density="compact">
-          <ListItem label={INDEX} href={fileHref()} isSelected={!chosen}/>
+          <ListItem label={instruction.title} href={fileHref()} isSelected={!chosen}/>
         </List>
-        {byFolder(instruction.files).map(([name, files]) => <VStack key={name} gap={0} className={name ? styles.fileGroup : undefined}>
-          {name && <Text type="supporting" color="secondary" className={styles.folder}>{name}/</Text>}
-          <List density="compact" aria-label={name || INDEX}>
-            {files.map(f => <ListItem key={f.path} label={f.path.slice(name ? name.length + 1 : 0)} href={fileHref(f.path)} isSelected={chosen === f}
+        {byFolder(instruction.files).map(([name, files]) => {
+          // A Markdown file goes by its first heading; the file name stays for files without one.
+          const list = <List density="compact" aria-label={name || INDEX}>
+            {files.map(f => <ListItem key={f.path} label={f.title ?? f.path.slice(name ? name.length + 1 : 0)} href={fileHref(f.path)} isSelected={chosen === f}
               onMouseEnter={() => prefetch(f)} onFocus={() => prefetch(f)}
               endContent={<Text type="supporting" color="secondary">{sizeOf(f.size)}</Text>}/>)}
-          </List>
-        </VStack>)}
+          </List>;
+          // Folders start open and fold away when a long list gets in the way.
+          return name ? <VStack key={name} gap={0} className={styles.fileGroup}>
+            <Collapsible chevronPosition="start" trigger={<Text type="supporting" color="secondary" className={styles.folder}>{name}/</Text>}>{list}</Collapsible>
+          </VStack> : <VStack key={name} gap={0}>{list}</VStack>;
+        })}
         {instruction.filesLimited && <Text type="supporting" color="secondary">{t('instructions.filesLimited')}</Text>}
       </VStack>
       <VStack gap={0} className={styles.content}>

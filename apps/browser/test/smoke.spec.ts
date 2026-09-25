@@ -138,6 +138,21 @@ test('the content card glides under the wheel, and stays native for a reader who
   await expect(page.locator('.lenis')).toHaveCount(0);
 });
 
+test('a click while the wheel still glides opens the next screen at the top', async ({ page }) => {
+  await mockApi(page);
+  await page.setViewportSize({ width: 1280, height: 600 });
+  await page.goto('/getting-started');
+  const card = page.locator('[data-scroll-restoration-id="content"]');
+  await expect(card.getByRole('heading', { level: 1 })).toHaveText('시작하기');
+  await page.mouse.move(700, 350);
+  for (let i = 0; i < 8; i++) await page.mouse.wheel(0, 150);
+  // The glide is still under way when the reader clicks; it must not carry the old page's scroll into the next one.
+  await page.getByRole('link', { name: '소개', exact: true }).click();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Gitifact 소개');
+  await page.waitForTimeout(1500);
+  expect(await card.evaluate(e => e.scrollTop)).toBe(0);
+});
+
 test('a new screen starts at the top of the content card, and going back returns to where the reader was', async ({ page }) => {
   await mockApi(page);
   await page.emulateMedia({ reducedMotion: 'reduce' });

@@ -1,4 +1,4 @@
-import { lstat, readdir, readFile } from 'node:fs/promises';
+import { lstat, open, readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { INSTRUCTION_FILE } from '@gitifact/core';
 
@@ -28,6 +28,34 @@ export async function listInstructionFiles(root: string, instructionPath: string
   }
   await visit(folderOf(root, instructionPath), '', 0);
   return { files, limited };
+}
+
+/** How much of a Markdown file is read to find its title: a title comes first, so the start of the file is enough. */
+const HEADING_WINDOW = 8 * 1024;
+
+/**
+ * The title of each Markdown file in the list: its first `# ` heading, found in the first few kilobytes outside code
+ * fences, or none. The browser names a reference by it instead of by its file name.
+ */
+export async function withTitles(root: string, instructionPath: string, files: { path: string; size: number }[]) {
+  const folder = folderOf(root, instructionPath);
+  return Promise.all(files.map(async file => {
+    if (!file.path.toLowerCase().endsWith('.md')) return file;
+    let handle;
+    try {
+      handle = await open(join(folder, ...file.path.split('/')), 'r');
+      const buffer = Buffer.alloc(Math.min(HEADING_WINDOW, file.size));
+      const { bytesRead } = await handle.read(buffer, 0, buffer.length, 0);
+      let fenced = false;
+      for (const line of buffer.subarray(0, bytesRead).toString('utf8').split(/\r?\n/)) {
+        if (/^\s{0,3}(```|~~~)/.test(line)) fenced = !fenced;
+        const heading = !fenced && /^#\s+(.+?)\s*#*\s*$/.exec(line);
+        if (heading) return { ...file, title: heading[1]!.slice(0, 200) };
+      }
+      return file;
+    } catch { return file; }
+    finally { await handle?.close(); }
+  }));
 }
 
 /**
