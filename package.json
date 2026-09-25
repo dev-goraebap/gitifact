@@ -8,9 +8,10 @@
     "pnpm": "10.33.0"
   },
   "scripts": {
-    "build": "pnpm --filter @gitifact/core --filter @gitifact/contracts build && pnpm --filter @gitifact/browser build && pnpm --filter gitifact build",
+    "build": "pnpm --filter @gitifact/core --filter @gitifact/contracts build && pnpm --filter @gitifact/browser --filter @gitifact/landing build && pnpm --filter gitifact build",
     "typecheck": "pnpm --filter @gitifact/core --filter @gitifact/contracts build && pnpm -r typecheck",
     "dev": "pnpm --filter @gitifact/browser dev",
+    "dev:landing": "pnpm --filter @gitifact/landing dev",
     "dev:cli": "pnpm --filter @gitifact/core --filter @gitifact/contracts build && pnpm --filter @gitifact/browser build && pnpm --parallel --filter @gitifact/core --filter @gitifact/contracts --filter gitifact dev",
     "cli": "node apps/cli/dist/main.js",
     "test": "pnpm build && pnpm test:built",
