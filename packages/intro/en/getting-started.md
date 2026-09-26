@@ -75,7 +75,7 @@ The CLI follows your environment's language and uses English for unsupported lan
 
 ## Update
 
-When a newer version is out, or a teammate moves the project to one, gitifact commands print a one-line notice before their output. Your agent then asks whether to update now or later. You can also ask at any time:
+When a newer version is out, or a teammate moves the project to one, gitifact commands print a one-line notice before their output. Your agent then shows the install command and asks whether to update now or later, and once you allow it, runs the install and `gitifact update` itself. You can also ask at any time:
 
 ```text
 Update Gitifact.
@@ -100,7 +100,9 @@ gitifact browser
 
 Open the local URL printed by `browser`. Press Ctrl+C in the terminal to stop the server.
 
-Agents use the global `gitifact`. If it is missing, they suggest `npm install -g gitifact@<version>` with the `cli` version in `.gitifact/config.json`.
+Agents use the global `gitifact`. If it is missing, they ask whether to run `npm install -g gitifact@<version>` with the `cli` version in `.gitifact/config.json`, and install it themselves once you allow it. If the agent tool blocks the install, the agent points you to that tool's approval (a prompt or a permission setting).
+
+If Windows PowerShell says `npm.ps1` cannot be loaded, running scripts is disabled. Use `npm.cmd install -g gitifact` and `gitifact.cmd` instead.
 
 > [!NOTE]
 > You can also run `npx gitifact@<version> <command>` without installing. Each call then takes about 1.7 seconds longer, and agents call the CLI often, so a global installation is recommended.

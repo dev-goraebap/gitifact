@@ -4,7 +4,7 @@ Product behavior (requirements and designs), instructions and decision records l
 
 ### At the start of a session
 
-1. If `gitifact` is missing, suggest a global install of the `cli` version in `.gitifact/config.json` with `npm i -g gitifact@<version>`. If installing is blocked, request approval.
+1. If `gitifact` is missing, show the user the exact command `npm i -g gitifact@<version>` with the `cli` version in `.gitifact/config.json` (`npm.cmd` in Windows PowerShell), ask whether to run it, and run it yourself once allowed. Do not leave the install to the user.
 2. Read every instruction with `gitifact instructions list --all`, and check git status and existing staging.
 
 ### What belongs in requirements
@@ -32,7 +32,7 @@ Record product behavior and constraints that must be maintained.
 
 ### Rules
 
-- When a version notice appears before a command's output, ask the user before the next step: update now (recommended) or later (`gitifact update --later`). To update, install as the notice says, run `gitifact update` and reread this block.
+- When a version notice appears before a command's output, show the user the notice's install command and ask before the next step: update now (recommended) or later (`gitifact update --later`). Once allowed, run the install and `gitifact update` yourself and reread this block. If your tool blocks it, request that tool's approval.
 - Commit only on a user request or project policy; push only when asked separately. Commit each decision with its record, documents, code and tests, and suggest a commit once when work is finished and left uncommitted.
 - Do not issue IDs, check or commit without running the CLI, or report that as done.
 - Write requirements and designs together for a new feature, in the project's language. Ask only about unclear product behavior and carry on with the rest.
