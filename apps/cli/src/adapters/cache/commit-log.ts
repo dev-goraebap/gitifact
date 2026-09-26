@@ -9,10 +9,10 @@ export interface Person { name: string; email: string; commits: number; latest: 
 /** Who touched one store folder and when it was last touched. */
 export interface FolderAuthors { people: Person[]; latest: string }
 
-const FORMAT = `%x1e%H%x00%aN%x00%aE%x00%at%x00%aI%x00%(trailers:key=${MIGRATION_TRAILER},valueonly,separator=%x2C)`;
+const FORMAT = `%x1e%H%x00%aN%x00%aE%x00%at%x00%aI%x00%s%x00%(trailers:key=${MIGRATION_TRAILER},valueonly,separator=%x2C)`;
 // A full read goes this many commits at a time, so one Git answer stays well under the reader's output limit.
 const CHUNK = 100_000;
-interface Row { oid: string; name: string; email: string; time: number; date: string; migration: boolean }
+interface Row { oid: string; name: string; email: string; time: number; date: string; subject: string; migration: boolean }
 
 /** The store folder a path belongs to: a feature folder, an instruction folder, or AGENTS.md itself. */
 const folderOf = (path: string) => path === 'AGENTS.md' ? path
@@ -35,8 +35,8 @@ export function createCommitLog(database: CacheDatabase, git: GitAccess, root: s
     for (let skip = 0; ; skip += CHUNK) {
       const text = await read(['log', `--format=${FORMAT}`, `--max-count=${CHUNK}`, `--skip=${skip}`, ...range, '--']);
       const chunk = text.split('\x1e').filter(Boolean).map(entry => {
-        const [oid, name, email, time, date, migration] = entry.split('\0');
-        return { oid: oid!, name: name ?? '', email: email ?? '', time: Number(time), date: date ?? '', migration: !!migration?.trim() };
+        const [oid, name, email, time, date, subject, migration] = entry.split('\0');
+        return { oid: oid!, name: name ?? '', email: email ?? '', time: Number(time), date: date ?? '', subject: subject ?? '', migration: !!migration?.trim() };
       });
       out.push(...chunk);
       if (chunk.length < CHUNK) return out;
@@ -80,9 +80,9 @@ export function createCommitLog(database: CacheDatabase, git: GitAccess, root: s
       // Another process may have followed a HEAD meanwhile: what it wrote is the new starting point, so read again.
       if (stateOf(db, 'head') !== before || stateOf(db, 'mailmap') !== named) return false;
       if (whole) { db.exec('DELETE FROM log'); db.exec('DELETE FROM touches'); }
-      const put = db.prepare(`INSERT INTO log (oid, name, email, time, date, migration, reach) VALUES (?, ?, ?, ?, ?, ?, 1)
+      const put = db.prepare(`INSERT INTO log (oid, name, email, time, date, subject, migration, reach) VALUES (?, ?, ?, ?, ?, ?, ?, 1)
         ON CONFLICT (oid) DO UPDATE SET name = excluded.name, email = excluded.email, reach = 1`);
-      for (const c of added) put.run(c.oid, c.name, c.email, c.time, c.date, c.migration ? 1 : 0);
+      for (const c of added) put.run(c.oid, c.name, c.email, c.time, c.date, c.subject, c.migration ? 1 : 0);
       const leave = db.prepare('UPDATE log SET reach = 0 WHERE oid = ?');
       for (const oid of removed) leave.run(oid);
       const touch = db.prepare('INSERT OR IGNORE INTO touches (oid, folder) VALUES (?, ?)');
@@ -109,6 +109,24 @@ export function createCommitLog(database: CacheDatabase, git: GitAccess, root: s
       return database.with(db => (db.prepare(`SELECT email, name, count(*) AS commits, max(time) AS time, date AS latest FROM log
         WHERE reach = 1 AND migration = 0 GROUP BY email ORDER BY commits DESC, name, email`).all() as unknown as (Person & { time: number })[])
         .map(({ name, email, commits, latest }) => ({ name, email, commits: Number(commits), latest })));
+    },
+    /**
+     * The commits of `head` a hash names: the whole hash, or its start from seven characters on, as `git log --oneline`
+     * prints it. Anything shorter or not a hash names none. Newest first, a page after the commit `after`.
+     */
+    async commitsNamed(head: string, raw: string, after: string | undefined, limit: number) {
+      const prefix = raw.trim().toLowerCase();
+      if (!/^[0-9a-f]{7,64}$/.test(prefix)) return { total: 0, next: null, hits: [] };
+      await ensure(head);
+      return database.with(db => {
+        const rows = db.prepare('SELECT oid, name, date, subject FROM log WHERE reach = 1 AND substr(oid, 1, length(?)) = ? ORDER BY time DESC, oid')
+          .all(prefix, prefix) as { oid: string; name: string; date: string; subject: string }[];
+        const start = after === undefined ? 0 : rows.findIndex(r => r.oid === after) + 1;
+        if (after !== undefined && !start) return undefined;
+        const shown = rows.slice(start, start + limit);
+        return { total: rows.length, next: start + shown.length < rows.length ? shown[shown.length - 1]!.oid : null,
+          hits: shown.map(r => ({ id: r.oid, kind: 'commit' as const, title: r.subject, where: r.oid.slice(0, 7) + ' · ' + r.name, line: r.date.slice(0, 10), commit: r.oid })) };
+      });
     },
     /** Each store folder's authors, most commits first, and when it was last touched, format migrations left out. */
     async folders(head: string): Promise<Map<string, FolderAuthors>> {

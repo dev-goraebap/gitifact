@@ -157,17 +157,39 @@ export async function serve(page: Page, data: Fixture) {
     return found ? route.fulfill({ json: { contract: 'browser-commit-file', version: 1, sessionId: session.sessionId, commit, binary: false, tooLarge: false, ...found } })
       : route.fulfill({ status: 404, json: notFound });
   });
+  // The search box's groups as the server works them out: documents by kind, records once each, commits by hash.
   await page.route('**/api/v1/search*', route => {
-    const query = lower(new URL(route.request().url()).searchParams.get('q') ?? '');
-    const records = [
+    const q = new URL(route.request().url()).searchParams; const query = lower(q.get('q') ?? '').trim();
+    const reply = (groups: unknown[]) => route.fulfill({ json: { contract: 'browser-search', version: 3, sessionId: session.sessionId, query: q.get('q') ?? '', groups } });
+    if (!query) {
+      const recent = [...checkout.features.map(f => ({ id: f.id, kind: 'feature', title: f.title, where: f.path.replace(/^\.gitifact\//, ''), line: f.description, featureId: f.id, at: f.updatedAt })),
+        ...checkout.instructions.map(k => ({ id: k.id, kind: 'instruction', title: k.title, where: k.path.replace(/^\.gitifact\//, ''), line: k.description, at: k.updatedAt }))]
+        .filter(r => r.at).sort((a, b) => (b.at ?? '').localeCompare(a.at ?? '')).slice(0, 6).map(({ at: _at, ...r }) => r);
+      return reply([{ group: 'recent', total: recent.length, next: null, hits: recent }]);
+    }
+    const documents = [
       ...checkout.features.flatMap(f => [{ id: f.id, kind: 'feature', title: f.title, where: f.path.replace(/^\.gitifact\//, ''), body: f.description, featureId: f.id },
-        ...f.requirements.map(r => ({ id: r.id, kind: 'requirement', title: r.title, where: f.title, body: r.body, featureId: f.id }))]),
-      ...checkout.instructions.map(k => ({ id: k.id, kind: 'instruction', title: k.title, where: k.name, body: k.description + ' ' + k.body })),
-    ].map(r => ({ ...r, body: plainText(r.body) })).filter(r => [r.title, r.where, r.body].some(text => lower(text).includes(query)));
-    const past = events.filter(e => lower([(e.after ?? e.before)?.title ?? '', ...e.records.flatMap(r => [r.title, ...r.sections.map(s => s.body)])].join(' ')).includes(query))
-      .map(e => ({ id: e.key, kind: 'history', title: (e.after ?? e.before)?.title ?? e.id, where: e.commit.slice(0, 7) + ' · ' + e.author, line: e.records.map(r => r.title).join(' · '), key: e.key }));
-    return route.fulfill({ json: { contract: 'browser-search', version: 2, sessionId: session.sessionId, query,
-      hits: [...records.map(({ body, ...r }) => ({ ...r, line: line(body, query) })), ...past] } });
+        ...f.requirements.map(r => ({ id: r.id, kind: 'requirement', title: r.title, where: r.path.replace(/^\.gitifact\//, ''), body: r.body, featureId: f.id })),
+        ...f.designs.map(x => ({ id: x.id, kind: 'design', title: x.title, where: x.path.replace(/^\.gitifact\//, ''), body: x.description + ' ' + x.body, featureId: f.id }))]),
+      ...checkout.instructions.map(k => ({ id: k.id, kind: 'instruction', title: k.title, where: k.path.replace(/^\.gitifact\//, ''), body: k.description + ' ' + k.body })),
+    ].map(r => ({ ...r, body: plainText(r.body) })).filter(r => [r.title, r.where, r.body].some(text => lower(text).includes(query)))
+      .map(({ body, ...r }) => ({ ...r, line: line(body, query) }));
+    const seen = new Set<string>();
+    const records = events.flatMap(e => e.records.map(r => ({ r, e }))).filter(({ r }) => !seen.has(r.id) && (seen.add(r.id), true))
+      .filter(({ r }) => lower([r.title, r.id, ...r.sections.map(x => x.body)].join(' ')).includes(query))
+      .map(({ r, e }) => ({ id: r.id, kind: 'record', title: r.title, where: r.id + ' · ' + e.commit.slice(0, 7), line: line(r.sections.map(x => x.body).join(' '), query), commit: e.commit }));
+    const commits = /^[0-9a-f]{7,64}$/.test(query) ? [...new Map(events.filter(e => e.commit.startsWith(query)).map(e => [e.commit, e])).values()]
+      .map(e => ({ id: e.commit, kind: 'commit', title: e.message, where: e.commit.slice(0, 7) + ' · ' + e.author, line: e.date.slice(0, 10), commit: e.commit })) : [];
+    const all = [...documents, ...records, ...commits];
+    const kinds = ['feature', 'requirement', 'design', 'instruction', 'record', 'commit'];
+    const group = q.get('group');
+    const groups = (group ? [group] : kinds).map(kind => {
+      const hits = all.filter(h => h.kind === kind);
+      const found = pageOf(hits, h => h.id, q, group ? 20 : 5);
+      return found && { group: kind, total: hits.length, next: found.next, hits: found.rows };
+    });
+    if (groups.some(g => !g)) return route.fulfill({ status: 404, json: notFound });
+    return reply(groups.filter(g => group || g!.total > 0));
   });
   // One file of an instruction folder: the text a test put in instructionFiles, or not found.
   await page.route(url => url.pathname === '/api/v1/instructions/file', route => {

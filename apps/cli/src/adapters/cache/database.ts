@@ -6,7 +6,7 @@ import { join } from 'node:path';
  * Bumped whenever what is stored changes meaning — a column, or how a commit's changes are computed. A file written
  * under another number is dropped and rebuilt; everything in it can be read again from the files and from Git.
  */
-export const CACHE_FORMAT = 10;
+export const CACHE_FORMAT = 11;
 export const CACHE_DIR = '.gitifact/cache';
 
 const SCHEMA = `
@@ -40,14 +40,14 @@ const SCHEMA = `
   -- Every commit the log has met, code commits too: who made it and when, and whether it is a format migration.
   -- 'reach' is 1 for the commits of the HEAD the log follows now; contributors are counted over those.
   CREATE TABLE log (oid TEXT PRIMARY KEY, name TEXT NOT NULL, email TEXT NOT NULL, time INTEGER NOT NULL, date TEXT NOT NULL,
-    migration INTEGER NOT NULL, reach INTEGER NOT NULL);
+    subject TEXT NOT NULL, migration INTEGER NOT NULL, reach INTEGER NOT NULL);
   CREATE INDEX log_by_reach ON log (reach, email);
   -- The store folders a commit touched: a feature folder, an instruction folder, or AGENTS.md.
   CREATE TABLE touches (oid TEXT NOT NULL, folder TEXT NOT NULL, PRIMARY KEY (oid, folder));
   CREATE INDEX touches_by_folder ON touches (folder);
   -- What the log follows: the HEAD ('head') and the fingerprint of the .mailmap its names were read with ('mailmap').
   CREATE TABLE state (key TEXT PRIMARY KEY, value TEXT NOT NULL);
-  -- Everything the search box finds: documents of the working tree (scope 'checkout') and past changes ('history').
+  -- What the search box finds among the working tree's documents (scope 'checkout'); records are searched in their table.
   -- The searched columns hold lower-cased text; trigram lets LIKE '%...%' use the index from three characters on.
   CREATE VIRTUAL TABLE search USING fts5(
     scope UNINDEXED, kind UNINDEXED, ref UNINDEXED, oid UNINDEXED, payload UNINDEXED,

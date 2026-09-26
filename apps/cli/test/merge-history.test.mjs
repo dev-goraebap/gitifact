@@ -55,7 +55,7 @@ for (const format of ['sha1', 'sha256']) test(`merged wiki, design and requireme
   assert.deepEqual(reasonsOf(edits.find(e => e.id === rid)), ['Original reason']);
   assert.equal((await records.history.commits(merge, { author: 'Sujeong@example.invalid' }, undefined, 50)).total, 3);
   assert.equal((await records.history.summary(merge)).recent[0].commit, original);
-  assert.equal((await records.cache.search(merge, 'Guide reason')).find(h => h.kind === 'history').key, original + ':' + wid);
+  assert.equal((await records.cache.history.searchRecords(merge, 'Guide reason', undefined, 5)).hits[0].commit, original);
   assert.equal((await records.change(original + ':' + rid)).after.body, 'Sujeong change');
   assert.equal(await records.change(merge + ':' + rid), undefined);
   assert.deepEqual(project(f), before);
@@ -206,5 +206,5 @@ test('records added on branches stay with their commits; a record the merge itse
   assert.deepEqual(on(merge, rid).map(r => r.id), ['DR-cccccccccc']);
   // A record is found by what it says.
   const records = openRecords(f.repo, f.env);
-  assert.equal((await records.cache.search(merge, 'survive a reload')).find(h => h.kind === 'history').key, work + ':' + rid);
+  assert.deepEqual((await records.cache.history.searchRecords(merge, 'survive a reload', undefined, 5)).hits.map(h => [h.id, h.commit]), [['DR-aaaaaaaaaa', work]]);
 });

@@ -26,3 +26,5 @@
 
 /* Cut by CSS rather than Text's maxLines, which measures every row each time the results change. */
 .oneLine { display:block; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+/* The row that reads a group on: quieter than a hit, so the eye lands on the documents first. */
+.more { padding-block: var(--spacing-1); }

@@ -79,21 +79,28 @@ export const browserHistorySummaryV4 = z.strictObject({
   // The newest commits: a few of their changes each and how many there are in all.
   recent: z.array(z.strictObject({ commit: oid, count: z.number().int().positive(), events: z.array(event) })),
 });
-/** Documents whose title, place or text holds the query: the current features and instructions, then past changes. */
-export const browserSearchV2 = z.strictObject({
-  contract: z.literal('browser-search'), version: z.literal(2), sessionId: z.string(), query: z.string(),
-  hits: z.array(z.strictObject({
-    id: z.string(), kind: z.enum(['feature', 'requirement', 'design', 'instruction', 'history']),
-    title: z.string(), where: z.string(), line: z.string(),
-    // What the hit opens: a feature (with the requirement or design tab), an instruction, or one change in the activity.
-    featureId: z.string().optional(), documentId: z.string().optional(), key: z.string().optional(),
-  })),
+// What the search box finds: current documents by kind, records one per record file, and commits a hash names.
+const searchKind = z.enum(['feature', 'requirement', 'design', 'instruction', 'record', 'commit']);
+const searchHit = z.strictObject({
+  id: z.string(), kind: searchKind, title: z.string(), where: z.string(), line: z.string(),
+  // What the hit opens: a feature (with the requirement or design tab), an instruction, a record, or a commit.
+  featureId: z.string().optional(), commit: oid.optional(),
+});
+/**
+ * The search box's groups, drawn as they come: with words, each group that has hits with its first few, how many it
+ * has and where the next page starts; asked for one group, that group's next page; with no words, the documents
+ * touched most recently (`recent`).
+ */
+export const browserSearchV3 = z.strictObject({
+  contract: z.literal('browser-search'), version: z.literal(3), sessionId: z.string(), query: z.string(),
+  groups: z.array(z.strictObject({ group: z.union([searchKind, z.literal('recent')]), total: z.number().int().nonnegative(), next: z.string().nullable(), hits: z.array(searchHit) })),
 });
 export type BrowserSpecsV7 = z.infer<typeof browserSpecsV7>;
 export type DocumentState = z.infer<typeof state>;
 export type BrowserHistoryV6 = z.infer<typeof browserHistoryV6>;
 export type BrowserHistorySummaryV4 = z.infer<typeof browserHistorySummaryV4>;
-export type BrowserSearchV2 = z.infer<typeof browserSearchV2>;
+export type BrowserSearchV3 = z.infer<typeof browserSearchV3>;
+export type SearchHit = z.infer<typeof searchHit>;
 export type SpecEvent = z.infer<typeof event>;
 export type SpecRecord = z.infer<typeof record>;
 export type SpecSnapshot = NonNullable<z.infer<typeof snapshot>>;
@@ -115,8 +122,12 @@ export const browserHistoryQueryV4 = z.strictObject({
   feature: z.string().regex(/^S-[a-z2-7]{10}$/).optional(), author: z.string().min(1).max(320).optional(), q: z.string().max(200).optional(),
 });
 export const browserHistorySummaryQueryV1 = z.strictObject({ head: headQuery });
-/** `/api/v1/search`: the words, and the HEAD whose history to look through (none before the first commit). */
-export const browserSearchQueryV1 = z.strictObject({ q: z.string().min(1).max(200), head: headQuery.optional() });
+/**
+ * `/api/v1/search`: the words (none for the opening list), the HEAD whose history to look through (the server's own when
+ * left out), and for more of one group, the group, the hit the page starts after and how many (default 20).
+ */
+export const browserSearchQueryV2 = z.strictObject({ q: z.string().max(200), head: headQuery.optional(), group: searchKind.optional(),
+  after: z.string().min(1).max(200).optional(), limit: count(50).pipe(z.number().min(1)).optional() });
 /** `/api/v1/instructions/file`: one file of an instruction folder, by the instruction's ID and the path inside the folder. */
 export const browserInstructionFileQueryV1 = z.strictObject({ id: z.string().regex(/^I-[a-z2-7]{10}$/), path: z.string().min(1).max(1000) });
 export const changelogQueryV1 = z.strictObject({ lang: z.string().regex(/^[a-z]{2}(?:-[A-Z]{2})?$/).optional() });

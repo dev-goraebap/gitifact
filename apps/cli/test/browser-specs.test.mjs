@@ -9,6 +9,8 @@ import { fixture, fingerprint } from './git-fixture.mjs';
 import { openRecords, docs, reasonsOf } from './browser-records.mjs';
 import { initializeSpecProject } from '../.test-build/commands/spec-init.js';
 import { startBrowserServer } from '../.test-build/server/browser-server.js';
+import { storeReader } from '../.test-build/adapters/git/store-reader.js';
+import { searchRecords } from '../.test-build/queries/search.js';
 
 const cacheFile = f => join(f.repo, '.gitifact', 'cache', 'index.db');
 // Everything but the cache, which is derived, ignored by Git and not part of the project.
@@ -116,6 +118,9 @@ test('the server refuses bad queries, missing sessions and other methods on ever
   assert.equal(await status('/api/v1/change?key=' + head + ':D-zzzzzzzzzz'), 404);
   assert.equal(await status('/api/v1/search'), 400);
   assert.equal(await status('/api/v1/search?q=x&head=' + head), 200);
+  assert.equal(await status('/api/v1/search?q='), 200);
+  assert.equal(await status('/api/v1/search?q=x&group=history'), 400);
+  assert.equal(await status('/api/v1/search?q=x&group=requirement&after=R-zzzzzzzzzz'), 404);
   assert.equal(await status('/api/v1/nothing'), 404);
 });
 
@@ -213,26 +218,53 @@ test('the document cache reparses a file only when its time or size changed, and
   unlinkSync(file); assert.equal(await body(), undefined); assert.deepEqual(await cache.documents.referencing(R), [{ from: D, type: 'requirement' }]);
 });
 
-test('the search finds documents by title, place and text, and past changes by their reasons', async t => {
+test('the search finds documents by kind, records by what they say, and commits by their hash, a group at a time', async t => {
   const { f, d } = await adopted(t);
   d.feature('posts', S, { title: 'Posts' }); d.requirement('posts', 'save', R, { title: 'Save', body: '게시물 본문에 캐시를 쓴다.' }); f.commit('posts');
   d.reasons({ id: 'H-aaaaaaaaaa', docs: [R], reason: '느린 조회를 줄이려고 바꿨다.' });
   d.requirement('posts', 'save', R, { title: 'Save', body: '게시물 본문에 캐시를 둔다.' }); f.commit('cache');
   const read = openRecords(f.repo, f.env); const current = await read();
-  const find = q => read.cache.search(current.head, q);
+  const git = storeReader(f.repo);
+  const source = { head: async () => current.head, reader: git, cache: read.cache };
+  const find = async (q, more) => Object.fromEntries((await searchRecords(source, { q, ...more })).map(g => [g.group, g]));
   // Two characters are below the trigram index and are still found; three and more use it.
   const short = await find('캐시');
-  assert.deepEqual(short.filter(h => h.kind !== 'history').map(h => [h.kind, h.id, h.featureId]), [['requirement', R, S]]); assert.match(short[0].line, /캐시를 둔다/);
-  assert.ok((await find('캐시를')).some(h => h.kind === 'requirement'));
-  const past = (await find('느린 조회')).filter(h => h.kind === 'history');
-  assert.equal(past.length, 1); assert.equal(past[0].key, current.head + ':' + R); assert.match(past[0].line, /느린 조회/);
+  assert.deepEqual(Object.keys(short), ['requirement']);
+  assert.deepEqual(short.requirement.hits.map(h => [h.kind, h.id, h.featureId]), [['requirement', R, S]]); assert.match(short.requirement.hits[0].line, /캐시를 둔다/);
+  assert.ok((await find('캐시를')).requirement);
+  // A record is found once, as a record file, with the commit that added it; no document change is a hit of its own.
+  const past = await find('느린 조회');
+  assert.deepEqual(Object.keys(past), ['record']);
+  assert.deepEqual(past.record.hits.map(h => [h.id, h.commit]), [['H-aaaaaaaaaa', current.head]]); assert.match(past.record.hits[0].line, /느린 조회/);
+  // A commit is named by its hash from seven characters on, and by nothing shorter.
+  assert.deepEqual((await find(current.head.slice(0, 7))).commit.hits.map(h => [h.id, h.title]), [[current.head, 'cache']]);
+  assert.equal((await find(current.head.slice(0, 6))).commit, undefined);
   // A title match outranks a text match, and pattern characters are taken literally.
-  assert.equal((await find('save'))[0].title, 'Save');
-  assert.deepEqual(await find('100%'), []);
+  assert.equal((await find('save')).requirement.hits[0].title, 'Save');
+  assert.deepEqual(await find('100%'), {});
+  // Nothing typed: the features touched most recently.
+  assert.deepEqual((await find('')).recent.hits.map(h => h.id), [S]);
   // An edited file is found by its new text on the next search, without a server read in between.
   d.requirement('posts', 'save', R, { title: 'Save', body: '새로 쓴 문장.' });
-  assert.equal((await find('캐시')).filter(h => h.kind !== 'history').length, 0);
-  assert.equal((await find('새로 쓴')).length, 1);
+  assert.equal((await find('캐시')).requirement, undefined);
+  assert.equal((await find('새로 쓴')).requirement.total, 1);
+});
+
+test('a search group pages after its last hit, five first and twenty on', async t => {
+  const { f, d } = await adopted(t);
+  d.feature('posts', S, { title: 'Posts' });
+  for (let i = 0; i < 27; i++) d.requirement('posts', 'r' + i, 'R-' + 'abcdefghijklmnopqrstuvwxyz2'[i].repeat(10), { title: 'Topic ' + String(i).padStart(2, '0'), order: i + 1 });
+  f.commit('many');
+  const read = openRecords(f.repo, f.env); const current = await read();
+  const source = { head: async () => current.head, reader: storeReader(f.repo), cache: read.cache };
+  const [first] = await searchRecords(source, { q: 'topic' });
+  assert.deepEqual([first.group, first.total, first.hits.length, first.next], ['requirement', 27, 5, first.hits[4].id]);
+  assert.deepEqual(first.hits.map(h => h.title), ['Topic 00', 'Topic 01', 'Topic 02', 'Topic 03', 'Topic 04']);
+  const [more] = await searchRecords(source, { q: 'topic', group: 'requirement', after: first.next });
+  assert.deepEqual([more.hits.length, more.hits[0].title, more.hits[19].title], [20, 'Topic 05', 'Topic 24']);
+  const [last] = await searchRecords(source, { q: 'topic', group: 'requirement', after: more.next });
+  assert.deepEqual([last.hits.map(h => h.title), last.next], [['Topic 25', 'Topic 26'], null]);
+  assert.equal(await searchRecords(source, { q: 'topic', group: 'requirement', after: 'R-7777777777' }), undefined);
 });
 
 test('files that are not documents in history are skipped and do not stop it', async t => {
@@ -429,7 +461,7 @@ test('instructions and AGENTS.md come in the checkout, instructions in history, 
   assert.deepEqual([commit.body.version, commit.body.changes.map(e => e.kind)], [4, ['instruction']]);
   assert.equal((await get('/api/v1/commit/change?commit=' + head + '&id=I-aaaaaaaaaa')).body.after.body, 'Rules about layers');
   const search = await get('/api/v1/search?q=layers&head=' + head);
-  assert.deepEqual(search.body.hits.filter(h => h.kind === 'instruction').map(h => h.id), ['I-aaaaaaaaaa']);
+  assert.deepEqual(search.body.groups.find(g => g.group === 'instruction').hits.map(h => h.id), ['I-aaaaaaaaaa']);
   // A file of the folder is read on its own; a binary file comes without text, and nothing outside the folder is served.
   const file = (path, id = 'I-aaaaaaaaaa') => get('/api/v1/instructions/file?' + new URLSearchParams({ id, path }));
   const decisions = await file('references/decisions.md');

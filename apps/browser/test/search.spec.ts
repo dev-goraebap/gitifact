@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { mockApi } from './mock-api';
+import { mockApi, serve, specs } from './mock-api';
 
 const palette = { name: '문서 검색' } as const;
 
@@ -85,14 +85,40 @@ test('a search field waits for a pause in typing before it searches', async ({ p
   await expect.poll(() => decodeURIComponent(page.url())).toContain('q=검색');
 });
 
-test('past changes are found by their reason and open in the activity', async ({ page }) => {
+test('a record is found once by what it says and opens on its own page', async ({ page }) => {
   await mockApi(page); await page.goto('/dashboard');
   await ask(page, '검색을 요청');
   const dialog = page.getByRole('dialog', palette);
-  await expect(dialog).toContainText('변경 이력');
-  await page.getByRole('option').filter({ hasText: '사용자가 검색을 요청했습니다.' }).first().click();
-  await expect(page).toHaveURL(/\/records\/commits\/[a-f0-9]+#R-/);
-  await expect(page.getByRole('article', { name: '커밋 상세' })).toContainText('검색어를 입력합니다.');
+  await expect(dialog).toContainText('결정기록');
+  await expect(page.getByRole('option').filter({ hasText: '사용자가 검색을 요청했습니다.' })).toHaveCount(1);
+  await page.getByRole('option').filter({ hasText: '사용자가 검색을 요청했습니다.' }).click();
+  await expect(page).toHaveURL(/\/records\/H-aaaaaaaaaa$/);
+});
+
+test('a commit is found by its hash and opens its page', async ({ page }) => {
+  await mockApi(page); await page.goto('/dashboard');
+  await ask(page, 'ccccccc');
+  const dialog = page.getByRole('dialog', palette);
+  await expect(dialog).toContainText('커밋');
+  await page.getByRole('option').filter({ hasText: '검색 도입' }).click();
+  await expect(page).toHaveURL(new RegExp('/records/commits/' + 'c'.repeat(40) + '$'));
+});
+
+test('each group shows five hits first and reads on in the palette when asked', async ({ page }) => {
+  const data = structuredClone(specs);
+  data.features[0]!.requirements = Array.from({ length: 8 }, (_, i) => ({ id: 'R-topic0000' + 'abcdefgh'[i], title: '주제 ' + (i + 1), body: '주제 본문' }));
+  await mockApi(page); await serve(page, data); await page.goto('/dashboard');
+  await ask(page, '주제');
+  const dialog = page.getByRole('dialog', palette);
+  await expect(page.getByRole('option').filter({ hasText: /^주제 \d/ })).toHaveCount(5);
+  const more = page.getByRole('option').filter({ hasText: '3개 더 보기' });
+  await expect(more).toBeVisible();
+  await more.click();
+  // The palette stays open with the same words, and the group now holds all eight.
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole('combobox')).toHaveValue('주제');
+  await expect(page.getByRole('option').filter({ hasText: /^주제 \d/ })).toHaveCount(8);
+  await expect(page.getByRole('option').filter({ hasText: '더 보기' })).toHaveCount(0);
 });
 
 test('while a search is on its way the palette shows the loading rows, never an empty state', async ({ page }) => {

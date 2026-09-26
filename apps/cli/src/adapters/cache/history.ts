@@ -2,12 +2,11 @@ import type { DatabaseSync } from 'node:sqlite';
 import { createCommitChanges, type ChangeType, type CommitChanges, type CommitReader, type GitAccess, type HistoryEvent, type Originals } from './commit-changes.js';
 import type { DocSnapshot, EventRecord } from './events.js';
 import { transaction, type CacheDatabase } from './database.js';
-import { containing, snippet } from './search-text.js';
+import { snippet } from './search-text.js';
 
 export interface HistoryFilter { kind?: ChangeType | undefined; document?: HistoryEvent['kind'] | undefined; feature?: string | undefined; author?: string | undefined; q?: string | undefined }
 /** What `records list` filters by: the author's name or email, words, a first moment (ms), or the commits allowed. */
 export interface RecordFilter { author?: string | undefined; q?: string | undefined; from?: number | undefined; commits?: string[] | undefined }
-export interface SearchHit { id: string; kind: 'feature' | 'requirement' | 'design' | 'instruction' | 'history'; title: string; where: string; line: string; featureId?: string; key?: string }
 
 /** The list row of a change: the document's name and place, without the text on either side. */
 const listed = (e: HistoryEvent) => {
@@ -24,7 +23,6 @@ type StoredEvent = Omit<ListedEvent, 'records'> & { records: string[] };
  */
 type Side = { rev: string; path: string } | DocSnapshot | null;
 const sideOf = (snapshot: DocSnapshot | null, rev: string | null | undefined): Side => !snapshot ? null : rev ? { rev, path: snapshot.path } : snapshot;
-const titleOf = (e: HistoryEvent) => (e.after ?? e.before)?.title ?? e.id;
 const DAY = 86_400_000;
 // A HEAD's lineage is kept for the last few HEADs seen, so switching back and forth between branches stays cheap.
 const KEPT_HEADS = 4;
@@ -49,7 +47,6 @@ export function createHistory(database: CacheDatabase, git: GitAccess, originals
     const commit = db.prepare('INSERT OR IGNORE INTO commits (oid, reader) VALUES (?, ?)');
     const change = db.prepare('INSERT OR IGNORE INTO changes (key, oid, ord, id, kind, types, email, date, before_spec, after_spec, needle, row, detail) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)');
     const record = db.prepare('INSERT OR IGNORE INTO records (oid, id, title, sections) VALUES (?, ?, ?, ?)');
-    const search = db.prepare('INSERT INTO search (scope, kind, ref, oid, payload, title, place, body) VALUES (?,?,?,?,?,?,?,?)');
     transaction(db, () => {
       for (const c of commits) {
         // Another process may have written this commit meanwhile; its rows are the same, so they are not written twice.
@@ -60,11 +57,6 @@ export function createHistory(database: CacheDatabase, git: GitAccess, originals
           const detail = { before: sideOf(e.before, e.source?.before), after: sideOf(e.after, e.source?.after) };
           change.run(e.key, e.commit, ord, e.id, e.kind, e.types.join(','), e.email, e.date, e.before?.specId ?? null, e.after?.specId ?? null,
             [e.id, e.before?.title ?? '', e.after?.title ?? ''].join(' ').toLowerCase(), JSON.stringify(row), JSON.stringify(detail));
-          // A change is found by its title and by why and how it was made.
-          const line = e.records.length ? e.records.map(r => [r.title, ...r.sections.map(s => s.body)].join(' ')).join(' · ') : e.message;
-          const where = e.commit.slice(0, 7) + ' · ' + e.author;
-          search.run('history', 'history', e.key, e.commit, JSON.stringify({ title: titleOf(e), where, line }),
-            titleOf(e).toLowerCase(), where.toLowerCase(), [line, e.message, e.id].join(' ').toLowerCase());
         });
       }
     });
@@ -89,7 +81,6 @@ export function createHistory(database: CacheDatabase, git: GitAccess, originals
     if (stale.length) await database.with(db => transaction(db, () => {
       for (const oid of stale) {
         db.prepare('DELETE FROM commits WHERE oid = ?').run(oid); db.prepare('DELETE FROM changes WHERE oid = ?').run(oid); db.prepare('DELETE FROM records WHERE oid = ?').run(oid);
-        db.prepare("DELETE FROM search WHERE scope = 'history' AND oid = ?").run(oid);
       }
       // Other HEADs listed these commits as they were read before; they are read again when next asked for.
       db.prepare('DELETE FROM lineage WHERE head != ?').run(head); db.prepare('DELETE FROM heads WHERE head != ?').run(head);
@@ -285,36 +276,37 @@ export function createHistory(database: CacheDatabase, git: GitAccess, originals
         .get(head, id) as { oid: string } | undefined)?.oid);
     },
     /**
-     * Documents whose title, place or text holds the query — a title match before a place match before a text match —
-     * then past changes of `head`'s history, newest first. The caller syncs the working documents first.
+     * The records of `head`'s history whose title, ID or sections hold the query, one hit per record file, a page at a
+     * time: a title that starts with it first, then a title, the ID, and the sections; newest first within each. `after`
+     * is the ID of the last hit of the page before; one that no longer matches answers undefined.
      */
-    async search(head: string | null, raw: string): Promise<SearchHit[]> {
+    async searchRecords(head: string, raw: string, after: string | undefined, limit: number) {
       const query = raw.trim().toLowerCase();
-      if (!query) return [];
-      if (head) await ensure(head);
+      await ensure(head);
       return database.with(db => {
-        // The trigram index answers LIKE from three characters on. Pattern characters in the query are matched
-        // literally with instr instead, which scans but is never wrong.
-        const literal = /[\\%_]/.test(query);
-        const match = (column: string) => literal ? `instr(${column}, ?) > 0` : `${column} LIKE ?`;
-        const needle = literal ? query : containing(query);
-        const features = new Map((db.prepare("SELECT feature, id FROM documents WHERE kind = 'feature'").all() as { feature: string; id: string }[]).map(r => [r.feature, r.id]));
-        const found = db.prepare(`SELECT kind, payload, title, place FROM search WHERE scope = 'checkout' AND (${match('title')} OR ${match('place')} OR ${match('body')}) LIMIT 400`)
-          .all(needle, needle, needle) as { kind: Exclude<SearchHit['kind'], 'history'>; payload: string; title: string; place: string }[];
-        const documents = found.map(r => {
-          const at = r.title.indexOf(query);
-          const rank = at === 0 ? 0 : at > 0 ? 1 : r.place.includes(query) ? 2 : 3;
-          const p = JSON.parse(r.payload) as { id: string; title: string; where: string; body: string; feature: string | null };
-          const featureId = p.feature ? features.get(p.feature) : undefined;
-          const hit: SearchHit = { id: p.id, kind: r.kind, title: p.title, where: p.where, line: snippet(p.body, query),
-            ...(featureId ? { featureId } : {}) };
-          return { rank, hit };
-        }).sort((a, b) => a.rank - b.rank || a.hit.title.localeCompare(b.hit.title)).slice(0, 24).map(r => r.hit);
-        const past = !head ? [] : (db.prepare(`SELECT s.ref AS ref, s.payload AS payload FROM search s JOIN lineage l ON l.head = ? AND l.oid = s.oid
-          WHERE s.scope = 'history' AND (${match('s.title')} OR ${match('s.body')}) ORDER BY l.pos LIMIT 8`).all(head, needle, needle) as { ref: string; payload: string }[])
-          .map(r => { const p = JSON.parse(r.payload) as { title: string; where: string; line: string };
-            return { id: r.ref, kind: 'history' as const, title: p.title, where: p.where, line: snippet(p.line, query), key: r.ref }; });
-        return [...documents, ...past];
+        const ordered = `WITH own AS (
+            SELECT r.id AS id, r.title AS title, r.oid AS oid, min(l.pos) AS pos, r.sections AS sections,
+              lower((SELECT group_concat(json_extract(s.value, '$.body'), ' ') FROM json_each(r.sections) s)) AS body
+            FROM lineage l JOIN records r ON r.oid = l.oid WHERE l.head = :head GROUP BY r.id),
+          hits AS (SELECT *, CASE WHEN substr(lower(title), 1, length(:q)) = :q THEN 0 WHEN instr(lower(title), :q) > 0 THEN 1
+              WHEN instr(lower(id), :q) > 0 THEN 2 ELSE 3 END AS rank
+            FROM own WHERE instr(lower(title), :q) > 0 OR instr(lower(id), :q) > 0 OR instr(body, :q) > 0),
+          ordered AS (SELECT *, row_number() OVER (ORDER BY rank, pos, id) AS n FROM hits)`;
+        const params = { head, q: query };
+        const total = Number((db.prepare(`${ordered} SELECT count(*) AS n FROM ordered`).get(params) as { n: number }).n);
+        let start = 0;
+        if (after !== undefined) {
+          const at = db.prepare(`${ordered} SELECT n FROM ordered WHERE id = :after`).get({ ...params, after }) as { n: number } | undefined;
+          if (!at) return undefined;
+          start = Number(at.n);
+        }
+        const rows = db.prepare(`${ordered} SELECT id, title, oid, sections FROM ordered WHERE n > :start ORDER BY n LIMIT :limit`)
+          .all({ ...params, start, limit: limit + 1 }) as { id: string; title: string; oid: string; sections: string }[];
+        const hits = rows.slice(0, limit).map(r => {
+          const text = (JSON.parse(r.sections) as EventRecord['sections']).map(s => s.body).join(' ');
+          return { id: r.id, kind: 'record' as const, title: r.title, where: r.id + ' · ' + r.oid.slice(0, 7), line: snippet(text, query), commit: r.oid };
+        });
+        return { total, next: rows.length > limit ? hits[hits.length - 1]!.id : null, hits };
       });
     },
   };

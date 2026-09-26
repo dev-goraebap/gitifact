@@ -1,5 +1,5 @@
 import type React from 'react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { CommandPalette } from '@astryxdesign/core/CommandPalette';
@@ -12,60 +12,44 @@ import { Skeleton } from '@astryxdesign/core/Skeleton';
 import { PageState } from '../../../shared/ui/page-state';
 import { useHotkeys } from '@astryxdesign/core/hooks';
 import type { SearchableItem, SearchSource } from '@astryxdesign/core/Typeahead';
-import type { BrowserSessionV3, BrowserSearchV2 } from '@gitifact/contracts';
-import { sessionOptions, specsOptions, searchRecords } from '../../../entities/project';
+import type { BrowserSessionV3, BrowserSearchV3, SearchHit } from '@gitifact/contracts';
+import { sessionOptions, searchRecords } from '../../../entities/project';
 import { useSearchOpen, openSearch, setSearchOpen, closeSearch, typingDelay } from '../../../shared/lib/search';
 import { t, useLanguage } from '../../../shared/i18n';
 import styles from './search-palette.module.css';
 
-type Kind = 'feature' | 'requirement' | 'design' | 'instruction' | 'history';
+type Kind = SearchHit['kind'];
+type Group = BrowserSearchV3['groups'][number];
 type Target = { to: string; params?: Record<string, string>; search?: Record<string, string>; hash?: string };
-// `line` is the matched line the server cut; the opening list shows the start of the body instead.
-type Hit = SearchableItem<{ group: string; kind: Kind; where: string; body: string; line?: string; target: Target; updatedAt: string | null }>;
+// A row is a hit, or the last row of a group that has more: choosing it reads the group's next page.
+type Hit = SearchableItem<{ group: string; kind: Kind | 'more'; where: string; line: string; target?: Target; more?: Group['group'] }>;
 
-const groupNames: () => Record<Kind, string> = () => ({
-  feature: t('search.group.feature'), requirement: t('search.group.requirement'),
-  design: t('search.group.design'), instruction: t('search.group.instruction'), history: t('search.group.history'),
+const groupNames: () => Record<Group['group'], string> = () => ({
+  feature: t('search.group.feature'), requirement: t('search.group.requirement'), design: t('search.group.design'),
+  instruction: t('search.group.instruction'), record: t('search.group.record'), commit: t('search.group.commit'), recent: t('search.group.recent'),
 });
 
-/** Where a server hit opens: the feature on the right tab, the instruction, or the change in the activity. */
-function targetOf(hit: BrowserSearchV2['hits'][number]): Target {
+/** Where a hit opens: the feature on the right tab, the instruction, the record, or the commit. */
+function targetOf(hit: SearchHit): Target {
   if (hit.kind === 'instruction') return { to: '/instructions/$instructionId', params: { instructionId: hit.id } };
-  // A past change is keyed `<commit>:<document>`, which is the commit's page and the section of that document.
-  if (hit.kind === 'history') { const [commit, id] = (hit.key ?? '').split(':'); return { to: '/records/commits/$commit', params: { commit: commit ?? '' }, hash: id ?? '' }; }
+  if (hit.kind === 'record') return { to: '/records/$recordId', params: { recordId: hit.id } };
+  if (hit.kind === 'commit') return { to: '/records/commits/$commit', params: { commit: hit.id } };
   const params = { featureId: hit.featureId ?? '' };
   if (hit.kind === 'requirement') return { to: '/features/$featureId', params, search: { tab: 'requirements' }, hash: hit.id };
-  if (hit.kind === 'design') return { to: '/features/$featureId', params, search: { tab: 'design' } };
+  if (hit.kind === 'design') return { to: '/features/$featureId', params, search: { tab: 'design' }, hash: hit.id };
   return { to: '/features/$featureId', params };
 }
 
-/**
- * Plain text of a Markdown body, so a match is judged and shown on what the reader sees rather than on syntax.
- * Markers are only removed where they mark: at the start of a line, or around a link. Stripping every hyphen and
- * pipe wherever it appeared turned dates into "2026 09 18".
- */
-function plain(body: string) {
-  return body
-    .replace(/```[\s\S]*?```/g, ' ')
-    .replace(/<!--[\s\S]*?-->/g, ' ')
-    .replace(/^\s*[#>]+\s*/gm, ' ')
-    .replace(/^\s*[-*+]\s+/gm, ' ')
-    .replace(/^\s*\|/gm, ' ').replace(/\|/g, ' ')
-    .replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1')
-    .replace(/[*_`]/g, '')
-    .replace(/\s+/g, ' ').trim();
+/** The rows of the groups as the server ordered them, each group closed by a "more" row while it has more. */
+function rowsOf(groups: Group[]): Hit[] {
+  return groups.flatMap(g => [
+    ...g.hits.map((hit): Hit => ({ id: hit.kind + ':' + hit.id, label: hit.title,
+      auxiliaryData: { group: groupNames()[g.group], kind: hit.kind, where: hit.where, line: hit.line, target: targetOf(hit) } })),
+    ...(g.next ? [{ id: 'more:' + g.group, label: t('search.more', { count: g.total - g.hits.length }),
+      auxiliaryData: { group: groupNames()[g.group], kind: 'more' as const, where: '', line: '', more: g.group } }] : []),
+  ]);
 }
 
-/**
- * One line of the body around the first match, with the matched run marked. The palette is for finding a document,
- * so the line is evidence that the word is really in there — not a preview of the document.
- */
-function snippet(body: string, query: string) {
-  const at = body.toLowerCase().indexOf(query);
-  if (at < 0) return body.slice(0, 90);
-  const from = Math.max(0, at - 30);
-  return (from > 0 ? '…' : '') + body.slice(from, at + query.length + 70).trim() + (at + query.length + 70 < body.length ? '…' : '');
-}
 function marked(text: string, query: string) {
   if (!query) return text;
   const at = text.toLowerCase().indexOf(query);
@@ -116,71 +100,35 @@ export function SearchPalette() {
 }
 
 function LoadedPalette({ session, isOpen }: { session: BrowserSessionV3; isOpen: boolean }) {
-  const language = useLanguage();
+  useLanguage();
   const navigate = useNavigate();
-  // The checkout is only read once the palette is opened, so the shell never fetches it just to be ready.
-  const specs = useQuery({ ...specsOptions(session), enabled: isOpen });
-  const checkout = specs.data;
 
-  const entries = useMemo<Hit[]>(() => {
-    if (!checkout) return [];
-    const out: Hit[] = [];
-    for (const feature of checkout.features) {
-      out.push({ id: feature.id, label: feature.title, auxiliaryData: { group: groupNames().feature, kind: 'feature',
-        where: feature.path.replace(/^\.gitifact\//, ''), body: plain(feature.description), updatedAt: feature.updatedAt,
-        target: { to: '/features/$featureId', params: { featureId: feature.id } } } });
-      for (const requirement of feature.requirements) {
-        out.push({ id: requirement.id, label: requirement.title, auxiliaryData: { group: groupNames().requirement, kind: 'requirement',
-          where: feature.title, body: plain(requirement.body), updatedAt: feature.updatedAt,
-          target: { to: '/features/$featureId', params: { featureId: feature.id }, search: { tab: 'requirements' }, hash: requirement.id } } });
-      }
-      for (const design of feature.designs) out.push({ id: design.id, label: design.title, auxiliaryData: { group: groupNames().design, kind: 'design',
-        where: feature.title, body: plain(design.description + ' ' + design.body), updatedAt: feature.updatedAt,
-        target: { to: '/features/$featureId', params: { featureId: feature.id }, search: { tab: 'design' }, hash: design.id } } });
-    }
-    for (const instruction of checkout.instructions) {
-      out.push({ id: instruction.id, label: instruction.title, auxiliaryData: { group: groupNames().instruction, kind: 'instruction',
-        where: instruction.name, body: plain(instruction.description + ' ' + instruction.body), updatedAt: instruction.updatedAt,
-        target: { to: '/instructions/$instructionId', params: { instructionId: instruction.id } } } });
-    }
-    return out;
-  }, [checkout, language]);
-
+  // The groups of the last words searched, with the pages of each read so far. The server works out every group; the
+  // palette keeps what it was given and draws it.
+  const current = useRef<{ query: string; groups: Group[] }>({ query: '', groups: [] });
+  const [opening, setOpening] = useState(true);
   const source = useMemo(() => ({
-    // Nothing typed yet: the files touched most recently. Requirements and designs carry their feature's timestamp,
-    // so including them filled the list with one feature's requirements instead of showing six different documents.
-    bootstrap: () => entries
-      .filter(entry => entry.auxiliaryData?.updatedAt && (entry.auxiliaryData.kind === 'feature' || entry.auxiliaryData.kind === 'instruction'))
-      .sort((a, b) => (b.auxiliaryData?.updatedAt ?? '').localeCompare(a.auxiliaryData?.updatedAt ?? ''))
-      .slice(0, 6)
-      .map(entry => ({ ...entry, auxiliaryData: { ...entry.auxiliaryData!, group: t('search.group.recent') } })),
-    // The server searches the checkout and all of history. A title match comes first, then the place, then the text,
-    // then past changes, newest first.
+    // Nothing typed yet: the features and instructions touched most recently.
+    bootstrap: async (): Promise<Hit[]> => {
+      try { return rowsOf((await searchRecords(session, '')).groups); } catch { return []; } finally { setOpening(false); }
+    },
     search: async (raw: string, signal: AbortSignal): Promise<Hit[]> => {
       const query = raw.trim();
       if (!query) return [];
-      const answer = await searchRecords(session, query, checkout?.head ?? null, signal);
-      return answer.hits.map(hit => ({ id: hit.kind + ':' + hit.id, label: hit.title, auxiliaryData: { group: groupNames()[hit.kind], kind: hit.kind,
-        where: hit.where, body: hit.line, line: hit.line, updatedAt: null, target: targetOf(hit) } }));
+      // The same words again are the palette asking to redraw after a group read on: the groups are already here.
+      if (query === current.current.query) return rowsOf(current.current.groups);
+      const answer = await searchRecords(session, query, signal);
+      current.current = { query, groups: answer.groups };
+      return rowsOf(answer.groups);
     },
-  }), [entries, session, checkout, language]);
+  }), [session]);
 
   // The palette owns the text field and reports no query, so the last query the source was asked for is what the
   // rows highlight. It is written before the results are set and read while they render, so it is never behind.
   const asked = useRef('');
   const shown = useRef<Hit[]>([]);
-  // The palette searches on open and on every keystroke, and never again on its own. So the source is read through a
-  // ref and answers late rather than answering empty: a reader who types before the documents have been read would
-  // otherwise be left with an empty list for a query that does match.
   const latest = useRef(source);
   latest.current = source;
-  const arrived = useRef<{ wait: Promise<void>; done: () => void }>(undefined);
-  if (!arrived.current) {
-    let done = () => {};
-    const wait = new Promise<void>(resolve => { done = resolve; });
-    arrived.current = { wait, done };
-  }
-  useEffect(() => { if (checkout) arrived.current!.done(); }, [checkout]);
 
   // Between a keystroke and its results the palette narrows what it already shows by title, and shows its empty
   // state when nothing is left. Typing the first word therefore flashed "no documents" over the opening list for as
@@ -196,30 +144,54 @@ function LoadedPalette({ session, isOpen }: { session: BrowserSessionV3; isOpen:
     // and stays busy until that promise settles, so abandoning the superseded ones left the spinner turning forever.
     const settle = (results: Hit[]) => { const waiters = queued; queued = []; setWaiting(false); for (const resolve of waiters) resolve(results); };
     return {
-      // The opening list waits for the documents but never for the typing delay, and keeps its own promise: sharing
-      // one with the search let a keystroke answer the bootstrap call, and the palette then showed both lists at once.
-      bootstrap: () => arrived.current!.wait.then(() => (shown.current = latest.current.bootstrap())),
-      // The results are computed here, not fetched, but showing them on every keystroke made the list flicker
-      // through partial words. They appear once typing pauses; until then the palette keeps what is shown.
+      // The opening list keeps its own promise: sharing one with the search let a keystroke answer the bootstrap
+      // call, and the palette then showed both lists at once.
+      bootstrap: () => latest.current.bootstrap().then(rows => (shown.current = rows)),
+      // Results appear once typing pauses; until then the palette keeps what is shown. Words already answered (a
+      // redraw after "more") need no pause.
       search: query => new Promise<Hit[]>(resolve => {
         queued.push(resolve);
         clearTimeout(waiting);
-        waiting = setTimeout(() => {
+        const run = () => {
           // A newer query makes the one still on its way pointless; its answer is dropped.
           inflight?.abort(); const controller = inflight = new AbortController();
-          void arrived.current!.wait
-            .then(() => latest.current.search(query, controller.signal))
+          void latest.current.search(query, controller.signal)
             .then(results => { if (controller.signal.aborted) return; asked.current = query.trim().toLowerCase(); settle(shown.current = results); })
             .catch(() => { if (!controller.signal.aborted) settle(shown.current = []); });
-        }, typingDelay);
+        };
+        if (query.trim() && query.trim() === current.current.query) run(); else waiting = setTimeout(run, typingDelay);
       }),
       cancel: () => { clearTimeout(waiting); inflight?.abort(); settle(shown.current); },
     };
   }, []);
 
+  // Choosing a row closes the palette. Choosing "more" must not: the palette is kept open, the group's next page is
+  // read, and the words are put back in the field, which is how the palette is told to draw its rows again.
+  const reading = useRef<Group['group'] | undefined>(undefined);
+  const field = useRef<HTMLInputElement>(null);
+  const readOn = async (group: Group['group']) => {
+    const { query, groups } = current.current;
+    const at = groups.find(g => g.group === group);
+    if (at?.next) {
+      try {
+        const [page] = (await searchRecords(session, query, undefined, { group, after: at.next })).groups;
+        if (page) current.current = { query, groups: groups.map(g => g.group === group ? { ...g, hits: [...g.hits, ...page.hits], next: page.next } : g) };
+      } catch { /* the row stays; choosing it again reads again */ }
+    }
+    reading.current = undefined;
+    const input = field.current;
+    if (!input) return;
+    // React tracks the field's value; the native setter and an input event are how a typed value arrives.
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, query);
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.focus();
+  };
+
   const go = (hit: Hit | undefined) => {
     if (!hit) return;
-    const { to, params, search, hash } = hit.auxiliaryData!.target;
+    const data = hit.auxiliaryData!;
+    if (data.more) { reading.current = data.more; void readOn(data.more); return; }
+    const { to, params, search, hash } = data.target!;
     closeSearch();
     void navigate({ to, params: params ?? {}, search: search ?? {}, ...(hash ? { hash } : {}) } as never);
   };
@@ -235,25 +207,25 @@ function LoadedPalette({ session, isOpen }: { session: BrowserSessionV3; isOpen:
 
   return <CommandPalette
     isOpen={isOpen}
-    onOpenChange={setSearchOpen}
+    onOpenChange={open => { if (open || !reading.current) setSearchOpen(open); }}
     searchSource={watching}
     label={t('search.label')}
     width={720}
     className={styles.palette}
-    input={<CommandPaletteInput placeholder={t('search.placeholder')} onKeyDown={openFirstOnEnter} onChange={event => { setWaiting(event.currentTarget.value.trim() !== ''); }}/>}
+    input={<CommandPaletteInput ref={field} placeholder={t('search.placeholder')} onKeyDown={openFirstOnEnter} onChange={event => { setWaiting(event.currentTarget.value.trim() !== ''); }}/>}
     footer={hints()}
     emptySearchText={waiting ? loading() : noMatch()}
-    emptyBootstrapText={specs.isPending || waiting ? loading() : noDocuments()}
+    emptyBootstrapText={opening || waiting || reading.current ? loading() : noDocuments()}
     renderItem={(item: Hit) => {
       const data = item.auxiliaryData!;
+      if (data.kind === 'more') return <Text type="supporting" color="secondary" className={styles.more}>{item.label}</Text>;
       const query = asked.current;
-      const line = data.line ?? (query ? snippet(data.body, query) : data.body.slice(0, 90));
       return <VStack gap={1} className={styles.row}>
         <HStack gap={3} className={styles.head}>
           <Text weight="semibold" className={styles.oneLine}>{marked(item.label, query)}</Text>
           <Text type="supporting" color="secondary" className={styles.oneLine}>{data.where}</Text>
         </HStack>
-        {line && <Text type="supporting" color="secondary" className={styles.oneLine}>{marked(line, query)}</Text>}
+        {data.line && <Text type="supporting" color="secondary" className={styles.oneLine}>{marked(data.line, query)}</Text>}
       </VStack>;
     }}
     onValueChange={id => { go(shown.current.find(entry => entry.id === id)); }}

@@ -161,6 +161,41 @@ export function createDocumentCache(root: string, database: CacheDatabase) {
         return new Map(rows.map(r => { const p = JSON.parse(r.payload) as { id: string; body: string }; return [p.id, snippet(p.body, query)]; }));
       });
     },
+    /**
+     * The working documents of one kind whose title, place or text holds the query, a page at a time: a title that
+     * starts with it first, then a title, a place, and the text; by title within each. `after` is the ID of the last
+     * hit of the page before; one that no longer matches answers undefined. Each hit names its feature's ID.
+     */
+    async searchKind(kind: 'feature' | 'requirement' | 'design' | 'instruction', raw: string, after: string | undefined, limit: number) {
+      const query = raw.trim().toLowerCase();
+      await sync();
+      return database.with(db => {
+        // The trigram index answers LIKE from three characters on; pattern characters are matched literally with instr.
+        const literal = /[\\%_]/.test(query);
+        const match = (column: string) => literal ? `instr(${column}, :q) > 0` : `${column} LIKE :like`;
+        const ordered = `WITH hits AS (
+            SELECT json_extract(payload, '$.id') AS id, payload, title, ref,
+              CASE WHEN substr(title, 1, length(:q)) = :q THEN 0 WHEN instr(title, :q) > 0 THEN 1 WHEN instr(place, :q) > 0 THEN 2 ELSE 3 END AS rank
+            FROM search WHERE scope = 'checkout' AND kind = :kind AND (${match('title')} OR ${match('place')} OR ${match('body')})),
+          ordered AS (SELECT *, row_number() OVER (ORDER BY rank, title, ref) AS n FROM hits)`;
+        const params = { q: query, kind, ...(literal ? {} : { like: containing(query) }) };
+        const total = Number((db.prepare(`${ordered} SELECT count(*) AS n FROM ordered`).get(params) as { n: number }).n);
+        let start = 0;
+        if (after !== undefined) {
+          const at = db.prepare(`${ordered} SELECT n FROM ordered WHERE id = :after`).get({ ...params, after }) as { n: number } | undefined;
+          if (!at) return undefined;
+          start = Number(at.n);
+        }
+        const rows = db.prepare(`${ordered} SELECT payload FROM ordered WHERE n > :start ORDER BY n LIMIT :limit`).all({ ...params, start, limit: limit + 1 }) as { payload: string }[];
+        const features = new Map((db.prepare("SELECT feature, id FROM documents WHERE kind = 'feature'").all() as { feature: string; id: string }[]).map(r => [r.feature, r.id]));
+        const hits = rows.slice(0, limit).map(r => {
+          const p = JSON.parse(r.payload) as { id: string; title: string; where: string; body: string; feature: string | null };
+          const featureId = p.feature ? features.get(p.feature) : undefined;
+          return { id: p.id, kind, title: p.title, where: p.where, line: snippet(p.body, query), ...(featureId ? { featureId } : {}) };
+        });
+        return { total, next: rows.length > limit ? hits[hits.length - 1]!.id : null, hits };
+      });
+    },
     /** Documents that refer to `id` from their frontmatter: designs naming a requirement or a source. */
     async referencing(id: string): Promise<{ from: string; type: string }[]> {
       await sync();

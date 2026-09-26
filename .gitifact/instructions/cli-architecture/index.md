@@ -42,7 +42,7 @@ flowchart TD
 | `adapters/github/` | `feedback`의 `gh` 실행과 이슈 작성 주소 |
 | `output/` | core 결과를 버전 있는 DTO로 변환 |
 | `server/` | `browser-server`(수명), `http/`(검사·라우터·응답·앱 파일), `routes/`(경로 표), `checkout/`(작업 폴더 체크아웃과 지문), `commit/`(커밋의 소스 변경) |
-| `queries/` | CLI 명령과 브라우저 서버가 함께 부르는 조회. 목록의 걸러내기·정렬·묶기·자르기는 여기서 하고, 명령과 서버는 받은 순서와 범위를 그대로 그린다: 페이지(`paging.ts`, 없는 커서는 undefined), 이력 필터(`filters.ts`), 명세·지침 목록(`specs.ts`·`instructions.ts`), 문서마다 마지막 커밋 대비 상태(`document-states.ts`), 커밋 전 변경(`working-changes.ts`). 같은 조회를 두 곳에 따로 짓지 않는다. 변경의 원문은 캐시가 받은 원문 공급원(`Originals`, 지금은 Git)으로 읽는다 |
+| `queries/` | CLI 명령과 브라우저 서버가 함께 부르는 조회. 목록의 걸러내기·정렬·묶기·자르기는 여기서 하고, 명령과 서버는 받은 순서와 범위를 그대로 그린다: 페이지(`paging.ts`, 없는 커서는 undefined), 이력 필터(`filters.ts`), 명세·지침 목록(`specs.ts`·`instructions.ts`), 검색창의 분류별 결과(`search.ts`), 문서마다 마지막 커밋 대비 상태(`document-states.ts`), 커밋 전 변경(`working-changes.ts`). 같은 조회를 두 곳에 따로 짓지 않는다. 변경의 원문은 캐시가 받은 원문 공급원(`Originals`, 지금은 Git)으로 읽는다 |
 | `shared/i18n/` | 사용자에게 보이는 문구와 언어별 Markdown |
 | `packages/core/src/domain/` | 문서·저장소 상태·읽기 오류 |
 | `formats/` | 공개 형식별 파싱·검증(문서·이유·0.7 저장소·패치노트) |

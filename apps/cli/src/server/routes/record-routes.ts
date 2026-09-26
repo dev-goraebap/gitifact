@@ -1,5 +1,5 @@
 import { browserCommitChangeQueryV1, browserCommitChangeV1, browserCommitQueryV2, browserCommitV4, browserCommitFileQueryV1, browserCommitFileV1, browserCommitFilesQueryV2, browserCommitFilesV2,
-  browserHistoryQueryV4, browserHistorySummaryQueryV1, browserHistorySummaryV4, browserHistoryV6, browserSearchQueryV1, browserSearchV2, browserInstructionFileQueryV1, browserInstructionFileV1,
+  browserHistoryQueryV4, browserHistorySummaryQueryV1, browserHistorySummaryV4, browserHistoryV6, browserSearchQueryV2, browserSearchV3, browserInstructionFileQueryV1, browserInstructionFileV1,
   browserRecordQueryV1, browserRecordV1, browserStampV1, browserWorkingChangeQueryV1, browserWorkingChangeV1, browserWorkingV1 } from '@gitifact/contracts';
 import { storeReader } from '../../adapters/git/store-reader.js';
 import { openCache } from '../../adapters/cache/index.js';
@@ -9,6 +9,8 @@ import { createStampReader } from '../checkout/stamp.js';
 import { createCommitFiles } from '../commit/commit-files.js';
 import { readInstructionFile } from '../../adapters/filesystem/instruction-folder.js';
 import { workingChange, workingOverview, type WorkingSource } from '../../queries/working-changes.js';
+import { searchRecords } from '../../queries/search.js';
+import type { ListSource } from '../../queries/specs.js';
 import { HttpError } from '../http/respond.js';
 import { ok, route } from '../http/router.js';
 import { t } from '../../shared/i18n/index.js';
@@ -28,6 +30,8 @@ export function recordRoutes(root: string, sessionId: string, env?: NodeJS.Proce
   const readCheckout = createCheckoutReader(root, sessionId, cache, env);
   const readStamp = createStampReader(root, env);
   const commitFiles = createCommitFiles(git);
+  // What the list queries read: the same HEAD, Git and cache as the CLI's project.
+  const source: ListSource = { head: async () => (await git.baseline()).head, reader: git, cache };
   const working: WorkingSource = { head: async () => (await git.baseline()).head, cache, pendingRecords: () => readPendingRecords(root, args => git.run(args)) };
   const unreadable = () => t('server.specsUnreadable');
   const cursorGone = () => new HttpError(404, 'NOT_FOUND', t('server.cursorNotFound'));
@@ -98,7 +102,11 @@ export function recordRoutes(root: string, sessionId: string, env?: NodeJS.Proce
       if (!found) throw new HttpError(404, 'NOT_FOUND', t('server.instructionFileNotFound'));
       return ok(browserInstructionFileV1.parse({ contract: 'browser-instruction-file', version: 1, sessionId, id: query.id, path: query.path, ...found }));
     } }),
-    route({ method: 'GET', path: '/api/v1/search', session: true, query: browserSearchQueryV1, unreadable, handle: async ({ query }) =>
-      ok(browserSearchV2.parse({ contract: 'browser-search', version: 2, sessionId, query: query.q, hits: await cache.search(query.head ?? null, query.q) })) }),
+    // The search box's groups as the query layer works them out (`queries/search.ts`); the browser only draws them.
+    route({ method: 'GET', path: '/api/v1/search', session: true, query: browserSearchQueryV2, unreadable, handle: async ({ query }) => {
+      const groups = await searchRecords(source, query);
+      if (!groups) throw cursorGone();
+      return ok(browserSearchV3.parse({ contract: 'browser-search', version: 3, sessionId, query: query.q, groups }));
+    } }),
   ];
 }

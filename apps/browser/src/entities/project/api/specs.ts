@@ -1,5 +1,5 @@
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
-import { browserSpecsV7, browserHistoryV6, browserHistorySummaryV4, browserSearchV2, browserCommitFilesV2, browserCommitFileV1, browserCommitV4, browserCommitChangeV1, browserInstructionFileV1,
+import { browserSpecsV7, browserHistoryV6, browserHistorySummaryV4, browserSearchV3, browserCommitFilesV2, browserCommitFileV1, browserCommitV4, browserCommitChangeV1, browserInstructionFileV1,
   browserRecordV1, browserStampV1, browserWorkingV1, browserWorkingChangeV1, type BrowserSessionV3 } from '@gitifact/contracts';
 import { requestJson, ApiError } from '../../../shared/api/client';
 import { httpFailure } from './repository';
@@ -139,7 +139,12 @@ export const instructionFileOptions = (session: BrowserSessionV3, id: string, pa
 });
 
 /** Records whose title, place or text holds the words: the current specs and instructions, then past changes of `head`. */
-export function searchRecords(session: BrowserSessionV3, words: string, head: string | null, signal?: AbortSignal) {
-  const query = new URLSearchParams({ q: words }); if (head) query.set('head', head);
-  return read(session, '/api/v1/search?' + query, browserSearchV2, signal);
+/**
+ * The search box's groups for some words (none for the documents touched most recently). With `more`, the next page
+ * of one group after the hit its last page ended with. The server reads its own HEAD for history.
+ */
+export function searchRecords(session: BrowserSessionV3, words: string, signal?: AbortSignal, more?: { group: string; after: string }) {
+  const query = new URLSearchParams({ q: words });
+  if (more) { query.set('group', more.group); query.set('after', more.after); }
+  return read(session, '/api/v1/search?' + query, browserSearchV3, signal);
 }
