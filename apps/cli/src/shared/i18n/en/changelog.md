@@ -1,3 +1,13 @@
+## 0.8.2 - 2026-09-26
+### Changed
+- The browser asks the server for as much of a list as it shows. Feature requirements read on twenty features at a time with "More features" instead of page numbers, contributors twenty at a time, a commit's code tab twenty files at a time, and a record's documents twenty at a time. The checkout a screen reads first went from 354 KB to 18 KB in this repository.
+- The search box shows five hits in each group — features, requirements, designs, instructions, decision records and commits — and "N more" reads on in that group without closing the box. A decision record appears once per record file, and a commit is found by seven or more characters of its hash. The "Change history" group with one hit per document change is gone.
+- Contributors and each feature's authors count every commit rather than the latest 10,000. The commit log is read into the cache once and new commits are added to it, and list commands no longer read Git history again for the same HEAD (`records list` 639 ms → 256 ms in a repository of 5,000 commits).
+- The cache format changed, so it is rebuilt once on the first run. Dropping the search rows kept per document change made it about 40% smaller.
+### Fixed
+- The code tab of a commit could not show files past the first 500.
+- A record's page could miss documents of its record in a commit of more than 500 changes.
+
 ## 0.8.1 - 2026-09-25
 ### Added
 - Lists show where each document stands against the last commit. A document not committed yet ends its line (in the browser, a light background and a badge) with added, modified or to be deleted, and a deleted document stays listed as to be deleted until the commit. A moved document is one modified line.

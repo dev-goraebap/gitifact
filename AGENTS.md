@@ -3,13 +3,13 @@
 <!-- GITIFACT:START -->
 ## Gitifact Guide
 
-gitifact v0.8.1 · ko · 저장 규약 schemaVersion 3
+gitifact v0.8.2 · ko · 저장 규약 schemaVersion 3
 
 제품 동작(요구사항·설계), 지침, 결정기록은 `.gitifact/`에 저장하고 CLI `gitifact`로 관리한다. 프로젝트가 별도 실행 방법을 정했다면 해당 방식을 `gitifact`로 적용한다.
 
 ### 세션을 시작할 때
 
-1. `gitifact --version`이 0.8.1인지 확인한다. 없거나 다르면 `npm i -g gitifact@0.8.1` 설치를 제안하고, 그전까지는 `npx --yes gitifact@0.8.1 <cmd>`로 실행한다. 실행이 막히면 승인을 요청한다.
+1. `gitifact --version`이 0.8.2인지 확인한다. 없거나 다르면 `npm i -g gitifact@0.8.2` 설치를 제안하고, 그전까지는 `npx --yes gitifact@0.8.2 <cmd>`로 실행한다. 실행이 막히면 승인을 요청한다.
 2. `gitifact update --check`를 1회 실행한다. 새 버전이 있으면 업데이트 여부를 묻고, 동의할 때만 설치 후 `update`를 실행한 뒤 이 블록을 다시 읽는다.
 3. `gitifact instructions list --all`로 지침을 모두 확인하고 git status와 기존 staging 상태를 점검한다.
 
