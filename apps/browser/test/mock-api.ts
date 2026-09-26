@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test';
-import { browserSessionV3, changelogV1, repositoryStatusSuccessV1, type BrowserSpecsV7, type BrowserWorkingV1, type CommitFile, type DesignSource, type SpecEvent, type SpecFeature, type SpecInstruction, type AgentsFile } from '@gitifact/contracts';
+import { browserSessionV3, changelogV1, repositoryStatusSuccessV1, type BrowserWorkingV1, type CommitFile, type Contributor, type DesignSource, type SpecEvent, type SpecFeature, type SpecInstruction, type AgentsFile } from '@gitifact/contracts';
 
 export const session = browserSessionV3.parse({
   contract: 'browser-session',
@@ -47,13 +47,17 @@ type LooseDesign = { id?: string; title: string; body: string; requirements: str
 type LooseFeature = Omit<SpecFeature, 'requirements' | 'designs' | 'body' | 'state'> & Standing & { requirements: LooseRequirement[]; designs?: LooseDesign[]; design?: LooseDesign | undefined; body?: string };
 /** An instruction as tests write it: what is left out is filled in (no other files, never committed). */
 type LooseInstruction = Pick<SpecInstruction, 'id' | 'name' | 'title' | 'body'> & Partial<SpecInstruction>;
+type Problem = { code: string; path: string; message: string };
+/** The whole checkout the server's parts are cut from: every feature and instruction with their text, and the people. */
+export type FullCheckout = { contract?: string; version?: number; sessionId: string; head: string | null; observedAt: string; working: boolean; stamp: string;
+  features: SpecFeature[]; instructions: SpecInstruction[]; agents: AgentsFile | null; problems: Problem[]; contributors: Contributor[]; contributorsLimited?: boolean };
 /** A checkout with the history the mock serves beside it, in a shorthand the tests can write by hand. */
-export type Fixture = Omit<BrowserSpecsV7, 'version' | 'features' | 'instructions' | 'agents' | 'problems' | 'stamp'> & { version?: number; stamp?: string; features: LooseFeature[];
-  instructions?: LooseInstruction[]; agents?: AgentsFile | null; problems?: BrowserSpecsV7['problems']; events: SpecEvent[] };
+export type Fixture = Omit<FullCheckout, 'version' | 'features' | 'instructions' | 'agents' | 'problems' | 'stamp'> & { version?: number; stamp?: string; features: LooseFeature[];
+  instructions?: LooseInstruction[]; agents?: AgentsFile | null; problems?: Problem[]; events: SpecEvent[] };
 /** Joins a relative link onto the folder of `from`, as a document link resolves. */
 const joined = (from: string, href: string) => { const parts = from.split('/').slice(0, -1); for (const p of href.split('/')) { if (p === '..') parts.pop(); else if (p && p !== '.') parts.push(p); } return parts.join('/'); };
-/** The checkout part of a fixture, as /api/v1/specs answers it: the shorthand filled out to the v7 shape, committed unless a state is given. */
-export const checkoutOf = ({ events: _events, features, instructions, agents, problems, stamp, ...rest }: Fixture): BrowserSpecsV7 => ({ ...rest, version: 7, stamp: stamp ?? 'stamp-1',
+/** The checkout part of a fixture: the shorthand filled out to the whole shape, committed unless a state is given. */
+export const checkoutOf = ({ events: _events, features, instructions, agents, problems, stamp, ...rest }: Fixture): FullCheckout => ({ ...rest, version: 7, stamp: stamp ?? 'stamp-1',
   features: features.map(({ design, designs, requirements, body, state = 'committed', ...f }) => {
     const path = f.path.replace(/requirements\.md$/, 'index.md'); const folder = path.replace(/\/index\.md$/, '');
     // A design written the old way names its sources relative to design.md; they become repository paths.
@@ -71,14 +75,70 @@ const plainText = (text: string) => text.replace(/[*_`#>]/g, '').replace(/\s+/g,
 const line = (text: string, query: string) => { const at = lower(text).indexOf(query); return at < 0 ? text.slice(0, 90) : text.slice(Math.max(0, at - 30), at + query.length + 70); };
 const notFound = { contract: 'browser-http-error', version: 1, error: { code: 'NOT_FOUND', message: 'no change' } };
 
+/** The frame `/api/v1/checkout` answers: HEAD, stamp, uncommitted, problems, and the index of documents and people. */
+export const frameOf = (full: FullCheckout) => ({ contract: 'browser-checkout', version: 1, sessionId: full.sessionId, head: full.head, observedAt: full.observedAt,
+  working: full.working, stamp: full.stamp, problems: full.problems,
+  index: { features: full.features.map(f => ({ id: f.id, path: f.path, title: f.title, state: f.state,
+      requirements: f.requirements.map(r => ({ id: r.id, path: r.path, title: r.title, description: r.description })),
+      designs: f.designs.map(d => ({ id: d.id, path: d.path, title: d.title })) })),
+    instructions: full.instructions.map(k => ({ id: k.id, name: k.name, path: k.path, title: k.title })),
+    people: full.contributors.map(p => ({ name: p.name, email: p.email })) } });
+const acceptance = (body: string) => { const lines = body.split('\n'); const start = lines.findIndex(l => /^###\s+(?:수용 조건|acceptance criteria)\s*$/i.test(l.trim()));
+  if (start < 0) return null; let n = 0; for (const l of lines.slice(start + 1)) { if (/^#{1,6}\s/.test(l)) break; if (/^\d+\.\s/.test(l)) n++; } return n || null; };
+/** The feature list as the server works it out: filtered, ordered and paged by feature, each with its first twelve requirements. */
+function featuresOf(full: FullCheckout, q: URLSearchParams) {
+  const query = lower(q.get('q') ?? ''); const key = q.get('sort') ?? 'updated';
+  const way = (q.get('dir') ?? (key === 'title' ? 'asc' : 'desc')) === 'asc' ? 1 : -1;
+  const named = (f: SpecFeature) => !query || lower(f.title + ' ' + f.id).includes(query);
+  const groups = full.features.filter(f => !q.get('design') || (q.get('design') === 'yes') === f.designs.length > 0)
+    .filter(f => !q.get('author') || f.contributors.some(p => p.email === q.get('author')))
+    .map(f => ({ feature: f, requirements: named(f) ? f.requirements : f.requirements.filter(r => lower(r.title + ' ' + r.id).includes(query)) }))
+    .filter(g => named(g.feature) || g.requirements.length)
+    .sort((a, b) => way * (key === 'requirements' ? a.feature.requirements.length - b.feature.requirements.length : key === 'title' ? a.feature.title.localeCompare(b.feature.title)
+      : (a.feature.updatedAt ?? '').localeCompare(b.feature.updatedAt ?? '')) || a.feature.title.localeCompare(b.feature.title));
+  const page = pageOf(groups, g => g.feature.id, q);
+  if (!page) return undefined;
+  return { contract: 'browser-features', version: 1, sessionId: session.sessionId, total: groups.length, all: full.features.length,
+    requirements: groups.reduce((n, g) => n + g.requirements.length, 0), mostRequirements: Math.max(0, ...full.features.map(f => f.requirements.length)), next: page.next,
+    features: page.rows.map(({ feature: f, requirements }) => { const designed = new Set(f.designs.flatMap(d => d.requirements));
+      return { id: f.id, path: f.path, title: f.title, description: f.description, state: f.state, designs: f.designs.length, contributors: f.contributors, updatedAt: f.updatedAt,
+        requirementCount: f.requirements.length, hidden: Math.max(0, requirements.length - 12),
+        requirements: requirements.slice(0, 12).map(r => ({ id: r.id, title: r.title, description: r.description, state: r.state, acceptance: acceptance(r.body), designed: designed.has(r.id) })) }; }) };
+}
+
 /**
- * Answers the record routes from one fixture the way the CLI does: the checkout whole, and history filtered, paged,
- * counted and searched over all of the fixture's events. Tests call it again to swap in their own fixture.
+ * Answers the record routes from one fixture the way the CLI does: the checkout a part at a time, each shaped as the
+ * server shapes it, and history filtered, paged, counted and searched over all of the fixture's events. Tests call it
+ * again to swap in their own fixture.
  */
 export async function serve(page: Page, data: Fixture) {
   const events = data.events;
   const checkout = checkoutOf(data);
-  await page.route('**/api/v1/specs*', route => route.fulfill({ json: checkout }));
+  await page.route(url => url.pathname === '/api/v1/checkout', route => route.fulfill({ json: frameOf(checkout) }));
+  await page.route(url => url.pathname === '/api/v1/features', route => {
+    const found = featuresOf(checkout, new URL(route.request().url()).searchParams);
+    return found ? route.fulfill({ json: found }) : route.fulfill({ status: 404, json: notFound });
+  });
+  await page.route(url => url.pathname === '/api/v1/feature', route => {
+    const feature = checkout.features.find(f => f.id === new URL(route.request().url()).searchParams.get('id'));
+    return feature ? route.fulfill({ json: { contract: 'browser-feature', version: 1, sessionId: session.sessionId, feature } }) : route.fulfill({ status: 404, json: notFound });
+  });
+  await page.route(url => url.pathname === '/api/v1/instructions', route => route.fulfill({ json: { contract: 'browser-instructions', version: 1, sessionId: session.sessionId,
+    instructions: [...checkout.instructions].sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0), agents: checkout.agents } }));
+  await page.route(url => url.pathname === '/api/v1/contributors', route => {
+    const q = new URL(route.request().url()).searchParams; const words = lower(q.get('q') ?? '');
+    const people = checkout.contributors.filter(p => !words || lower(p.name + ' ' + p.email).includes(words));
+    const found = pageOf(people, p => p.email, q);
+    return found ? route.fulfill({ json: { contract: 'browser-contributors', version: 1, sessionId: session.sessionId, total: people.length, next: found.next,
+      people: found.rows.map(p => ({ ...p, features: checkout.features.filter(f => f.contributors.some(c => c.email === p.email)).length })) } })
+      : route.fulfill({ status: 404, json: notFound });
+  });
+  await page.route(url => url.pathname === '/api/v1/contributor', route => {
+    const email = new URL(route.request().url()).searchParams.get('email'); const person = checkout.contributors.find(p => p.email === email);
+    return person ? route.fulfill({ json: { contract: 'browser-contributor', version: 1, sessionId: session.sessionId, person,
+      features: checkout.features.flatMap(f => { const share = f.contributors.find(c => c.email === email); return share ? [{ id: f.id, title: f.title, commits: share.commits, requirements: f.requirements.length }] : []; }) } })
+      : route.fulfill({ status: 404, json: notFound });
+  });
   await page.route(url => url.pathname === '/api/v1/history', route => {
     const q = new URL(route.request().url()).searchParams;
     const matching = events.filter(e => (!q.get('kind') || e.types.includes(q.get('kind') as never)) && (!q.get('document') || e.kind === q.get('document'))
@@ -94,7 +154,9 @@ export async function serve(page: Page, data: Fixture) {
   await page.route('**/api/v1/history/summary*', route => {
     const commits = [...new Set(events.map(e => e.commit))];
     const count = (type: string) => events.filter(e => e.types.includes(type as never)).length;
-    return route.fulfill({ json: { contract: 'browser-history-summary', version: 4, sessionId: session.sessionId, head: data.head, total: events.length,
+    const people = [...checkout.contributors].sort((a, b) => b.commits - a.commits || a.name.localeCompare(b.name));
+    return route.fulfill({ json: { contract: 'browser-history-summary', version: 5, sessionId: session.sessionId, head: data.head, total: events.length,
+      people: { total: people.length, top: people.slice(0, 3), rest: { count: Math.max(0, people.length - 3), commits: people.slice(3).reduce((n, p) => n + p.commits, 0) } },
       byType: { created: count('created'), modified: count('modified'), moved: count('moved'), deleted: count('deleted') },
       pulse: commits.map(c => ({ date: events.find(e => e.commit === c)!.date, count: events.filter(e => e.commit === c).length })),
       recent: commits.slice(0, 3).map(c => ({ commit: c, count: events.filter(e => e.commit === c).length, events: events.filter(e => e.commit === c).slice(0, 12) })) } });

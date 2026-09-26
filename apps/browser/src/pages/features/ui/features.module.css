@@ -87,15 +87,6 @@
 .requirementNoDesign { flex:0 0 auto; padding-inline-start:var(--spacing-4); color:var(--color-text-yellow, var(--color-text-secondary)); font-size:.75rem; white-space:nowrap; }
 .acceptanceCount { font-size:.75rem; font-variant-numeric:tabular-nums; white-space:nowrap; }
 .requirementMore { color:var(--color-text-secondary); font-size:.8125rem; text-decoration:none; }
-/* The pager rides the bottom of the card: a page of forty rows is taller than the screen, and the way to the
-   next one should not be something the reader has to scroll to the end to find. Sticky alone only holds while
-   there is something to scroll, so a short page (the last one, or a narrowed list) left it under the table in the
-   middle of the screen. The column it sits in is stretched to the card instead, and `margin-block-start:auto`
-   pushes it to the floor of that. The stretch is asked for by the pager itself, so every other screen is untouched. */
-/* Keep the sticky header's containing block as tall as the rows. Shrinking these stacks to the card's
-   viewport lets the rows overflow their parent and pushes the header away before the list ends. */
-.featureTable:has(.featurePager) { flex:1 0 auto; }
-.featurePager { position:sticky; bottom:0; z-index:2; margin-block-start:auto; align-items:center; margin-inline:calc(var(--spacing-4) * -1); margin-bottom:calc(var(--spacing-4) * -1); padding:var(--spacing-2) var(--spacing-4); background:var(--color-background-surface); border-top:1px solid var(--color-border); }
 .featureTitleRow .featureTitle { flex:0 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .countCell { align-items:center; justify-content:flex-end; }
 .countCell > :last-child { flex:1; min-width:2.5rem; max-width:6rem; }

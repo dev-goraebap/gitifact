@@ -62,18 +62,20 @@ test('the checkout says where each document stands, keeps a deleted one until th
   d.instruction('guide', I, { title: 'Guide' }); f.commit('Create');
   const server = await startBrowserServer({ cwd: f.repo, env: f.env, assetsDirectory: fileURLToPath(new URL('../../browser/dist/', import.meta.url)) }); t.after(() => server.close());
   const get = async path => (await fetch(server.url + path, { headers: { 'X-Gitifact-Session': server.session.sessionId } })).json();
-  const clean = await get('/api/v1/specs');
-  assert.deepEqual(clean.features[0].requirements.map(r => [r.id, r.state]), [[R2, 'committed'], [R, 'committed']]);
-  const stamp = (await get('/api/v1/stamp')).stamp; assert.equal(stamp, clean.stamp);
+  const clean = await get('/api/v1/feature?id=' + S);
+  assert.deepEqual(clean.feature.requirements.map(r => [r.id, r.state]), [[R2, 'committed'], [R, 'committed']]);
+  const stamp = (await get('/api/v1/stamp')).stamp; assert.equal(stamp, (await get('/api/v1/checkout')).stamp);
   d.requirement('posts', 'save', R, { title: 'Save', body: 'Second' });
   unlinkSync(join(f.repo, '.gitifact/spec/posts/requirements/list.md'));
   const edited = (await get('/api/v1/stamp')).stamp; assert.notEqual(edited, stamp);
   // Editing a file that is already modified moves the stamp on too.
   d.requirement('posts', 'save', R, { title: 'Save', body: 'Third' }); utimesSync(join(f.repo, '.gitifact/spec/posts/requirements/save.md'), new Date(), new Date(Date.now() + 5000));
   assert.notEqual((await get('/api/v1/stamp')).stamp, edited);
-  const changed = await get('/api/v1/specs');
-  assert.deepEqual(changed.features[0].requirements.map(r => [r.id, r.state]).sort(), [[R, 'modified'], [R2, 'deleted']].sort());
-  assert.equal(changed.stamp, (await get('/api/v1/stamp')).stamp);
+  const changed = await get('/api/v1/feature?id=' + S);
+  assert.deepEqual(changed.feature.requirements.map(r => [r.id, r.state]).sort(), [[R, 'modified'], [R2, 'deleted']].sort());
+  const frame = await get('/api/v1/checkout');
+  assert.equal(frame.stamp, (await get('/api/v1/stamp')).stamp);
+  assert.deepEqual([frame.working, frame.index.features[0].state, frame.index.features[0].requirements.map(r => r.id).sort()], [true, 'committed', [R, R2].sort()]);
   // The uncommitted work: the two changes, one with no record, and each read with the document at HEAD and now.
   d.record({ id: 'DR-aaaaaaaaaa', docs: [R], reason: '저장 규칙을 바꿨다' });
   const working = await get('/api/v1/working');
@@ -91,10 +93,21 @@ test('the server refuses bad queries, missing sessions and other methods on ever
   const headers = { 'X-Gitifact-Session': server.session.sessionId };
   const head = f.git(['rev-parse', 'HEAD']).stdout.trim();
   const status = async (path, init = { headers }) => (await fetch(server.url + path, init)).status;
-  assert.equal(await status('/api/v1/specs', {}), 409);
-  assert.equal(await status('/api/v1/specs?path=..'), 400);
-  assert.equal(await status('/api/v1/specs'), 200);
-  assert.equal(await status('/api/v1/specs', { headers, method: 'POST' }), 405);
+  assert.equal(await status('/api/v1/checkout', {}), 409);
+  assert.equal(await status('/api/v1/checkout?path=..'), 400);
+  assert.equal(await status('/api/v1/checkout'), 200);
+  assert.equal(await status('/api/v1/checkout', { headers, method: 'POST' }), 405);
+  assert.equal(await status('/api/v1/specs'), 404);
+  // The checkout's parts check their queries before anything is read.
+  assert.equal(await status('/api/v1/features?sort=nope'), 400);
+  assert.equal(await status('/api/v1/features?after=nope'), 400);
+  assert.equal(await status('/api/v1/features?after=S-zzzzzzzzzz'), 404);
+  assert.equal(await status('/api/v1/feature'), 400);
+  assert.equal(await status('/api/v1/feature?id=S-zzzzzzzzzz'), 404);
+  assert.equal(await status('/api/v1/instructions'), 200);
+  assert.equal(await status('/api/v1/contributors?after=nobody@example.invalid'), 404);
+  assert.equal(await status('/api/v1/contributor'), 400);
+  assert.equal(await status('/api/v1/contributor?email=nobody@example.invalid'), 404);
   // History needs the HEAD it is read against; a page and the filters are checked before anything is read.
   assert.equal(await status('/api/v1/history'), 400);
   assert.equal(await status('/api/v1/history?head=nope'), 400);
@@ -448,9 +461,8 @@ test('instructions and AGENTS.md come in the checkout, instructions in history, 
   const head = f.git(['rev-parse', 'HEAD']).stdout.trim();
   const server = await startBrowserServer({ cwd: f.repo, env: f.env, assetsDirectory: fileURLToPath(new URL('../../browser/dist/', import.meta.url)) }); t.after(() => server.close());
   const get = async path => { const response = await fetch(server.url + path, { headers: { 'X-Gitifact-Session': server.session.sessionId } }); return { status: response.status, body: await response.json() }; };
-  const specs = (await get('/api/v1/specs')).body;
-  assert.equal(specs.version, 7);
-  assert.deepEqual([specs.instructions[0].state, typeof specs.stamp], ['committed', 'string']);
+  const specs = (await get('/api/v1/instructions')).body;
+  assert.deepEqual([specs.contract, specs.version, specs.instructions[0].state], ['browser-instructions', 1, 'committed']);
   assert.deepEqual(specs.instructions.map(k => [k.id, k.name, k.title, k.files, k.filesLimited, !!k.updatedAt]),
     [['I-aaaaaaaaaa', 'cli-rules', 'CLI rules', [{ path: 'assets/logo.png', size: 4 }, { path: 'references/decisions.md', size: 22 },
       { path: 'references/layers.md', size: layers.length, title: 'Layer rules', description: 'Which layer may call which. Read when adding a module.' }], false, true]]);
@@ -472,5 +484,50 @@ test('instructions and AGENTS.md come in the checkout, instructions in history, 
   assert.equal((await file('index.md', 'nope')).status, 400);
   // Without AGENTS.md the checkout says so rather than failing.
   f.git(['rm', '-q', 'AGENTS.md']); f.commit('Drop AGENTS.md');
-  assert.equal((await get('/api/v1/specs')).body.agents, null);
+  assert.equal((await get('/api/v1/instructions')).body.agents, null);
+});
+
+test('the feature list is filtered, ordered and paged by the server, a feature whole, and contributors likewise', async t => {
+  const { f, d } = await adopted(t);
+  const as = (name, message) => f.git(['commit', '-m', message, '--author', `${name} <${name.toLowerCase()}@example.invalid>`]);
+  d.feature('alpha', 'S-aaaaaaaaaa', { title: 'Alpha' });
+  for (let i = 0; i < 14; i++) d.requirement('alpha', 'r' + i, 'R-a' + 'abcdefghijklmn'[i].repeat(9), { title: 'Alpha rule ' + i, order: i + 1,
+    body: i === 0 ? '본문\n\n### 수용 조건\n\n1. 조건: 하나\n2. 조건: 둘\n' : '본문' });
+  d.design('alpha', 'overview', 'D-aaaaaaaaaa', { title: 'Overview', requirements: ['R-aaaaaaaaaa'] });
+  f.git(['add', '-A']); as('Ann', 'alpha');
+  d.feature('beta', 'S-bbbbbbbbbb', { title: 'Beta' }); d.requirement('beta', 'save', 'R-bbbbbbbbbb', { title: 'Save posts' });
+  f.git(['add', '-A']); as('Bob', 'beta');
+  d.feature('gamma', 'S-cccccccccc', { title: 'Gamma' });
+  f.git(['add', '-A']); as('Bob', 'gamma');
+  const server = await startBrowserServer({ cwd: f.repo, env: f.env, assetsDirectory: fileURLToPath(new URL('../../browser/dist/', import.meta.url)) }); t.after(() => server.close());
+  const get = async path => { const response = await fetch(server.url + path, { headers: { 'X-Gitifact-Session': server.session.sessionId } }); return { status: response.status, body: await response.json() }; };
+  const list = async query => (await get('/api/v1/features?' + new URLSearchParams(query))).body;
+  // Most recent first by default; the fixture's commits share one date, so the name breaks the tie.
+  const all = await list({});
+  assert.deepEqual([all.total, all.all, all.requirements, all.mostRequirements, all.next], [3, 3, 15, 14, null]);
+  assert.deepEqual(all.features.map(x => x.id), ['S-aaaaaaaaaa', 'S-bbbbbbbbbb', 'S-cccccccccc']);
+  // A long feature shows its first twelve and says how many more; each carries its acceptance count and whether a design names it.
+  const alpha = all.features[0];
+  assert.deepEqual([alpha.requirements.length, alpha.hidden, alpha.requirementCount, alpha.designs], [12, 2, 14, 1]);
+  assert.deepEqual([alpha.requirements[0].acceptance, alpha.requirements[0].designed, alpha.requirements[1].acceptance, alpha.requirements[1].designed], [2, true, null, false]);
+  // Order by count, by name backwards; filter by a design written or missing, by author, and by a word naming a requirement.
+  assert.deepEqual((await list({ sort: 'requirements' })).features.map(x => x.id), ['S-aaaaaaaaaa', 'S-bbbbbbbbbb', 'S-cccccccccc']);
+  assert.deepEqual((await list({ sort: 'title', dir: 'desc' })).features.map(x => x.id), ['S-cccccccccc', 'S-bbbbbbbbbb', 'S-aaaaaaaaaa']);
+  assert.deepEqual((await list({ design: 'no' })).features.map(x => x.id), ['S-bbbbbbbbbb', 'S-cccccccccc']);
+  assert.deepEqual((await list({ author: 'bob@example.invalid' })).features.map(x => x.id), ['S-bbbbbbbbbb', 'S-cccccccccc']);
+  const word = await list({ q: 'save' });
+  assert.deepEqual([word.total, word.requirements, word.features[0].requirements.map(r => r.id)], [1, 1, ['R-bbbbbbbbbb']]);
+  // A page of whole features, and the next one after it.
+  const first = await list({ limit: '2' });
+  assert.deepEqual([first.features.map(x => x.id), first.next], [['S-aaaaaaaaaa', 'S-bbbbbbbbbb'], 'S-bbbbbbbbbb']);
+  assert.deepEqual((await list({ limit: '2', after: first.next })).features.map(x => x.id), ['S-cccccccccc']);
+  // One feature whole, and the contributors: most commits first, with the features each touched.
+  assert.equal((await get('/api/v1/feature?id=S-aaaaaaaaaa')).body.feature.requirements.length, 14);
+  const people = (await get('/api/v1/contributors')).body;
+  assert.deepEqual(people.people.map(p => [p.name, p.commits, p.features]).slice(0, 2), [['Bob', 2, 2], ['Ann', 1, 1]]);
+  assert.deepEqual((await get('/api/v1/contributors?q=ann')).body.people.map(p => p.name), ['Ann']);
+  const bob = (await get('/api/v1/contributor?email=bob@example.invalid')).body;
+  assert.deepEqual(bob.features.map(x => [x.id, x.commits, x.requirements]), [['S-bbbbbbbbbb', 1, 1], ['S-cccccccccc', 1, 0]]);
+  const summary = (await get('/api/v1/history/summary?head=' + f.git(['rev-parse', 'HEAD']).stdout.trim())).body;
+  assert.deepEqual([summary.version, summary.people.top[0].name, summary.people.total], [5, 'Bob', people.total]);
 });

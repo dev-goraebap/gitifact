@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
-import type { BrowserSessionV3, SpecFeature } from '@gitifact/contracts';
+import type { BrowserSessionV3, IndexFeature } from '@gitifact/contracts';
 import { VStack } from '@astryxdesign/core/VStack';
 import { HStack } from '@astryxdesign/core/HStack';
 import { Heading } from '@astryxdesign/core/Heading';
@@ -31,7 +31,7 @@ import { t, useLanguage } from '../../../shared/i18n';
 /** The most changes the API gives in one page: enough for every document of one commit. */
 const ALL = 500;
 
-export function RecordView({ recordId, documentId, session, features, head }: { recordId: string; documentId?: string | undefined; session: BrowserSessionV3; features: SpecFeature[]; head: string }) {
+export function RecordView({ recordId, documentId, session, features, head }: { recordId: string; documentId?: string | undefined; session: BrowserSessionV3; features: IndexFeature[]; head: string }) {
   useLanguage();
   const found = useQuery(recordOptions(session, head, recordId));
   const commit = found.data?.commit;

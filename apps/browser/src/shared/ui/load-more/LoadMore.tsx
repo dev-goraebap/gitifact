@@ -1,5 +1,5 @@
 import { Button } from '@astryxdesign/core/Button';
-import { t, useLanguage } from '../../../shared/i18n';
+import { t, useLanguage } from '../../i18n';
 
 /** The next page of a list read a page at a time; nothing when the list is whole. */
 export function LoadMore({ label, query }: { label: string; query: { hasNextPage: boolean; isFetchingNextPage: boolean; isFetchNextPageError: boolean; isFetching: boolean; fetchNextPage: () => unknown } }) {

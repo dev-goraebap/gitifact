@@ -1,5 +1,5 @@
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
-import { browserSpecsV7, browserHistoryV6, browserHistorySummaryV4, browserSearchV3, browserCommitFilesV2, browserCommitFileV1, browserCommitV4, browserCommitChangeV1, browserInstructionFileV1,
+import { browserCheckoutV1, browserFeaturesV1, browserFeatureV1, browserInstructionsV1, browserContributorsV1, browserContributorV1, browserHistoryV6, browserHistorySummaryV5, browserSearchV3, browserCommitFilesV2, browserCommitFileV1, browserCommitV4, browserCommitChangeV1, browserInstructionFileV1,
   browserRecordV1, browserStampV1, browserWorkingV1, browserWorkingChangeV1, type BrowserSessionV3 } from '@gitifact/contracts';
 import { requestJson, ApiError } from '../../../shared/api/client';
 import { httpFailure } from './repository';
@@ -20,13 +20,64 @@ async function read<T extends { sessionId: string }>(session: BrowserSessionV3, 
 const scope = (session: BrowserSessionV3) => [window.location.origin, session.sessionId, session.repository.worktreeKey] as const;
 
 /**
- * The checkout — current specs, instructions and contributors — read once and kept until the reader asks again. Every screen
- * that shows specs shares it, and the header's refresh button is how this project says an observation is explicit.
+ * The frame every records screen reads first: HEAD, the stamp, whether anything is uncommitted, and the index of every
+ * document and person. Read once and kept until the reader asks again; the header's refresh button is how this
+ * project says an observation is explicit.
  */
-export const specsOptions = (session: BrowserSessionV3) => queryOptions({
-  queryKey: ['browser-specs', 7, ...scope(session)],
+export const checkoutOptions = (session: BrowserSessionV3) => queryOptions({
+  queryKey: ['browser-checkout', 1, ...scope(session)],
   staleTime: Infinity, retry: false,
-  queryFn: ({ signal }) => read(session, '/api/v1/specs', browserSpecsV7, signal),
+  queryFn: ({ signal }) => read(session, '/api/v1/checkout', browserCheckoutV1, signal),
+});
+/** The parts of the checkout the refresh reads again with the frame: each is the working tree, seen another way. */
+export const checkoutParts = ['browser-features', 'browser-feature', 'browser-instructions', 'browser-contributors', 'browser-contributor'];
+
+/** The feature list's filters and order, as the server takes them. */
+export interface FeatureFilter { q?: string | undefined; design?: string | undefined; author?: string | undefined; sort?: string | undefined; dir?: string | undefined }
+/**
+ * The features that match, twenty whole features at a time, filtered and ordered by the server. Each set of filters is
+ * its own list, kept until the refresh.
+ */
+export const featuresOptions = (session: BrowserSessionV3, filter: FeatureFilter) => infiniteQueryOptions({
+  queryKey: ['browser-features', 1, ...scope(session), filter],
+  initialPageParam: undefined as string | undefined, staleTime: Infinity, retry: false,
+  queryFn: ({ signal, pageParam }) => {
+    const query = new URLSearchParams();
+    for (const [key, value] of Object.entries(filter)) if (value) query.set(key, value);
+    if (pageParam) query.set('after', pageParam);
+    return read(session, '/api/v1/features?' + query, browserFeaturesV1, signal);
+  },
+  getNextPageParam: last => last.next ?? undefined,
+});
+/** One feature as written, with its requirements and designs. */
+export const featureOptions = (session: BrowserSessionV3, id: string) => queryOptions({
+  queryKey: ['browser-feature', 1, ...scope(session), id],
+  staleTime: Infinity, retry: false,
+  queryFn: ({ signal }) => read(session, '/api/v1/feature?id=' + encodeURIComponent(id), browserFeatureV1, signal),
+});
+/** Every instruction with its files, and AGENTS.md. */
+export const instructionsOptions = (session: BrowserSessionV3) => queryOptions({
+  queryKey: ['browser-instructions', 1, ...scope(session)],
+  staleTime: Infinity, retry: false,
+  queryFn: ({ signal }) => read(session, '/api/v1/instructions', browserInstructionsV1, signal),
+});
+/** The contributors whose name or email holds the words, most commits first, twenty at a time. */
+export const contributorsOptions = (session: BrowserSessionV3, q: string | undefined) => infiniteQueryOptions({
+  queryKey: ['browser-contributors', 1, ...scope(session), q ?? ''],
+  initialPageParam: undefined as string | undefined, staleTime: Infinity, retry: false,
+  queryFn: ({ signal, pageParam }) => {
+    const query = new URLSearchParams();
+    if (q) query.set('q', q);
+    if (pageParam) query.set('after', pageParam);
+    return read(session, '/api/v1/contributors?' + query, browserContributorsV1, signal);
+  },
+  getNextPageParam: last => last.next ?? undefined,
+});
+/** One contributor and the features they touched. */
+export const contributorOptions = (session: BrowserSessionV3, email: string) => queryOptions({
+  queryKey: ['browser-contributor', 1, ...scope(session), email],
+  staleTime: Infinity, retry: false,
+  queryFn: ({ signal }) => read(session, '/api/v1/contributor?email=' + encodeURIComponent(email), browserContributorV1, signal),
 });
 
 /**
@@ -70,11 +121,11 @@ export const historyOptions = (session: BrowserSessionV3, head: string, filter: 
   getNextPageParam: last => last.next ?? undefined,
 });
 
-/** Counts over all of `head`'s history and its newest commits, for the overview. */
+/** Counts over all of `head`'s history, its newest commits and who committed most, for the overview. */
 export const summaryOptions = (session: BrowserSessionV3, head: string) => queryOptions({
-  queryKey: ['browser-history-summary', 3, ...scope(session), head],
+  queryKey: ['browser-history-summary', 5, ...scope(session), head],
   staleTime: Infinity, retry: false,
-  queryFn: ({ signal }) => read(session, '/api/v1/history/summary?head=' + head, browserHistorySummaryV4, signal),
+  queryFn: ({ signal }) => read(session, '/api/v1/history/summary?head=' + head, browserHistorySummaryV5, signal),
 });
 
 /**

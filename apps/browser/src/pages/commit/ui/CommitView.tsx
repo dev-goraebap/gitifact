@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
-import type { BrowserSessionV3, SpecFeature } from '@gitifact/contracts';
+import type { BrowserSessionV3, IndexFeature } from '@gitifact/contracts';
 import { VStack } from '@astryxdesign/core/VStack';
 import { HStack } from '@astryxdesign/core/HStack';
 import { Text } from '@astryxdesign/core/Text';
@@ -10,7 +10,7 @@ import { commitFilesOptions, commitOptions } from '../../../entities/project';
 import { KindToken } from '../../../entities/document';
 import { decisionPreview, groupRecords } from '../../../widgets/activity-timeline';
 import { RecordDocuments } from './RecordDocuments';
-import { LoadMore } from './LoadMore';
+import { LoadMore } from '../../../shared/ui/load-more';
 import { commitChange, listed, loadedCommit } from '../model/commit-changes';
 import { CommitCode } from './CommitCode';
 import { CommitHeading } from './CommitHeading';
@@ -27,7 +27,7 @@ import { t, useLanguage } from '../../../shared/i18n';
  * reader straight to the code, and a link that names a document opens the documents at that section. The documents
  * come twenty at a time without their text; the chosen one's text is read when it is opened.
  */
-export function CommitView({ commit, search, documentId, session, features, head }: { commit: string; search: CommitSearch; documentId?: string | undefined; session: BrowserSessionV3; features: SpecFeature[]; head: string | null }) {
+export function CommitView({ commit, search, documentId, session, features, head }: { commit: string; search: CommitSearch; documentId?: string | undefined; session: BrowserSessionV3; features: IndexFeature[]; head: string | null }) {
   useLanguage();
   const navigate = useNavigate();
   const query = useInfiniteQuery(commitOptions(session, commit));

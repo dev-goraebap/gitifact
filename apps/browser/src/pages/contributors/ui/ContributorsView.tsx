@@ -1,6 +1,9 @@
-import type { BrowserSessionV3, BrowserSpecsV7, SpecFeature } from '@gitifact/contracts';
-import { useInfiniteQuery } from '@tanstack/react-query';
-import { historyOptions } from '../../../entities/project';
+import type { BrowserContributorV1, BrowserSessionV3, Contributor } from '@gitifact/contracts';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { contributorOptions, contributorsOptions, historyOptions } from '../../../entities/project';
+import { ApiError } from '../../../shared/api/client';
+import { RequestState } from '../../../shared/ui/request-state';
+import { LoadMore } from '../../../shared/ui/load-more';
 import { VStack } from '@astryxdesign/core/VStack';
 import { HStack } from '@astryxdesign/core/HStack';
 import { Grid } from '@astryxdesign/core/Grid';
@@ -12,32 +15,38 @@ import { Timestamp } from '@astryxdesign/core/Timestamp';
 import { Link } from '@tanstack/react-router';
 import { avatarSource, contributorHref } from '../../../entities/contributor';
 import { ChangeBadge } from '../../../entities/document';
-import type { RecordSearch } from '../../../widgets/records-page';
+import { ListSkeleton, type RecordSearch } from '../../../widgets/records-page';
 import styles from './contributors.module.css';
 import { PageState } from '../../../shared/ui/page-state';
 import { t, tNodes, useLanguage } from '../../../shared/i18n';
 
-type Contributor = NonNullable<BrowserSpecsV7['contributors']>[number];
-
-export function ContributorsView({session,head,people,features,email,search}: {session:BrowserSessionV3;head:string|null;people:Contributor[];features:SpecFeature[];email?:string|undefined;search:RecordSearch}) {
+export function ContributorsView({session,head,email,search}: {session:BrowserSessionV3;head:string|null;email?:string|undefined;search:RecordSearch}) {
   useLanguage();
-  if (!email) return <ContributorGrid people={people} features={features} search={search}/>;
-  const selected = people.find(p => p.email === email);
-  if (!selected) return <PageState kind="not-found" title={t('contributors.notFoundTitle')} description={t('contributors.notFoundDescription', { email })} actions={<Link to="/contributors">{t('contributors.backToList')}</Link>}/>;
-  return <ContributorDetail session={session} head={head} person={selected} features={features}/>;
+  if (!email) return <ContributorGrid session={session} search={search}/>;
+  return <ContributorPage session={session} head={head} email={email}/>;
 }
 
-/** Card per Git author; the whole card opens the contributor page. */
-function ContributorGrid({people,features,search}: {people:Contributor[];features:SpecFeature[];search:RecordSearch}) {
+/** One person as the server gives them; someone who never committed to HEAD says so with a way back. */
+function ContributorPage({session,head,email}: {session:BrowserSessionV3;head:string|null;email:string}) {
+  const query = useQuery(contributorOptions(session, email));
+  if (query.error instanceof ApiError && query.error.code === 'NOT_FOUND') return <PageState kind="not-found" title={t('contributors.notFoundTitle')} description={t('contributors.notFoundDescription', { email })} actions={<Link to="/contributors">{t('contributors.backToList')}</Link>}/>;
+  if (query.error) return <RequestState error={query.error} retry={() => { void query.refetch(); }}/>;
+  if (!query.data) return <ListSkeleton/>;
+  return <ContributorDetail session={session} head={head} person={query.data.person} features={query.data.features}/>;
+}
+
+/** Card per Git author, most commits first and twenty at a time; the whole card opens the contributor page. */
+function ContributorGrid({session,search}: {session:BrowserSessionV3;search:RecordSearch}) {
   useLanguage();
-  const filtered = people.filter(p => !search.q || (p.name + ' ' + p.email).toLowerCase().includes(search.q.toLowerCase()));
-  if (!filtered.length) return <PageState kind={search.q ? 'search' : 'empty'} title={t('contributors.emptyTitle')} description={t('contributors.emptyDescription')}/>;
+  const query = useInfiniteQuery(contributorsOptions(session, search.q));
+  if (query.error) return <RequestState error={query.error} retry={() => { void query.refetch(); }}/>;
+  if (!query.data) return <ListSkeleton/>;
+  const people = query.data.pages.flatMap(page => page.people);
+  if (!people.length) return <PageState kind={search.q ? 'search' : 'empty'} title={t('contributors.emptyTitle')} description={t('contributors.emptyDescription')}/>;
   return <VStack gap={3}>
-    <Text type="supporting" color="secondary">{t('contributors.count', { count: filtered.length })}</Text>
+    <Text type="supporting" color="secondary">{t('contributors.count', { count: query.data.pages[0]!.total })}</Text>
     <Grid columns={{ minWidth: 220, repeat: 'fill' }} gap={3}>
-      {filtered.map(p => {
-        const touched = features.filter(f => f.contributors.some(c => c.email === p.email)).length;
-        return <ClickableCard key={p.email} label={p.name} href={contributorHref(p.email)} padding={4} elevation="none">
+      {people.map(p => <ClickableCard key={p.email} label={p.name} href={contributorHref(p.email)} padding={4} elevation="none">
           <VStack gap={3} className={styles.personCard}>
             {/* The card is the link; a nested avatar link would be invalid markup. */}
             <Avatar name={p.name} src={avatarSource(p.email)} shape="circle" size="lg"/>
@@ -47,22 +56,21 @@ function ContributorGrid({people,features,search}: {people:Contributor[];feature
             </VStack>
             <HStack gap={3} wrap="wrap" className={styles.personStats}>
               <Text type="supporting" color="secondary">{t('contributors.cardCommits', { count: p.commits })}</Text>
-              <Text type="supporting" color="secondary">{t('contributors.cardFeatures', { count: touched })}</Text>
+              <Text type="supporting" color="secondary">{t('contributors.cardFeatures', { count: p.features })}</Text>
               <Timestamp value={p.latest} format="relative"/>
             </HStack>
           </VStack>
-        </ClickableCard>;
-      })}
+        </ClickableCard>)}
     </Grid>
+    <HStack gap={0}><LoadMore label={t('contributors.more')} query={query}/></HStack>
   </VStack>;
 }
 
-function ContributorDetail({session,head,person,features}: {session:BrowserSessionV3;head:string|null;person:Contributor;features:SpecFeature[]}) {
+function ContributorDetail({session,head,person,features}: {session:BrowserSessionV3;head:string|null;person:Contributor;features:BrowserContributorV1['features']}) {
   useLanguage();
   // This person's ten newest changes in all of history, asked of the server rather than looked for in loaded pages.
   const recent = useInfiniteQuery({ ...historyOptions(session, head ?? '', { author: person.email }, 10), enabled: !!head });
   const activities = recent.data?.pages[0]?.events ?? [];
-  const touched = features.map(f => ({ feature: f, share: f.contributors.find(c => c.email === person.email) })).filter(x => x.share);
   return <VStack as="article" aria-label={t('contributors.detail')} gap={0} className={styles.featureDetail}>
     <Link to="/contributors" className={styles.featureBack}>{t('contributors.back')}</Link>
     <HStack gap={5} className={styles.personHero}>
@@ -79,11 +87,11 @@ function ContributorDetail({session,head,person,features}: {session:BrowserSessi
     </HStack>
     <VStack gap={4} className={styles.personSection}>
       <Heading level={3}>{t('contributors.features')}</Heading>
-      {touched.length ? <Grid columns={{ minWidth: 220, repeat: 'fill' }} gap={3}>
-        {touched.map(({feature, share}) => <ClickableCard key={feature.id} label={feature.title} href={`/features/${encodeURIComponent(feature.id)}`} padding={4} elevation="none">
+      {features.length ? <Grid columns={{ minWidth: 220, repeat: 'fill' }} gap={3}>
+        {features.map(feature => <ClickableCard key={feature.id} label={feature.title} href={`/features/${encodeURIComponent(feature.id)}`} padding={4} elevation="none">
           <VStack gap={1}>
             <Text weight="semibold" className={styles.oneLine}>{feature.title}</Text>
-            <Text type="supporting" color="secondary">{t('contributors.featureShare', { commits: share!.commits, requirements: feature.requirements.length })}</Text>
+            <Text type="supporting" color="secondary">{t('contributors.featureShare', { commits: feature.commits, requirements: feature.requirements })}</Text>
           </VStack>
         </ClickableCard>)}
       </Grid> : <Text color="secondary">{t('contributors.noSpecCommits')}</Text>}

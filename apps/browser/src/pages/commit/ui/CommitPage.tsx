@@ -15,6 +15,6 @@ export function CommitPage({ commit, search }: { commit: string; search: CommitS
   return <RecordsPage header={PageHeader} title={t('nav.history')} root="/records" hasTitle={false} isWide
     trail={() => [{ label: commit.slice(0, 12) }]}
     skeleton={<></>}>
-    {({ checkout, session }) => <CommitView commit={commit} search={search} documentId={documentId} session={session} features={checkout.features} head={checkout.head}/>}
+    {({ checkout, session }) => <CommitView commit={commit} search={search} documentId={documentId} session={session} features={checkout.index.features} head={checkout.head}/>}
   </RecordsPage>;
 }

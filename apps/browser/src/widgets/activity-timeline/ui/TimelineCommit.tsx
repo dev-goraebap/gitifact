@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import type { SpecEvent, SpecFeature } from '@gitifact/contracts';
+import type { SpecEvent, IndexFeature } from '@gitifact/contracts';
 import { VStack } from '@astryxdesign/core/VStack';
 import { HStack } from '@astryxdesign/core/HStack';
 import { Text } from '@astryxdesign/core/Text';
@@ -13,7 +13,7 @@ import styles from './timeline.module.css';
 import { t, useLanguage } from '../../../shared/i18n';
 
 /** `hidden` counts the commit's records this list leaves out — the overview shows a few of a large commit. */
-type Props = {events:SpecEvent[];day:string|undefined;features:SpecFeature[];hidden:number};
+type Props = {events:SpecEvent[];day:string|undefined;features:IndexFeature[];hidden:number};
 /** Records a commit lists before the rest are left to its page: a commit may add a hundred. */
 const RECORDS_SHOWN = 3;
 

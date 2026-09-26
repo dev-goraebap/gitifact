@@ -1,4 +1,4 @@
-import type { SpecEvent, SpecFeature, SpecRecord } from '@gitifact/contracts';
+import type { SpecEvent, IndexFeature, SpecRecord } from '@gitifact/contracts';
 import { VStack } from '@astryxdesign/core/VStack';
 import { Text } from '@astryxdesign/core/Text';
 import { Link } from '@tanstack/react-router';
@@ -15,7 +15,7 @@ const DOCUMENTS_SHOWN = 3;
  * it explains, a line each, up to three. The sections are read on the record's page; a list that printed them all
  * showed three records a screen and took a hundred-record commit twenty screens to pass.
  */
-export function RecordRow({ record, events, features }: { record: SpecRecord; events: SpecEvent[]; features: SpecFeature[] }) {
+export function RecordRow({ record, events, features }: { record: SpecRecord; events: SpecEvent[]; features: IndexFeature[] }) {
   useLanguage();
   const preview = decisionPreview(record);
   return <VStack as="li" gap={1} className={styles.recordRow}>

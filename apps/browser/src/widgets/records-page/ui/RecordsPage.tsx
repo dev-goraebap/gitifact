@@ -1,13 +1,13 @@
 import type { ComponentType, ReactNode } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import type { BrowserSessionV3, BrowserSpecsV7 } from '@gitifact/contracts';
+import type { BrowserSessionV3, BrowserCheckoutV1 } from '@gitifact/contracts';
 import { VStack } from '@astryxdesign/core/VStack';
 import { HStack } from '@astryxdesign/core/HStack';
 import { Heading } from '@astryxdesign/core/Heading';
 import { Text } from '@astryxdesign/core/Text';
 import { IconButton } from '@astryxdesign/core/IconButton';
 import { HgiRefresh } from '../../../shared/ui/icons/HgiRefresh';
-import { sessionOptions, specsOptions } from '../../../entities/project';
+import { sessionOptions, checkoutOptions, checkoutParts } from '../../../entities/project';
 import { ApiError } from '../../../shared/api/client';
 import styles from './records.module.css';
 import { RequestState } from '../../../shared/ui/request-state';
@@ -28,20 +28,20 @@ export interface RecordsPageProps {
   /** Where the first crumb leads. */
   root: string;
   /** Crumbs after the screen's own once the checkout is read: the feature, the person or the page being shown. */
-  trail?: (checkout: BrowserSpecsV7) => Crumb[];
+  trail?: (checkout: BrowserCheckoutV1) => Crumb[];
   /** A list shows its name as a heading; detail pages and the overview carry their own. */
   hasTitle: boolean;
   /** A screen whose content is compared side by side (the commit page) gets a wider column than reading prose needs. */
   isWide?: boolean;
   /** The filter row under the heading, which stays in view while the list scrolls. */
-  filters?: (checkout: BrowserSpecsV7) => ReactNode;
+  filters?: (checkout: BrowserCheckoutV1) => ReactNode;
   /** Shaped like the screen, shown while the checkout is read. */
   skeleton: ReactNode;
-  children: (context: { checkout: BrowserSpecsV7; session: BrowserSessionV3 }) => ReactNode;
+  children: (context: { checkout: BrowserCheckoutV1; session: BrowserSessionV3 }) => ReactNode;
 }
 
 /**
- * The frame every records screen shares: the session and the checkout read once, the header with the time of that
+ * The frame every records screen shares: the session and the checkout's frame read once, the header with the time of that
  * read and a refresh, the loading skeleton, the failure states, and the index documents resolve their links with.
  * Coming back to the tab asks whether the project changed since that read; when it did, a notice offers the refresh.
  * A new server session starts the frame over so nothing of another session's answers is shown.
@@ -54,10 +54,11 @@ export function RecordsPage(props: RecordsPageProps) {
 
 function RecordsPanel({ session, header: Header, title, description, root, trail, hasTitle, isWide = false, filters, skeleton, children }: RecordsPageProps & { session: BrowserSessionV3 }) {
   useLanguage();
-  const query = useQuery(specsOptions(session));
+  const query = useQuery(checkoutOptions(session));
   const client = useQueryClient();
-  // A refresh reads the checkout again and forgets the uncommitted work, which is worked out anew when shown.
-  const refresh = () => { void query.refetch(); void client.invalidateQueries({ predicate: q => q.queryKey[0] === 'browser-working' || q.queryKey[0] === 'browser-working-change' }); };
+  // A refresh reads the checkout again, with the parts of it the screens hold and the uncommitted work.
+  const forgotten = new Set([...checkoutParts, 'browser-working', 'browser-working-change']);
+  const refresh = () => { void query.refetch(); void client.invalidateQueries({ predicate: q => forgotten.has(String(q.queryKey[0])) }); };
   // When the checkout was last answered, which changes with every read even when the answer is the same.
   const behind = useBehind(session, query.data?.stamp, query.dataUpdatedAt);
   const disconnected = query.error instanceof ApiError && query.error.code === 'SESSION_CHANGED';
@@ -80,8 +81,7 @@ function RecordsPanel({ session, header: Header, title, description, root, trail
       {loading && skeleton}
       {ready && filters && <HStack gap={3} wrap="wrap" className={`${styles.filters} ${styles.filtersSticky}`}>{filters(first)}</HStack>}
       {ready && <VStack gap={3} className={styles.content}>
-        <DocumentIndexProvider index={first}>{children({ checkout: first, session })}</DocumentIndexProvider>
-        {first.contributorsLimited && <HStack gap={3} wrap="wrap"><Text type="supporting">{t('history.contributorsLimited')}</Text></HStack>}
+        <DocumentIndexProvider index={first.index}>{children({ checkout: first, session })}</DocumentIndexProvider>
       </VStack>}
     </VStack>
   </VStack>;

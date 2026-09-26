@@ -13,8 +13,9 @@ import styles from './instructions.module.css';
 import { t, useLanguage } from '../../../shared/i18n';
 
 /**
- * AGENTS.md, which every session loads, then the instructions it points agents at for one kind of work, by name. Rows
- * are links of their own because the title and the folder name share a line, which ListItem does not allow.
+ * AGENTS.md, which every session loads, then the instructions it points agents at for one kind of work, in the order
+ * the server gives (by name). Rows are links of their own because the title and the folder name share a line, which
+ * ListItem does not allow.
  */
 export function InstructionList({ instructions, agents }: { instructions: SpecInstruction[]; agents: AgentsFile | null }) {
   useLanguage();
@@ -29,7 +30,7 @@ export function InstructionList({ instructions, agents }: { instructions: SpecIn
     </>}
     <Text type="supporting" color="secondary" className={styles.groupLabel}>{t('instructions.byWork', { count: instructions.length })}</Text>
     {instructions.length ? <VStack as="ul" gap={0} aria-label={t('instructions.byWorkLabel')} className={styles.rows}>
-      {[...instructions].sort((a, b) => a.name.localeCompare(b.name)).map(instruction => <Row key={instruction.id} href={`/instructions/${encodeURIComponent(instruction.id)}`}
+      {instructions.map(instruction => <Row key={instruction.id} href={`/instructions/${encodeURIComponent(instruction.id)}`}
         color={colors.get(instruction.id)} title={instruction.title} name={instruction.name} description={instruction.description} state={instruction.state}/>)}
     </VStack> : <Text type="supporting" color="secondary">{t('instructions.noneYet')}</Text>}
   </VStack>;

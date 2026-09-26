@@ -13,7 +13,7 @@ export function RecordPage({ recordId }: { recordId: string }) {
     trail={() => [{ label: recordId }]}
     skeleton={<></>}>
     {({ checkout, session }) => checkout.head
-      ? <RecordView recordId={recordId} documentId={documentId} session={session} features={checkout.features} head={checkout.head}/>
+      ? <RecordView recordId={recordId} documentId={documentId} session={session} features={checkout.index.features} head={checkout.head}/>
       : <PageState kind="empty" title={t('history.emptyTitle')} description={t('history.emptyDescription')}/>}
   </RecordsPage>;
 }

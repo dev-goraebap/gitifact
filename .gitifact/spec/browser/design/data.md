@@ -100,7 +100,7 @@ gitGraph
 
 ## 체크아웃의 작성자 집계
 
-`server/checkout/checkout-reader.ts`가 `.gitifact/spec`·`.gitifact/instructions`·AGENTS.md를 건드린 커밋을 `git log --name-only` 한 번으로 읽어 기능별 작성자·최근 커밋과 지침 폴더·AGENTS.md의 최근 커밋을 센다. 로그는 커밋 20,000개까지 읽고 기능마다 2000커밋까지 센다.
+기능별 작성자·최근 커밋과 지침 폴더·AGENTS.md의 최근 커밋, 전체 참여자는 캐시의 커밋 기록(`adapters/cache/commit-log.ts`)에서 SQL로 센다. 커밋 기록은 HEAD의 모든 커밋과 그 커밋이 건드린 `.gitifact/spec`·`.gitifact/instructions`의 폴더와 AGENTS.md를 담으며, 개수 제한이 없다. 새 HEAD는 앞 HEAD와의 차이만 읽는다(`git log <새> ^<앞>`, `git rev-list <앞> ^<새>`).
 
 병합 커밋은 파일 목록이 없어 집계에 들지 않는다. 마이그레이션 커밋은 문서를 모두 다시 쓰지만 누구의 작업도 아니므로 뺀다. 체크아웃 읽기 안의 여러 읽기는 나란히 돌리고 실패는 모두 끝난 뒤 알린다. 실패를 먼저 돌려주면 요청이 끝난 뒤에도 git 프로세스가 프로젝트에서 돈다.
 

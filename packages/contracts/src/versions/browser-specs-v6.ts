@@ -4,8 +4,9 @@ import { z } from 'zod';
 // its requirements and design documents in `order`. Project instructions joined as a document kind in specs v6 and
 // search v2, and records replaced reasons in history v5, summary v4 and commit v3. Specs v7 says where each document
 // stands against the last commit; history v6 pages by commit with a cursor; commit v4 lists changes without their text,
-// which commit change v1 reads when one is opened. The versions before them had no consumers outside the CLI and were
-// removed.
+// which commit change v1 reads when one is opened. In 0.8.2 the checkout (specs v7) became checkout, features,
+// feature, instructions and contributors, each shaped by the server. The versions before them had no consumers
+// outside the CLI and were removed.
 
 // Where a document stands against the last commit. A deleted one is still listed until the commit that removes it.
 const state = z.enum(['committed', 'added', 'modified', 'deleted']);
@@ -34,17 +35,61 @@ const agents = z.strictObject({ path: z.string(), body: z.string(), updatedAt: z
 const problem = z.strictObject({ code: z.string(), path: z.string(), message: z.string() });
 const oid = z.string().regex(/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/);
 
+// The checkout, read a part at a time: the frame every screen shares, the feature list and one feature, the
+// instructions, and the contributors. Each list is filtered, ordered and paged by the server (DR-jvbx23yyyj).
+
+// What a link or a lookup needs to name a document: no body. The whole set, since a link may point anywhere.
+const indexFeature = z.strictObject({ id: z.string(), path: z.string(), title: z.string(), state,
+  requirements: z.array(z.strictObject({ id: z.string(), path: z.string(), title: z.string(), description: z.string() })),
+  designs: z.array(z.strictObject({ id: z.string(), path: z.string(), title: z.string() })) });
+const indexInstruction = z.strictObject({ id: z.string(), name: z.string(), path: z.string(), title: z.string() });
 /**
- * The checkout: the current features, instructions and AGENTS.md with where each stands against the last commit, the
- * contributors, and whether anything is uncommitted. `stamp` changes whenever HEAD or the uncommitted documents do; the
- * browser compares it with `/api/v1/stamp` to tell the reader the screen is behind.
+ * The frame every records screen reads first: HEAD, when it was read and its stamp, whether anything is uncommitted,
+ * the files that could not be read, and the index of every document and person — what links resolve with, crumbs
+ * name, and filters offer. `stamp` changes whenever HEAD or the uncommitted documents do; the browser compares it with
+ * `/api/v1/stamp` to tell the reader the screen is behind.
  */
-export const browserSpecsV7 = z.strictObject({
-  contract: z.literal('browser-specs'), version: z.literal(7), sessionId: z.string(),
-  head: oid.nullable(), observedAt: z.string(), working: z.boolean(), stamp: z.string(),
-  features: z.array(feature), instructions: z.array(instruction), agents: agents.nullable(), problems: z.array(problem),
-  contributors: z.array(contributor), contributorsLimited: z.boolean(),
+export const browserCheckoutV1 = z.strictObject({
+  contract: z.literal('browser-checkout'), version: z.literal(1), sessionId: z.string(),
+  head: oid.nullable(), observedAt: z.string(), working: z.boolean(), stamp: z.string(), problems: z.array(problem),
+  index: z.strictObject({ features: z.array(indexFeature), instructions: z.array(indexInstruction), people: z.array(z.strictObject({ name: z.string(), email: z.string() })) }),
 });
+// A row of the feature list: the feature, its first requirements (those the words matched), and how many more.
+const featureRow = z.strictObject({ id: z.string(), path: z.string(), title: z.string(), description: z.string(), state,
+  designs: z.number().int().nonnegative(), contributors: z.array(contributor), updatedAt: z.string().nullable(), requirementCount: z.number().int().nonnegative(),
+  // `acceptance`: the numbered items under the acceptance heading, null without one. `designed`: a design names it.
+  requirements: z.array(z.strictObject({ id: z.string(), title: z.string(), description: z.string(), state, acceptance: z.number().int().positive().nullable(), designed: z.boolean() })),
+  hidden: z.number().int().nonnegative() });
+/**
+ * The features that match, in the asked order, a page of whole features. `total` counts the matching features, `all`
+ * every feature, `requirements` the matching requirements, `mostRequirements` the largest feature's count (what each
+ * row's bar is measured against). `next` is the last feature of this page, or null at the end.
+ */
+export const browserFeaturesV1 = z.strictObject({
+  contract: z.literal('browser-features'), version: z.literal(1), sessionId: z.string(),
+  total: z.number().int().nonnegative(), all: z.number().int().nonnegative(), requirements: z.number().int().nonnegative(), mostRequirements: z.number().int().nonnegative(),
+  next: z.string().nullable(), features: z.array(featureRow),
+});
+/** One feature with its requirements and designs as written, its authors and its last change. */
+export const browserFeatureV1 = z.strictObject({ contract: z.literal('browser-feature'), version: z.literal(1), sessionId: z.string(), feature });
+/** Every instruction by name and AGENTS.md: few enough to send whole, each with the files of its folder. */
+export const browserInstructionsV1 = z.strictObject({ contract: z.literal('browser-instructions'), version: z.literal(1), sessionId: z.string(),
+  instructions: z.array(instruction), agents: agents.nullable() });
+/** The contributors that match, most commits first, a page at a time; `features` is how many features each touched. */
+export const browserContributorsV1 = z.strictObject({ contract: z.literal('browser-contributors'), version: z.literal(1), sessionId: z.string(),
+  total: z.number().int().nonnegative(), next: z.string().nullable(),
+  people: z.array(z.strictObject({ email: z.string(), name: z.string(), commits: z.number().int().nonnegative(), latest: z.string(), features: z.number().int().nonnegative() })) });
+/** One contributor and the features they touched, with their commits there and each feature's requirement count. */
+export const browserContributorV1 = z.strictObject({ contract: z.literal('browser-contributor'), version: z.literal(1), sessionId: z.string(), person: contributor,
+  features: z.array(z.strictObject({ id: z.string(), title: z.string(), commits: z.number().int().nonnegative(), requirements: z.number().int().nonnegative() })) });
+export type BrowserCheckoutV1 = z.infer<typeof browserCheckoutV1>;
+export type IndexFeature = z.infer<typeof indexFeature>;
+export type BrowserFeaturesV1 = z.infer<typeof browserFeaturesV1>;
+export type FeatureRow = z.infer<typeof featureRow>;
+export type BrowserInstructionsV1 = z.infer<typeof browserInstructionsV1>;
+export type BrowserContributorsV1 = z.infer<typeof browserContributorsV1>;
+export type BrowserContributorV1 = z.infer<typeof browserContributorV1>;
+export type Contributor = z.infer<typeof contributor>;
 
 const kind = z.enum(['feature', 'requirement', 'design', 'wiki', 'instruction']);
 // What a list row needs to name a document: no body. The body comes with the change when the entry is opened.
@@ -70,9 +115,11 @@ export const browserHistoryV6 = z.strictObject({
   // Matching changes and the commits that hold them in all of history, not in this page.
   total: z.number().int().nonnegative(), commits: z.number().int().nonnegative(), next: oid.nullable(), events: z.array(event),
 });
-/** What the product overview draws from history: counts over all of it and its newest commits. */
-export const browserHistorySummaryV4 = z.strictObject({
-  contract: z.literal('browser-history-summary'), version: z.literal(4), sessionId: z.string(), head: oid,
+/** What the product overview draws from history: counts over all of it, its newest commits, and who committed most. */
+export const browserHistorySummaryV5 = z.strictObject({
+  contract: z.literal('browser-history-summary'), version: z.literal(5), sessionId: z.string(), head: oid,
+  // The three who committed most, and how many others there are and how many commits they made between them.
+  people: z.strictObject({ total: z.number().int().nonnegative(), top: z.array(contributor), rest: z.strictObject({ count: z.number().int().nonnegative(), commits: z.number().int().nonnegative() }) }),
   total: z.number().int().nonnegative(), byType: z.strictObject({ created: z.number().int().nonnegative(), modified: z.number().int().nonnegative(), moved: z.number().int().nonnegative(), deleted: z.number().int().nonnegative() }),
   // One entry per commit within three weeks of the newest change, so the reader can count by its own calendar day.
   pulse: z.array(z.strictObject({ date: z.string(), count: z.number().int().positive() })),
@@ -95,10 +142,9 @@ export const browserSearchV3 = z.strictObject({
   contract: z.literal('browser-search'), version: z.literal(3), sessionId: z.string(), query: z.string(),
   groups: z.array(z.strictObject({ group: z.union([searchKind, z.literal('recent')]), total: z.number().int().nonnegative(), next: z.string().nullable(), hits: z.array(searchHit) })),
 });
-export type BrowserSpecsV7 = z.infer<typeof browserSpecsV7>;
 export type DocumentState = z.infer<typeof state>;
 export type BrowserHistoryV6 = z.infer<typeof browserHistoryV6>;
-export type BrowserHistorySummaryV4 = z.infer<typeof browserHistorySummaryV4>;
+export type BrowserHistorySummaryV5 = z.infer<typeof browserHistorySummaryV5>;
 export type BrowserSearchV3 = z.infer<typeof browserSearchV3>;
 export type SearchHit = z.infer<typeof searchHit>;
 export type SpecEvent = z.infer<typeof event>;
@@ -122,6 +168,17 @@ export const browserHistoryQueryV4 = z.strictObject({
   feature: z.string().regex(/^S-[a-z2-7]{10}$/).optional(), author: z.string().min(1).max(320).optional(), q: z.string().max(200).optional(),
 });
 export const browserHistorySummaryQueryV1 = z.strictObject({ head: headQuery });
+const featureId = z.string().regex(/^S-[a-z2-7]{10}$/);
+/** `/api/v1/features`: the words, whether a design is written, one author's features, the order, and the page. */
+export const browserFeaturesQueryV1 = z.strictObject({
+  q: z.string().max(200).optional(), design: z.enum(['yes', 'no']).optional(), author: z.string().min(1).max(320).optional(),
+  sort: z.enum(['title', 'requirements', 'updated']).optional(), dir: z.enum(['asc', 'desc']).optional(),
+  after: featureId.optional(), limit: count(50).pipe(z.number().min(1)).optional(),
+});
+export const browserFeatureQueryV1 = z.strictObject({ id: featureId });
+/** `/api/v1/contributors`: the words (name or email), the person the page starts after, and how many. */
+export const browserContributorsQueryV1 = z.strictObject({ q: z.string().max(200).optional(), after: z.string().min(1).max(320).optional(), limit: count(50).pipe(z.number().min(1)).optional() });
+export const browserContributorQueryV1 = z.strictObject({ email: z.string().min(1).max(320) });
 /**
  * `/api/v1/search`: the words (none for the opening list), the HEAD whose history to look through (the server's own when
  * left out), and for more of one group, the group, the hit the page starts after and how many (default 20).

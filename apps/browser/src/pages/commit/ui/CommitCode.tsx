@@ -8,7 +8,7 @@ import { Skeleton } from '@astryxdesign/core/Skeleton';
 import { commitFileOptions, commitFilesOptions } from '../../../entities/project';
 import { FileDiff } from './FileDiff';
 import { SplitReader } from './SplitReader';
-import { LoadMore } from './LoadMore';
+import { LoadMore } from '../../../shared/ui/load-more';
 import styles from './commit.module.css';
 import { t, useLanguage } from '../../../shared/i18n';
 

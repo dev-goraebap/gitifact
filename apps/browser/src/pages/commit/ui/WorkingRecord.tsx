@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import type { BrowserSessionV3, SpecFeature } from '@gitifact/contracts';
+import type { BrowserSessionV3, IndexFeature } from '@gitifact/contracts';
 import { VStack } from '@astryxdesign/core/VStack';
 import { HStack } from '@astryxdesign/core/HStack';
 import { Heading } from '@astryxdesign/core/Heading';
@@ -20,7 +20,7 @@ import { t, useLanguage } from '../../../shared/i18n';
  * A record not committed yet, at the same address a committed one has: its sections and the uncommitted changes of the
  * documents it names, compared with the last commit. It has no commit, author or time until it is committed.
  */
-export function WorkingRecord({ recordId, documentId, session, features, head }: { recordId: string; documentId?: string | undefined; session: BrowserSessionV3; features: SpecFeature[]; head: string | null }) {
+export function WorkingRecord({ recordId, documentId, session, features, head }: { recordId: string; documentId?: string | undefined; session: BrowserSessionV3; features: IndexFeature[]; head: string | null }) {
   useLanguage();
   const query = useQuery(workingOptions(session));
   if (query.error) return <RequestState error={query.error} retry={() => { void query.refetch(); }}/>;

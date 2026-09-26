@@ -1,4 +1,4 @@
-import type { SpecEvent, SpecFeature } from '@gitifact/contracts';
+import type { SpecEvent, IndexFeature } from '@gitifact/contracts';
 import { HStack } from '@astryxdesign/core/HStack';
 import { Link } from '@tanstack/react-router';
 import { ChangeBadge } from '../../../entities/document';
@@ -15,7 +15,7 @@ import { useLanguage } from '../../../shared/i18n';
  * The title is cut by CSS, not by Text's maxLines: maxLines measures every element to decide on a tooltip, which
  * forces a layout per row, and a list of 334 rows took 2.7 s to draw again when the reader came back to it.
  */
-export function TimelineRecord({event:e,features,record}: {event:SpecEvent;features:SpecFeature[];record?:string}) {
+export function TimelineRecord({event:e,features,record}: {event:SpecEvent;features:IndexFeature[];record?:string}) {
   useLanguage();
  const spec=e.after??e.before;
  // The feature a requirement or design belongs to now; a feature removed since then leaves the title on its own.

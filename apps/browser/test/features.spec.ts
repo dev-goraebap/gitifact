@@ -205,26 +205,22 @@ test('the design tab reads every design in order, each with its number, ID and h
   await expect(panel.locator('[aria-current=location]')).toHaveCount(0);
 });
 
-test('the list pages by feature so a feature is never split, and the page is kept in the address', async ({ page }) => {
+test('the list reads twenty whole features at a time and reads on, a long feature showing its first twelve', async ({ page }) => {
   const wide = structuredClone(many);
-  // Four features of fifteen requirements each: sixty-four rows, more than one page holds.
-  wide.features = [0, 1, 2, 3].map(n => ({ ...many.features[1]!, id: 'S-' + 'abcdefghij'.slice(0, 9) + String(n), title: '기능 ' + n,
-    updatedAt: '2026-09-' + (20 - n) + 'T00:00:00Z',
-    requirements: Array.from({ length: 15 }, (_, i) => ({ id: 'R-' + n + 'bcdefghi' + String(i).padStart(2, '0'), title: `기능 ${n} 요구사항 ${i}`, body: '내용.' })) })) as typeof specs.features;
+  // Twenty-two features, the first of fifteen requirements: the server sends twenty and says where the rest start.
+  wide.features = Array.from({ length: 22 }, (_, n) => ({ ...many.features[1]!, id: 'S-' + 'abcdefgh' + 'abcdefghijklmnopqrstuvwxyz'[n]! + 'a', title: '기능 ' + String(n).padStart(2, '0'),
+    updatedAt: '2026-09-' + String(28 - n).padStart(2, '0') + 'T00:00:00Z',
+    requirements: Array.from({ length: n ? 1 : 15 }, (_, i) => ({ id: 'R-' + 'abcdefghijklmnopqrstuvwxyz'[n]! + 'bcdefgh' + String(i).padStart(2, '0'), title: `기능 ${n} 요구사항 ${i}`, body: '내용.' })) })) as typeof specs.features;
   await mockApi(page);
   await serve(page, wide);
   await page.goto('/features');
-  // A feature shows twelve of its requirements and links on for the rest rather than filling the page.
-  await expect(page.locator('tbody tr[data-row=feature]')).toHaveCount(2);
-  await expect(page.locator('tbody tr[data-row=requirement]')).toHaveCount(24);
-  await expect(page.getByRole('link', { name: '요구사항 3개 더 →' }).first()).toBeVisible();
-  await page.getByRole('button', { name: '2 페이지로 이동' }).click();
-  await expect(page).toHaveURL(/page=2/);
-  await expect(page.locator('tbody tr[data-row=feature]')).toHaveCount(2);
-  // Reloading the address shows the same page, and no feature was cut in half to fill the one before it.
-  await page.reload();
-  await expect(page.locator('tbody tr[data-row=feature]').first()).toContainText('기능 2');
-  await expect(page.locator('tbody tr[data-row=requirement]')).toHaveCount(24);
+  await expect(page.locator('tbody tr[data-row=feature]')).toHaveCount(20);
+  await expect(page.getByRole('link', { name: '요구사항 3개 더 →' })).toBeVisible();
+  await expect(page.locator('tbody tr[data-row=requirement]')).toHaveCount(12 + 19);
+  await page.getByRole('button', { name: '기능 더 보기' }).click();
+  await expect(page.locator('tbody tr[data-row=feature]')).toHaveCount(22);
+  await expect(page.locator('tbody tr[data-row=feature]').last()).toContainText('기능 21');
+  await expect(page.getByRole('button', { name: '기능 더 보기' })).toHaveCount(0);
 });
 
 test('a word finds the requirement that carries it, not only the feature it sits in', async ({ page }) => {
@@ -240,36 +236,6 @@ test('a word finds the requirement that carries it, not only the feature it sits
   await expect(requirementsOf(page)).toHaveCount(2);
 });
 
-test('the pager sits on the floor of the card even when the page is too short to scroll', async ({ page }) => {
-  // Three long features fill the first page; a short fourth one lands on the second with room to spare.
-  const wide = structuredClone(many);
-  wide.features = [0, 1, 2, 3].map(n => ({ ...many.features[1]!, id: 'S-' + 'abcdefghij'.slice(0, 9) + String(n), title: '기능 ' + n,
-    updatedAt: '2026-09-' + (20 - n) + 'T00:00:00Z',
-    requirements: Array.from({ length: n === 3 ? 2 : 15 }, (_, i) => ({ id: 'R-' + n + 'bcdefghi' + String(i).padStart(2, '0'), title: `기능 ${n} 요구사항 ${i}`, body: '내용.' })) })) as typeof specs.features;
-  await mockApi(page);
-  await serve(page, wide);
-  await page.setViewportSize({ width: 1440, height: 800 });
-  const floor = () => page.evaluate(() => {
-    const pager = document.querySelector('[class*=featurePager]')!.getBoundingClientRect();
-    const card = [...document.querySelectorAll('*')].find(n => getComputedStyle(n).overflowY === 'auto' && n.scrollHeight > 0 && n.className.toString().includes('card'));
-    return { gap: Math.round((card ? card.getBoundingClientRect().bottom : innerHeight) - pager.bottom), scrolls: !!card && card.scrollHeight > card.clientHeight + 4 };
-  });
-  // A full page scrolls, and the pager holds the floor rather than waiting at the end of the rows.
-  await page.goto('/features');
-  await expect(page.getByRole('button', { name: '2 페이지로 이동' })).toBeVisible();
-  const full = await floor();
-  expect(full.scrolls).toBe(true);
-  expect(Math.abs(full.gap)).toBeLessThanOrEqual(8);
-  // The last page is short enough that there is nothing to scroll, which is where sticky alone gave up: it used to
-  // stop under the last row, a third of the way up the screen.
-  await page.setViewportSize({ width: 1440, height: 1400 });
-  await page.goto('/features?page=2');
-  await expect(page.locator('tbody tr[data-row=feature]')).toHaveCount(2);
-  const short = await floor();
-  expect(short.scrolls).toBe(false);
-  expect(Math.abs(short.gap)).toBeLessThanOrEqual(8);
-});
-
 for (const width of [1440, 760]) for (const colorScheme of ['light', 'dark'] as const) {
   test(`the page header stays pinned through a long feature list at ${width}px in ${colorScheme}`, async ({ page }) => {
     await page.setViewportSize({ width, height: 800 });
@@ -283,7 +249,6 @@ for (const width of [1440, 760]) for (const colorScheme of ['light', 'dark'] as 
     await serve(page, long);
     await page.goto('/features');
     await expect(page.getByRole('table')).toBeVisible();
-    await expect(page.getByRole('button', { name: '2 페이지로 이동' })).toBeVisible();
     const header = page.locator('header[aria-label]');
     const initial = (await header.boundingBox())!;
     const card = page.locator('[class*=card]').filter({ has: header });

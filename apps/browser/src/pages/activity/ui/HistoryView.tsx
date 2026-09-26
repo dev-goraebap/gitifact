@@ -1,5 +1,5 @@
 import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query';
-import type { BrowserSessionV3, SpecFeature } from '@gitifact/contracts';
+import type { BrowserSessionV3, IndexFeature } from '@gitifact/contracts';
 import { VStack } from '@astryxdesign/core/VStack';
 import { Text } from '@astryxdesign/core/Text';
 import { Button } from '@astryxdesign/core/Button';
@@ -17,7 +17,7 @@ import { t, useLanguage } from '../../../shared/i18n';
  * finds changes that were never loaded, and the count is the whole count — twenty commits at a time, each whole.
  * The work not committed yet comes first while no filter is set.
  */
-export function HistoryView({features,search,session,head}: {features:SpecFeature[];search:RecordSearch;session:BrowserSessionV3;head:string|null}) {
+export function HistoryView({features,search,session,head}: {features:IndexFeature[];search:RecordSearch;session:BrowserSessionV3;head:string|null}) {
   useLanguage();
  const filter={kind:search.kind,document:search.document,feature:search.feature,author:search.author,q:search.q};
  const filtering=Object.values(filter).some(Boolean);

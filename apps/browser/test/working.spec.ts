@@ -35,7 +35,7 @@ test('a document not committed as it is says so in the lists; a committed one sa
 test('coming back to the tab after the project changed offers a refresh, which reads it again', async ({ page }) => {
   await mockApi(page);
   let reads = 0;
-  page.on('request', request => { if (new URL(request.url()).pathname === '/api/v1/specs') reads++; });
+  page.on('request', request => { if (new URL(request.url()).pathname === '/api/v1/checkout') reads++; });
   await page.goto('/features');
   await expect(page.getByRole('table')).toBeVisible();
   const comeBack = () => page.evaluate(() => window.dispatchEvent(new Event('focus')));

@@ -1,4 +1,4 @@
-import type { SpecEvent, SpecFeature, SpecSnapshot } from '@gitifact/contracts';
+import type { SpecEvent, IndexFeature, SpecSnapshot } from '@gitifact/contracts';
 import { VStack } from '@astryxdesign/core/VStack';
 import { HStack } from '@astryxdesign/core/HStack';
 import { Text } from '@astryxdesign/core/Text';
@@ -18,7 +18,7 @@ export type Change = { event: Pick<SpecEvent, 'key' | 'id' | 'kind' | 'types'>; 
  * What a changed document shows under its title: where it is, links to it now and to its history, then its
  * differences — or its text, when it was added or deleted.
  */
-export function ChangeBody({ change: { event, before, after }, features, head }: { change: Change; features: SpecFeature[]; head: string | null }) {
+export function ChangeBody({ change: { event, before, after }, features, head }: { change: Change; features: IndexFeature[]; head: string | null }) {
   useLanguage();
   const spec = after ?? before;
   const body = (s: SpecSnapshot) => event.kind === 'design'

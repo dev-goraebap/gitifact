@@ -45,6 +45,8 @@
   "server.sessionChanged": "The server session changed. Reconnect to continue.",
   "server.badRange": "Check the requested range.",
   "server.commitNotFound": "This repository has no such commit.",
+  "server.featureNotFound": "The checkout has no such feature.",
+  "server.contributorNotFound": "Nobody with this email committed to HEAD.",
   "server.cursorNotFound": "The place to read on from is no longer in the list. Load it again from the start.",
   "server.workingChangeNotFound": "No uncommitted change of that document.",
   "server.recordNotFound": "This history has no such decision record.",

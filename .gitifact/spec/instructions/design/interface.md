@@ -1,7 +1,7 @@
 ---
 id: D-lapfibde2z
 title: 지침 명령과 API
-description: instructions 명령, 체크아웃의 지침과 AGENTS.md, 지침 파일 API
+description: instructions 명령, 지침 목록과 AGENTS.md, 지침 파일 API
 order: 30
 requirements:
   - R-y5tidh72gk
@@ -26,11 +26,11 @@ AGENTS.md는 gitifact 문서가 아니다. 프로젝트가 블록 밖에 지침 
 
 ## 브라우저 API
 
-체크아웃(browser-specs v6)은 `instructions`(지침마다 ID·폴더 이름·경로·제목·설명·본문·폴더 파일 목록·최근 변경. 파일마다 경로·크기와, 참고 파일이면 프론트매터의 선택 필드 `title`·`description`)와 `agents`(루트 AGENTS.md의 본문과 최근 변경, 없거나 1MB를 넘거나 UTF-8이 아니면 `null`)를 싣는다.
+지침 목록(`/api/v1/instructions`, browser-instructions v1)은 `instructions`(이름순으로 지침마다 ID·폴더 이름·경로·제목·설명·본문·폴더 파일 목록·최근 변경. 파일마다 경로·크기와, 참고 파일이면 프론트매터의 선택 필드 `title`·`description`)와 `agents`(루트 AGENTS.md의 본문과 최근 변경, 없거나 1MB를 넘거나 UTF-8이 아니면 `null`)를 싣는다.
 
 | 경로 | 내용 |
 | :--- | :--- |
-| `GET /api/v1/specs` | 체크아웃. 지침과 AGENTS.md 포함 |
+| `GET /api/v1/instructions` | 모든 지침과 AGENTS.md. 지침은 수가 적어 나누지 않는다. 링크와 이동 경로가 쓰는 지침의 이름은 체크아웃 틀(`/api/v1/checkout`)의 색인에 있다 |
 | `GET /api/v1/instructions/file?id&path` | 지침 폴더의 파일 하나(browser-instruction-file v1). 링크는 따라가지 않고, 512KB 넘거나 이진이면 원문 없이 표시만 |
 
 이력·요약·커밋·검색 계약은 문서 종류 `instruction`을 싣는다.

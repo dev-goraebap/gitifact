@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { SpecFeature } from '@gitifact/contracts';
+import type { IndexFeature } from '@gitifact/contracts';
 import { KindToken } from '../../../entities/document';
 import { ChosenChange } from './ChosenChange';
 import type { Change, ListedChange } from './ChangeBody';
@@ -19,7 +19,7 @@ export type UseChange = (id: string) => { data: Change | undefined; error: Error
  * already write it; without one the first opens. The record page, the commit's documents tab and the uncommitted page
  * read documents this way. `more` goes under the list, for a list that is read a page at a time.
  */
-export function RecordDocuments({ label, changes, useChange, features, head, documentId, href, more }: { label: string; changes: ListedChange[]; useChange: UseChange; features: SpecFeature[];
+export function RecordDocuments({ label, changes, useChange, features, head, documentId, href, more }: { label: string; changes: ListedChange[]; useChange: UseChange; features: IndexFeature[];
   head: string | null; documentId?: string | undefined; href: (id: string) => string; more?: ReactNode }) {
   useLanguage();
   const chosen = changes.find(c => c.id === documentId) ?? changes[0];

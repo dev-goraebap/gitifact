@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import type { BrowserSessionV3, SpecFeature } from '@gitifact/contracts';
+import type { BrowserSessionV3, IndexFeature } from '@gitifact/contracts';
 import { VStack } from '@astryxdesign/core/VStack';
 import { HStack } from '@astryxdesign/core/HStack';
 import { Heading } from '@astryxdesign/core/Heading';
@@ -24,7 +24,7 @@ import { t, useLanguage } from '../../../shared/i18n';
  * documents changed since the last commit with their differences from it. It is worked out when the page is read and
  * kept until the header's refresh; source code is left to Git.
  */
-export function WorkingView({ search, documentId, session, features, head }: { search: WorkingSearch; documentId?: string | undefined; session: BrowserSessionV3; features: SpecFeature[]; head: string | null }) {
+export function WorkingView({ search, documentId, session, features, head }: { search: WorkingSearch; documentId?: string | undefined; session: BrowserSessionV3; features: IndexFeature[]; head: string | null }) {
   useLanguage();
   const navigate = useNavigate();
   const query = useQuery(workingOptions(session));

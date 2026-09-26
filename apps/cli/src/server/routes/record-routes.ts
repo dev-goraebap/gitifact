@@ -1,5 +1,6 @@
 import { browserCommitChangeQueryV1, browserCommitChangeV1, browserCommitQueryV2, browserCommitV4, browserCommitFileQueryV1, browserCommitFileV1, browserCommitFilesQueryV2, browserCommitFilesV2,
-  browserHistoryQueryV4, browserHistorySummaryQueryV1, browserHistorySummaryV4, browserHistoryV6, browserSearchQueryV2, browserSearchV3, browserInstructionFileQueryV1, browserInstructionFileV1,
+  browserHistoryQueryV4, browserHistorySummaryQueryV1, browserHistorySummaryV5, browserHistoryV6, browserCheckoutV1, browserFeaturesQueryV1, browserFeaturesV1,
+  browserFeatureQueryV1, browserFeatureV1, browserInstructionsV1, browserContributorsQueryV1, browserContributorsV1, browserContributorQueryV1, browserContributorV1, browserSearchQueryV2, browserSearchV3, browserInstructionFileQueryV1, browserInstructionFileV1,
   browserRecordQueryV1, browserRecordV1, browserStampV1, browserWorkingChangeQueryV1, browserWorkingChangeV1, browserWorkingV1 } from '@gitifact/contracts';
 import { storeReader } from '../../adapters/git/store-reader.js';
 import { openCache } from '../../adapters/cache/index.js';
@@ -11,6 +12,7 @@ import { readInstructionFile } from '../../adapters/filesystem/instruction-folde
 import { workingChange, workingOverview, type WorkingSource } from '../../queries/working-changes.js';
 import { searchRecords } from '../../queries/search.js';
 import type { ListSource } from '../../queries/specs.js';
+import { checkoutIndex, contributorOf, featureOf, listContributors, listFeatures, topContributors } from '../../queries/checkout.js';
 import { HttpError } from '../http/respond.js';
 import { ok, route } from '../http/router.js';
 import { t } from '../../shared/i18n/index.js';
@@ -19,15 +21,15 @@ import { t } from '../../shared/i18n/index.js';
 const PAGE = 20;
 
 /**
- * The records: the checkout (current features, instructions and AGENTS.md, sent whole), history, which the server
- * filters, pages by commit, counts and searches over all of it, and the uncommitted work. They come from the cache the
+ * The records: the checkout (current features, instructions, AGENTS.md and contributors, a part at a time), history,
+ * which the server filters, pages by commit, counts and searches over all of it, and the uncommitted work. They come from the cache the
  * CLI uses too (`.gitifact/cache/index.db`) and from the same queries (`apps/cli/src/queries/`).
  */
 export function recordRoutes(root: string, sessionId: string, env?: NodeJS.ProcessEnv) {
   const git = storeReader(root);
   // The 0.7 reader serves the history before a migration; it is read-only and goes with the 0.7 parser at 1.0.0.
   const cache = openCache(root, { run: (args, input) => git.run(args, input), decode: git.decode, legacyBundles: oids => git.readBundles(oids) });
-  const readCheckout = createCheckoutReader(root, sessionId, cache, env);
+  const checkout = createCheckoutReader(root, cache, env);
   const readStamp = createStampReader(root, env);
   const commitFiles = createCommitFiles(git);
   // What the list queries read: the same HEAD, Git and cache as the CLI's project.
@@ -37,7 +39,35 @@ export function recordRoutes(root: string, sessionId: string, env?: NodeJS.Proce
   const cursorGone = () => new HttpError(404, 'NOT_FOUND', t('server.cursorNotFound'));
 
   return [
-    route({ method: 'GET', path: '/api/v1/specs', session: true, unreadable, handle: async () => ok((await readCheckout()).checkout) }),
+    // The checkout a part at a time, each shaped by the query layer (`queries/checkout.ts`): the frame every screen reads
+    // first, the feature list and one feature, the instructions, and the contributors.
+    route({ method: 'GET', path: '/api/v1/checkout', session: true, unreadable, handle: async () => {
+      const base = await checkout.base();
+      return ok(browserCheckoutV1.parse({ contract: 'browser-checkout', version: 1, sessionId, head: base.head, observedAt: base.observedAt, stamp: base.stamp,
+        working: base.working, problems: base.problems, index: checkoutIndex(base) }));
+    } }),
+    route({ method: 'GET', path: '/api/v1/features', session: true, query: browserFeaturesQueryV1, unreadable, handle: async ({ query }) => {
+      const page = listFeatures(await checkout.base(), query, { after: query.after, limit: query.limit ?? PAGE });
+      if (!page) throw cursorGone();
+      return ok(browserFeaturesV1.parse({ contract: 'browser-features', version: 1, sessionId, ...page }));
+    } }),
+    route({ method: 'GET', path: '/api/v1/feature', session: true, query: browserFeatureQueryV1, unreadable, handle: async ({ query }) => {
+      const feature = featureOf(await checkout.base(), query.id);
+      if (!feature) throw new HttpError(404, 'NOT_FOUND', t('server.featureNotFound'));
+      return ok(browserFeatureV1.parse({ contract: 'browser-feature', version: 1, sessionId, feature }));
+    } }),
+    route({ method: 'GET', path: '/api/v1/instructions', session: true, unreadable, handle: async () =>
+      ok(browserInstructionsV1.parse({ contract: 'browser-instructions', version: 1, sessionId, ...await checkout.instructions() })) }),
+    route({ method: 'GET', path: '/api/v1/contributors', session: true, query: browserContributorsQueryV1, unreadable, handle: async ({ query }) => {
+      const page = listContributors(await checkout.base(), query.q, { after: query.after, limit: query.limit ?? PAGE });
+      if (!page) throw cursorGone();
+      return ok(browserContributorsV1.parse({ contract: 'browser-contributors', version: 1, sessionId, ...page }));
+    } }),
+    route({ method: 'GET', path: '/api/v1/contributor', session: true, query: browserContributorQueryV1, unreadable, handle: async ({ query }) => {
+      const found = contributorOf(await checkout.base(), query.email);
+      if (!found) throw new HttpError(404, 'NOT_FOUND', t('server.contributorNotFound'));
+      return ok(browserContributorV1.parse({ contract: 'browser-contributor', version: 1, sessionId, ...found }));
+    } }),
     // Whether the screen is behind, asked when the reader comes back to the tab; cheap enough to ask every time.
     route({ method: 'GET', path: '/api/v1/stamp', session: true, unreadable, handle: async () =>
       ok(browserStampV1.parse({ contract: 'browser-stamp', version: 1, sessionId, stamp: await readStamp() })) }),
@@ -47,7 +77,8 @@ export function recordRoutes(root: string, sessionId: string, env?: NodeJS.Proce
       return ok(browserHistoryV6.parse({ contract: 'browser-history', version: 6, sessionId, head: query.head, ...page }));
     } }),
     route({ method: 'GET', path: '/api/v1/history/summary', session: true, query: browserHistorySummaryQueryV1, unreadable, handle: async ({ query }) =>
-      ok(browserHistorySummaryV4.parse({ contract: 'browser-history-summary', version: 4, sessionId, head: query.head, ...await cache.history.summary(query.head) })) }),
+      ok(browserHistorySummaryV5.parse({ contract: 'browser-history-summary', version: 5, sessionId, head: query.head, ...await cache.history.summary(query.head),
+        people: topContributors(await cache.log.contributors(query.head)) })) }),
     // One commit as its page reads it: who made it and a page of the documents it changed, even when it changed none.
     route({ method: 'GET', path: '/api/v1/commit', session: true, query: browserCommitQueryV2, unreadable, handle: async ({ query }) => {
       const page = await cache.history.commitChanges(query.commit, query.after, query.limit ?? PAGE);

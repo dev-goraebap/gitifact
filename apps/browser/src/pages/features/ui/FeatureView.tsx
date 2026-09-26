@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import type { SpecFeature } from '@gitifact/contracts';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import type { BrowserSessionV3, Contributor, FeatureRow, IndexFeature, SpecFeature } from '@gitifact/contracts';
 import { VStack } from '@astryxdesign/core/VStack';
 import { HStack } from '@astryxdesign/core/HStack';
 import { Heading } from '@astryxdesign/core/Heading';
@@ -8,7 +9,6 @@ import { Markdown } from '@astryxdesign/core/Markdown';
 import { TabList, Tab } from '@astryxdesign/core/TabList';
 import { Table, pixel, proportional, useTableSortable, type TableColumn, type TablePlugin, type TableSortDirection } from '@astryxdesign/core/Table';
 import { ProgressBar } from '@astryxdesign/core/ProgressBar';
-import { Pagination } from '@astryxdesign/core/Pagination';
 import { Token } from '@astryxdesign/core/Token';
 import { Timestamp } from '@astryxdesign/core/Timestamp';
 import { Avatar } from '@astryxdesign/core/Avatar';
@@ -17,26 +17,35 @@ import { useMediaQuery } from '@astryxdesign/core/hooks';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { DesignDocument, StateToken } from '../../../entities/document';
 import { avatarSource, contributorHref } from '../../../entities/contributor';
-import type { RecordSearch } from '../../../widgets/records-page';
+import { ListSkeleton, type RecordSearch } from '../../../widgets/records-page';
+import { featureOptions, featuresOptions } from '../../../entities/project';
+import { ApiError } from '../../../shared/api/client';
+import { RequestState } from '../../../shared/ui/request-state';
+import { LoadMore } from '../../../shared/ui/load-more';
 import { designsByRequirement } from '../model/design-sections';
-import { pagesOf, type FeatureRow } from '../model/feature-rows';
-import { acceptanceCount } from '../model/acceptance';
 import styles from './features.module.css';
 import { PageState } from '../../../shared/ui/page-state';
 import { DocumentBody } from '../../../shared/ui/document';
 import { RelatedList, RelatedItem } from '../../../shared/ui/related-list';
 import { t, useLanguage } from '../../../shared/i18n';
 
-export function FeatureView({ features, featureId, search, change }: { features: SpecFeature[]; featureId?: string | undefined; search: RecordSearch; change: (s: RecordSearch) => void }) {
+export function FeatureView({ session, index, featureId, search, change }: { session: BrowserSessionV3; index: IndexFeature[]; featureId?: string | undefined; search: RecordSearch; change: (s: RecordSearch) => void }) {
   useLanguage();
-  if (!featureId) return <FeatureList features={features} search={search} change={change}/>;
-  const selected = features.find(f => f.id === featureId);
-  if (!selected) return <PageState kind="not-found" title={t('features.notFoundTitle')} description={t('features.notFoundDescription', { id: featureId })} actions={<Link to="/features">{t('features.backToList')}</Link>}/>;
-  return <FeatureDetail feature={selected} features={features} search={search} change={change}/>;
+  if (!featureId) return <FeatureList session={session} search={search} change={change}/>;
+  return <FeatureDetailPage session={session} index={index} featureId={featureId} search={search} change={change}/>;
+}
+
+/** One feature as its page reads it, asked of the server; a feature the checkout lacks says so with a way back. */
+function FeatureDetailPage({ session, index, featureId, search, change }: { session: BrowserSessionV3; index: IndexFeature[]; featureId: string; search: RecordSearch; change: (s: RecordSearch) => void }) {
+  const query = useQuery(featureOptions(session, featureId));
+  if (query.error instanceof ApiError && query.error.code === 'NOT_FOUND') return <PageState kind="not-found" title={t('features.notFoundTitle')} description={t('features.notFoundDescription', { id: featureId })} actions={<Link to="/features">{t('features.backToList')}</Link>}/>;
+  if (query.error) return <RequestState error={query.error} retry={() => { void query.refetch(); }}/>;
+  if (!query.data) return <ListSkeleton/>;
+  return <FeatureDetail feature={query.data.feature} features={index} search={search} change={change}/>;
 }
 
 /** Overlapping author avatars; the fourth and later collapse into a "+N" count. */
-function Contributors({ people }: { people: SpecFeature['contributors'] }) {
+function Contributors({ people }: { people: Contributor[] }) {
   useLanguage();
   if (!people.length) return <Text type="supporting" color="secondary">{t('common.uncommitted')}</Text>;
   const shown = people.slice(0, 3);
@@ -48,48 +57,47 @@ function Contributors({ people }: { people: SpecFeature['contributors'] }) {
 
 /** The columns a reader can order the list by; every other column holds nothing to compare. */
 type SortKey = 'title' | 'requirements' | 'updatedAt';
+/** A row of the table: a feature heading its group, one of its requirements, or the rest of a long feature. */
+type Row = { id: string; kind: 'feature' | 'requirement' | 'more'; feature: FeatureRow; requirement?: FeatureRow['requirements'][number]; number?: number; [key: string]: unknown };
 
-function FeatureList({ features, search, change }: { features: SpecFeature[]; search: RecordSearch; change: (s: RecordSearch) => void }) {
+/**
+ * The feature list as the server gives it: filtered, ordered and cut into pages of whole features, each with its first
+ * requirements. The table draws the rows and asks for the next page; it neither filters nor sorts.
+ */
+function FeatureList({ session, search, change }: { session: BrowserSessionV3; search: RecordSearch; change: (s: RecordSearch) => void }) {
   useLanguage();
   const navigate = useNavigate();
   const mobile = useMediaQuery('(max-width: 767px)');
-  // The column headers carry the order now, so the state is a column and a direction rather than a named preset.
+  // The column headers carry the order, so the state is a column and a direction rather than a named preset.
   // Ascending first suits a name; a count and a date are read newest-and-largest first, so they open descending.
   const opens: Record<SortKey, TableSortDirection> = { title: 'ascending', requirements: 'descending', updatedAt: 'descending' };
   const key: SortKey = search.sort === 'title' || search.sort === 'requirements' ? search.sort : 'updatedAt';
   const direction: TableSortDirection = search.dir === 'asc' ? 'ascending' : search.dir === 'desc' ? 'descending' : opens[key];
-  const way = direction === 'ascending' ? 1 : -1;
-  const query = search.q?.toLowerCase();
-  // A word may name the feature or one of its requirements. Naming the feature keeps all of them; naming a
-  // requirement keeps that one, so the list answers with the requirement rather than the document holding it.
-  const named = (f: SpecFeature) => !query || (f.title + ' ' + f.id).toLowerCase().includes(query);
-  const groups = features
-    .filter(f => !search.design || (search.design === 'yes') === f.designs.length > 0)
-    .filter(f => !search.author || f.contributors.some(p => p.email === search.author))
-    .map(f => ({ feature: f, requirements: named(f) ? f.requirements : f.requirements.filter(r => (r.title + ' ' + r.id).toLowerCase().includes(query!)) }))
-    .filter(g => named(g.feature) || g.requirements.length)
-    // Recent first by default: the list is read to see where the work is, and the store order says nothing. The
-    // order is the features', not the rows': a requirement keeps the place its document gives it.
-    .sort((a, b) => way * (key === 'requirements' ? a.feature.requirements.length - b.feature.requirements.length
-      : key === 'title' ? a.feature.title.localeCompare(b.feature.title)
-      : (a.feature.updatedAt ?? '').localeCompare(b.feature.updatedAt ?? '')) || a.feature.title.localeCompare(b.feature.title));
-  const carried = { q: search.q, design: search.design, author: search.author, sort: search.sort, dir: search.dir, page: search.page };
-  const mostRequirements = Math.max(1, ...features.map(f => f.requirements.length));
-  const pages = pagesOf(groups);
-  const page = Math.min(Math.max(1, search.page ?? 1), Math.max(1, pages.length));
-  const rows = pages[page - 1] ?? [];
-  const shown = groups.reduce((sum, g) => sum + g.requirements.length, 0);
-  const sections = new Map(groups.map(g => [g.feature.id, designsByRequirement(g.feature.designs)]));
-  // Designs are the norm, so a requirement row marks only a requirement no design of its feature explains; a feature
-  // without any design says so once on its own row.
-  const uncovered = (row: FeatureRow) => row.feature.designs.length > 0 && !sections.get(row.feature.id)?.has(row.requirement?.id ?? '');
+  const query = useInfiniteQuery(featuresOptions(session, { q: search.q, design: search.design, author: search.author,
+    sort: key === 'updatedAt' ? undefined : key, dir: search.dir }));
+  const carried = { q: search.q, design: search.design, author: search.author, sort: search.sort, dir: search.dir };
+  const sorting = useTableSortable<Row, SortKey>({ sort: [{ sortKey: key, direction }], allowUnsortedState: false,
+    // A column the reader has just reached opens the way that column is normally read, not always ascending.
+    onSortChange: next => { const entry = next[0]; if (!entry) return;
+      const way = entry.sortKey === key ? entry.direction : opens[entry.sortKey];
+      change({ ...search, sort: entry.sortKey === 'updatedAt' ? undefined : entry.sortKey, dir: way === opens[entry.sortKey] ? undefined : way === 'ascending' ? 'asc' : 'desc' }); } });
+  if (query.error) return <RequestState error={query.error} retry={() => { void query.refetch(); }}/>;
+  if (!query.data) return <ListSkeleton/>;
+  const first = query.data.pages[0]!;
+  const features = query.data.pages.flatMap(page => page.features);
+  const rows: Row[] = features.flatMap(feature => [
+    { id: feature.id, kind: 'feature' as const, feature },
+    ...feature.requirements.map((requirement, index) => ({ id: feature.id + ':' + requirement.id, kind: 'requirement' as const, feature, requirement, number: index + 1 })),
+    ...(feature.hidden ? [{ id: feature.id + ':more', kind: 'more' as const, feature }] : []),
+  ]);
+  const mostRequirements = Math.max(1, first.mostRequirements);
   const oneLine = (text: string) => text.replace(/[#*_`]/g, '').replace(/\s+/g, ' ').trim();
-  const open = (row: FeatureRow) => {
+  const open = (row: Row) => {
     const requirement = row.kind === 'requirement' ? row.requirement!.id : undefined;
     void navigate({ to: '/features/$featureId', params: { featureId: row.feature.id },
       search: { ...carried, ...(requirement ? { selected: requirement, tab: 'requirements' } : {}) }, ...(requirement ? { hash: requirement } : {}) });
   };
-  const columns: TableColumn<FeatureRow>[] = [
+  const columns: TableColumn<Row>[] = [
     // One column carries both kinds of row: a feature names the group and its requirements sit under it, indented.
     // A feature stacks its title over its description inside the height one line used to take, and ends with one
     // link to its designs. A requirement reads as number, title and its one-line description.
@@ -99,55 +107,50 @@ function FeatureList({ features, search, change }: { features: SpecFeature[]; se
           <HStack gap={2} className={styles.featureNameLine}>
             <Link to="/features/$featureId" params={{ featureId: row.feature.id }} search={carried} className={styles.featureTitle} data-state-title>{row.feature.title}</Link>
             <StateToken state={row.feature.state}/>
-            {!row.feature.designs.length && <Token label={t('features.noDesignMark')} color="yellow" size="sm"/>}
+            {!row.feature.designs && <Token label={t('features.noDesignMark')} color="yellow" size="sm"/>}
           </HStack>
           {/* The second line is kept even without a description, so every feature row has the same height. */}
           <Text type="supporting" color="secondary" className={`${styles.featureDescription} ${styles.oneLine}`}>{oneLine(row.feature.description) || ' '}</Text>
         </VStack>
-        {row.feature.designs.length > 0 && <Link to="/features/$featureId" params={{ featureId: row.feature.id }} search={{ ...carried, tab: 'design' }} className={styles.featureDesignLink}>{t('features.designMark', { count: row.feature.designs.length })}</Link>}
+        {row.feature.designs > 0 && <Link to="/features/$featureId" params={{ featureId: row.feature.id }} search={{ ...carried, tab: 'design' }} className={styles.featureDesignLink}>{t('features.designMark', { count: row.feature.designs })}</Link>}
       </HStack>
       : row.kind === 'more'
-        ? <Link to="/features/$featureId" params={{ featureId: row.feature.id }} search={carried} className={styles.requirementMore}>{t('features.moreRequirements', { count: row.hidden! })}</Link>
+        ? <Link to="/features/$featureId" params={{ featureId: row.feature.id }} search={carried} className={styles.requirementMore}>{t('features.moreRequirements', { count: row.feature.hidden })}</Link>
         : <HStack gap={3} className={styles.requirementRow}>
           <Text type="supporting" color="secondary" className={styles.requirementNumber}>{String(row.number!).padStart(2, '0')}</Text>
           <Link to="/features/$featureId" params={{ featureId: row.feature.id }} search={{ ...carried, selected: row.requirement!.id, tab: 'requirements' }} hash={row.requirement!.id} className={styles.requirementLink} data-state-title>{row.requirement!.title}</Link>
           <StateToken state={row.requirement!.state}/>
           {row.requirement!.description && <Text type="supporting" color="secondary" className={`${styles.requirementDescription} ${styles.oneLine}`}>{oneLine(row.requirement!.description)}</Text>}
-          {uncovered(row) && <Text type="supporting" color="secondary" className={styles.requirementNoDesign}>{t('features.noDesignMark')}</Text>}
+          {/* Designs are the norm, so a requirement marks only that no design of its feature explains it. */}
+          {row.feature.designs > 0 && !row.requirement!.designed && <Text type="supporting" color="secondary" className={styles.requirementNoDesign}>{t('features.noDesignMark')}</Text>}
         </HStack> },
     // The count with a bar of its share of the largest feature: the number answers "how many", the bar "how big is
     // this one next to the rest" without reading every row. A requirement row puts its acceptance criteria count here.
     { key: 'requirements', header: t('features.column.requirements'), sortable: true, width: pixel(128), align: 'end', renderCell: row => row.kind === 'requirement'
-      ? acceptanceCount(row.requirement!.body) === undefined ? null : <Text type="supporting" color="secondary" className={styles.acceptanceCount}>{t('features.acceptanceCount', { count: acceptanceCount(row.requirement!.body)! })}</Text>
+      ? row.requirement!.acceptance === null ? null : <Text type="supporting" color="secondary" className={styles.acceptanceCount}>{t('features.acceptanceCount', { count: row.requirement!.acceptance })}</Text>
       : row.kind !== 'feature' ? null : <HStack gap={3} className={styles.countCell}>
-      <Text>{row.feature.requirements.length}</Text>
-      {!mobile && <ProgressBar label={t('features.requirementShare', { title: row.feature.title })} isLabelHidden value={row.feature.requirements.length} max={mostRequirements} variant="accent"/>}
+      <Text>{row.feature.requirementCount}</Text>
+      {!mobile && <ProgressBar label={t('features.requirementShare', { title: row.feature.title })} isLabelHidden value={row.feature.requirementCount} max={mostRequirements} variant="accent"/>}
     </HStack> },
   ];
   // A phone keeps the feature and its count: the people and the last change are on the feature page, and with them the
   // count column was cut to 64px, which clipped its sortable header and the acceptance counts.
   if (!mobile) columns.push({ key: 'contributors', header: t('features.column.contributors'), width: pixel(120), renderCell: row => row.kind !== 'feature' ? null : <Contributors people={row.feature.contributors}/> });
   if (!mobile) columns.push({ key: 'updatedAt', header: t('common.recentChange'), sortable: true, width: pixel(110), align: 'end', renderCell: row => row.kind !== 'feature' ? null : row.feature.updatedAt ? <Timestamp value={row.feature.updatedAt} format="relative"/> : <Text type="supporting" color="secondary">{t('common.inProgress')}</Text> });
-  const sorting = useTableSortable<FeatureRow, SortKey>({ sort: [{ sortKey: key, direction }], allowUnsortedState: false,
-    // A column the reader has just reached opens the way that column is normally read, not always ascending.
-    onSortChange: next => { const entry = next[0]; if (!entry) return;
-      const way = entry.sortKey === key ? entry.direction : opens[entry.sortKey];
-      change({ ...search, sort: entry.sortKey === 'updatedAt' ? undefined : entry.sortKey, dir: way === opens[entry.sortKey] ? undefined : way === 'ascending' ? 'asc' : 'desc', page: undefined }); } });
   // A row not committed as it is carries its state, which draws the bar at its start (global.css).
-  const stateOf = (row: FeatureRow) => { const state = row.kind === 'feature' ? row.feature.state : row.kind === 'requirement' ? row.requirement!.state : undefined; return state === 'committed' ? undefined : state; };
-  const interaction: TablePlugin<FeatureRow> = { transformBodyRow: (props, item) => ({ ...props, htmlProps: { ...props.htmlProps, tabIndex: 0, 'data-row': item.kind, 'data-state': stateOf(item),
+  const stateOf = (row: Row) => { const state = row.kind === 'feature' ? row.feature.state : row.kind === 'requirement' ? row.requirement!.state : undefined; return state === 'committed' ? undefined : state; };
+  const interaction: TablePlugin<Row> = { transformBodyRow: (props, item) => ({ ...props, htmlProps: { ...props.htmlProps, tabIndex: 0, 'data-row': item.kind, 'data-state': stateOf(item),
     // Links inside the row (title, contributor avatars) navigate on their own; only bare surface clicks open it.
     onClick: (event: { target: EventTarget | null }) => { if (!(event.target as HTMLElement | null)?.closest('a, button')) open(item); }, onKeyDown: event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); open(item); } } } }) };
-  if (!groups.length) return <PageState kind={features.length ? 'search' : 'empty'} title={t('features.emptyTitle')} description={features.length ? t('features.changeFilters') : t('features.emptyDescription')}/>;
+  if (!features.length) return <PageState kind={first.all ? 'search' : 'empty'} title={t('features.emptyTitle')} description={first.all ? t('features.changeFilters') : t('features.emptyDescription')}/>;
   return <VStack gap={3} className={styles.featureTable}>
-    <Text type="supporting" color="secondary">{t('features.count', { count: groups.length })}{groups.length < features.length ? t('features.ofTotal', { total: features.length }) : ''} · {t('features.requirementCount', { count: shown })} · {t('features.countNote')}</Text>
+    <Text type="supporting" color="secondary">{t('features.count', { count: first.total })}{first.total < first.all ? t('features.ofTotal', { total: first.all }) : ''} · {t('features.requirementCount', { count: first.requirements })} · {t('features.countNote')}</Text>
     <Table data={rows} idKey="id" columns={columns} plugins={{ sorting, interaction }} density="compact" dividers="rows" hasHover textOverflow="truncate"/>
-    {/* data-page-footer asks the records frame to stretch to the card, so the pager rests on its floor. */}
-    {pages.length > 1 && <VStack gap={0} className={styles.featurePager} data-page-footer><Pagination page={page} totalPages={pages.length} onChange={(next: number) => change({ ...search, page: next === 1 ? undefined : next })}/></VStack>}
+    <HStack gap={0}><LoadMore label={t('features.more')} query={query}/></HStack>
   </VStack>;
 }
 
-function FeatureDetail({ feature: selected, features, search, change }: { feature: SpecFeature; features: SpecFeature[]; search: RecordSearch; change: (s: RecordSearch) => void }) {
+function FeatureDetail({ feature: selected, features, search, change }: { feature: SpecFeature; features: IndexFeature[]; search: RecordSearch; change: (s: RecordSearch) => void }) {
   useLanguage();
   const tab = search.tab === 'design' ? 'design' : 'requirements';
   const designSections = designsByRequirement(selected.designs);

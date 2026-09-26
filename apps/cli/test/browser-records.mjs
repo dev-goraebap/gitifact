@@ -14,9 +14,12 @@ import { createCheckoutReader } from '../.test-build/server/checkout/checkout-re
 export function openRecords(root, env, limit = 100) {
   const git = storeReader(root);
   const cache = openCache(root, { run: (args, input) => git.run(args, input), decode: git.decode, legacyBundles: oids => git.readBundles(oids) });
-  const checkout = createCheckoutReader(root, 'fixture', cache, env);
+  const checkout = createCheckoutReader(root, cache, env);
   async function read() {
-    const { checkout: current } = await checkout();
+    // The whole checkout as the screens' parts together give it: features with their authors, instructions with their
+    // files, AGENTS.md, and the contributors.
+    const base = await checkout.base(); const { instructions, agents } = await checkout.instructions();
+    const current = { ...base, instructions, agents, contributors: base.people };
     if (!current.head) return { ...current, events: [], total: 0 };
     // History comes a page of whole commits at a time; the fixture reads on until it has `limit` changes.
     let events = []; let after; let total = 0;

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { DesignSource, SpecFeature } from '@gitifact/contracts';
+import type { DesignSource, IndexFeature } from '@gitifact/contracts';
 import { DocumentBody, DocumentLink, resolveDocumentLink, useDocumentIndex } from '../../../shared/ui/document';
 import { RelatedList, RelatedItem } from '../../../shared/ui/related-list';
 import { Heading } from '@astryxdesign/core/Heading';
@@ -39,7 +39,7 @@ function relativeTo(from: string, to: string) {
  * its own block: the requirements it explains (linking to the requirements tab), the documents it drew on, and
  * whatever the page adds (`footer`, the feature page's history link).
  */
-export function DesignDocument({design, path, features, eyebrow, footer}: {design: {title: string; description?: string | undefined; body: string; sources?: DesignSource[] | undefined; requirements?: string[] | undefined}; path: string; features: SpecFeature[]; eyebrow?: ReactNode; footer?: ReactNode}) {
+export function DesignDocument({design, path, features, eyebrow, footer}: {design: {title: string; description?: string | undefined; body: string; sources?: DesignSource[] | undefined; requirements?: string[] | undefined}; path: string; features: IndexFeature[]; eyebrow?: ReactNode; footer?: ReactNode}) {
   useLanguage();
   const requirements = design.requirements ?? [];
   return <VStack gap={4}>

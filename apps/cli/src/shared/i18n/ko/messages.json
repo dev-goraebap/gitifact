@@ -45,6 +45,8 @@
   "server.sessionChanged": "서버 세션이 변경됐습니다. 다시 연결하세요.",
   "server.badRange": "조회 범위를 확인하세요.",
   "server.commitNotFound": "이 저장소에 그 커밋이 없습니다.",
+  "server.featureNotFound": "체크아웃에 그 기능이 없습니다.",
+  "server.contributorNotFound": "HEAD에 그 이메일로 커밋한 사람이 없습니다.",
   "server.cursorNotFound": "이어 읽을 위치를 목록에서 찾지 못했습니다. 처음부터 다시 불러오세요.",
   "server.workingChangeNotFound": "커밋 전 변경에 그 문서가 없습니다.",
   "server.recordNotFound": "이 이력에 그 결정기록이 없습니다.",

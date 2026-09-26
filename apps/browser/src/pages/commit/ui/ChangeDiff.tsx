@@ -1,4 +1,4 @@
-import type { DesignSource, SpecFeature, SpecSnapshot } from '@gitifact/contracts';
+import type { DesignSource, IndexFeature, SpecSnapshot } from '@gitifact/contracts';
 import { VStack } from '@astryxdesign/core/VStack';
 import { HStack } from '@astryxdesign/core/HStack';
 import { Text } from '@astryxdesign/core/Text';
@@ -36,7 +36,7 @@ function fieldChanges(before: SpecSnapshot, after: SpecSnapshot, title: (id: str
  * A document change read the way `git diff` shows it: the frontmatter fields that changed as "before → after", then
  * the body as source lines (`LineDiff`).
  */
-export function ChangeDiff({ before, after, features }: { before: SpecSnapshot; after: SpecSnapshot; features: SpecFeature[] }) {
+export function ChangeDiff({ before, after, features }: { before: SpecSnapshot; after: SpecSnapshot; features: IndexFeature[] }) {
   useLanguage();
   const index = useDocumentIndex();
   // A requirement or a page named by ID reads by its current title; one that no longer exists keeps its ID.

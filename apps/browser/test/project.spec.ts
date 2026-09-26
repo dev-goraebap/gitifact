@@ -1,5 +1,5 @@
 import {expect,test} from '@playwright/test';
-import {mockApi,specs,changeBodies,commitSources,serve,checkoutOf} from './mock-api';
+import {mockApi,specs,changeBodies,commitSources,serve,checkoutOf,frameOf} from './mock-api';
 test('history links to current features and contributors with URL restoration',async({page})=>{
  await mockApi(page);await page.goto('/records');await page.getByText('검색어 입력',{exact:true}).click();
  await expect(page.getByRole('article',{name:'결정기록 상세'})).toContainText('사용자가 검색을 요청했습니다.');
@@ -12,8 +12,8 @@ test('history links to current features and contributors with URL restoration',a
 });
 test('reload failure labels previous snapshot and malformed responses are rejected',async({page})=>{
  await mockApi(page);await page.goto('/records');await expect(page.getByText('검색어 입력',{exact:true})).toBeVisible();
- await page.route('**/api/v1/specs*',r=>r.abort());await page.getByRole('button',{name:'새로고침',exact:true}).click();await expect(page.getByRole('alert')).toContainText('이전 조회 자료');
- await page.route('**/api/v1/specs*',r=>r.fulfill({json:{...checkoutOf(specs),features:'broken'}}));await page.getByRole('button',{name:'새로고침',exact:true}).click();await expect(page.getByRole('alert')).toContainText('호환되지');
+ await page.route(url=>url.pathname==='/api/v1/checkout',r=>r.abort());await page.getByRole('button',{name:'새로고침',exact:true}).click();await expect(page.getByRole('alert')).toContainText('이전 조회 자료');
+ await page.route(url=>url.pathname==='/api/v1/checkout',r=>r.fulfill({json:{...frameOf(checkoutOf(specs)),index:'broken'}}));await page.getByRole('button',{name:'새로고침',exact:true}).click();await expect(page.getByRole('alert')).toContainText('호환되지');
 });
 test('mobile dark theme preserves safe Markdown and navigation',async({page})=>{
  await mockApi(page);await page.setViewportSize({width:390,height:844});await page.emulateMedia({colorScheme:'dark'});
@@ -49,7 +49,7 @@ test('loaded history is kept across screens, and refresh re-reads the checkout b
  // Every screen shares one history query per HEAD and filter, so leaving and coming back asks the server nothing.
  await mockApi(page, longHistory());
  let history = 0; let checkout = 0;
- page.on('request', request => { const path = new URL(request.url()).pathname; if (path === '/api/v1/history') history++; if (path === '/api/v1/specs') checkout++; });
+ page.on('request', request => { const path = new URL(request.url()).pathname; if (path === '/api/v1/history') history++; if (path === '/api/v1/checkout') checkout++; });
  await page.goto('/records');
  await expect(page.getByText('검색어 입력',{exact:true})).toBeVisible();
  await page.getByRole('button',{name:'이전 이력 더 보기',exact:true}).click();
@@ -73,7 +73,7 @@ test('initial request shows delayed skeleton then the Gentask empty illustration
  const pending = new Promise<void>(resolve => {release = resolve;});
  const empty={...structuredClone(specs),events:[],features:[],contributors:[]};
  await serve(page, empty);
- await page.route('**/api/v1/specs*', async route => {await pending;await route.fulfill({json:checkoutOf(empty)});});
+ await page.route(url => url.pathname === '/api/v1/checkout', async route => {await pending;await route.fulfill({json:frameOf(checkoutOf(empty))});});
  await page.goto('/records');
  await expect(page.getByRole('status',{name:'프로젝트 불러오는 중'})).toHaveCSS('opacity','1');
  release();
@@ -328,4 +328,18 @@ test('a list row opens its commit from the hash and message, and a narrow screen
  await expect(page).toHaveURL(/file=src%2Forder\.ts$/);
  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
  delete commitSources[event.commit];
+});
+
+test('the contributors come twenty at a time, most commits first, and read on', async ({page}) => {
+ const data=structuredClone(specs);
+ data.contributors=Array.from({length:23},(_,i)=>({name:'사람 '+String(i).padStart(2,'0'),email:`p${i}@example.test`,commits:30-i,latest:'2026-09-14T00:00:00Z'}));
+ await mockApi(page); await serve(page, data);
+ await page.goto('/contributors');
+ await expect(page.getByText('참여자 23명',{exact:false})).toBeVisible();
+ const cards=page.getByText(/^p\d+@example\.test$/);
+ await expect(cards).toHaveCount(20);
+ await expect(cards.first()).toHaveText('p0@example.test');
+ await page.getByRole('button',{name:'참여자 더 보기'}).click();
+ await expect(cards).toHaveCount(23);
+ await expect(page.getByRole('button',{name:'참여자 더 보기'})).toHaveCount(0);
 });
