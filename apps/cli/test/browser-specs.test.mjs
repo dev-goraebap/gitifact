@@ -399,7 +399,11 @@ test('a commit answers with every document it changed, and with its author when 
   assert.equal((await get('/api/v1/commit?commit=' + '0'.repeat(sourceOnly.length))).status, 404);
   // A record's page finds the commit that added it through the history of the HEAD it is on.
   const found = (await get(`/api/v1/record?head=${sourceOnly}&id=H-aaaaaaaaaa`)).body;
-  assert.deepEqual([found.contract, found.commit], ['browser-record', withDocuments]);
+  assert.deepEqual([found.contract, found.version, found.commit, found.record.sections[0].body, found.others], ['browser-record', 2, withDocuments, '정리했다', 0]);
+  // The documents a record explains come from its commit, a page at a time, and only those.
+  const explained = (await get(`/api/v1/commit?commit=${withDocuments}&record=H-aaaaaaaaaa`)).body;
+  assert.deepEqual([explained.total, explained.changes.map(e => e.id)], [2, [R, W]]);
+  assert.equal((await get(`/api/v1/commit?commit=${withDocuments}&record=nope`)).status, 400);
   assert.equal((await get(`/api/v1/record?head=${sourceOnly}&id=H-zzzzzzzzzz`)).status, 404);
   assert.equal((await get(`/api/v1/record?head=${sourceOnly}&id=R-aaaaaaaaaa`)).status, 400);
   assert.equal((await get('/api/v1/commit?commit=nope')).status, 400);
@@ -530,4 +534,18 @@ test('the feature list is filtered, ordered and paged by the server, a feature w
   assert.deepEqual(bob.features.map(x => [x.id, x.commits, x.requirements]), [['S-bbbbbbbbbb', 1, 1], ['S-cccccccccc', 1, 0]]);
   const summary = (await get('/api/v1/history/summary?head=' + f.git(['rev-parse', 'HEAD']).stdout.trim())).body;
   assert.deepEqual([summary.version, summary.people.top[0].name, summary.people.total], [5, 'Bob', people.total]);
+});
+
+test('a record page reads only the documents its record explains, and knows the commit\'s other records', async t => {
+  const { f, d } = await adopted(t);
+  d.feature('posts', S, { title: 'Posts' }); d.requirement('posts', 'save', R, { title: 'Save', body: 'First' }); d.requirement('posts', 'list', R2, { title: 'List', body: 'First' }); f.commit('Add');
+  d.requirement('posts', 'save', R, { title: 'Save', body: 'Second' }); d.requirement('posts', 'list', R2, { title: 'List', body: 'Second' });
+  d.record({ id: 'DR-aaaaaaaaaa', docs: [R], reason: '저장을 바꿨다' }); d.record({ id: 'DR-bbbbbbbbbb', docs: [R2], reason: '목록을 바꿨다' }); f.commit('Both');
+  const head = f.git(['rev-parse', 'HEAD']).stdout.trim();
+  const server = await startBrowserServer({ cwd: f.repo, env: f.env, assetsDirectory: fileURLToPath(new URL('../../browser/dist/', import.meta.url)) }); t.after(() => server.close());
+  const get = async path => (await fetch(server.url + path, { headers: { 'X-Gitifact-Session': server.session.sessionId } })).json();
+  const record = await get(`/api/v1/record?head=${head}&id=DR-aaaaaaaaaa`);
+  assert.deepEqual([record.commit, record.record.title, record.others], [head, '저장을 바꿨다', 1]);
+  const docs = await get(`/api/v1/commit?commit=${head}&record=DR-aaaaaaaaaa`);
+  assert.deepEqual([docs.total, docs.changes.map(e => e.id), docs.message], [1, [R], 'Both']);
 });

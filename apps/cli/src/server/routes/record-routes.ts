@@ -1,7 +1,7 @@
-import { browserCommitChangeQueryV1, browserCommitChangeV1, browserCommitQueryV2, browserCommitV4, browserCommitFileQueryV1, browserCommitFileV1, browserCommitFilesQueryV2, browserCommitFilesV2,
+import { browserCommitChangeQueryV1, browserCommitChangeV1, browserCommitQueryV3, browserCommitV4, browserCommitFileQueryV1, browserCommitFileV1, browserCommitFilesQueryV2, browserCommitFilesV2,
   browserHistoryQueryV4, browserHistorySummaryQueryV1, browserHistorySummaryV5, browserHistoryV6, browserCheckoutV1, browserFeaturesQueryV1, browserFeaturesV1,
   browserFeatureQueryV1, browserFeatureV1, browserInstructionsV1, browserContributorsQueryV1, browserContributorsV1, browserContributorQueryV1, browserContributorV1, browserSearchQueryV2, browserSearchV3, browserInstructionFileQueryV1, browserInstructionFileV1,
-  browserRecordQueryV1, browserRecordV1, browserStampV1, browserWorkingChangeQueryV1, browserWorkingChangeV1, browserWorkingV1 } from '@gitifact/contracts';
+  browserRecordQueryV1, browserRecordV2, browserStampV1, browserWorkingChangeQueryV1, browserWorkingChangeV1, browserWorkingV1 } from '@gitifact/contracts';
 import { storeReader } from '../../adapters/git/store-reader.js';
 import { openCache } from '../../adapters/cache/index.js';
 import { readPendingRecords } from '../../adapters/git/pending-records.js';
@@ -80,8 +80,8 @@ export function recordRoutes(root: string, sessionId: string, env?: NodeJS.Proce
       ok(browserHistorySummaryV5.parse({ contract: 'browser-history-summary', version: 5, sessionId, head: query.head, ...await cache.history.summary(query.head),
         people: topContributors(await cache.log.contributors(query.head)) })) }),
     // One commit as its page reads it: who made it and a page of the documents it changed, even when it changed none.
-    route({ method: 'GET', path: '/api/v1/commit', session: true, query: browserCommitQueryV2, unreadable, handle: async ({ query }) => {
-      const page = await cache.history.commitChanges(query.commit, query.after, query.limit ?? PAGE);
+    route({ method: 'GET', path: '/api/v1/commit', session: true, query: browserCommitQueryV3, unreadable, handle: async ({ query }) => {
+      const page = await cache.history.commitChanges(query.commit, query.after, query.limit ?? PAGE, query.record);
       if (!page) throw cursorGone();
       const first = page.events[0];
       // A commit that changed no document still has a page: its source files. Git names its author then.
@@ -101,9 +101,9 @@ export function recordRoutes(root: string, sessionId: string, env?: NodeJS.Proce
     } }),
     // A record's page names the record; which commit added it is read from the history of the HEAD the reader is on.
     route({ method: 'GET', path: '/api/v1/record', session: true, query: browserRecordQueryV1, unreadable, handle: async ({ query }) => {
-      const commit = await cache.history.commitOfRecord(query.head, query.id);
-      if (!commit) throw new HttpError(404, 'NOT_FOUND', t('server.recordNotFound'));
-      return ok(browserRecordV1.parse({ contract: 'browser-record', version: 1, sessionId, head: query.head, id: query.id, commit }));
+      const found = await cache.history.recordOf(query.head, query.id);
+      if (!found) throw new HttpError(404, 'NOT_FOUND', t('server.recordNotFound'));
+      return ok(browserRecordV2.parse({ contract: 'browser-record', version: 2, sessionId, head: query.head, id: query.id, ...found }));
     } }),
     // What is not committed yet, worked out again on every request: the uncommitted entry of the records list.
     route({ method: 'GET', path: '/api/v1/working', session: true, unreadable, handle: async () =>

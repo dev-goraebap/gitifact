@@ -225,8 +225,13 @@ export const browserCommitV4 = z.strictObject({
   author: z.string(), email: z.string(), committer: z.string(), date: z.string(), message: z.string(),
   total: z.number().int().nonnegative(), next: z.string().nullable(), changes: z.array(event),
 });
-/** `/api/v1/commit`: the commit, the change the page starts after, and how many changes. */
-export const browserCommitQueryV2 = z.strictObject({ commit: oid, after: z.string().min(1).max(200).optional(), limit: count(500).pipe(z.number().min(1)).optional() });
+// A decision record is `DR-`; a reason from before decision records (a reason line, a 0.7 reason) keeps its `H-` ID.
+const recordId = z.string().regex(/^(?:DR|H)-[A-Za-z0-9_-]{1,64}$/);
+/**
+ * `/api/v1/commit`: the commit, the change the page starts after, how many changes (default 20), and with `record`
+ * only the changes that record explains.
+ */
+export const browserCommitQueryV3 = z.strictObject({ commit: oid, after: z.string().min(1).max(200).optional(), limit: count(100).pipe(z.number().min(1)).optional(), record: recordId.optional() });
 export type BrowserCommitV4 = z.infer<typeof browserCommitV4>;
 /** One change of a commit with both sides' text, read from Git when the reader opens it. */
 export const browserCommitChangeV1 = z.strictObject({
@@ -236,14 +241,16 @@ export const browserCommitChangeV1 = z.strictObject({
 export const browserCommitChangeQueryV1 = z.strictObject({ commit: oid, id: z.string().min(1).max(100) });
 export type BrowserCommitChangeV1 = z.infer<typeof browserCommitChangeV1>;
 
-// A decision record is `DR-`; a reason from before decision records (a reason line, a 0.7 reason) keeps its `H-` ID.
-const recordId = z.string().regex(/^(?:DR|H)-[A-Za-z0-9_-]{1,64}$/);
-/** Which commit of `head`'s history added a record: the record page reads that commit and shows the record's part. */
-export const browserRecordV1 = z.strictObject({
-  contract: z.literal('browser-record'), version: z.literal(1), sessionId: z.string(), head: oid, id: recordId, commit: oid,
+/**
+ * A record of `head`'s history: its title and sections, the commit that added it, and how many other records that
+ * commit holds. The record page reads the documents it explains from the commit, a page at a time.
+ */
+export const browserRecordV2 = z.strictObject({
+  contract: z.literal('browser-record'), version: z.literal(2), sessionId: z.string(), head: oid, id: recordId, commit: oid,
+  record, others: z.number().int().nonnegative(),
 });
 export const browserRecordQueryV1 = z.strictObject({ head: oid, id: recordId });
-export type BrowserRecordV1 = z.infer<typeof browserRecordV1>;
+export type BrowserRecordV2 = z.infer<typeof browserRecordV2>;
 
 /** One file of an instruction folder from the working tree: its text, or why there is none (binary, over 512 KB). */
 export const browserInstructionFileV1 = z.strictObject({

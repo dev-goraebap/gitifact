@@ -1,6 +1,6 @@
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 import { browserCheckoutV1, browserFeaturesV1, browserFeatureV1, browserInstructionsV1, browserContributorsV1, browserContributorV1, browserHistoryV6, browserHistorySummaryV5, browserSearchV3, browserCommitFilesV2, browserCommitFileV1, browserCommitV4, browserCommitChangeV1, browserInstructionFileV1,
-  browserRecordV1, browserStampV1, browserWorkingV1, browserWorkingChangeV1, type BrowserSessionV3 } from '@gitifact/contracts';
+  browserRecordV2, browserStampV1, browserWorkingV1, browserWorkingChangeV1, type BrowserSessionV3 } from '@gitifact/contracts';
 import { requestJson, ApiError } from '../../../shared/api/client';
 import { httpFailure } from './repository';
 import { t } from '../../../shared/i18n';
@@ -129,14 +129,15 @@ export const summaryOptions = (session: BrowserSessionV3, head: string) => query
 });
 
 /**
- * One commit and the documents it changed, twenty at a time and without their text: what its page lists. `limit`
- * reads more at once, as the record page does to find every document its record explains. A commit never changes.
+ * One commit and the documents it changed, twenty at a time and without their text: what its page lists. With
+ * `record`, only the documents that record explains, as the record page lists them. A commit never changes.
  */
-export const commitOptions = (session: BrowserSessionV3, commit: string, limit = 20) => infiniteQueryOptions({
-  queryKey: ['browser-commit', 4, ...scope(session), commit, limit],
+export const commitOptions = (session: BrowserSessionV3, commit: string, record?: string) => infiniteQueryOptions({
+  queryKey: ['browser-commit', 4, ...scope(session), commit, record ?? ''],
   initialPageParam: undefined as string | undefined, staleTime: Infinity, retry: false,
   queryFn: ({ signal, pageParam }) => {
-    const query = new URLSearchParams({ commit, limit: String(limit) });
+    const query = new URLSearchParams({ commit });
+    if (record) query.set('record', record);
     if (pageParam) query.set('after', pageParam);
     return read(session, '/api/v1/commit?' + query, browserCommitV4, signal);
   },
@@ -150,11 +151,11 @@ export const commitChangeOptions = (session: BrowserSessionV3, commit: string, i
   queryFn: ({ signal }) => read(session, '/api/v1/commit/change?' + new URLSearchParams({ commit, id }), browserCommitChangeV1, signal),
 });
 
-/** Which commit of `head` added a record. History of one HEAD never changes, so the answer is kept. */
+/** A record of `head`'s history with the commit that added it. History of one HEAD never changes, so the answer is kept. */
 export const recordOptions = (session: BrowserSessionV3, head: string, id: string) => queryOptions({
-  queryKey: ['browser-record', 1, ...scope(session), head, id],
+  queryKey: ['browser-record', 2, ...scope(session), head, id],
   staleTime: Infinity, retry: false,
-  queryFn: ({ signal }) => read(session, '/api/v1/record?head=' + head + '&id=' + encodeURIComponent(id), browserRecordV1, signal),
+  queryFn: ({ signal }) => read(session, '/api/v1/record?head=' + head + '&id=' + encodeURIComponent(id), browserRecordV2, signal),
 });
 
 /**

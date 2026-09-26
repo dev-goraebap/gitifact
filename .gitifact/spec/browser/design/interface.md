@@ -55,11 +55,11 @@ requirements:
 | `GET /api/v1/stamp` | browser-stamp v1 | 지금의 지문. HEAD와 `.gitifact`·AGENTS.md의 `git status`, 그 경로들의 수정 시각·크기의 해시 |
 | `GET /api/v1/history?head&after&limit&kind&document&feature&author&q` | browser-history v6 | 조건에 맞는 변경을 커밋 단위로 한 페이지(기본 20커밋, 최대 50). 전체 변경 수(`total`)·커밋 수(`commits`)와 다음 커서(`next`, 이 페이지 마지막 커밋) |
 | `GET /api/v1/history/summary?head` | browser-history-summary v5 | 종류별 건수, 최근 3주 커밋별 건수, 최신 커밋 셋, 커밋 많은 참여자 셋과 나머지 수·커밋 |
-| `GET /api/v1/commit?commit&after&limit` | browser-commit v4 | 커밋 하나의 작성자·시각·메시지와 바꾼 문서의 목록 한 페이지(기본 20, 최대 500). 원문 없이 `total`·`next`(마지막 변경의 key) |
+| `GET /api/v1/commit?commit&after&limit&record` | browser-commit v4 | 커밋 하나의 작성자·시각·메시지와 바꾼 문서의 목록 한 페이지(기본 20, 최대 100). 원문 없이 `total`·`next`(마지막 변경의 key). `record`면 그 기록이 설명하는 문서만(0.7 이유는 같은 글의 다른 ID도) |
 | `GET /api/v1/commit/change?commit&id` | browser-commit-change v1 | 그 커밋이 바꾼 문서 하나의 전후 본문. Git에서 읽는다 |
 | `GET /api/v1/working` | browser-working v1 | 커밋 전 작업: 커밋 전 결정기록(섹션 포함), HEAD 대비 바뀐 문서, 결정기록 없는 변경. 요청마다 계산한다 |
 | `GET /api/v1/working/change?id` | browser-working-change v1 | 커밋 전 변경 하나의 HEAD 쪽과 지금 파일 쪽 |
-| `GET /api/v1/record?head&id` | browser-record v1 | `head` 이력에서 그 결정기록(`DR-…`, 기록 도입 전 이유는 `H-…`)을 더한 커밋. 캐시의 이력 행에서 찾고, 그 이력에 기록이 없으면 404, 쿼리가 형식에 어긋나면 400 |
+| `GET /api/v1/record?head&id` | browser-record v2 | `head` 이력에서 그 결정기록(`DR-…`, 기록 도입 전 이유는 `H-…`)의 제목·섹션, 그 기록을 더한 커밋, 그 커밋의 다른 기록 수(0.7 이유는 같은 글을 하나로 센다). 그 이력에 기록이 없으면 404, 쿼리가 형식에 어긋나면 400 |
 | `GET /api/v1/commit/files?commit&after&limit` | browser-commit-files v2 | 첫 부모 대비 바뀐 소스 파일(`.gitifact` 밖)의 경로·상태·줄 수를 Git 순서로 한 페이지(기본 20, 최대 100). 전체 수(`total`)와 다음 커서(`next`, 이 페이지 마지막 파일의 경로). `after`가 목록에 없으면 404 |
 | `GET /api/v1/commit/file?commit&path` | browser-commit-file v1 | 그 목록의 파일 하나의 양쪽 원문. 이진 파일과 512KB 넘는 쪽은 원문 없이 표시만 |
 | `GET /api/v1/search?q&head&group&after&limit` | browser-search v3 | 검색창의 분류별 결과: 분류마다 앞의 5개·전체 수·다음 커서. `group`이면 그 분류만 다음 페이지(기본 20, 최대 50), `q`가 비면 최근 변경 6개. 없는 커서는 404 |
@@ -115,6 +115,6 @@ sequenceDiagram
 
 ## 브라우저의 조회 캐시
 
-TanStack Query 키에는 origin·서버 세션·worktree를 넣는다. 체크아웃과 그 부분들(기능 목록·기능·지침·참여자)의 staleTime은 무한이고, 다시 읽는 것은 헤더의 새로고침 버튼뿐이다. 새로고침은 틀을 다시 읽고 부분들과 커밋 전 작업의 조회를 버린다. 필터나 정렬을 바꾸면 그 조건으로 서버에 새로 묻고, 같은 조건은 보관한 답을 쓴다. 이력은 HEAD·조건별로, 기록을 더한 커밋은 HEAD·기록 ID별로, 커밋은 커밋·페이지 크기별로, 문서 하나의 원문은 커밋·문서별로 세션 동안 보관한다. 기록 상세는 그 기록의 문서를 찾으려고 커밋의 변경을 500개까지 한 번에 받는다. 탭으로 돌아오면 `/api/v1/stamp`를 묻고, 체크아웃의 `stamp`와 다르면 새 변경 알림을 띄운다(errors 참고).
+TanStack Query 키에는 origin·서버 세션·worktree를 넣는다. 체크아웃과 그 부분들(기능 목록·기능·지침·참여자)의 staleTime은 무한이고, 다시 읽는 것은 헤더의 새로고침 버튼뿐이다. 새로고침은 틀을 다시 읽고 부분들과 커밋 전 작업의 조회를 버린다. 필터나 정렬을 바꾸면 그 조건으로 서버에 새로 묻고, 같은 조건은 보관한 답을 쓴다. 이력은 HEAD·조건별로, 기록을 더한 커밋은 HEAD·기록 ID별로, 커밋은 커밋·페이지 크기별로, 문서 하나의 원문은 커밋·문서별로 세션 동안 보관한다. 탭으로 돌아오면 `/api/v1/stamp`를 묻고, 체크아웃의 `stamp`와 다르면 새 변경 알림을 띄운다(errors 참고).
 
 FSD의 entities는 조회를, 화면별 pages 슬라이스는 화면 구성을, `widgets/records-page`는 명세 화면이 함께 쓰는 틀과 검색 상태를 맡는다.

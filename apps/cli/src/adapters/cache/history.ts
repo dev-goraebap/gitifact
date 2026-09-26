@@ -120,6 +120,16 @@ export function createHistory(database: CacheDatabase, git: GitAccess, originals
     const read = await changes.of([commit]).catch(() => undefined);
     if (read) await database.with(db => insert(db, read, new Map()));
   }
+  /**
+   * The IDs a record stands for in its commit: itself, and for a reason from before decision records (`H-`), every
+   * reason of the commit with the same text — 0.7 stored one reason once per document it explained.
+   */
+  function sameRecord(db: DatabaseSync, commit: string, id: string): string[] {
+    if (!id.startsWith('H-')) return [id];
+    const own = db.prepare('SELECT title, sections FROM records WHERE oid = ? AND id = ?').get(commit, id) as { title: string; sections: string } | undefined;
+    if (!own) return [id];
+    return (db.prepare("SELECT id FROM records WHERE oid = ? AND id LIKE 'H-%' AND title = ? AND sections = ?").all(commit, own.title, own.sections) as { id: string }[]).map(r => r.id);
+  }
   /** Stored rows as the lists send them, with each record's title and sections from the records table. */
   function hydrate(db: DatabaseSync, rows: string[]): ListedEvent[] {
     const events = rows.map(row => JSON.parse(row) as StoredEvent);
@@ -189,11 +199,17 @@ export function createHistory(database: CacheDatabase, git: GitAccess, originals
           events: hydrate(db, rows.map(r => r.row)) };
       });
     },
-    /** The changes of one commit without their text, a page at a time after the change `after` (a key): the commit page's list. */
-    async commitChanges(commit: string, after: string | undefined, limit: number) {
+    /**
+     * The changes of one commit without their text, a page at a time after the change `after` (a key): the commit page's
+     * list. With `record`, only the changes that record explains: the record page's documents.
+     */
+    async commitChanges(commit: string, after: string | undefined, limit: number, record?: string) {
       await readCommit(commit);
       return database.with(db => {
-        const all = db.prepare('SELECT key, row FROM changes WHERE oid = ? ORDER BY ord').all(commit) as { key: string; row: string }[];
+        const ids = record === undefined ? undefined : JSON.stringify(sameRecord(db, commit, record));
+        const all = (ids === undefined ? db.prepare('SELECT key, row FROM changes WHERE oid = ? ORDER BY ord').all(commit)
+          : db.prepare("SELECT key, row FROM changes c WHERE oid = ? AND EXISTS (SELECT 1 FROM json_each(c.row, '$.records') j WHERE j.value IN (SELECT value FROM json_each(?))) ORDER BY ord")
+            .all(commit, ids)) as { key: string; row: string }[];
         const start = after === undefined ? 0 : all.findIndex(r => r.key === after) + 1;
         if (after !== undefined && !start) return undefined;
         const shown = all.slice(start, start + limit);
@@ -269,11 +285,20 @@ export function createHistory(database: CacheDatabase, git: GitAccess, originals
         return { total, byType: { created: count('created'), modified: count('modified'), moved: count('moved'), deleted: count('deleted') }, pulse, recent };
       });
     },
-    /** The commit of `head`'s history that added a record, found through the records its changes carry. */
-    async commitOfRecord(head: string, id: string): Promise<string | undefined> {
+    /**
+     * The record of `head`'s history with the commit that added it, and how many other records that commit holds (a
+     * 0.7 reason written once over several documents counts once). Undefined when the history has no such record.
+     */
+    async recordOf(head: string, id: string) {
       await ensure(head);
-      return database.with(db => (db.prepare('SELECT l.oid AS oid FROM lineage l JOIN records r ON r.oid = l.oid WHERE l.head = ? AND r.id = ? ORDER BY l.pos LIMIT 1')
-        .get(head, id) as { oid: string } | undefined)?.oid);
+      return database.with(db => {
+        const found = db.prepare('SELECT r.oid AS oid, r.title AS title, r.sections AS sections FROM lineage l JOIN records r ON r.oid = l.oid WHERE l.head = ? AND r.id = ? ORDER BY l.pos LIMIT 1')
+          .get(head, id) as { oid: string; title: string; sections: string } | undefined;
+        if (!found) return undefined;
+        const all = db.prepare('SELECT id, title, sections FROM records WHERE oid = ?').all(found.oid) as { id: string; title: string; sections: string }[];
+        const groups = new Set(all.map(r => r.id.startsWith('H-') ? 'H\0' + r.title + '\0' + r.sections : r.id));
+        return { commit: found.oid, record: { id, title: found.title, sections: JSON.parse(found.sections) as EventRecord['sections'] }, others: groups.size - 1 };
+      });
     },
     /**
      * The records of `head`'s history whose title, ID or sections hold the query, one hit per record file, a page at a

@@ -164,9 +164,13 @@ export async function serve(page: Page, data: Fixture) {
   // One commit as its page reads it: a page of that commit's events, without their text.
   await page.route(url => url.pathname === '/api/v1/commit', route => {
     const q = new URL(route.request().url()).searchParams; const commit = q.get('commit') ?? '';
-    const own = events.filter(e => e.commit === commit);
-    const first = own[0];
+    const all = events.filter(e => e.commit === commit);
+    const first = all[0];
     if (!first) return route.fulfill({ status: 404, json: notFound });
+    // With `record`, the changes that record explains: itself, and a 0.7 reason of the same text under its other IDs.
+    const record = q.get('record'); const named = all.flatMap(e => e.records).find(r => r.id === record);
+    const same = (r: SpecEvent['records'][number]) => r.id === record || (!!named && r.id.startsWith('H-') && named.id.startsWith('H-') && r.title === named.title && JSON.stringify(r.sections) === JSON.stringify(named.sections));
+    const own = record ? all.filter(e => e.records.some(same)) : all;
     const start = q.get('after') ? own.findIndex(e => e.key === q.get('after')) + 1 : 0; const limit = Number(q.get('limit') ?? 20);
     const shown = own.slice(start, start + limit);
     return route.fulfill({ json: { contract: 'browser-commit', version: 4, sessionId: session.sessionId, commit,
@@ -201,7 +205,10 @@ export async function serve(page: Page, data: Fixture) {
   await page.route(url => url.pathname === '/api/v1/record', route => {
     const q = new URL(route.request().url()).searchParams; const id = q.get('id') ?? '';
     const found = events.find(e => e.records.some(r => r.id === id));
-    return found ? route.fulfill({ json: { contract: 'browser-record', version: 1, sessionId: session.sessionId, head: q.get('head'), id, commit: found.commit } })
+    const record = found?.records.find(r => r.id === id);
+    const key = (r: SpecEvent['records'][number]) => r.id.startsWith('H-') ? r.title + JSON.stringify(r.sections) : r.id;
+    const others = found ? new Set(events.filter(e => e.commit === found.commit).flatMap(e => e.records).map(key)).size - 1 : 0;
+    return found ? route.fulfill({ json: { contract: 'browser-record', version: 2, sessionId: session.sessionId, head: q.get('head'), id, commit: found.commit, record, others } })
       : route.fulfill({ status: 404, json: notFound });
   });
 
