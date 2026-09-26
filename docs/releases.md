@@ -438,3 +438,17 @@ main을 02f2e86까지 푸시하고, 릴리스 커밋 02f2e86에 주석 태그 v0
 레지스트리 압축 파일을 풀어 비교했다. 파일 214개이고 dist 전체·README·LICENSE가 검증 빌드와 바이트 단위로 같으며 CLI SHA-256도 같다. 새 임시 폴더에 레지스트리의 0.8.3을 설치해 version, 빈 Git 저장소의 `init`(config에 `cli`·`language`, 버전 없는 블록), 기준 버전이 더 새 프로젝트에서의 버전 안내(stdout JSON은 그대로)를 확인했다. 사용자 프로젝트와 전역 설치는 바꾸지 않았다.
 
 릴리스 커밋 8c53da1에 주석 태그 v0.8.3을 만들어 origin에 푸시했고, 원격 태그가 해당 커밋을 가리키는 것을 확인했다. 이 게시 결과를 남기는 후속 문서 커밋으로 태그를 옮기지 않는다.
+
+## 0.8.4 배포 준비
+
+2026-09-27, 에이전트가 설치·업데이트를 사용자에게 넘기지 않게 한 변경을 0.8.4로 준비했다. 에이전트는 설치 명령을 그대로 보여 주며 허용을 묻고 직접 실행하며, Windows PowerShell의 스크립트 제한에서는 `npm.cmd`·`gitifact.cmd`를 쓴다(`f31800c`, DR-eys4dayunx). `init`이 기준 버전을 스스로 올리면서 그 앞에 update로 올리라는 안내를 내던 문제도 고쳤다(`26ecb6c`, DR-xszf4ve43g). 이 저장소는 `pnpm cli init`으로 블록과 config를 0.8.4에 맞췄다.
+
+릴리스 커밋 6cbada215c71b6473f2f300794b5dc90b59aa3f3만 담은 별도 worktree에서 `pnpm install --frozen-lockfile`과 `pnpm check`를 돌려 통과했다(core 45, 계약 10, 소개 2, 브라우저 106, CLI 169, 패키지 오프라인 설치·실행). 모의 게시는 214개 파일, 압축 4,413,283바이트, integrity sha512-vQp8/k1QyvC9x/1KhduTtUE1+NKi3IzF+4UokUEaDn5iwW0ZKC6ARim5EKZyLkSfpSM/W1moKxoMsqeh0SBUXg==, shasum 0810812f7cebbe89ff395d17ffb67b40a29f5f4a이다. CLI 번들 SHA-256은 09250ce2270e61bee6958357816164d891a9f2438a72a819bf6a0363fed01bc4이다.
+
+## 0.8.4 게시 결과
+
+2026-09-27, 사용자가 worktree에서 `pnpm publish --access public --tag latest --no-git-checks`로 게시했다. 레지스트리의 버전과 latest가 0.8.4로 반영됐다. integrity는 sha512-JJ40r4/KAXA1xT6E5fTnGdoT7GxKTgrIXCYdqRMjFbrpmistlueX5qFVkDFmHriPH+Zzxcet/kblZL8R0czicg==, shasum은 064d896d95307ed8874f89c36f4e6ce225795a94다.
+
+모의 실행과 integrity가 달라 레지스트리 압축 파일을 풀어 비교했다. 파일 214개이고 dist 전체·README·LICENSE가 검증 빌드와 바이트 단위로 같으며 CLI SHA-256도 같다. package.json만 pnpm이 다시 쓴 형식이라 다르다(0.8.1·0.8.2와 같은 원인). 새 임시 폴더에 레지스트리의 0.8.4를 설치해 version을 확인했다. 사용자 프로젝트와 전역 설치는 바꾸지 않았다.
+
+릴리스 커밋 6cbada2에 주석 태그 v0.8.4를 만들어 origin에 푸시했고, 원격 태그가 해당 커밋을 가리키는 것을 확인했다. 이 게시 결과를 남기는 후속 문서 커밋으로 태그를 옮기지 않는다.
