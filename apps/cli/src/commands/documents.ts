@@ -25,8 +25,7 @@ export const line = (doc: Doc) => `${doc.id} ${doc.title}${draftMark(doc)} — $
 /** One file of an instruction folder: its path, then the title and description of a reference file. */
 export const fileLine = (f: InstructionFile) => f.title ? `${f.path} ${f.title} — ${f.description}` : f.path;
 /** A design's sources with the titles of the documents they name. */
-export const titledSources = (d: DesignDoc, byId: ReadonlyMap<string, Doc>) =>
-  d.sources.map(s => 'id' in s ? { id: s.id, title: byId.get(s.id)?.title ?? null, ...(s.note ? { note: s.note } : {}) } : s);
+export { titledSources } from '../queries/specs.js';
 
 export interface DocumentView {
   byId: Map<string, Doc>;

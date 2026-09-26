@@ -1,5 +1,5 @@
 import type { DatabaseSync } from 'node:sqlite';
-import { createCommitChanges, type ChangeType, type CommitChanges, type CommitReader, type GitAccess, type HistoryEvent } from './commit-changes.js';
+import { createCommitChanges, type ChangeType, type CommitChanges, type CommitReader, type GitAccess, type HistoryEvent, type Originals } from './commit-changes.js';
 import type { DocSnapshot, EventRecord } from './events.js';
 import { transaction, type CacheDatabase } from './database.js';
 import { containing, snippet } from './search-text.js';
@@ -38,8 +38,10 @@ const RECENT_COMMITS = 3; const RECENT_CHANGES = 12;
  * commits. A new HEAD reads the commits the cache does not have yet — after a pull, the new ones; after a branch
  * switch, usually none. Queries are then plain SQL over rows and ask Git nothing.
  */
-export function createHistory(database: CacheDatabase, git: GitAccess) {
+export function createHistory(database: CacheDatabase, git: GitAccess, originals?: Originals) {
   const changes = createCommitChanges(git);
+  // The text a change shows is read through the originals, Git unless the caller gives another source.
+  const texts: Originals = originals ?? changes;
   const building = new Map<string, Promise<void>>();
   const built = new Set<string>();
 
@@ -149,7 +151,7 @@ export function createHistory(database: CacheDatabase, git: GitAccess) {
         if (value && 'rev' in value) places.push({ rev: value.rev, path: value.path, specId: events[i]![key]?.specId ?? '' });
       }
     });
-    const read = places.length ? await changes.sides(places) : [];
+    const read = places.length ? await texts.sides(places) : [];
     const text = new Map(places.map((p, i) => [p.rev + ':' + p.path, read[i] ?? null]));
     const resolve = (value: Side): DocSnapshot | null => !value ? null : 'rev' in value ? text.get(value.rev + ':' + value.path) ?? null : value;
     return events.map((event, i) => ({ event, before: resolve(sides[i]!.before), after: resolve(sides[i]!.after) }));
@@ -168,7 +170,7 @@ export function createHistory(database: CacheDatabase, git: GitAccess) {
   return {
     ensure,
     /** The document and reason files of one commit, read from Git and not kept. */
-    filesAt: (rev: string) => changes.tree(rev),
+    filesAt: (rev: string) => texts.tree(rev),
     /**
      * The changes that match, newest first, a page of whole commits: `limit` commits after the commit `after`, each
      * with all of its matching changes, and how many changes and commits match in all. `next` is the last commit of the

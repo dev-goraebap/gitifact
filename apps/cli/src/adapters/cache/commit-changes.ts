@@ -13,6 +13,16 @@ export interface GitAccess { run(args: string[], input?: Buffer): Promise<Buffer
 
 export type { DocSnapshot, SnapshotSource, ChangeType, HistoryEvent, CommitChanges } from './events.js';
 interface RawCommit { commit: string; parent: string | undefined; parents: string[]; author: string; email: string; date: string; committer: string; message: string; paths: string[]; added: string[] }
+/**
+ * Where the text of documents at a commit comes from when a reader opens a change: the queries ask this and never Git
+ * itself. Git gives it here (`createCommitChanges`); a source without Git, such as a snapshot's files, could stand in.
+ */
+export interface Originals {
+  /** The documents at the commits and paths a change was read at; null where a place no longer reads. */
+  sides(places: { rev: string; path: string; specId: string }[]): Promise<(DocSnapshot | null)[]>;
+  /** Every document and reason file of a commit (path → text). */
+  tree(rev: string): Promise<Map<string, string>>;
+}
 /** How a commit is read: with the current parser, with the 0.7 parser (before a migration), or not at all (the migration itself). */
 export type CommitReader = 'current' | 'legacy' | 'migration';
 /** The trailer `changes commit` puts on a format migration. Its commit is where the current format's history starts. */

@@ -1,59 +1,21 @@
-import { lstat } from 'node:fs/promises';
-import { join } from 'node:path';
 import { INSTRUCTIONS_ROOT, type InstructionDoc } from '@gitifact/core';
-import { readInstructionFile, readInstructionFiles } from '../adapters/filesystem/instruction-folder.js';
+import { readInstructionFile } from '../adapters/filesystem/instruction-folder.js';
 import { committed, createDocument, draftMark, fileLine, showDocuments, stateMark, working } from './documents.js';
-import { documentStates } from '../queries/document-states.js';
-import { byAuthor, checkFields, aside, pageLine, paginate, selected, type Change, type ListOptions } from './list-options.js';
+import { listInstructions } from '../queries/instructions.js';
+import { checkFields, aside, cursorGone, pageLine, selected, type ListOptions } from './list-options.js';
 import { CommandError, runCommand, text, type Format } from './output.js';
 import { openProject, type Project } from './project.js';
 import { t } from '../shared/i18n/index.js';
 
 export const instructionSorts = ['name', 'updated'] as const;
 const columns = ['id', 'name', 'path', 'title', 'description', 'draft', 'state', 'previousPath', 'files', 'updated', 'line'] as const;
-const AGENTS = 'AGENTS.md';
 
-/**
- * `instructions list`: where AGENTS.md is, since its index says which instruction a kind of work reads, then each
- * instruction with the files of its folder besides index.md, each by its title and description, so an agent opens
- * only the ones the work needs. Each says where it stands against the last commit, and an instruction deleted since is
- * listed as to be deleted; its folder is gone, so it lists no files.
- */
+/** `instructions list`: AGENTS.md, then the instructions `queries/instructions.ts` picks and pages, each with its files. */
 export const runInstructionsList = (options: ListOptions & { sort: typeof instructionSorts[number] }) => runCommand('instructions', options.format, async () => {
   const fields = checkFields(options.fields, columns);
   const project = await openProject(process.cwd());
-  const listed = await project.cache.documents.list(); const problems = listed.problems;
-  const states = await documentStates(project, listed.documents);
-  const documents = states.documents;
-  const agents = { path: AGENTS, exists: !!(await lstat(join(project.root, AGENTS)).catch(() => undefined))?.isFile() };
-  const historyNeeded = options.sort === 'updated' || options.author !== undefined || !!fields?.includes('updated');
-  const latest = new Map<string, Change>();
-  // Each document's place in HEAD's history, newest first: the order of commits, not their dates, which may tie.
-  const newest = new Map<string, number>();
-  let touched: Set<string> | undefined;
-  if (historyNeeded) {
-    const head = await project.head();
-    const changes = head ? await project.cache.history.changesOf(head) : [];
-    changes.forEach((c, rank) => { if (!latest.has(c.id)) { latest.set(c.id, { commit: c.commit, date: c.date, author: c.author, email: c.email }); newest.set(c.id, rank); } });
-    if (options.author !== undefined) { const by = byAuthor(options.author); touched = new Set(changes.filter(by).map(c => c.id)); }
-  }
-  const matched = options.q !== undefined ? await project.cache.documents.matching(options.q) : undefined;
-  const instructions = documents.filter((d): d is InstructionDoc => d.kind === 'instruction')
-    .filter(d => (!touched || touched.has(d.id)) && (!matched || matched.has(d.id)))
-    .sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
-  const rows = await Promise.all(instructions.map(async d => {
-    const state = states.state(d.id);
-    const { files, limited } = state === 'deleted' ? { files: [], limited: false } : await readInstructionFiles(project.root, d.path);
-    return {
-      id: d.id, name: d.name, path: d.path, title: d.title, description: d.description, ...(d.draft ? { draft: true } : {}),
-      state, ...(states.previousPath(d.id) ? { previousPath: states.previousPath(d.id) } : {}),
-      files, ...(limited ? { filesLimited: true } : {}),
-      ...(historyNeeded ? { updated: latest.get(d.id) ?? null } : {}),
-      ...(matched ? { line: matched.get(d.id)! } : {}),
-    };
-  }));
-  if (options.sort === 'updated') rows.sort((a, b) => (newest.get(a.id) ?? Infinity) - (newest.get(b.id) ?? Infinity));
-  const page = paginate(rows, r => r.id, options); const shown = page.rows;
+  const listed = await listInstructions(project, { ...options, withUpdated: !!fields?.includes('updated') }, options) ?? cursorGone(options);
+  const { agents, problems, page } = listed; const shown = page.rows;
   const paging = { total: page.total, next: page.next, unit: 'instruction' as const };
   const unreadable = problems.filter(p => p.path.startsWith(INSTRUCTIONS_ROOT + '/'));
   if (fields) {
