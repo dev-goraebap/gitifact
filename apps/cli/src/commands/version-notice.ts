@@ -18,10 +18,10 @@ export const LATER_MS = 24 * 60 * 60 * 1000;
 export const REFRESH_COMMAND = '__refresh-update';
 
 export type VersionNotice = { kind: 'project-newer'; project: string } | { kind: 'release'; latest: string } | { kind: 'project-older'; project: string };
-// init and update report the release they checked themselves, and update is what brings the project up to date.
+// init and update report the release they checked themselves, and both bring the project up to this CLI.
 export interface NoticeScope { release: boolean; projectOlder: boolean }
 export const noticeScope = (command: string): NoticeScope =>
-  ({ release: command !== 'init' && command !== 'update', projectOlder: command !== 'update' });
+  ({ release: command !== 'init' && command !== 'update', projectOlder: command !== 'init' && command !== 'update' });
 
 /** One notice at most: a project ahead of this CLI first, then a newer release, then a project behind it. */
 export function chooseNotice(running: string, project: string | undefined, cache: UpdateCache, now: number, scope: NoticeScope = { release: true, projectOlder: true }): VersionNotice | null {

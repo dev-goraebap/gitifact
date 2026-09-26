@@ -83,7 +83,7 @@ sequenceDiagram
 | 새 버전 | 캐시의 `latest`가 실행 중인 버전보다 새 버전이고 `later`로 미루지 않음 | 두 버전, 전역 설치 뒤 `gitifact update`, `gitifact update --later` |
 | 프로젝트가 뒤짐 | 실행 중인 버전이 설정의 `cli`보다 새 버전 | `gitifact update`로 기준을 올릴 수 있음 |
 
-한 번에 하나만, 위 표의 순서로 고른다. `init`과 `update`는 레지스트리를 직접 확인해 결과에 담으므로 새 버전 안내와 뒤의 확인을 하지 않는다. `update`는 프로젝트가 뒤짐 안내도 하지 않는다. `GITIFACT_NO_UPDATE_CHECK`가 켜져 있으면 캐시를 읽지 않고 뒤의 확인도 걸지 않는다. 프로젝트 비교는 로컬 파일만 읽으므로 계속한다. 설정은 `findProjectConfig`로 위 폴더까지 찾고, 읽지 못하거나 `cli`가 형식에 맞지 않으면 없는 것으로 본다.
+한 번에 하나만, 위 표의 순서로 고른다. `init`과 `update`는 레지스트리를 직접 확인해 결과에 담으므로 새 버전 안내와 뒤의 확인을 하지 않는다. 둘 다 기준 버전을 이 CLI로 올리므로 프로젝트가 뒤짐 안내도 하지 않는다. `GITIFACT_NO_UPDATE_CHECK`가 켜져 있으면 캐시를 읽지 않고 뒤의 확인도 걸지 않는다. 프로젝트 비교는 로컬 파일만 읽으므로 계속한다. 설정은 `findProjectConfig`로 위 폴더까지 찾고, 읽지 못하거나 `cli`가 형식에 맞지 않으면 없는 것으로 본다.
 
 뒤의 확인은 같은 CLI를 `spawn(process.execPath, [...execArgv, main.js, '__refresh-update'], { detached, stdio: 'ignore', windowsHide, cwd: 홈 폴더 })`로 띄우고 `unref()`한다. Windows에서 실행 중인 프로세스의 폴더는 지울 수 없으므로 프로젝트 폴더에서 띄우지 않는다. `__refresh-update`는 도움말에 나오지 않고 안내도 하지 않는다.
 

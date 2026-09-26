@@ -35,9 +35,9 @@ test('one notice at most: a project ahead of the CLI, then a newer release, then
   assert.deepEqual(chooseNotice('0.8.3', '0.8.3', later, now + LATER_MS), { kind: 'release', latest: '0.8.4' });
   // A quieted release does not hide a project that is ahead.
   assert.deepEqual(chooseNotice('0.8.3', '0.8.4', later, now), { kind: 'project-newer', project: '0.8.4' });
-  // init and update report the release themselves, and update is the answer to a project behind the CLI.
+  // init and update report the release themselves, and both are the answer to a project behind the CLI.
   assert.deepEqual(noticeScope('update'), { release: false, projectOlder: false });
-  assert.deepEqual(noticeScope('init'), { release: false, projectOlder: true });
+  assert.deepEqual(noticeScope('init'), { release: false, projectOlder: false });
   assert.deepEqual(noticeScope('specs'), { release: true, projectOlder: true });
   assert.equal(chooseNotice('0.8.3', '0.8.2', fresh, now, noticeScope('update')), null);
   assert.deepEqual(chooseNotice('0.8.3', '0.8.5', fresh, now, noticeScope('update')), { kind: 'project-newer', project: '0.8.5' });
