@@ -408,3 +408,19 @@ Markdown 명세·변경 이유·Git 커밋 연결과 요구사항 이력·제품
 새 임시 폴더에 레지스트리의 0.8.1을 설치해 version, init과 `.gitifact/.gitattributes`·줄바꿈 안내·새 지침 블록, `specs new`와 `specs list`의 상태 표시·`page`, `instructions list --all`, `records list`, `check`를 확인했다. 사용자 프로젝트와 전역 설치는 바꾸지 않았다.
 
 main을 02f2e86까지 푸시하고, 릴리스 커밋 02f2e86에 주석 태그 v0.8.1을 만들어 origin에 푸시했으며 원격 태그가 해당 커밋을 가리키는 것을 확인했다. 이 게시 결과를 남기는 후속 문서 커밋으로 태그를 옮기지 않는다.
+
+## 0.8.2 배포 준비
+
+2026-09-26, 목록 가공을 서버의 조회층으로 모은 변경을 0.8.2로 준비했다. 브라우저 체크아웃을 틀(`/api/v1/checkout`)과 기능 목록·기능·지침·참여자로 나눴고, 기능 목록은 기능 20개씩 "기능 더 보기", 참여자·커밋 코드 탭·기록 상세 문서는 20개씩 잇는다. 검색창은 분류마다 5개와 분류별 더 보기이며 결정기록(기록 파일 단위)과 커밋 해시를 찾는다. 참여자는 캐시의 커밋 기록으로 모든 커밋을 센다(캐시 형식 11). 한국어·영어 패치노트와 AGENTS.md 블록의 버전을 함께 맞췄다.
+
+작업 폴더에 사용자의 추적하지 않는 파일(`docs/assets/gitifact-mascot*`)이 있어, 릴리스 커밋 589c5110b41e212d68644290b3178c6751e2a00b만 담은 별도 worktree에서 `pnpm install --frozen-lockfile`과 `pnpm check`를 돌려 통과했다(브라우저 101 포함, 패키지 오프라인 설치·실행). 모의 게시는 219개 파일, 압축 4,350,669바이트, integrity sha512-FbuATb9wQNa0P+C5I6QT+AcmiFTofbyvc0gCNSWvq4tgFF32wNVm+DRKsT19H2rndmX6lCHDhEsxvQMC6YW+rQ==, shasum b03bd29a838f655f8ba3447ae6032a8930314054이다. CLI 번들 SHA-256은 e60c6c20df5733dd982a07eaa16fe76cc96bd45f8f1a9c6156f41e6867bda6e0이다.
+
+## 0.8.2 게시 결과
+
+2026-09-26, 사용자가 worktree에서 `pnpm publish --access public --tag latest --no-git-checks`로 게시했다. 처음 안내한 명령이 `&&`를 써서 Windows PowerShell 5.1에서 실행되지 않았고, 두 줄로 나눠 다시 실행했다. 레지스트리의 버전과 latest가 0.8.2로 반영됐다. integrity는 sha512-gAjkEA3y8mrqW7TP/DdHKqsQj27xu0eYaSeXBgpsVBLTW8aEh1z75rVZ+Ynwq/4hC6ak0CDHYjCgoBgF1GjCYQ==, shasum은 d1648d1fbf94490d2ebba5f04593bee70a124730이다.
+
+모의 실행과 integrity가 달라 레지스트리 압축 파일을 풀어 비교했다. 파일 219개의 목록과 풀었을 때의 크기(9,451,565바이트)가 같고, dist 전체·README·LICENSE가 검증 빌드와 바이트 단위로 같으며 CLI SHA-256도 같다. package.json만 pnpm이 `workspace:*`를 바꾸고 다시 쓴 형식이라 다르다.
+
+새 임시 폴더에 레지스트리의 0.8.2를 설치해 version과 커밋 5,000개 합성 저장소에서 `records list`·`specs list`의 페이지 안내를 확인했다. 사용자 프로젝트와 전역 설치는 바꾸지 않았다.
+
+릴리스 커밋 589c511에 주석 태그 v0.8.2를 만들어 origin에 푸시했고, 원격 태그가 해당 커밋을 가리키는 것을 확인했다. 이 게시 결과를 남기는 후속 문서 커밋으로 태그를 옮기지 않는다.
