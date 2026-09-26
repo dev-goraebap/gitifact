@@ -13,8 +13,7 @@ export function WorkingPage({ search }: { search: WorkingSearch }) {
   useLanguage();
   const documentId = useLocation({ select: location => location.hash }) || undefined;
   return <RecordsPage header={PageHeader} title={t('nav.history')} root="/records" hasTitle={false} isWide
-    trail={() => [{ label: t('working.title') }]}
-    skeleton={<></>}>
+    trail={() => [{ label: t('working.title') }]}>
     {({ checkout, session }) => <WorkingView search={search} documentId={documentId} session={session} features={checkout.index.features} head={checkout.head}/>}
   </RecordsPage>;
 }

@@ -2,8 +2,6 @@
 .page { min-width:0; }
 /* The same side gutter as the title, the filters and the top bar, so the page's left edge is one line. */
 .content {padding:var(--spacing-4) var(--spacing-5);min-width:0;animation:reveal .22s ease-out both}
-.skeleton { min-height:24rem; animation:reveal .2s ease-out both; }
-.skeletonRow { align-items:center; padding-block:var(--spacing-3); border-bottom:1px solid var(--color-border); }
 @media (prefers-reduced-motion: reduce) {
   .content { animation:none; }
 }
@@ -12,7 +10,7 @@
 .pageTitle { padding-inline:var(--spacing-5); padding-block:var(--spacing-6) var(--spacing-2); }
 .filters { padding:var(--spacing-3) var(--spacing-5); }
 .filtersSticky { position:sticky; top:var(--gitifact-topbar-height); z-index:2; background:var(--color-background-surface); border-bottom:1px solid var(--color-border); }
-/* Row pieces the contributor's activity, the feature list and the wiki skeleton share. */
+/* Row pieces the contributor's activity, and the feature list share. */
 .entryBody { min-width:0; flex:1; }
 /* Header: the observed time sits left of the refresh button. */
 .headerActions { align-items:center; flex-shrink:0; white-space:nowrap; }

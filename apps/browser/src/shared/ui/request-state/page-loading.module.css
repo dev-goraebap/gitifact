@@ -1,0 +1,17 @@
+/* The loader lies over the content card: the card keeps its size and place, so nothing moves when the screen appears. */
+.overlay { position: absolute; inset: var(--spacing-2); inset-inline-start: 0; border-radius: var(--radius-container); opacity: 0; visibility: hidden; pointer-events: none; transition: opacity var(--duration-fast) var(--ease-standard), visibility 0s linear var(--duration-fast); }
+/* It appears at once, the moment the wait passes 100ms, and only fades on the way out. While shown it takes the clicks,
+   so the hidden screen under it cannot be pressed; the card itself is left alone. */
+.visible { opacity: 1; visibility: visible; pointer-events: auto; transition: none; }
+@media (width < 64rem) { .overlay { inset: 0; border-radius: 0; } }
+
+/* A square box the rocket is drawn into: it holds its size before the player arrives, so the text under it never moves. */
+.mark { width: calc(var(--spacing-8) * 5); aspect-ratio: 1; }
+.small { width: calc(var(--spacing-8) * 2.5); }
+.inline { min-height: calc(var(--spacing-8) * 3); }
+/* The drawing's own black lines and white fills are replaced by the theme's text and card colors, in light and dark. */
+.mark :global(svg) [stroke="rgb(0,0,0)"] { stroke: var(--color-text-secondary); }
+.mark :global(svg) [fill="rgb(254,254,255)"], .mark :global(svg) [fill="#ffffff"] { fill: var(--color-background-surface); }
+@media (prefers-reduced-motion: reduce) {
+  .overlay, .visible { transition: none; }
+}

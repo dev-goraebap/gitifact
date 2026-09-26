@@ -1,5 +1,6 @@
+import { useDeferredValue } from 'react';
 import type { BrowserContributorV1, BrowserSessionV3, Contributor } from '@gitifact/contracts';
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { contributorOptions, contributorsOptions, historyOptions } from '../../../entities/project';
 import { ApiError } from '../../../shared/api/client';
 import { RequestState } from '../../../shared/ui/request-state';
@@ -15,7 +16,7 @@ import { Timestamp } from '@astryxdesign/core/Timestamp';
 import { Link } from '@tanstack/react-router';
 import { avatarSource, contributorHref } from '../../../entities/contributor';
 import { ChangeBadge } from '../../../entities/document';
-import { ListSkeleton, type RecordSearch } from '../../../widgets/records-page';
+import type { RecordSearch } from '../../../widgets/records-page';
 import styles from './contributors.module.css';
 import { PageState } from '../../../shared/ui/page-state';
 import { t, tNodes, useLanguage } from '../../../shared/i18n';
@@ -31,20 +32,23 @@ function ContributorPage({session,head,email}: {session:BrowserSessionV3;head:st
   const query = useQuery(contributorOptions(session, email));
   if (query.error instanceof ApiError && query.error.code === 'NOT_FOUND') return <PageState kind="not-found" title={t('contributors.notFoundTitle')} description={t('contributors.notFoundDescription', { email })} actions={<Link to="/contributors">{t('contributors.backToList')}</Link>}/>;
   if (query.error) return <RequestState error={query.error} retry={() => { void query.refetch(); }}/>;
-  if (!query.data) return <ListSkeleton/>;
+  if (!query.data) return <RequestState/>;
   return <ContributorDetail session={session} head={head} person={query.data.person} features={query.data.features}/>;
 }
 
 /** Card per Git author, most commits first and twenty at a time; the whole card opens the contributor page. */
 function ContributorGrid({session,search}: {session:BrowserSessionV3;search:RecordSearch}) {
   useLanguage();
-  const query = useInfiniteQuery(contributorsOptions(session, search.q));
+  // A new search keeps the cards on screen until the next answer replaces them.
+  const query = useInfiniteQuery({ ...contributorsOptions(session, search.q), placeholderData: keepPreviousData });
+  // Drawn in the background, so the loader keeps moving while the cards are laid out.
+  const data = useDeferredValue(query.data);
   if (query.error) return <RequestState error={query.error} retry={() => { void query.refetch(); }}/>;
-  if (!query.data) return <ListSkeleton/>;
-  const people = query.data.pages.flatMap(page => page.people);
+  if (!data) return <RequestState/>;
+  const people = data.pages.flatMap(page => page.people);
   if (!people.length) return <PageState kind={search.q ? 'search' : 'empty'} title={t('contributors.emptyTitle')} description={t('contributors.emptyDescription')}/>;
   return <VStack gap={3}>
-    <Text type="supporting" color="secondary">{t('contributors.count', { count: query.data.pages[0]!.total })}</Text>
+    <Text type="supporting" color="secondary">{t('contributors.count', { count: data.pages[0]!.total })}</Text>
     <Grid columns={{ minWidth: 220, repeat: 'fill' }} gap={3}>
       {people.map(p => <ClickableCard key={p.email} label={p.name} href={contributorHref(p.email)} padding={4} elevation="none">
           <VStack gap={3} className={styles.personCard}>

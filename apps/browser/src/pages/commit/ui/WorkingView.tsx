@@ -11,7 +11,6 @@ import { workingOptions } from '../../../entities/project';
 import { KindToken } from '../../../entities/document';
 import { decisionPreview } from '../../../widgets/activity-timeline';
 import { RecordDocuments } from './RecordDocuments';
-import { CommitSkeleton } from './CommitSkeleton';
 import { listedWorking, workingChange } from '../model/working-change';
 import type { WorkingSearch, WorkingTab } from '../model/working-search';
 import styles from './commit.module.css';
@@ -30,7 +29,7 @@ export function WorkingView({ search, documentId, session, features, head }: { s
   const query = useQuery(workingOptions(session));
   const data = query.data;
   if (query.error) return <RequestState error={query.error} retry={() => { void query.refetch(); }}/>;
-  if (!data) return <CommitSkeleton label={t('working.loading')}/>;
+  if (!data) return <RequestState/>;
   const tab: WorkingTab = search.tab ?? (documentId || !data.records.length ? 'documents' : 'records');
   const without = data.changes.filter(c => data.withoutRecord.includes(c.id));
   const choose = (next: string) => { void navigate({ to: '/records/working', search: { tab: next as WorkingTab } }); };

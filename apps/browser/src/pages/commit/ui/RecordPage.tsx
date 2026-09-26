@@ -10,8 +10,7 @@ export function RecordPage({ recordId }: { recordId: string }) {
   useLanguage();
   const documentId = useLocation({ select: location => location.hash }) || undefined;
   return <RecordsPage header={PageHeader} title={t('nav.history')} root="/records" hasTitle={false} isWide
-    trail={() => [{ label: recordId }]}
-    skeleton={<></>}>
+    trail={() => [{ label: recordId }]}>
     {({ checkout, session }) => checkout.head
       ? <RecordView recordId={recordId} documentId={documentId} session={session} features={checkout.index.features} head={checkout.head}/>
       : <PageState kind="empty" title={t('history.emptyTitle')} description={t('history.emptyDescription')}/>}

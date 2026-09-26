@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useDeferredValue, useEffect } from 'react';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import type { BrowserSessionV3, IndexFeature } from '@gitifact/contracts';
 import { VStack } from '@astryxdesign/core/VStack';
@@ -11,7 +11,6 @@ import { LoadMore } from '../../../shared/ui/load-more';
 import { RecordDocuments } from './RecordDocuments';
 import { commitChange, listed, loadedCommit } from '../model/commit-changes';
 import { CommitHeading } from './CommitHeading';
-import { CommitSkeleton } from './CommitSkeleton';
 import { RecordCommit } from './RecordCommit';
 import { RecordSections } from './RecordSections';
 import { WorkingRecord } from './WorkingRecord';
@@ -32,13 +31,14 @@ export function RecordView({ recordId, documentId, session, features, head }: { 
   const found = useQuery(recordOptions(session, head, recordId));
   const commit = found.data?.commit;
   const query = useInfiniteQuery({ ...commitOptions(session, commit ?? '', recordId), enabled: !!commit });
-  const data = loadedCommit(query);
+  // The changes are drawn in the background, so the loader keeps moving while a large commit is laid out.
+  const data = loadedCommit(useDeferredValue(query.data));
   useEffect(() => { if (data && documentId) document.getElementById(documentId)?.scrollIntoView({ block: 'start' }); }, [data, documentId]);
   // A record HEAD's history does not have may be one not committed yet, which the uncommitted work names.
   if (found.error instanceof ApiError && found.error.code === 'NOT_FOUND') return <WorkingRecord recordId={recordId} documentId={documentId} session={session} features={features} head={head}/>;
   const error = found.error ?? query.error;
   if (error) return <RequestState error={error} retry={() => { void (found.error ? found.refetch() : query.refetch()); }}/>;
-  if (!data || !commit || !found.data) return <CommitSkeleton label={t('record.loading')}/>;
+  if (!data || !commit || !found.data) return <RequestState/>;
   const record = found.data.record;
   const explained = data.changes.map(listed);
   return <VStack gap={0} as="article" aria-label={t('record.title')} className={styles.commitPage}>

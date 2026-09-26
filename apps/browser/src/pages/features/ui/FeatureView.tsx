@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { useDeferredValue, useEffect, useState } from 'react';
+import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import type { BrowserSessionV3, Contributor, FeatureRow, IndexFeature, SpecFeature } from '@gitifact/contracts';
 import { VStack } from '@astryxdesign/core/VStack';
 import { HStack } from '@astryxdesign/core/HStack';
@@ -17,7 +17,7 @@ import { useMediaQuery } from '@astryxdesign/core/hooks';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { DesignDocument, StateToken } from '../../../entities/document';
 import { avatarSource, contributorHref } from '../../../entities/contributor';
-import { ListSkeleton, type RecordSearch } from '../../../widgets/records-page';
+import type { RecordSearch } from '../../../widgets/records-page';
 import { featureOptions, featuresOptions } from '../../../entities/project';
 import { ApiError } from '../../../shared/api/client';
 import { RequestState } from '../../../shared/ui/request-state';
@@ -38,10 +38,12 @@ export function FeatureView({ session, index, featureId, search, change }: { ses
 /** One feature as its page reads it, asked of the server; a feature the checkout lacks says so with a way back. */
 function FeatureDetailPage({ session, index, featureId, search, change }: { session: BrowserSessionV3; index: IndexFeature[]; featureId: string; search: RecordSearch; change: (s: RecordSearch) => void }) {
   const query = useQuery(featureOptions(session, featureId));
+  // Drawn in the background so the loader keeps moving while a long feature is laid out.
+  const data = useDeferredValue(query.data);
   if (query.error instanceof ApiError && query.error.code === 'NOT_FOUND') return <PageState kind="not-found" title={t('features.notFoundTitle')} description={t('features.notFoundDescription', { id: featureId })} actions={<Link to="/features">{t('features.backToList')}</Link>}/>;
   if (query.error) return <RequestState error={query.error} retry={() => { void query.refetch(); }}/>;
-  if (!query.data) return <ListSkeleton/>;
-  return <FeatureDetail feature={query.data.feature} features={index} search={search} change={change}/>;
+  if (!data) return <RequestState/>;
+  return <FeatureDetail feature={data.feature} features={index} search={search} change={change}/>;
 }
 
 /** Overlapping author avatars; the fourth and later collapse into a "+N" count. */
@@ -73,8 +75,11 @@ function FeatureList({ session, search, change }: { session: BrowserSessionV3; s
   const opens: Record<SortKey, TableSortDirection> = { title: 'ascending', requirements: 'descending', updatedAt: 'descending' };
   const key: SortKey = search.sort === 'title' || search.sort === 'requirements' ? search.sort : 'updatedAt';
   const direction: TableSortDirection = search.dir === 'asc' ? 'ascending' : search.dir === 'desc' ? 'descending' : opens[key];
-  const query = useInfiniteQuery(featuresOptions(session, { q: search.q, design: search.design, author: search.author,
-    sort: key === 'updatedAt' ? undefined : key, dir: search.dir }));
+  // A new filter or order keeps the rows on screen until the next answer replaces them.
+  const query = useInfiniteQuery({ ...featuresOptions(session, { q: search.q, design: search.design, author: search.author,
+    sort: key === 'updatedAt' ? undefined : key, dir: search.dir }), placeholderData: keepPreviousData });
+  // The rows are drawn in the background, a slice at a time, so the loader keeps moving while the table is built.
+  const data = useDeferredValue(query.data);
   const carried = { q: search.q, design: search.design, author: search.author, sort: search.sort, dir: search.dir };
   const sorting = useTableSortable<Row, SortKey>({ sort: [{ sortKey: key, direction }], allowUnsortedState: false,
     // A column the reader has just reached opens the way that column is normally read, not always ascending.
@@ -82,9 +87,9 @@ function FeatureList({ session, search, change }: { session: BrowserSessionV3; s
       const way = entry.sortKey === key ? entry.direction : opens[entry.sortKey];
       change({ ...search, sort: entry.sortKey === 'updatedAt' ? undefined : entry.sortKey, dir: way === opens[entry.sortKey] ? undefined : way === 'ascending' ? 'asc' : 'desc' }); } });
   if (query.error) return <RequestState error={query.error} retry={() => { void query.refetch(); }}/>;
-  if (!query.data) return <ListSkeleton/>;
-  const first = query.data.pages[0]!;
-  const features = query.data.pages.flatMap(page => page.features);
+  if (!data) return <RequestState/>;
+  const first = data.pages[0]!;
+  const features = data.pages.flatMap(page => page.features);
   const rows: Row[] = features.flatMap(feature => [
     { id: feature.id, kind: 'feature' as const, feature },
     ...feature.requirements.map((requirement, index) => ({ id: feature.id + ':' + requirement.id, kind: 'requirement' as const, feature, requirement, number: index + 1 })),

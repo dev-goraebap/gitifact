@@ -1,6 +1,5 @@
 import { Selector } from '@astryxdesign/core/Selector';
-import { RecordsPage, SearchFilter, ListSkeleton, type RecordSearch, type ChangeSearch } from '../../../widgets/records-page';
-import { TimelineSkeleton } from '../../../widgets/activity-timeline';
+import { RecordsPage, SearchFilter, type RecordSearch, type ChangeSearch } from '../../../widgets/records-page';
 import { HistoryView } from './HistoryView';
 import { PageHeader } from '../../../widgets/page-header';
 import { ChangeKindIcon, DocumentKindIcon, FeatureIcon, PersonIcon } from '../../../shared/ui/icons/filter-icons';
@@ -10,7 +9,6 @@ import { t, useLanguage } from '../../../shared/i18n';
 export function ActivityPage({ search, change }: { search: RecordSearch; change: ChangeSearch }) {
   useLanguage();
   return <RecordsPage header={PageHeader} title={t('nav.history')} description={t('pageDescription.history')} root="/records" hasTitle
-    skeleton={<ListSkeleton selectors={4}><TimelineSkeleton/></ListSkeleton>}
     filters={checkout => <>
       <SearchFilter label={t('filters.search')} placeholder={t('filters.searchEvents')} value={search.q ?? ''} onChange={q => change({ ...search, q: q || undefined }, true)}/>
       <Selector label={t('filters.feature')} isLabelHidden startIcon={FeatureIcon} value={search.feature ?? ''} options={[{ value: '', label: t('filters.allFeatures') }, ...checkout.index.features.map(f => ({ value: f.id, label: f.title }))]} onChange={feature => change({ ...search, feature: feature || undefined })}/>

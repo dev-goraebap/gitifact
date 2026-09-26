@@ -10,8 +10,7 @@ import { HgiRefresh } from '../../../shared/ui/icons/HgiRefresh';
 import { sessionOptions, checkoutOptions, checkoutParts } from '../../../entities/project';
 import { ApiError } from '../../../shared/api/client';
 import styles from './records.module.css';
-import { RequestState } from '../../../shared/ui/request-state';
-import { useLoadingHold } from '../../../shared/ui/request-state/useLoadingHold';
+import { RequestState, usePageLoading } from '../../../shared/ui/request-state';
 import { t, tNodes, useLanguage, getLanguage } from '../../../shared/i18n';
 import { DocumentIndexProvider } from '../../../shared/ui/document';
 import { DescriptionHelp } from '../../../shared/ui/description-help';
@@ -35,14 +34,12 @@ export interface RecordsPageProps {
   isWide?: boolean;
   /** The filter row under the heading, which stays in view while the list scrolls. */
   filters?: (checkout: BrowserCheckoutV1) => ReactNode;
-  /** Shaped like the screen, shown while the checkout is read. */
-  skeleton: ReactNode;
   children: (context: { checkout: BrowserCheckoutV1; session: BrowserSessionV3 }) => ReactNode;
 }
 
 /**
  * The frame every records screen shares: the session and the checkout's frame read once, the header with the time of that
- * read and a refresh, the loading skeleton, the failure states, and the index documents resolve their links with.
+ * read and a refresh, the report to the frame's loader, the failure states, and the index documents resolve their links with.
  * Coming back to the tab asks whether the project changed since that read; when it did, a notice offers the refresh.
  * A new server session starts the frame over so nothing of another session's answers is shown.
  */
@@ -52,7 +49,7 @@ export function RecordsPage(props: RecordsPageProps) {
   return <RecordsPanel key={session.data.sessionId} session={session.data} {...props}/>;
 }
 
-function RecordsPanel({ session, header: Header, title, description, root, trail, hasTitle, isWide = false, filters, skeleton, children }: RecordsPageProps & { session: BrowserSessionV3 }) {
+function RecordsPanel({ session, header: Header, title, description, root, trail, hasTitle, isWide = false, filters, children }: RecordsPageProps & { session: BrowserSessionV3 }) {
   useLanguage();
   const query = useQuery(checkoutOptions(session));
   const client = useQueryClient();
@@ -63,9 +60,9 @@ function RecordsPanel({ session, header: Header, title, description, root, trail
   const behind = useBehind(session, query.data?.stamp, query.dataUpdatedAt);
   const disconnected = query.error instanceof ApiError && query.error.code === 'SESSION_CHANGED';
   const first = disconnected ? undefined : query.data;
-  // The skeleton waits 200ms before appearing and then stays at least 300ms, so fast answers never flash and slow ones never blink.
-  const loading = useLoadingHold(!first && !query.error);
-  const ready = !!first && !loading;
+  // The frame's one loader covers the screen until the checkout and the screen's own first reads have answered.
+  usePageLoading(!first && !query.error);
+  const ready = !!first;
   const crumbs = [{ label: title, to: root }, ...(first && trail ? trail(first) : [])];
   const actions = <HStack gap={3} className={styles.headerActions}>
     {first && <Text type="supporting" color="secondary" className={styles.headerTime}>{tNodes('header.observedAt', { time: <time dateTime={first.observedAt}>{new Date(first.observedAt).toLocaleString(getLanguage())}</time> })}</Text>}
@@ -78,7 +75,6 @@ function RecordsPanel({ session, header: Header, title, description, root, trail
       {behind && first && <VStack gap={0} className={styles.staleNotice}><StaleNotice isRefreshing={query.isFetching} onRefresh={refresh}/></VStack>}
       {query.error && first && <VStack padding={4} role="alert"><Text>{query.error.message}</Text><Text>{t('history.staleData')}</Text></VStack>}
       {!first && query.error && <RequestState error={query.error} retry={() => { if (disconnected) window.location.reload(); else void query.refetch(); }}/>}
-      {loading && skeleton}
       {ready && filters && <HStack gap={3} wrap="wrap" className={`${styles.filters} ${styles.filtersSticky}`}>{filters(first)}</HStack>}
       {ready && <VStack gap={3} className={styles.content}>
         <DocumentIndexProvider index={first.index}>{children({ checkout: first, session })}</DocumentIndexProvider>

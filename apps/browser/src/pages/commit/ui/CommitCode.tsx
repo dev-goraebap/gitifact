@@ -1,14 +1,13 @@
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import type { BrowserSessionV3, CommitFile } from '@gitifact/contracts';
-import { VStack } from '@astryxdesign/core/VStack';
 import { HStack } from '@astryxdesign/core/HStack';
 import { Text } from '@astryxdesign/core/Text';
 import { Token } from '@astryxdesign/core/Token';
-import { Skeleton } from '@astryxdesign/core/Skeleton';
 import { commitFileOptions, commitFilesOptions } from '../../../entities/project';
 import { FileDiff } from './FileDiff';
 import { SplitReader } from './SplitReader';
 import { LoadMore } from '../../../shared/ui/load-more';
+import { InlineLoader, RequestState } from '../../../shared/ui/request-state';
 import styles from './commit.module.css';
 import { t, useLanguage } from '../../../shared/i18n';
 
@@ -29,9 +28,7 @@ export function CommitCode({ session, commit, file, href }: { session: BrowserSe
   // A file named in the address may be past the pages read so far; its own answer says how it changed.
   const named = useQuery({ ...commitFileOptions(session, commit, file ?? ''), enabled: !!query.data && !!file && !listed });
   if (query.error) return <Text type="supporting" color="secondary" role="alert">{t('source.listFailed')}</Text>;
-  if (!query.data) return <VStack gap={2} role="status" aria-label={t('source.listLoading')}>
-    {[92, 86, 74].map((w, i) => <Skeleton key={i} index={i} width={`${w}%`} height="var(--spacing-4)"/>)}
-  </VStack>;
+  if (!query.data) return <RequestState placeholder={<InlineLoader label={t('source.listLoading')}/>}/>;
   if (!files.length) return <Text color="secondary">{t('source.none')}</Text>;
   const chosen: CommitFile | undefined = listed ?? (file ? named.data?.file : files[0]);
   return <SplitReader label={t('source.title')}
@@ -51,8 +48,6 @@ export function CommitCode({ session, commit, file, href }: { session: BrowserSe
       </HStack>
       <FileDiff key={chosen.path} session={session} commit={commit} file={chosen}/>
     </> : named.error ? <Text type="supporting" color="secondary" role="alert">{t('source.fileFailed')}</Text>
-      : <VStack gap={2} role="status" aria-label={t('source.fileLoading')}>
-        {[92, 86, 74].map((w, i) => <Skeleton key={i} index={i} width={`${w}%`} height="var(--spacing-4)"/>)}
-      </VStack>}
+      : <RequestState placeholder={<InlineLoader label={t('source.fileLoading')}/>}/>}
   </SplitReader>;
 }

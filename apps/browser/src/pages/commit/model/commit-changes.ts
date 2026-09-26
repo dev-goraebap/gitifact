@@ -1,4 +1,4 @@
-import { useQuery, type UseInfiniteQueryResult, type InfiniteData } from '@tanstack/react-query';
+import { useQuery, type InfiniteData } from '@tanstack/react-query';
 import type { BrowserCommitV4, BrowserSessionV3, SpecEvent } from '@gitifact/contracts';
 import { commitChangeOptions } from '../../../entities/project';
 import type { ListedChange } from '../ui/ChangeBody';
@@ -9,8 +9,8 @@ export const listed = (event: SpecEvent): ListedChange =>
   ({ key: event.key, id: event.id, kind: event.kind, types: event.types, title: (event.after ?? event.before)?.title ?? event.id });
 
 /** The pages of a commit read so far, as one commit: its head from the first page and every change loaded. */
-export function loadedCommit(query: UseInfiniteQueryResult<InfiniteData<BrowserCommitV4>, Error>) {
-  const pages = query.data?.pages;
+export function loadedCommit(data: InfiniteData<BrowserCommitV4> | undefined) {
+  const pages = data?.pages;
   const first = pages?.[0];
   return first ? { ...first, changes: pages!.flatMap(p => p.changes) } : undefined;
 }

@@ -42,18 +42,43 @@ const orderBy = (page: Page, column: string) => page.getByRole('button', { name:
 // The feature's own title link; the row's link to its designs points at the design tab.
 const titles = (rows: ReturnType<Page['locator']>) => rows.locator('a[href^="/features/S-"]:not([href*="tab=design"])').allInnerTexts();
 
+test('the list appears once and whole: one loader covers the frame and the rows until both have answered', async ({ page }) => {
+  await mockApi(page);
+  await serve(page, many);
+  let releaseFrame!: () => void; let releaseRows!: () => void; let asked = 0;
+  const frame = new Promise<void>(resolve => { releaseFrame = resolve; });
+  const rows = new Promise<void>(resolve => { releaseRows = resolve; });
+  await page.route(url => url.pathname === '/api/v1/checkout', async route => { await frame; await route.fallback(); });
+  await page.route(url => url.pathname === '/api/v1/features', async route => { asked++; await rows; await route.fallback(); });
+  await page.goto('/features');
+  const loader = page.getByRole('status', { name: '불러오는 중' });
+  const content = page.locator('[data-scroll-restoration-id="content"]');
+  await expect(loader).toBeVisible();
+  releaseFrame();
+  // The frame has answered and the rows are asked for: the same loader stays, with no second placeholder under the filters.
+  await expect.poll(() => asked).toBe(1);
+  await expect(loader).toBeVisible();
+  await expect(page.getByRole('status', { name: '프로젝트 불러오는 중' })).toHaveCount(0);
+  await expect(content).toHaveAttribute('aria-busy', 'true');
+  releaseRows();
+  await expect(loader).toHaveCount(0);
+  await expect(content).toHaveAttribute('aria-busy', 'false');
+  await expect(content.locator('> *').first()).toHaveCSS('opacity', '1');
+  await expect(rowsOf(page)).toHaveCount(3);
+});
+
 test('the columns that hold comparable values order the list, and the header says which one does', async ({ page }) => {
   const rows = await listing(page);
   // Recent first by default: the store's own order says nothing about where the work is.
-  expect(await titles(rows)).toEqual(['알림 기능', '검색 기능', '보관 기능']);
+  await expect.poll(() => titles(rows)).toEqual(['알림 기능', '검색 기능', '보관 기능']);
   await expect(page.getByRole('columnheader', { name: /최근 변경/ })).toHaveAttribute('aria-sort', 'descending');
   // A column opens the way it is normally read: most requirements first, names from the top.
   await orderBy(page, '요구사항');
-  expect(await titles(rows)).toEqual(['알림 기능', '보관 기능', '검색 기능']);
+  await expect.poll(() => titles(rows)).toEqual(['알림 기능', '보관 기능', '검색 기능']);
   await orderBy(page, '요구사항');
-  expect(await titles(rows)).toEqual(['검색 기능', '보관 기능', '알림 기능']);
+  await expect.poll(() => titles(rows)).toEqual(['검색 기능', '보관 기능', '알림 기능']);
   await orderBy(page, '기능');
-  expect(await titles(rows)).toEqual(['검색 기능', '보관 기능', '알림 기능']);
+  await expect.poll(() => titles(rows)).toEqual(['검색 기능', '보관 기능', '알림 기능']);
   await expect(page.getByRole('columnheader', { name: /^기능/ })).toHaveAttribute('aria-sort', 'ascending');
   // Only the columns with something to compare offer it.
   await expect(page.getByRole('columnheader', { name: '참여자' }).getByRole('button')).toHaveCount(0);
@@ -61,11 +86,11 @@ test('the columns that hold comparable values order the list, and the header say
   await expect(page).toHaveURL(/sort=title/);
   await page.reload();
   await expect(rowsOf(page)).toHaveCount(3);
-  expect(await titles(rowsOf(page))).toEqual(['검색 기능', '보관 기능', '알림 기능']);
+  await expect.poll(() => titles(rowsOf(page))).toEqual(['검색 기능', '보관 기능', '알림 기능']);
   // The default order writes nothing to the address.
   await orderBy(page, '최근 변경');
   await expect(page).not.toHaveURL(/sort=/);
-  expect(await titles(rows)).toEqual(['알림 기능', '검색 기능', '보관 기능']);
+  await expect.poll(() => titles(rows)).toEqual(['알림 기능', '검색 기능', '보관 기능']);
 });
 
 test('a feature links its designs once, and a requirement row reads its description, criteria and a missing design', async ({ page }) => {
@@ -98,13 +123,13 @@ test('a feature links its designs once, and a requirement row reads its descript
 test('the list narrows by a missing design and by contributor, and says how many of the whole are left', async ({ page }) => {
   const rows = await listing(page);
   await choose(page, '설계 여부', '설계 없음');
-  expect(await titles(rows)).toEqual(['검색 기능']);
+  await expect.poll(() => titles(rows)).toEqual(['검색 기능']);
   await expect(page.getByText('전체 3개 중')).toBeVisible();
   // The one feature without a design is marked as such beside its title, so the reason it matched is visible.
   await expect(rows.first()).toContainText('설계 없음');
   await choose(page, '설계 여부', '설계 전체');
   await choose(page, '참여자', 'Second');
-  expect(await titles(rows)).toEqual(['알림 기능', '검색 기능']);
+  await expect.poll(() => titles(rows)).toEqual(['알림 기능', '검색 기능']);
   // A filter that matches nothing explains itself rather than showing an empty table.
   await page.getByRole('textbox', { name: '검색', exact: true }).fill('없는기능');
   await expect(page.getByText('검색어나 필터를 바꿔 보세요.')).toBeVisible();
@@ -118,7 +143,7 @@ test('filters are kept when a feature is opened and closed', async ({ page }) =>
   await page.getByRole('link', { name: '← 기능별 요구사항' }).click();
   await expect(page).toHaveURL(/design=yes/);
   await expect(rowsOf(page)).toHaveCount(2);
-  expect(await titles(rowsOf(page))).toEqual(['보관 기능', '알림 기능']);
+  await expect.poll(() => titles(rowsOf(page))).toEqual(['보관 기능', '알림 기능']);
 });
 
 test('every feature row is the same height however long its description is', async ({ page }) => {
@@ -249,6 +274,8 @@ for (const width of [1440, 760]) for (const colorScheme of ['light', 'dark'] as 
     await serve(page, long);
     await page.goto('/features');
     await expect(page.getByRole('table')).toBeVisible();
+    // The table is laid out under the loader before it shows; the header is measured once the loader has gone.
+    await expect(page.getByRole('status', { name: '불러오는 중' })).toHaveCount(0);
     const header = page.locator('header[aria-label]');
     const initial = (await header.boundingBox())!;
     const card = page.locator('[class*=card]').filter({ has: header });

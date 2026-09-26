@@ -1,9 +1,7 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import type { BrowserSessionV3, InstructionFile, SpecInstruction } from '@gitifact/contracts';
 import { CodeBlock } from '@astryxdesign/core/CodeBlock';
-import { Skeleton } from '@astryxdesign/core/Skeleton';
 import { Text } from '@astryxdesign/core/Text';
-import { VStack } from '@astryxdesign/core/VStack';
 import { instructionFileOptions } from '../../../entities/project';
 import { DocumentBody } from '../../../shared/ui/document';
 import { RequestState } from '../../../shared/ui/request-state';
@@ -24,9 +22,7 @@ export function InstructionFileView({ session, instruction, file }: { session: B
   // Moving to another file keeps the one on screen until the next arrives, instead of shrinking to a skeleton.
   const query = useQuery({ ...instructionFileOptions(session, instruction.id, file.path, file.size), placeholderData: keepPreviousData });
   if (query.error) return <RequestState error={query.error} retry={() => { void query.refetch(); }}/>;
-  if (!query.data) return <VStack gap={2} role="status" aria-label={t('request.loadingProject')} aria-busy="true">
-    <Skeleton width="60%" height="var(--spacing-4)"/><Skeleton width="80%" height="var(--spacing-4)"/><Skeleton width="40%" height="var(--spacing-4)"/>
-  </VStack>;
+  if (!query.data) return <RequestState/>;
   // While the next file is read the previous one stays, drawn by its own path.
   const { text, binary, path } = query.data;
   if (text === null) return <Text color="secondary">{binary ? t('instructions.binary') : t('instructions.tooLarge')}</Text>;

@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import type { BrowserSessionV3 } from '@gitifact/contracts';
-import { RecordsPage, ListSkeleton } from '../../../widgets/records-page';
+import { RecordsPage } from '../../../widgets/records-page';
 import { PageHeader } from '../../../widgets/page-header';
 import { instructionsOptions } from '../../../entities/project';
 import { PageState } from '../../../shared/ui/page-state';
@@ -19,7 +19,7 @@ import { t, useLanguage } from '../../../shared/i18n';
 export function InstructionsPage({ instructionId, agents, file }: { instructionId?: string | undefined; agents?: boolean; file?: string | undefined }) {
   useLanguage();
   const detail = agents || !!instructionId;
-  return <RecordsPage header={PageHeader} title={t('nav.instructions')} description={t('pageDescription.instructions')} root="/instructions" hasTitle={!detail} skeleton={<ListSkeleton/>}
+  return <RecordsPage header={PageHeader} title={t('nav.instructions')} description={t('pageDescription.instructions')} root="/instructions" hasTitle={!detail}
     trail={checkout => {
       if (agents) return [{ label: 'AGENTS.md' }];
       const instruction = instructionId ? checkout.index.instructions.find(s => s.id === instructionId) : undefined;
@@ -34,7 +34,7 @@ function Instructions({ session, instructionId, agents, file }: { session: Brows
   useLanguage();
   const query = useQuery(instructionsOptions(session));
   if (query.error) return <RequestState error={query.error} retry={() => { void query.refetch(); }}/>;
-  if (!query.data) return <ListSkeleton/>;
+  if (!query.data) return <RequestState/>;
   const { instructions, agents: agentsFile } = query.data;
   const notFound = (title: string, description: string) => <PageState kind="not-found" title={title} description={description} actions={<Link to="/instructions">{t('instructions.backToList')}</Link>}/>;
   if (agents) return agentsFile ? <AgentsDetail agents={agentsFile}/> : notFound(t('instructions.agentsMissingTitle'), t('instructions.agentsMissingDescription'));

@@ -20,6 +20,7 @@ import { HgiSettings } from '../../../shared/ui/icons/HgiSettings';
 import { VersionFooter } from './VersionFooter';
 import { useSmoothWheel } from '../../../shared/lib/smooth-scroll';
 import { SearchPalette } from '../../../features/search-palette';
+import { PageLoader, PageLoadingProvider, usePageLoadingFrame } from '../../../shared/ui/request-state';
 import styles from './app-shell.module.css';
 import { t, useLanguage } from '../../../shared/i18n';
 const destinations = () => ([
@@ -40,6 +41,10 @@ export function BrowserShell() {
   // The card is what scrolls; the wheel glides over it.
   const card = useRef<HTMLDivElement>(null);
   useSmoothWheel(card);
+  // One loader for the whole screen: it stays hidden until every read it needs to be drawn has answered. The screen is
+  // the route drawn, not the address: while the next screen's code loads the previous one is still the one on view.
+  const drawn = useRouterState({ select: (s) => s.matches.at(-1)?.pathname ?? s.location.pathname });
+  const loading = usePageLoadingFrame(drawn);
   const go = (to: string) => (event: MouseEvent) => { if (plainClick(event)) { event.preventDefault(); void navigate({ to }); } };
   return (
     <AppShell
@@ -80,12 +85,15 @@ export function BrowserShell() {
         </SideNav>
       }
     >
-      <VStack gap={0} className={styles.frame}>
-        <VStack gap={0} ref={card} className={styles.card} data-scroll-restoration-id="content">
-          <Outlet />
+      <PageLoadingProvider frame={loading}>
+        <VStack gap={0} className={styles.frame}>
+          <VStack gap={0} ref={card} className={[styles.card, loading.isHidden && styles.cardWaiting, loading.isRevealing && styles.cardRevealing].filter(Boolean).join(' ')} data-scroll-restoration-id="content" aria-busy={loading.isHidden}>
+            <Outlet />
+          </VStack>
+          <PageLoader isVisible={loading.isShowing}/>
+          <SearchPalette/>
         </VStack>
-        <SearchPalette/>
-      </VStack>
+      </PageLoadingProvider>
     </AppShell>
   );
 }

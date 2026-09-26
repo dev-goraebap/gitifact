@@ -67,7 +67,7 @@ test('loaded history is kept across screens, and refresh re-reads the checkout b
  expect(history).toBe(2);
 });
 
-test('initial request shows delayed skeleton then the Gentask empty illustration', async ({page}) => {
+test('initial request shows the delayed loader then the Gentask empty illustration', async ({page}) => {
  await mockApi(page);
  let release!: () => void;
  const pending = new Promise<void>(resolve => {release = resolve;});
@@ -75,11 +75,11 @@ test('initial request shows delayed skeleton then the Gentask empty illustration
  await serve(page, empty);
  await page.route(url => url.pathname === '/api/v1/checkout', async route => {await pending;await route.fulfill({json:frameOf(checkoutOf(empty))});});
  await page.goto('/records');
- await expect(page.getByRole('status',{name:'프로젝트 불러오는 중'})).toHaveCSS('opacity','1');
+ await expect(page.getByRole('status',{name:'불러오는 중'})).toHaveCSS('opacity','1');
  release();
  await expect(page.getByRole('heading',{name:'표시할 기록이 없습니다.'})).toBeVisible();
  await expect(page.locator('img[aria-hidden="true"]').first()).toBeVisible();
- await expect(page.getByRole('status',{name:'프로젝트 불러오는 중'})).toHaveCount(0);
+ await expect(page.getByRole('status',{name:'불러오는 중'})).toHaveCount(0);
 });
 
 test('a record opens on a page of its own with the documents it explains, its commit is one step on, and the list one step back', async ({page}) => {

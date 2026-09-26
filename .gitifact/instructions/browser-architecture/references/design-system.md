@@ -14,7 +14,7 @@ Astryx의 설치 버전이 API 기준이며 제품별 배치 규칙은 이 문�
 - 고밀도 목록에는 Table 또는 List/ListItem을 쓰고 행마다 Card를 만들지 않는다. Card는 독립된 항목(참여자 카드처럼)에만 쓴다. 페이지 영역 구분은 Section이다.
 - 상태는 Token/StatusDot, 개수는 Badge다. 모든 행에 같은 배지를 반복하지 않는다.
 - 키·값 정보는 MetadataList, 보기 전환은 SegmentedControl, 페이지 전체 동작은 헤더의 ghost IconButton이다.
-- 빈 화면은 shared/ui/page-state의 PageState와 일러스트(검색 없음·빈 목록·찾을 수 없음·오류)를 쓴다. 초기 조회는 Skeleton으로 표현하고 reduced-motion 환경에서 애니메이션을 끈다.
+- 빈 화면은 shared/ui/page-state의 PageState와 일러스트(검색 없음·빈 목록·찾을 수 없음·오류)를 쓴다. 초기 조회는 셸의 공통 로더(`shared/ui/request-state`)로 표현하고 reduced-motion 환경에서 애니메이션을 끈다.
 - shared/ui는 도메인 독립 UI에 한정하고 동일 props 재수출 래퍼는 만들지 않는다.
 - Astryx가 제공하지 않는 표시와 상호작용(예: 활동 상세의 줄 단위 diff 표)만 직접 구현하고 그 이유를 설계에 남긴다.
 

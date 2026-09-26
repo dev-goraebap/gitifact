@@ -9,7 +9,6 @@ import { Link } from '@tanstack/react-router';
 import { workingOptions } from '../../../entities/project';
 import { RecordDocuments } from './RecordDocuments';
 import { RecordSections } from './RecordSections';
-import { CommitSkeleton } from './CommitSkeleton';
 import { listedWorking, workingChange } from '../model/working-change';
 import styles from './commit.module.css';
 import { PageState } from '../../../shared/ui/page-state';
@@ -24,7 +23,7 @@ export function WorkingRecord({ recordId, documentId, session, features, head }:
   useLanguage();
   const query = useQuery(workingOptions(session));
   if (query.error) return <RequestState error={query.error} retry={() => { void query.refetch(); }}/>;
-  if (!query.data) return <CommitSkeleton label={t('record.loading')}/>;
+  if (!query.data) return <RequestState/>;
   const record = query.data.records.find(r => r.id === recordId);
   if (!record) return <PageState isCompact title={t('record.missing')}/>;
   const explained = query.data.changes.filter(c => record.docs.includes(c.id)).map(listedWorking);

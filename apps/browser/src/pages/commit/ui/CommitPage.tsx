@@ -13,8 +13,7 @@ export function CommitPage({ commit, search }: { commit: string; search: CommitS
   useLanguage();
   const documentId = useLocation({ select: location => location.hash }) || undefined;
   return <RecordsPage header={PageHeader} title={t('nav.history')} root="/records" hasTitle={false} isWide
-    trail={() => [{ label: commit.slice(0, 12) }]}
-    skeleton={<></>}>
+    trail={() => [{ label: commit.slice(0, 12) }]}>
     {({ checkout, session }) => <CommitView commit={commit} search={search} documentId={documentId} session={session} features={checkout.index.features} head={checkout.head}/>}
   </RecordsPage>;
 }

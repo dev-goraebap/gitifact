@@ -12,6 +12,7 @@ import { Link } from '@tanstack/react-router';
 import { Skeleton } from '@astryxdesign/core/Skeleton';
 import { ActivityTimeline, TimelineSkeleton } from '../../../widgets/activity-timeline';
 import { statusOptions, summaryOptions } from '../../../entities/project';
+import { usePageLoading } from '../../../shared/ui/request-state';
 import styles from './overview.module.css';
 import { t, useLanguage, getLanguage } from '../../../shared/i18n';
 
@@ -98,6 +99,9 @@ export function ProductOverview({ session, head, features, instructions, contrib
   // answers there is no count yet — saying zero, or that nothing has been committed, states the opposite.
   const counting = !!head && !summary && !history.error;
   const status = useQuery(statusOptions(session));
+  // The dashboard is drawn once both have answered, so its heading and charts do not change under the reader's eyes;
+  // a later count (after a refresh with a new HEAD) shows its placeholders in place.
+  usePageLoading(counting || status.isPending);
   const project = status.data?.repository.rootPath?.split(/[\/]/).filter(Boolean).at(-1);
   const requirements = features.reduce((sum, f) => sum + f.requirements.length, 0);
   const changes: Segment[] = changeOrder.map((type, i) => ({ label: changeNames()[type], value: summary?.byType[type] ?? 0, color: series[i]! }));

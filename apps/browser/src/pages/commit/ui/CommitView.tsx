@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useDeferredValue, useEffect } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import type { BrowserSessionV3, IndexFeature } from '@gitifact/contracts';
 import { VStack } from '@astryxdesign/core/VStack';
@@ -14,7 +14,6 @@ import { LoadMore } from '../../../shared/ui/load-more';
 import { commitChange, listed, loadedCommit } from '../model/commit-changes';
 import { CommitCode } from './CommitCode';
 import { CommitHeading } from './CommitHeading';
-import { CommitSkeleton } from './CommitSkeleton';
 import type { CommitSearch, CommitTab } from '../model/commit-search';
 import styles from './commit.module.css';
 import { PageState } from '../../../shared/ui/page-state';
@@ -32,14 +31,15 @@ export function CommitView({ commit, search, documentId, session, features, head
   const navigate = useNavigate();
   const query = useInfiniteQuery(commitOptions(session, commit));
   const files = useInfiniteQuery(commitFilesOptions(session, commit));
-  const data = loadedCommit(query);
+  // The changes are drawn in the background, so the loader keeps moving while a large commit is laid out.
+  const data = loadedCommit(useDeferredValue(query.data));
   const groups = data ? groupRecords(data.changes) : [];
   const recorded = groups.filter(group => group.record);
   const tab: CommitTab = search.tab ?? (documentId || !recorded.length ? 'documents' : 'records');
   // An address typed or shared from outside names its section before the page has drawn it, so the page lands on it.
   useEffect(() => { if (data && documentId && tab === 'documents') document.getElementById(documentId)?.scrollIntoView({ block: 'start' }); }, [data, documentId, tab]);
   if (query.error) return <RequestState error={query.error} retry={() => { void query.refetch(); }}/>;
-  if (!data) return <CommitSkeleton label={t('commit.loading')}/>;
+  if (!data) return <RequestState/>;
   const bare = groups.find(group => !group.record && group.missing);
   const choose = (next: string) => { void navigate({ to: '/records/commits/$commit', params: { commit }, search: { tab: next as CommitTab } }); };
   const count = (n: number | undefined) => n === undefined ? '' : ` ${n}`;
