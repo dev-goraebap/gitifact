@@ -192,6 +192,14 @@ test('a selection may leave changes for later, but a moved document goes whole; 
   const outside = f.commit({ paths: ['app.js', '.gitifact/scratch.txt'], message: 'x', authorization });
   assert.equal(outside.status, 1); assert.match(JSON.parse(outside.stderr).error.message, /scratch\.txt/);
   unlinkSync(join(f.repo, '.gitifact/scratch.txt'));
+  // The line-ending attributes init writes are the store's own; the same name deeper in the store is not.
+  mkdirSync(join(f.repo, '.gitifact/notes')); f.write('.gitifact/notes/.gitattributes', '* -text\n');
+  const nested = f.commit({ paths: ['.gitifact/notes/.gitattributes'], message: 'x', authorization });
+  assert.equal(nested.status, 1); assert.match(JSON.parse(nested.stderr).error.message, /notes\/\.gitattributes/);
+  unlinkSync(join(f.repo, '.gitifact/notes/.gitattributes'));
+  f.write('.gitifact/.gitattributes', '* text=auto eol=lf\n');
+  assert.deepEqual(f.done(f.commit({ paths: ['.gitifact/.gitattributes', 'app.js'], message: 'Keep LF', authorization })).paths, ['.gitifact/.gitattributes', 'app.js']);
+  f.write('app.js', 'export const save = () => false;\n');
   f.git(['add', 'app.js']); before = fingerprint(f.repo); assert.equal(f.commit({ paths: ['app.js'], message: 'x', authorization }).status, 1); assert.deepEqual(fingerprint(f.repo), before);
   const g = setup(t); g.git(['add', '-N', 'app.js']); before = fingerprint(g.repo); assert.equal(g.commit(request()).status, 1); assert.deepEqual(fingerprint(g.repo), before);
 });

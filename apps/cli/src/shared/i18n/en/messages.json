@@ -146,7 +146,7 @@
   "server.assetNotFound": "Asset not found.",
   "help.lang": "Output language (ko or en)",
   "help.updateCheck": "Check for a newer version without changing files",
-  "commitFiles.notRecord": "Inside .gitifact only records, the configuration and assets can be committed: {path}",
+  "commitFiles.notRecord": "Inside .gitifact only records, the configuration (config.json, .gitattributes) and assets can be committed: {path}",
   "help.changes": "Inspect and commit uncommitted document changes",
   "help.changesList": "Documents changed since HEAD, uncommitted records, changes without a record, and the commit input path",
   "help.changesCommit": "Check like the check command, then commit the selected files and records",

@@ -60,7 +60,7 @@ flowchart LR
 블록은 "요구사항·설계·코드를 바꾸기 전에 블록 밖 색인에서 작업에 맞는 지침을 읽는다"와 "지침과 색인을 만들거나 고치기 전에 `guide show instructions`를 읽는다"를 안내한다. `instructions` topic은 지침 폴더 형식, 색인 쓰는 법, 명세와의 관계, 결정을 남기는 곳, 커밋을 다룬다.
 
 > [!NOTE]
-> `changes commit`은 `.gitifact` 안에서 문서·결정기록·설정·에셋만 커밋한다. 남아 있는 `.gitifact/overrides/` 파일은 이 명령으로 커밋할 수 없다.
+> `changes commit`은 `.gitifact` 안에서 문서·결정기록·설정(`config.json`과 `init`이 쓰는 `.gitattributes`)·에셋만 커밋한다. 다른 폴더의 `.gitattributes`는 받지 않는다. 남아 있는 `.gitifact/overrides/` 파일은 이 명령으로 커밋할 수 없다.
 
 ## 기록 보기 요청
 

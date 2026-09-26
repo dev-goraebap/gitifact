@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { lstat, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { classifyDocPath, isAssetPath } from '@gitifact/core';
+import { LINE_ENDINGS_PATH } from '../adapters/filesystem/document-file.js';
 import { CommandError } from './output.js';
 import { t } from '../shared/i18n/index.js';
 
@@ -48,9 +49,11 @@ export function policyPaths(files: string[]) {
   for (const file of files) { const parts = file.split('/'); for (let i = 1; i < parts.length; i++) for (const name of ['AGENTS.md', 'CLAUDE.md', '.gitignore', '.gitattributes']) all.add(parts.slice(0, i).join('/') + '/' + name); }
   return [...all].sort();
 }
-/** Inside `.gitifact` only documents, instruction files, the reason file, the configuration and assets are committed; the cache never is. */
+/** The store's own files besides documents: the configuration and the line-ending attributes init writes. */
+const storeFiles = new Set(['.gitifact/config.json', LINE_ENDINGS_PATH]);
+/** Inside `.gitifact` only documents, instruction files, the reason file, the store's own files and assets are committed; the cache never is. */
 export function checkStoreSelection(selected: string[]) {
-  for (const p of selected.filter(p => p.startsWith('.gitifact/') && !record(p) && p !== '.gitifact/config.json')) {
+  for (const p of selected.filter(p => p.startsWith('.gitifact/') && !record(p) && !storeFiles.has(p))) {
     // Assets travel with the documents; they are committed, not parsed.
     if (!isAssetPath(p) && !instructionFile(p)) fail(t('commitFiles.notRecord', { path: p }));
   }
