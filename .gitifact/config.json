@@ -4,5 +4,7 @@
     "kind": "commit",
     "objectFormat": "sha1",
     "commit": "9fbe58b582f9d5a158d575405f2d912cf6b10e0d"
-  }
+  },
+  "cli": "0.8.3",
+  "language": "ko"
 }

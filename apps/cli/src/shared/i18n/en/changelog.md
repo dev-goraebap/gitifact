@@ -1,3 +1,20 @@
+## 0.8.3 - 2026-09-26
+### Added
+- Every command prints one version notice before its result: when a newer release is out, when the project is set to a newer version than this CLI, and when this CLI is newer than the project's version. The newer release is read from the user's cache and checked in the background at most once an hour, so commands never wait on the network. `GITIFACT_NO_UPDATE_CHECK` turns off only the release check.
+- `update --later` quiets the announced release for 24 hours. A release newer than it is announced at once.
+- `.gitifact/config.json` records the project's version (`cli`) and the language of the instruction block (`language`). `init` and `update` write them, and the project's version is never lowered. A field this CLI does not know no longer stops it.
+### Changed
+- 0.8.3 or later is required. A config with `cli` stops 0.8.2 and earlier with `INVALID_CONFIG`, so move everyone before running `update`.
+- Installation guidance is a global install (`npm install -g gitifact@<version>`, then `gitifact update`). The instruction block, README and getting started point at the global command instead of npx.
+- The first line of the instruction block (version, language, schemaVersion) is gone. Instead of checking the version and running `update --check` at the start of a session, agents ask whether to update now or later when a version notice appears. A release that leaves the block text alone leaves the block alone.
+- The block follows the config's `language` and changes only with `--lang`. A block written by 0.8.2 or earlier has its first-line language moved to the config once.
+- `update --commit` commits a `config.json` whose only changes are `cli` and `language` together with the blocks, as `chore(gitifact): update project to gitifact v<version>`. The `update` JSON is v6: it carries `project`, and `install` holds only `npmGlobal`.
+- `update` and `init` from a CLI older than the project's version leave the instruction blocks alone.
+- The browser shows one rocket loader for every screen instead of per-screen skeletons. Moving to another screen keeps the current one under a veil, with the loader, until the next is drawn whole.
+- In the browser's feature list, only the words of a row's title and description open the feature; the empty part of the row does not.
+### Fixed
+- `changes commit` refused the `.gitifact/.gitattributes` that `init` writes, so a project had no way to commit it.
+
 ## 0.8.2 - 2026-09-26
 ### Changed
 - The browser asks the server for as much of a list as it shows. Feature requirements read on twenty features at a time with "More features" instead of page numbers, contributors twenty at a time, a commit's code tab twenty files at a time, and a record's documents twenty at a time. The checkout a screen reads first went from 354 KB to 18 KB in this repository.

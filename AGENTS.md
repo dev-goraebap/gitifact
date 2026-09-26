@@ -3,15 +3,12 @@
 <!-- GITIFACT:START -->
 ## Gitifact Guide
 
-gitifact v0.8.2 · ko · 저장 규약 schemaVersion 3
-
 제품 동작(요구사항·설계), 지침, 결정기록은 `.gitifact/`에 저장하고 CLI `gitifact`로 관리한다. 프로젝트가 별도 실행 방법을 정했다면 해당 방식을 `gitifact`로 적용한다.
 
 ### 세션을 시작할 때
 
-1. `gitifact --version`이 0.8.2인지 확인한다. 없거나 다르면 `npm i -g gitifact@0.8.2` 설치를 제안하고, 그전까지는 `npx --yes gitifact@0.8.2 <cmd>`로 실행한다. 실행이 막히면 승인을 요청한다.
-2. `gitifact update --check`를 1회 실행한다. 새 버전이 있으면 업데이트 여부를 묻고, 동의할 때만 설치 후 `update`를 실행한 뒤 이 블록을 다시 읽는다.
-3. `gitifact instructions list --all`로 지침을 모두 확인하고 git status와 기존 staging 상태를 점검한다.
+1. `gitifact`가 없으면 `.gitifact/config.json`의 `cli` 버전으로 `npm i -g gitifact@<버전>` 전역 설치를 제안한다. 설치가 막히면 승인을 요청한다.
+2. `gitifact instructions list --all`로 지침을 모두 확인하고 git status와 기존 staging 상태를 점검한다.
 
 ### 무엇을 요구사항으로 남기는가
 
@@ -38,6 +35,7 @@ gitifact v0.8.2 · ko · 저장 규약 schemaVersion 3
 
 ### 지킬 것
 
+- 명령 출력 앞에 버전 안내가 보이면 다음 작업 전에 지금 업데이트(권장)와 나중에(`gitifact update --later`) 중 하나를 사용자에게 묻는다. 업데이트하면 안내대로 설치하고 `gitifact update`를 실행한 뒤 이 블록을 다시 읽는다.
 - 커밋은 사용자 요청이나 프로젝트 정책이 있을 때만 수행하고, 푸시는 별도로 요청받는다. 결정 단위마다 기록·문서·코드·테스트를 함께 커밋하며, 작업을 마치고 커밋하지 않았으면 1회 제안한다.
 - CLI를 실행하지 않고 ID 발급·검사·커밋을 대신하거나 완료로 보고하지 않는다.
 - 새 기능은 요구사항과 설계를 함께 작성하고 문서는 프로젝트 언어로 작성한다. 불명확한 제품 동작만 질문하고 나머지는 진행한다.
@@ -46,14 +44,14 @@ gitifact v0.8.2 · ko · 저장 규약 schemaVersion 3
 ### 명령
 
 - `specs`·`instructions`·`records`: `list`·`show`·`new`. `check`: 전체 검사. `changes list`·`changes commit --file <json> [--dry-run]`
-- `browser`, `feedback`, `update [--check | --commit]`, `init`, `guide list`·`guide show <topic>` (workflow, spec, design, instructions, records, writing, commit, migrate). 목록은 20개씩 출력되며 끝의 `--after <값>`으로 이어 조회한다(`--all`은 전체). `--fields`, `--format json`을 지원하며 옵션은 `--help`로 확인한다.
+- `browser`, `feedback`, `update [--check | --commit | --later]`, `init`, `guide list`·`guide show <topic>` (workflow, spec, design, instructions, records, writing, commit, migrate). 목록은 20개씩 출력되며 끝의 `--after <값>`으로 이어 조회한다(`--all`은 전체). `--fields`, `--format json`을 지원하며 옵션은 `--help`로 확인한다.
 
 ---
 <!-- GITIFACT:END -->
 
 이 저장소는 gitifact를 개발하면서 프로젝트 자체에도 적용한다. 제품의 기록 원칙을 따르되, 아직 구현되지 않은 기능은 아래 대체 절차로 수행한다. 이 예외는 gitifact 개발 저장소에만 적용하며 제품의 기본 동작으로 확장하지 않는다.
 
-현재 프로젝트는 `.gitifact/config.json`의 `schemaVersion: 3` 저장 규약이다(0.8.0 문서 형식: 문서 하나가 파일 하나, 구조 정보는 프론트매터, 이유는 `.gitifact/records/`의 결정기록). 2026-09-22 0.7 형식에서 전환했다(`Gitifact-Migration: 0.8.0` 커밋, 과정은 [개발 환경](docs/development.md)). 2026-09-24 이유 파일 `.gitifact/history.jsonl`을 결정기록으로 바꾸고 설계·지침의 결정 표를 결정기록으로 옮겼다(이유 → 맥락, 기각한 안 → 검토한 대안). 결정기록에는 종류가 없다. 그 전 커밋의 이유는 이력에서 맥락 섹션만 있는 기록으로 읽는다. 2026-09-18 product·guides를 위키로, 파일 ID 주석을 frontmatter로 바꾸며 이 저장소의 기록을 일회성 스크립트(DEV-01)로 전환했다. 2026-09-15 제품 이름을 Tryce에서 Gitifact로 바꾸며 저장 경로 `.tryce`와 `tryce-*` 마커를 `.gitifact`와 `gitifact-*`로 전환했다. 2026-09-22 0.8.0 준비에서 `.tryce` 경로·`tryce-*` 마커·구형 JSON·schemaVersion 1 읽기와 `migrate` 명령을 지웠다. 과거 커밋의 옛 기록은 이력에 나타나지 않고 Git에만 남는다. 모드·승인 묶음·note를 새로 작성하지 않는다. 개발 작업에는 이 파일 첫머리의 GITIFACT 블록과 `pnpm cli guide show <topic>`을 읽고 적용한다. 블록의 버전은 npm에 배포된 CLI 버전이다. 이 저장소에서는 블록 안의 `gitifact`를 `pnpm cli`로 실행하고, 전역 설치와 npx는 다른 프로젝트에서 쓴다. 0.7.1은 이 저장소(schemaVersion 3)를 읽지 못한다. 블록은 `pnpm cli init`이 쓰고 갱신하며 마커 사이를 직접 편집하지 않는다. 블록 안의 `gitifact`는 이 저장소에서 `pnpm cli`를 뜻한다. 지침 원본은 `apps/cli/src/shared/i18n/<lang>/docs/`에만 두고 두 번째 편집본을 만들지 않는다.
+현재 프로젝트는 `.gitifact/config.json`의 `schemaVersion: 3` 저장 규약이다(0.8.0 문서 형식: 문서 하나가 파일 하나, 구조 정보는 프론트매터, 이유는 `.gitifact/records/`의 결정기록). 2026-09-22 0.7 형식에서 전환했다(`Gitifact-Migration: 0.8.0` 커밋, 과정은 [개발 환경](docs/development.md)). 2026-09-24 이유 파일 `.gitifact/history.jsonl`을 결정기록으로 바꾸고 설계·지침의 결정 표를 결정기록으로 옮겼다(이유 → 맥락, 기각한 안 → 검토한 대안). 결정기록에는 종류가 없다. 그 전 커밋의 이유는 이력에서 맥락 섹션만 있는 기록으로 읽는다. 2026-09-18 product·guides를 위키로, 파일 ID 주석을 frontmatter로 바꾸며 이 저장소의 기록을 일회성 스크립트(DEV-01)로 전환했다. 2026-09-15 제품 이름을 Tryce에서 Gitifact로 바꾸며 저장 경로 `.tryce`와 `tryce-*` 마커를 `.gitifact`와 `gitifact-*`로 전환했다. 2026-09-22 0.8.0 준비에서 `.tryce` 경로·`tryce-*` 마커·구형 JSON·schemaVersion 1 읽기와 `migrate` 명령을 지웠다. 과거 커밋의 옛 기록은 이력에 나타나지 않고 Git에만 남는다. 모드·승인 묶음·note를 새로 작성하지 않는다. 개발 작업에는 이 파일 첫머리의 GITIFACT 블록과 `pnpm cli guide show <topic>`을 읽고 적용한다. `.gitifact/config.json`의 `cli`는 npm에 배포된 CLI 버전이며, 배포 때 `pnpm cli init`으로 올린다. 이 저장소에서는 블록 안의 `gitifact`를 `pnpm cli`로 실행하고, 전역 설치와 npx는 다른 프로젝트에서 쓴다. 0.7.1은 이 저장소(schemaVersion 3)를 읽지 못하고, 0.8.2 이하는 config의 `cli`·`language` 때문에 `INVALID_CONFIG`로 멈춘다(2026-09-26, 0.8.3). 블록은 `pnpm cli init`이 쓰고 갱신하며 마커 사이를 직접 편집하지 않는다. 블록 안의 `gitifact`는 이 저장소에서 `pnpm cli`를 뜻한다. 지침 원본은 `apps/cli/src/shared/i18n/<lang>/docs/`에만 두고 두 번째 편집본을 만들지 않는다.
 
 프로젝트 사용 빌드와 해시는 [개발 환경](docs/development.md)의 최신 지정을 따른다. 시작할 때 `pnpm cli specs list`·`pnpm cli instructions list`와 Git 상태를 읽고 필요한 명세·지침 문서를 `pnpm cli specs show <ID>`·`pnpm cli instructions show <이름>`으로 원문 확인한다. browser는 요구사항 이력·제품 기능·기여자를 읽기 전용으로 제공한다. 구형 req·note·mode·brief·commit 명령은 개발 빌드에서 제거했다.
 

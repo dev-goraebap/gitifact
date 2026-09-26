@@ -1,5 +1,13 @@
 # 개발 환경
 
+## 2026-09-26 명령마다 버전 안내와 config의 cli(0.8.3 준비)
+
+모든 명령이 결과 앞에 stderr 한 줄로 새 버전과 프로젝트 기준 버전을 알린다. 새 버전은 사용자 캐시(`%LOCALAPPDATA%\gitifact\update.json` 등)에서 읽고, 확인이 1시간 지났으면 분리 실행한 `__refresh-update`가 레지스트리를 조회한다. `update --later`는 그 버전을 24시간 조용히 한다(DR-g3rc2m4kgg). `.gitifact/config.json`에 `cli`·`language`를 두고 `init`·`update`가 쓴다. 0.8.2 이하는 이 설정에서 `INVALID_CONFIG`로 멈추고 0.8.3부터는 모르는 필드를 허용한다(DR-nkw5mkycbv). 블록 첫 줄을 없애고 블록 언어도 config로 옮겼다(DR-kuj2k42kae). 설치 안내는 전역 설치로 바꿨다. 구현은 `e84cf65`, 계획은 `.tmp/0.8.3/plan-version-notice.md`다. 이 저장소도 `pnpm cli init`으로 블록과 config를 0.8.3에 맞췄다.
+
+테스트는 `test/locale.mjs`가 `GITIFACT_NO_UPDATE_CHECK=1`과 임시 `GITIFACT_CACHE_DIR`을 두고, 확인을 켜는 테스트는 조회 함수를 주입하거나 fetch를 바꾼 preload를 쓴다. 브라우저 live-server 시험과 패키지 검사도 확인을 끈다.
+
+검증: `pnpm check` 통과(core 45, 계약 10, 소개 2, 브라우저 106, CLI 169, 패키지 설치 시험). `LOCALAPPDATA`를 빈 폴더로 바꿔 돌린 `pnpm check`에서 `gitifact` 캐시 폴더가 생기지 않아 테스트가 사용자 캐시를 쓰지 않음을 확인했다. 설치된 0.8.1이 `cli`가 있는 설정에서 `INVALID_CONFIG`로 멈추는 것을 실행해 확인했고, 0.8.2는 `v0.8.2` 태그의 파서가 같은 검사를 하는 것을 코드로 확인했다(실행하지 않음). 뒤의 확인이 Windows에서 창을 띄우지 않는지는 `windowsHide`에 기대며 눈으로 확인하지 않았다.
+
 ## 2026-09-26 조회를 서버 한 곳으로(0.8.2 준비)
 
 목록의 걸러내기·정렬·묶기·자르기를 서버의 조회층(`apps/cli/src/queries/`)으로 모았다(DR-jvbx23yyyj). 캐시에 커밋 기록을 두어 참여자·기능별 작성자를 제한 없이 SQL로 세고, 계보를 쓴 HEAD는 Git에 다시 묻지 않는다(`8b018f3`, DR-h26a5m7tjp). `specs list`·`instructions list`의 가공을 `queries/`로 옮기고 원문 공급원(`Originals`)을 나눴다(`1cde61a`, DR-nth5lnbljj). 커밋 코드 탭은 파일 20개씩(`ab7a9bf`, DR-enqvg4ik7x), 검색창은 분류마다 5개와 분류별 더 보기(`2c28340`, DR-oprvueklea), 체크아웃은 틀과 기능 목록·기능·지침·참여자로 나눴고(`57faef6`, DR-wddo74sdjw), 기록 상세는 그 기록의 문서만 20개씩 받는다(`a6ab852`, DR-brzhskozma). 계획은 `.tmp/0.8.2/plan.md`다. 버전은 올리지 않았고 패치노트는 배포 때 쓴다.
