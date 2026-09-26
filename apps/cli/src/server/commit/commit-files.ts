@@ -1,9 +1,8 @@
 import type { CommitFile } from '@gitifact/contracts';
+import { pageOf, type PageRequest } from '../../queries/paging.js';
 
 interface Git { run(args: string[]): Promise<Buffer> }
 
-/** Files a list returns; the rest are counted. A commit of thousands of files is read by its count, not scrolled. */
-const LIST_LIMIT = 500;
 /** A side larger than this is not sent: the browser compares lines itself, and a generated file says nothing read. */
 const TEXT_LIMIT = 512 * 1024;
 /** Commits kept in memory. A commit never changes, so its list is read once per server. */
@@ -68,10 +67,15 @@ export function createCommitFiles(git: Git) {
   }
 
   return {
-    /** The first `LIST_LIMIT` source files and how many there are; undefined for a commit the repository lacks. */
-    async files(commit: string): Promise<CommitFiles | undefined> {
+    /**
+     * A page of the source files after the file `after` (a path) and how many there are in all: undefined for a commit
+     * the repository lacks, null for a cursor the commit does not have.
+     */
+    async files(commit: string, request: PageRequest): Promise<(CommitFiles & { next: string | null }) | null | undefined> {
       const all = await list(commit);
-      return all && { ...all, files: all.files.slice(0, LIST_LIMIT) };
+      if (!all) return undefined;
+      const page = pageOf(all.files, f => f.path, request);
+      return page ? { ...all, files: page.rows, next: page.next } : null;
     },
     /** One listed file on both sides; undefined when the commit did not change that path. */
     async file(commit: string, path: string): Promise<CommitFileText | undefined> {

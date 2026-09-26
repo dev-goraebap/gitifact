@@ -373,11 +373,17 @@ test('a commit lists the source files it changed beside its documents, and one f
   const get = async path => { const response = await fetch(server.url + path, { headers: { 'X-Gitifact-Session': server.session.sessionId } }); return { status: response.status, body: await response.json() }; };
   // Documents are records and stay out; a rename keeps its old path, a binary file has no line counts.
   const listed = (await get('/api/v1/commit/files?commit=' + second)).body;
-  assert.deepEqual([listed.contract, listed.total], ['browser-commit-files', 2]);
+  assert.deepEqual([listed.contract, listed.version, listed.total, listed.next], ['browser-commit-files', 2, 2, null]);
   assert.deepEqual(listed.files, [
     { path: 'logo.bin', status: 'deleted', additions: null, deletions: null },
     { path: 'src/b.ts', previousPath: 'src/a.ts', status: 'renamed', additions: 1, deletions: 1 },
   ]);
+  // A page at a time: each starts after the path the one before ended with; a path the list lacks is refused.
+  const one = (await get('/api/v1/commit/files?limit=1&commit=' + second)).body;
+  assert.deepEqual([one.total, one.next, one.files.map(x => x.path)], [2, 'logo.bin', ['logo.bin']]);
+  const two = (await get('/api/v1/commit/files?limit=1&after=logo.bin&commit=' + second)).body;
+  assert.deepEqual([two.next, two.files.map(x => x.path)], [null, ['src/b.ts']]);
+  assert.equal((await get('/api/v1/commit/files?after=gone.txt&commit=' + second)).status, 404);
   assert.deepEqual((await get('/api/v1/commit/files?commit=' + first)).body.files.map(x => [x.path, x.status, x.additions]), [['logo.bin', 'added', null], ['src/a.ts', 'added', 5]]);
   const moved = (await get('/api/v1/commit/file?commit=' + second + '&path=src/b.ts')).body;
   assert.deepEqual([moved.before, moved.after, moved.binary, moved.tooLarge], ['one\ntwo\nthree\nfour\nfive\n', 'one\ntwo\nthree\nfour\nsix\n', false, false]);
@@ -387,6 +393,13 @@ test('a commit lists the source files it changed beside its documents, and one f
   assert.equal((await get('/api/v1/commit/file?commit=' + second + '&path=.gitifact/config.json')).status, 404);
   assert.equal((await get('/api/v1/commit/files?commit=' + '0'.repeat(second.length))).status, 404);
   assert.equal((await get('/api/v1/commit/files?commit=nope')).status, 400);
+  // Twenty files unless the reader asks for another size.
+  for (let i = 0; i < 25; i++) f.write(`src/f${String(i).padStart(2, '0')}.ts`, String(i));
+  f.commit('Many');
+  const many = f.git(['rev-parse', 'HEAD']).stdout.trim();
+  const page = (await get('/api/v1/commit/files?commit=' + many)).body;
+  assert.deepEqual([page.total, page.files.length, page.next], [25, 20, 'src/f19.ts']);
+  assert.deepEqual((await get('/api/v1/commit/files?after=src/f19.ts&commit=' + many)).body.files.map(x => x.path), ['src/f20.ts', 'src/f21.ts', 'src/f22.ts', 'src/f23.ts', 'src/f24.ts']);
 });
 
 test('instructions and AGENTS.md come in the checkout, instructions in history, commits and search, and one file reads on its own', async t => {

@@ -127,10 +127,13 @@ const fileStatus = z.enum(['added', 'modified', 'deleted', 'renamed']);
 const commitFile = z.strictObject({ path: z.string(), previousPath: z.string().optional(), status: fileStatus,
   // Line counts against the first parent; null for a binary file, which has no lines.
   additions: z.number().int().nonnegative().nullable(), deletions: z.number().int().nonnegative().nullable() });
-/** Every source file one commit changed against its first parent, capped at `limit` with the whole count beside. */
-export const browserCommitFilesV1 = z.strictObject({
-  contract: z.literal('browser-commit-files'), version: z.literal(1), sessionId: z.string(), commit: oid,
-  total: z.number().int().nonnegative(), files: z.array(commitFile),
+/**
+ * The source files one commit changed against its first parent, a page at a time in Git's order. `total` counts them
+ * all; `next` is the path of the last file of this page, where the next one starts, or null at the end.
+ */
+export const browserCommitFilesV2 = z.strictObject({
+  contract: z.literal('browser-commit-files'), version: z.literal(2), sessionId: z.string(), commit: oid,
+  total: z.number().int().nonnegative(), next: z.string().nullable(), files: z.array(commitFile),
 });
 /** One file of a commit on both sides, as text; a side is null where the file did not exist. */
 export const browserCommitFileV1 = z.strictObject({
@@ -138,9 +141,10 @@ export const browserCommitFileV1 = z.strictObject({
   // `binary` and `tooLarge` leave both texts null: the reader is told why instead of shown noise.
   before: z.string().nullable(), after: z.string().nullable(), binary: z.boolean(), tooLarge: z.boolean(),
 });
-export const browserCommitFilesQueryV1 = z.strictObject({ commit: oid });
+/** `/api/v1/commit/files`: the commit, the file the page starts after, and how many files (default 20). */
+export const browserCommitFilesQueryV2 = z.strictObject({ commit: oid, after: z.string().min(1).max(4096).optional(), limit: count(100).pipe(z.number().min(1)).optional() });
 export const browserCommitFileQueryV1 = z.strictObject({ commit: oid, path: z.string().min(1).max(4096) });
-export type BrowserCommitFilesV1 = z.infer<typeof browserCommitFilesV1>;
+export type BrowserCommitFilesV2 = z.infer<typeof browserCommitFilesV2>;
 export type BrowserCommitFileV1 = z.infer<typeof browserCommitFileV1>;
 export type CommitFile = z.infer<typeof commitFile>;
 

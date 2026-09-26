@@ -264,7 +264,7 @@
   "diff.bodyUnchanged": "The body did not change.",
   "source.title": "Source changed in the same commit",
   "source.count": "{count} files",
-  "source.shown": "showing the first {count}",
+  "source.more": "More files",
   "source.none": "This commit changed no files outside the documents.",
   "source.listLoading": "Loading the changed files",
   "source.listFailed": "Could not load the changed files.",

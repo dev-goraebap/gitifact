@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import type { BrowserSessionV3, SpecFeature } from '@gitifact/contracts';
 import { VStack } from '@astryxdesign/core/VStack';
 import { HStack } from '@astryxdesign/core/HStack';
@@ -31,7 +31,7 @@ export function CommitView({ commit, search, documentId, session, features, head
   useLanguage();
   const navigate = useNavigate();
   const query = useInfiniteQuery(commitOptions(session, commit));
-  const files = useQuery(commitFilesOptions(session, commit));
+  const files = useInfiniteQuery(commitFilesOptions(session, commit));
   const data = loadedCommit(query);
   const groups = data ? groupRecords(data.changes) : [];
   const recorded = groups.filter(group => group.record);
@@ -50,7 +50,7 @@ export function CommitView({ commit, search, documentId, session, features, head
     <TabList role="tablist" value={tab} onChange={choose} hasDivider>
       <Tab value="records" label={t('commit.tab.records') + count(recorded.length)} panelId="commit-records"/>
       <Tab value="documents" label={t('commit.tab.documents') + count(data.total)} panelId="commit-documents"/>
-      <Tab value="code" label={t('commit.tab.code') + count(files.data?.total)} panelId="commit-code"/>
+      <Tab value="code" label={t('commit.tab.code') + count(files.data?.pages[0]?.total)} panelId="commit-code"/>
     </TabList>
 
     {tab === 'records' && <VStack id="commit-records" role="tabpanel" aria-label={t('event.records')} gap={3} className={styles.commitPanel}>

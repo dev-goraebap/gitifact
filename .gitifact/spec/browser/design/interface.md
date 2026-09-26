@@ -55,7 +55,7 @@ requirements:
 | `GET /api/v1/working` | browser-working v1 | 커밋 전 작업: 커밋 전 결정기록(섹션 포함), HEAD 대비 바뀐 문서, 결정기록 없는 변경. 요청마다 계산한다 |
 | `GET /api/v1/working/change?id` | browser-working-change v1 | 커밋 전 변경 하나의 HEAD 쪽과 지금 파일 쪽 |
 | `GET /api/v1/record?head&id` | browser-record v1 | `head` 이력에서 그 결정기록(`DR-…`, 기록 도입 전 이유는 `H-…`)을 더한 커밋. 캐시의 이력 행에서 찾고, 그 이력에 기록이 없으면 404, 쿼리가 형식에 어긋나면 400 |
-| `GET /api/v1/commit/files?commit` | browser-commit-files v1 | 첫 부모 대비 바뀐 소스 파일(`.gitifact` 밖)의 경로·상태·줄 수. 500개까지와 전체 수 |
+| `GET /api/v1/commit/files?commit&after&limit` | browser-commit-files v2 | 첫 부모 대비 바뀐 소스 파일(`.gitifact` 밖)의 경로·상태·줄 수를 Git 순서로 한 페이지(기본 20, 최대 100). 전체 수(`total`)와 다음 커서(`next`, 이 페이지 마지막 파일의 경로). `after`가 목록에 없으면 404 |
 | `GET /api/v1/commit/file?commit&path` | browser-commit-file v1 | 그 목록의 파일 하나의 양쪽 원문. 이진 파일과 512KB 넘는 쪽은 원문 없이 표시만 |
 | `GET /api/v1/search?q&head` | browser-search v2 | 체크아웃과 지난 변경의 검색 결과 |
 | `GET /api/v1/instructions/file?id&path` | browser-instruction-file v1 | 작업 폴더의 지침 파일 하나. 링크는 따라가지 않고, 이진 파일과 512KB 넘는 파일은 원문 없이 표시만 |

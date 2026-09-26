@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import type { BrowserSessionV3 } from '@gitifact/contracts';
 import { HStack } from '@astryxdesign/core/HStack';
 import { Link } from '@tanstack/react-router';
@@ -12,7 +12,7 @@ import { t, useLanguage } from '../../../shared/i18n';
  */
 export function RecordCommit({ session, commit, others }: { session: BrowserSessionV3; commit: string; others: number }) {
   useLanguage();
-  const code = useQuery(commitFilesOptions(session, commit)).data?.total;
+  const code = useInfiniteQuery(commitFilesOptions(session, commit)).data?.pages[0]?.total;
   if (!others && !code) return null;
   return <HStack gap={4} wrap="wrap" className={styles.recordCommitLinks}>
     {others > 0 && <Link to="/records/commits/$commit" params={{ commit }} search={{ tab: 'records' }}>{t('record.otherRecords', { count: others })}</Link>}

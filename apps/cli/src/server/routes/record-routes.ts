@@ -1,4 +1,4 @@
-import { browserCommitChangeQueryV1, browserCommitChangeV1, browserCommitQueryV2, browserCommitV4, browserCommitFileQueryV1, browserCommitFileV1, browserCommitFilesQueryV1, browserCommitFilesV1,
+import { browserCommitChangeQueryV1, browserCommitChangeV1, browserCommitQueryV2, browserCommitV4, browserCommitFileQueryV1, browserCommitFileV1, browserCommitFilesQueryV2, browserCommitFilesV2,
   browserHistoryQueryV4, browserHistorySummaryQueryV1, browserHistorySummaryV4, browserHistoryV6, browserSearchQueryV1, browserSearchV2, browserInstructionFileQueryV1, browserInstructionFileV1,
   browserRecordQueryV1, browserRecordV1, browserStampV1, browserWorkingChangeQueryV1, browserWorkingChangeV1, browserWorkingV1 } from '@gitifact/contracts';
 import { storeReader } from '../../adapters/git/store-reader.js';
@@ -80,10 +80,11 @@ export function recordRoutes(root: string, sessionId: string, env?: NodeJS.Proce
     } }),
 
     // The source a commit changed beside its documents, read from Git when the commit or record page asks for it.
-    route({ method: 'GET', path: '/api/v1/commit/files', session: true, query: browserCommitFilesQueryV1, unreadable, handle: async ({ query }) => {
-      const found = await commitFiles.files(query.commit);
-      if (!found) throw new HttpError(404, 'NOT_FOUND', t('server.commitNotFound'));
-      return ok(browserCommitFilesV1.parse({ contract: 'browser-commit-files', version: 1, sessionId, commit: found.commit, total: found.total, files: found.files }));
+    route({ method: 'GET', path: '/api/v1/commit/files', session: true, query: browserCommitFilesQueryV2, unreadable, handle: async ({ query }) => {
+      const found = await commitFiles.files(query.commit, { after: query.after, limit: query.limit ?? PAGE });
+      if (found === undefined) throw new HttpError(404, 'NOT_FOUND', t('server.commitNotFound'));
+      if (found === null) throw cursorGone();
+      return ok(browserCommitFilesV2.parse({ contract: 'browser-commit-files', version: 2, sessionId, commit: found.commit, total: found.total, next: found.next, files: found.files }));
     } }),
     route({ method: 'GET', path: '/api/v1/commit/file', session: true, query: browserCommitFileQueryV1, unreadable, handle: async ({ query }) => {
       const found = await commitFiles.file(query.commit, query.path);

@@ -1,5 +1,5 @@
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
-import { browserSpecsV7, browserHistoryV6, browserHistorySummaryV4, browserSearchV2, browserCommitFilesV1, browserCommitFileV1, browserCommitV4, browserCommitChangeV1, browserInstructionFileV1,
+import { browserSpecsV7, browserHistoryV6, browserHistorySummaryV4, browserSearchV2, browserCommitFilesV2, browserCommitFileV1, browserCommitV4, browserCommitChangeV1, browserInstructionFileV1,
   browserRecordV1, browserStampV1, browserWorkingV1, browserWorkingChangeV1, type BrowserSessionV3 } from '@gitifact/contracts';
 import { requestJson, ApiError } from '../../../shared/api/client';
 import { httpFailure } from './repository';
@@ -106,11 +106,19 @@ export const recordOptions = (session: BrowserSessionV3, head: string, id: strin
   queryFn: ({ signal }) => read(session, '/api/v1/record?head=' + head + '&id=' + encodeURIComponent(id), browserRecordV1, signal),
 });
 
-/** The source files a commit changed beside its documents. A commit never changes, so the answer is kept. */
-export const commitFilesOptions = (session: BrowserSessionV3, commit: string) => queryOptions({
-  queryKey: ['browser-commit-files', 1, ...scope(session), commit],
-  staleTime: Infinity, retry: false,
-  queryFn: ({ signal }) => read(session, '/api/v1/commit/files?commit=' + commit, browserCommitFilesV1, signal),
+/**
+ * The source files a commit changed beside its documents, twenty at a time; each page starts after the last file of
+ * the one before. A commit never changes, so the pages are kept.
+ */
+export const commitFilesOptions = (session: BrowserSessionV3, commit: string) => infiniteQueryOptions({
+  queryKey: ['browser-commit-files', 2, ...scope(session), commit],
+  initialPageParam: undefined as string | undefined, staleTime: Infinity, retry: false,
+  queryFn: ({ signal, pageParam }) => {
+    const query = new URLSearchParams({ commit });
+    if (pageParam) query.set('after', pageParam);
+    return read(session, '/api/v1/commit/files?' + query, browserCommitFilesV2, signal);
+  },
+  getNextPageParam: last => last.next ?? undefined,
 });
 
 /** One of those files on both sides, read when the reader opens it. */

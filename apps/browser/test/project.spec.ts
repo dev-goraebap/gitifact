@@ -184,6 +184,26 @@ test('the commit page reads its code as files down the side and the chosen file\
  delete commitSources[event.commit];
 });
 
+test('the code tab lists twenty files and reads on, and a file named past them opens', async ({page}) => {
+ await mockApi(page);
+ const event=specs.events[0]!;
+ commitSources[event.commit]=Array.from({length:25},(_,i)=>({file:{path:`src/f${String(i).padStart(2,'0')}.ts`,status:'added' as const,additions:1,deletions:0},before:null,after:`export const n = ${i};\n`}));
+ await serve(page, specs);
+ await page.goto('/records/commits/'+event.commit+'?tab=code&file=src%2Ff23.ts');
+ const article=page.getByRole('article',{name:'커밋 상세'});
+ const files=article.getByRole('navigation',{name:'같은 커밋의 소스 변경'});
+ await expect(files).toContainText('파일 25개');
+ await expect(files.getByRole('link')).toHaveCount(20);
+ // The file the address names is past the first page: it opens from its own answer.
+ const panel=article.getByRole('tabpanel',{name:'같은 커밋의 소스 변경'});
+ await expect(panel).toContainText('src/f23.ts');
+ await expect(panel.getByRole('table',{name:'src/f23.ts 변경'})).toContainText('export const n = 23;');
+ await files.getByRole('button',{name:'파일 더 보기'}).click();
+ await expect(files.getByRole('link')).toHaveCount(25);
+ await expect(files.getByRole('button',{name:'파일 더 보기'})).toHaveCount(0);
+ delete commitSources[event.commit];
+});
+
 test('a reason is written once over the records it explains, and each day is marked once', async ({page}) => {
  await mockApi(page);
  const event=specs.events[0]!;

@@ -145,9 +145,11 @@ export async function serve(page: Page, data: Fixture) {
 
   // The source a commit changed: none unless a test lists some in commitSources.
   await page.route(url => url.pathname === '/api/v1/commit/files', route => {
-    const commit = new URL(route.request().url()).searchParams.get('commit') ?? '';
+    const q = new URL(route.request().url()).searchParams; const commit = q.get('commit') ?? '';
     const files = (commitSources[commit] ?? []).map(s => s.file);
-    return route.fulfill({ json: { contract: 'browser-commit-files', version: 1, sessionId: session.sessionId, commit, total: files.length, files } });
+    const found = pageOf(files, f => f.path, q);
+    return found ? route.fulfill({ json: { contract: 'browser-commit-files', version: 2, sessionId: session.sessionId, commit, total: files.length, next: found.next, files: found.rows } })
+      : route.fulfill({ status: 404, json: notFound });
   });
   await page.route(url => url.pathname === '/api/v1/commit/file', route => {
     const q = new URL(route.request().url()).searchParams; const commit = q.get('commit') ?? '';
@@ -198,3 +200,12 @@ export const commitSources: Record<string, { file: CommitFile; before: string | 
 export const changeBodies: Record<string, { before: Side; after: Side }> = {
   ['c'.repeat(40) + ':R-abcdefghij']: { before: null, after: { id: 'R-abcdefghij', title: '검색어 입력', body: '**검색어**를 입력합니다.', specId: 'S-abcdefghij', path: '.gitifact/spec/search/requirements.md' } },
 };
+
+/** A page as the server cuts one: after the `after` key, `limit` rows (20 unless asked), undefined for a key it lacks. */
+export function pageOf<T>(rows: T[], keyOf: (row: T) => string, q: URLSearchParams, size = 20) {
+  const after = q.get('after'); const limit = Number(q.get('limit') ?? size);
+  const start = after === null ? 0 : rows.findIndex(r => keyOf(r) === after) + 1;
+  if (after !== null && !start) return undefined;
+  const shown = rows.slice(start, start + limit);
+  return { rows: shown, next: start + shown.length < rows.length && shown.length ? keyOf(shown[shown.length - 1]!) : null };
+}

@@ -264,7 +264,7 @@
   "diff.bodyUnchanged": "본문은 바뀌지 않았습니다.",
   "source.title": "같은 커밋의 소스 변경",
   "source.count": "파일 {count}개",
-  "source.shown": "앞의 {count}개만 표시",
+  "source.more": "파일 더 보기",
   "source.none": "이 커밋은 문서 밖의 파일을 바꾸지 않았습니다.",
   "source.listLoading": "바뀐 파일을 불러오는 중",
   "source.listFailed": "바뀐 파일을 불러오지 못했습니다.",
