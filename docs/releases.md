@@ -424,3 +424,17 @@ main을 02f2e86까지 푸시하고, 릴리스 커밋 02f2e86에 주석 태그 v0
 새 임시 폴더에 레지스트리의 0.8.2를 설치해 version과 커밋 5,000개 합성 저장소에서 `records list`·`specs list`의 페이지 안내를 확인했다. 사용자 프로젝트와 전역 설치는 바꾸지 않았다.
 
 릴리스 커밋 589c511에 주석 태그 v0.8.2를 만들어 origin에 푸시했고, 원격 태그가 해당 커밋을 가리키는 것을 확인했다. 이 게시 결과를 남기는 후속 문서 커밋으로 태그를 옮기지 않는다.
+
+## 0.8.3 배포 준비
+
+2026-09-26, 명령마다 버전 안내와 `config.json`의 `cli`·`language`를 0.8.3으로 준비했다(구현 `e84cf65`). 모든 명령이 결과 앞에 새 버전과 프로젝트 기준 버전을 stderr 한 줄로 알리고, 새 버전은 사용자 캐시와 뒤의 확인으로 읽는다. `update --later`, update 계약 v6, 전역 설치 안내를 더했다. 0.8.2 뒤의 브라우저 로딩·기능 목록 변경과 `.gitattributes` 커밋 수정도 패치노트에 담았다. 이 저장소는 `pnpm cli init`으로 블록 첫 줄을 없애고 config에 `cli: 0.8.3`·`language: ko`를 적었다. 0.8.2 이하는 이 설정에서 `INVALID_CONFIG`로 멈춘다.
+
+작업 폴더에 사용자의 추적하지 않는 파일(`docs/assets/gitifact-mascot*`)이 있어, 릴리스 커밋 8c53da19e89e0fb5efd80e022125a5bf5bf4f62a만 담은 별도 worktree에서 `pnpm install --frozen-lockfile`과 `pnpm check`를 돌려 통과했다(core 45, 계약 10, 소개 2, 브라우저 106, CLI 169, 패키지 오프라인 설치·실행). 모의 게시는 214개 파일, 압축 4,412,691바이트, integrity sha512-NKVNFMCW1mqfIMdutUWfSlvoDJSVYcrJ+kidKteWByz8jskApLlfiuVw6uO3A7Xz1R6upRoWz5CysfKtT10+WQ==, shasum 7c5e7a6f634235ded166e4c170e76804710844c2이다. CLI 번들 SHA-256은 7a019b64bc3c1a6f7cb903df3aaf0d00308e5cbf74756099172798404658ead8이다.
+
+## 0.8.3 게시 결과
+
+2026-09-26, 사용자가 worktree에서 `pnpm publish --access public --tag latest --no-git-checks`로 게시했다(npm 웹 인증). 게시 직후 몇 분 동안 레지스트리가 404를 돌려주다가 버전과 latest가 0.8.3으로 반영됐다. integrity와 shasum은 모의 실행과 같다(0.8.1·0.8.2와 달리 이번에는 같았다).
+
+레지스트리 압축 파일을 풀어 비교했다. 파일 214개이고 dist 전체·README·LICENSE가 검증 빌드와 바이트 단위로 같으며 CLI SHA-256도 같다. 새 임시 폴더에 레지스트리의 0.8.3을 설치해 version, 빈 Git 저장소의 `init`(config에 `cli`·`language`, 버전 없는 블록), 기준 버전이 더 새 프로젝트에서의 버전 안내(stdout JSON은 그대로)를 확인했다. 사용자 프로젝트와 전역 설치는 바꾸지 않았다.
+
+릴리스 커밋 8c53da1에 주석 태그 v0.8.3을 만들어 origin에 푸시했고, 원격 태그가 해당 커밋을 가리키는 것을 확인했다. 이 게시 결과를 남기는 후속 문서 커밋으로 태그를 옮기지 않는다.
