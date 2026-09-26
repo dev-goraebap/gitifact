@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { useLanguage } from '../../shared/i18n';
 import { LayerProvider } from '@astryxdesign/core/Layer';
 import { LinkProvider } from '@astryxdesign/core/Link';
@@ -11,10 +11,17 @@ import { documentSyntax } from '../../shared/ui/document';
 import { themes } from './themes';
 import { useAppearance } from '../../shared/lib/appearance';
 import { QueryClientProvider } from '@tanstack/react-query';
-import { createRouter, RouterProvider } from '@tanstack/react-router';
+import { createRouter, RouterProvider, useRouterState } from '@tanstack/react-router';
 import { routeTree } from '../routeTree.gen';
 import { queryClient } from './query-client';
-import { RequestState } from '../../shared/ui/request-state';
+import { PageLoader, useLoadingHold } from '../../shared/ui/request-state';
+
+/** The first visit has no screen to keep in view while the first one's reads are primed, so the rocket stands alone. */
+function FirstVisit({ children }: { children: ReactNode }) {
+  const waiting = useRouterState({ select: s => !s.resolvedLocation });
+  const showing = useLoadingHold(waiting, { delay: 100, minimum: 300 });
+  return <>{children}<PageLoader isVisible={showing} place="window"/></>;
+}
 
 const router = createRouter({
   routeTree,
@@ -25,9 +32,9 @@ const router = createRouter({
   // The content card scrolls, not the window: a new screen starts it at the top (or at the #section it names), and
   // going back restores where the reader was. The card carries the matching data-scroll-restoration-id.
   scrollToTopSelectors: ['[data-scroll-restoration-id="content"]'],
-  defaultPendingComponent: RequestState,
-  defaultPendingMs: 200,
-  defaultPendingMinMs: 0,
+  // No pending component: a move keeps the previous screen until the next one's loader has primed what it draws (the
+  // shell veils it meanwhile), so a screen is only ever shown whole.
+  InnerWrap: FirstVisit,
 });
 
 declare module '@tanstack/react-router' {

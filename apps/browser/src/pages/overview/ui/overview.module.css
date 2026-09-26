@@ -1,6 +1,6 @@
-@keyframes reveal { from { opacity:0; transform:translateY(4px); } }
+/* A screen fades in where it stands; rising into place read as the page moving when a move ends. */
+@keyframes reveal { from { opacity:0; } }
 .content {padding:var(--spacing-4) var(--spacing-5);min-width:0;animation:reveal .22s ease-out both}
-.skeleton { min-height:24rem; animation:reveal .2s ease-out both; }
 @media (prefers-reduced-motion: reduce) {
   .content { animation:none; }
 }

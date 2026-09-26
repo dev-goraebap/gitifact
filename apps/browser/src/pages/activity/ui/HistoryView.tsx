@@ -7,6 +7,7 @@ import { Button } from '@astryxdesign/core/Button';
 import { historyOptions } from '../../../entities/project';
 import { ActivityTimeline } from '../../../widgets/activity-timeline';
 import { WorkingEntry } from './WorkingEntry';
+import { historyFilterOf } from '../model/load';
 import type { RecordSearch } from '../../../widgets/records-page';
 import { PageState } from '../../../shared/ui/page-state';
 import { RequestState } from '../../../shared/ui/request-state';
@@ -20,7 +21,7 @@ import { t, useLanguage } from '../../../shared/i18n';
  */
 export function HistoryView({features,search,session,head}: {features:IndexFeature[];search:RecordSearch;session:BrowserSessionV3;head:string|null}) {
   useLanguage();
- const filter={kind:search.kind,document:search.document,feature:search.feature,author:search.author,q:search.q};
+ const filter=historyFilterOf(search);
  const filtering=Object.values(filter).some(Boolean);
  // While a new filter is answered the list that is on screen stays, instead of the page going blank.
  const query=useInfiniteQuery({...historyOptions(session,head??'',filter),enabled:!!head,placeholderData:keepPreviousData});

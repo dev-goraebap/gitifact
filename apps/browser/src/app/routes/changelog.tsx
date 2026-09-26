@@ -1,4 +1,4 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { ChangelogPage } from '../../pages/changelog';
+import { ChangelogPage, loadChangelog } from '../../pages/changelog';
 
-export const Route = createFileRoute('/changelog')({ component: ChangelogPage });
+export const Route = createFileRoute('/changelog')({ loader: ({ context }) => loadChangelog(context.queryClient), component: ChangelogPage });

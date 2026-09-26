@@ -64,3 +64,5 @@ export function setAppearance(next: Partial<Appearance>) {
 window.addEventListener('storage', event => { if (event.key === key) { current = read(); listeners.forEach(listener => listener()); } });
 const subscribe = (listener: () => void) => { listeners.add(listener); return () => { listeners.delete(listener); }; };
 export const useAppearance = () => useSyncExternalStore(subscribe, () => current);
+/** The appearance chosen now, for work done outside React (drawing a diagram ahead of its screen). */
+export const getAppearance = () => current;

@@ -10,7 +10,7 @@ import { HgiRefresh } from '../../../shared/ui/icons/HgiRefresh';
 import { sessionOptions, checkoutOptions, checkoutParts } from '../../../entities/project';
 import { ApiError } from '../../../shared/api/client';
 import styles from './records.module.css';
-import { RequestState, usePageLoading } from '../../../shared/ui/request-state';
+import { RequestState } from '../../../shared/ui/request-state';
 import { t, tNodes, useLanguage, getLanguage } from '../../../shared/i18n';
 import { DocumentIndexProvider } from '../../../shared/ui/document';
 import { DescriptionHelp } from '../../../shared/ui/description-help';
@@ -39,7 +39,7 @@ export interface RecordsPageProps {
 
 /**
  * The frame every records screen shares: the session and the checkout's frame read once, the header with the time of that
- * read and a refresh, the report to the frame's loader, the failure states, and the index documents resolve their links with.
+ * read and a refresh, the failure states, and the index documents resolve their links with.
  * Coming back to the tab asks whether the project changed since that read; when it did, a notice offers the refresh.
  * A new server session starts the frame over so nothing of another session's answers is shown.
  */
@@ -60,8 +60,6 @@ function RecordsPanel({ session, header: Header, title, description, root, trail
   const behind = useBehind(session, query.data?.stamp, query.dataUpdatedAt);
   const disconnected = query.error instanceof ApiError && query.error.code === 'SESSION_CHANGED';
   const first = disconnected ? undefined : query.data;
-  // The frame's one loader covers the screen until the checkout and the screen's own first reads have answered.
-  usePageLoading(!first && !query.error);
   const ready = !!first;
   const crumbs = [{ label: title, to: root }, ...(first && trail ? trail(first) : [])];
   const actions = <HStack gap={3} className={styles.headerActions}>

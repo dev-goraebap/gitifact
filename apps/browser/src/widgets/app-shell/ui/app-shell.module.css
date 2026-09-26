@@ -1,15 +1,7 @@
 /* Inset layout: the side nav shares the page floor, the content sits on it as a rounded card. */
 .frame { --gitifact-topbar-height: 2.75rem; height: 100%; min-height: 0; box-sizing: border-box; padding: var(--spacing-2); padding-inline-start: 0; }
 .card { overflow-x: hidden; overflow-y: auto; scrollbar-gutter: stable; scrollbar-width: thin; scrollbar-color: var(--color-border-emphasized, var(--color-border)) transparent; height: 100%; min-height: 0; min-width: 0; background: var(--color-background-surface); border: 1px solid var(--color-border); border-radius: var(--radius-container); box-shadow: var(--shadow-low); }
-/* While a screen's first reads are under way its content is hidden at once and then fades in whole; the card stays. */
 .frame { position: relative; }
-.card > * { transition: opacity var(--duration-medium-min) var(--ease-standard); }
-/* Hidden but still painted: at a near-zero opacity the browser lays out and rasterizes the screen while the loader shows,
-   so the fade starts from a finished picture. The layer lives only through the wait and the fade; kept for good it
-   would cost the text its subpixel smoothing. */
-.cardWaiting > * { opacity: 0.001; transition: none; will-change: opacity; }
-.cardRevealing > * { will-change: opacity; }
-@media (prefers-reduced-motion: reduce) { .card > * { transition: none; } }
 @media (width < 64rem) { .frame { --gitifact-topbar-height: 2.75rem; padding: 0; } .card { border: 0; border-radius: 0; box-shadow: none; } }
 
 /* The version reads as the last line of the menu, so its text starts where the menu icons do. It is a ghost

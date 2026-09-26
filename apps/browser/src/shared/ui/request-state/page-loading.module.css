@@ -1,9 +1,21 @@
-/* The loader lies over the content card: the card keeps its size and place, so nothing moves when the screen appears. */
-.overlay { position: absolute; inset: var(--spacing-2); inset-inline-start: 0; border-radius: var(--radius-container); opacity: 0; visibility: hidden; pointer-events: none; transition: opacity var(--duration-fast) var(--ease-standard), visibility 0s linear var(--duration-fast); }
 /* It appears at once, the moment the wait passes 100ms, and only fades on the way out. While shown it takes the clicks,
-   so the hidden screen under it cannot be pressed; the card itself is left alone. */
+   so the screen under it cannot be pressed while the next one is on its way. */
+.overlay { opacity: 0; visibility: hidden; pointer-events: none; transition: opacity var(--duration-medium) var(--ease-standard), visibility 0s linear var(--duration-medium); }
 .visible { opacity: 1; visibility: visible; pointer-events: auto; transition: none; }
-@media (width < 64rem) { .overlay { inset: 0; border-radius: 0; } }
+/* The first visit: nothing to show yet, so the rocket stands alone on the page floor. */
+.window { position: fixed; inset: 0; z-index: 10; background: var(--color-background-body); }
+/* A move between screens: the previous screen stays in the card, softened under the rocket until the next one is ready.
+   It lies above the card's sticky header and filter row (z-index 2), or those would change in plain sight. */
+.veil { position: absolute; z-index: 3; inset: var(--spacing-2); inset-inline-start: 0; border-radius: var(--radius-container);
+  background: color-mix(in srgb, var(--color-background-surface) 55%, transparent); backdrop-filter: blur(var(--spacing-1)); }
+@media (width < 64rem) { .veil { inset: 0; border-radius: 0; } }
+/* Once shown it deepens to nearly the card's own colour, so the moment the next screen replaces this one happens out of
+   sight, and lifting the veil reads as the next screen fading in rather than a cut seen through the glass. */
+.veil::before { content: ''; position: absolute; inset: 0; border-radius: inherit; background: var(--color-background-surface); opacity: 0; }
+.veil.visible::before { animation: deepen var(--duration-fast) var(--ease-standard) forwards; }
+.veil > * { position: relative; }
+@keyframes deepen { to { opacity: 0.78; } }
+@media (prefers-reduced-motion: reduce) { .veil.visible::before { animation: none; opacity: 0.78; } }
 
 /* A square box the rocket is drawn into: it holds its size before the player arrives, so the text under it never moves. */
 .mark { width: calc(var(--spacing-8) * 5); aspect-ratio: 1; }

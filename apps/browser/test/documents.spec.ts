@@ -119,18 +119,16 @@ test('a commit that touched a great many documents shows three under its record 
   await expect(commitPage.getByRole('region', { name: '도입 기록 24' })).toBeVisible();
 });
 
-test('while history is still being counted the overview says nothing about zero or emptiness', async ({ page }) => {
+test('while history is still being counted the overview is not shown, so it never says zero or empty', async ({ page }) => {
   await mockApi(page);
   let release!: () => void;
   const pending = new Promise<void>(resolve => { release = resolve; });
   await page.route(url => url.pathname === '/api/v1/history/summary', async route => { await pending; await route.fallback(); });
   await page.goto('/dashboard');
+  // The dashboard is drawn only once its counts have answered; until then the rocket waits alone.
+  await expect(page.getByRole('status', { name: '불러오는 중' })).toBeVisible();
   const article = page.getByRole('article', { name: '대시보드' });
-  await expect(article.getByRole('heading', { name: '최신 활동' })).toBeVisible();
-  // The count and the two empty states belong to an answer that has not arrived.
-  await expect(article).not.toContainText('커밋된 명세 활동이 아직 없습니다.');
-  await expect(article).not.toContainText('전체 활동 0건');
-  await expect(article).not.toContainText('아직 자료가 없습니다.');
+  await expect(article).toHaveCount(0);
   release();
   await expect(article.getByLabel('최신 활동').getByRole('list', { name: '결정기록 목록' })).toBeVisible();
   await expect(article).toContainText('전체 활동 1건');

@@ -5,3 +5,4 @@ export { useDocumentIndex } from './document-scope';
 export { resolveDocumentLink } from './resolveDocumentLink';
 export type { DocumentIndex, ResolvedLink } from './resolveDocumentLink';
 export { documentSyntax } from './syntax';
+export { prepareDiagrams } from './MermaidDiagram';

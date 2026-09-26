@@ -23,6 +23,7 @@ import { ApiError } from '../../../shared/api/client';
 import { RequestState } from '../../../shared/ui/request-state';
 import { LoadMore } from '../../../shared/ui/load-more';
 import { designsByRequirement } from '../model/design-sections';
+import { featureFilterOf, sortKeyOf, type SortKey } from '../model/feature-filter';
 import styles from './features.module.css';
 import { PageState } from '../../../shared/ui/page-state';
 import { DocumentBody } from '../../../shared/ui/document';
@@ -57,8 +58,6 @@ function Contributors({ people }: { people: Contributor[] }) {
   </AvatarGroup>;
 }
 
-/** The columns a reader can order the list by; every other column holds nothing to compare. */
-type SortKey = 'title' | 'requirements' | 'updatedAt';
 /** A row of the table: a feature heading its group, one of its requirements, or the rest of a long feature. */
 type Row = { id: string; kind: 'feature' | 'requirement' | 'more'; feature: FeatureRow; requirement?: FeatureRow['requirements'][number]; number?: number; [key: string]: unknown };
 
@@ -73,11 +72,10 @@ function FeatureList({ session, search, change }: { session: BrowserSessionV3; s
   // The column headers carry the order, so the state is a column and a direction rather than a named preset.
   // Ascending first suits a name; a count and a date are read newest-and-largest first, so they open descending.
   const opens: Record<SortKey, TableSortDirection> = { title: 'ascending', requirements: 'descending', updatedAt: 'descending' };
-  const key: SortKey = search.sort === 'title' || search.sort === 'requirements' ? search.sort : 'updatedAt';
+  const key = sortKeyOf(search);
   const direction: TableSortDirection = search.dir === 'asc' ? 'ascending' : search.dir === 'desc' ? 'descending' : opens[key];
   // A new filter or order keeps the rows on screen until the next answer replaces them.
-  const query = useInfiniteQuery({ ...featuresOptions(session, { q: search.q, design: search.design, author: search.author,
-    sort: key === 'updatedAt' ? undefined : key, dir: search.dir }), placeholderData: keepPreviousData });
+  const query = useInfiniteQuery({ ...featuresOptions(session, featureFilterOf(search)), placeholderData: keepPreviousData });
   // The rows are drawn in the background, a slice at a time, so the loader keeps moving while the table is built.
   const data = useDeferredValue(query.data);
   const carried = { q: search.q, design: search.design, author: search.author, sort: search.sort, dir: search.dir };

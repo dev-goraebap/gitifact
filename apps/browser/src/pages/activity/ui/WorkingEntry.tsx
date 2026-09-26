@@ -6,7 +6,6 @@ import { Text } from '@astryxdesign/core/Text';
 import { Token } from '@astryxdesign/core/Token';
 import { Link } from '@tanstack/react-router';
 import { workingOptions } from '../../../entities/project';
-import { usePageLoading } from '../../../shared/ui/request-state';
 import styles from './activity.module.css';
 import { t, useLanguage } from '../../../shared/i18n';
 
@@ -20,8 +19,6 @@ const RECORDS_SHOWN = 3;
 export function WorkingEntry({ session }: { session: BrowserSessionV3 }) {
   useLanguage();
   const query = useQuery(workingOptions(session));
-  // Part of the screen's first draw: appearing after it would push the history down under the reader.
-  usePageLoading(query.isPending);
   const data = query.data;
   if (!data || (!data.records.length && !data.changes.length)) return null;
   return <VStack as="section" aria-label={t('working.title')} gap={2} className={styles.workingEntry}>

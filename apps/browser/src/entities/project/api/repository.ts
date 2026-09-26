@@ -13,8 +13,8 @@ export function httpFailure(data: unknown): never {
 export const sessionOptions = () =>
   queryOptions<BrowserSessionV3, Error, BrowserSessionV3, typeof sessionKey>({
     queryKey: sessionKey,
+    // Asked again whenever a screen mounts, but kept between: a route's loader reads it before the screen that uses it exists.
     staleTime: 0,
-    gcTime: 0,
     retry: false,
     refetchOnWindowFocus: true,
     queryFn: async ({ signal }): Promise<BrowserSessionV3> => {

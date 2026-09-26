@@ -46,7 +46,9 @@ test('loading, successful refresh and failure retain the last observed data', as
       });
   });
   await page.goto('/git');
-  await expect(page.getByText('저장소 상태를 읽고 있습니다.', { exact: true })).toBeVisible();
+  // The page is drawn once the first status has answered; until then the rocket waits alone.
+  await expect(page.getByRole('status', { name: '불러오는 중' })).toBeVisible();
+  await expect(page.getByRole('cell', { name: 'partial.txt', exact: true })).toHaveCount(0);
   releaseInitial();
   await expect(page.getByRole('cell', { name: 'partial.txt', exact: true })).toBeVisible();
   await page.getByRole('button', { name: '상태 새로고침' }).click();

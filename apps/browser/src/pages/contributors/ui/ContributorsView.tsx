@@ -18,6 +18,7 @@ import { avatarSource, contributorHref } from '../../../entities/contributor';
 import { ChangeBadge } from '../../../entities/document';
 import type { RecordSearch } from '../../../widgets/records-page';
 import styles from './contributors.module.css';
+import { RECENT_CHANGES } from '../model/load';
 import { PageState } from '../../../shared/ui/page-state';
 import { t, tNodes, useLanguage } from '../../../shared/i18n';
 
@@ -73,7 +74,7 @@ function ContributorGrid({session,search}: {session:BrowserSessionV3;search:Reco
 function ContributorDetail({session,head,person,features}: {session:BrowserSessionV3;head:string|null;person:Contributor;features:BrowserContributorV1['features']}) {
   useLanguage();
   // This person's ten newest changes in all of history, asked of the server rather than looked for in loaded pages.
-  const recent = useInfiniteQuery({ ...historyOptions(session, head ?? '', { author: person.email }, 10), enabled: !!head });
+  const recent = useInfiniteQuery({ ...historyOptions(session, head ?? '', { author: person.email }, RECENT_CHANGES), enabled: !!head });
   const activities = recent.data?.pages[0]?.events ?? [];
   return <VStack as="article" aria-label={t('contributors.detail')} gap={0} className={styles.featureDetail}>
     <Link to="/contributors" className={styles.featureBack}>{t('contributors.back')}</Link>

@@ -1,8 +1,8 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { CodeBlock } from '@astryxdesign/core/CodeBlock';
 import { Text } from '@astryxdesign/core/Text';
 import { VStack } from '@astryxdesign/core/VStack';
-import { useAppearance } from '../../lib/appearance';
+import { getAppearance, useAppearance, type Appearance } from '../../lib/appearance';
 import { t, useLanguage } from '../../i18n';
 import styles from './document.module.css';
 
@@ -84,6 +84,7 @@ function measuringHost(): HTMLElement {
 }
 
 // The resolved mode, not the stored one: 'system' follows the operating system, and the tokens change with it.
+const signatureOf = ({ mode, palette }: Appearance, dark: boolean) => `${palette}:${mode === 'system' ? (dark ? 'dark' : 'light') : mode}`;
 function useThemeSignature(): string {
   const { mode, palette } = useAppearance();
   const [dark, setDark] = useState(() => window.matchMedia('(prefers-color-scheme: dark)').matches);
@@ -93,22 +94,69 @@ function useThemeSignature(): string {
     query.addEventListener('change', update);
     return () => query.removeEventListener('change', update);
   }, []);
-  return `${palette}:${mode === 'system' ? (dark ? 'dark' : 'light') : mode}`;
+  return signatureOf({ mode, palette }, dark);
 }
 
 // Drawings already made, by source and theme. A page opened again (an instruction's index after one of its references)
 // draws them at once instead of growing twice as each diagram arrives, which shook the text under the reader.
 const drawn = new Map<string, string>();
 const DRAWN_KEPT = 50;
+let drawings = 0;
+/** A drawing is kept by theme and source, the source without the line breaks a fence may end with. */
+const keyOf = (signature: string, code: string) => signature + '|' + code.trimEnd();
+
+/**
+ * Draws one diagram under the theme `host` sits in and keeps it by source and theme. The screen's own figure and a route's
+ * loader, which draws ahead so the screen is shown with its diagrams in place, both come here.
+ */
+async function draw(source: string, signature: string, host: HTMLElement): Promise<string> {
+  const code = source.trimEnd();
+  const key = keyOf(signature, code);
+  const kept = drawn.get(key);
+  if (kept) return kept;
+  const mermaid = (await import('mermaid')).default;
+  // Mermaid sizes every box from the width it measures, so measuring before the theme font arrives leaves the
+  // text hanging outside its box once the font swaps in.
+  await document.fonts?.ready;
+  // strict keeps mermaid's own sanitizer on and refuses click handlers in the source. Labels are plain SVG
+  // text rather than HTML in a foreignObject, because a drawing wider than the column is scaled down to fit
+  // and only SVG text scales with it; HTML labels keep their pixel size and spill out of their boxes.
+  // The neo look draws rounded boxes with thin borders; rounded curves bend edges at corners instead of
+  // sweeping splines, which keeps parallel edges from crossing each other's labels.
+  mermaid.initialize({
+    startOnLoad: false, securityLevel: 'strict', theme: 'base', look: 'neo', themeVariables: themeVariables(host), themeCSS,
+    // The per-diagram switches alone leave the labels as HTML; the top-level one is what turns them off.
+    htmlLabels: false, flowchart: { htmlLabels: false, curve: 'rounded', nodeSpacing: 36, rankSpacing: 44, padding: 12 }, class: { htmlLabels: false },
+    // Commit labels upright; the actors once, at the top; entity boxes sized to their names.
+    gitGraph: { rotateCommitLabel: false }, sequence: { mirrorActors: false }, er: { minEntityWidth: 80, minEntityHeight: 44, entityPadding: 12 },
+    fontFamily: getComputedStyle(host).fontFamily,
+  });
+  // Only letters and digits: mermaid puts the id into a CSS selector.
+  const { svg } = await mermaid.render('gitifact-diagram-' + ++drawings, code, measuringHost());
+  drawn.set(key, svg);
+  if (drawn.size > DRAWN_KEPT) drawn.delete(drawn.keys().next().value!);
+  return svg;
+}
+
+/**
+ * Draws ahead every diagram in the Markdown of `texts`, under the theme of the content card, so a screen shown with them
+ * is shown whole. A failure is left to the screen, which shows the source and the parser's message.
+ */
+export async function prepareDiagrams(texts: Array<string | null | undefined>): Promise<void> {
+  const host = document.querySelector<HTMLElement>('[data-scroll-restoration-id="content"]');
+  const codes = texts.flatMap(text => [...(text ?? '').matchAll(/^```mermaid[^\n]*\n([\s\S]*?)^```/gm)].map(m => m[1]!.trimEnd()));
+  if (!host || !codes.length) return;
+  const signature = signatureOf(getAppearance(), window.matchMedia('(prefers-color-scheme: dark)').matches);
+  // One at a time: mermaid.initialize is global, and drawings under way would share it.
+  for (const code of codes) await draw(code, signature, host).catch(() => undefined);
+}
 
 export function MermaidDiagram({ code }: { code: string }) {
   useLanguage();
   const host = useRef<HTMLElement>(null);
   const signature = useThemeSignature();
-  const key = signature + '|' + code;
+  const key = keyOf(signature, code);
   const [state, setState] = useState<State>(() => { const svg = drawn.get(key); return svg ? { kind: 'ready', svg } : { kind: 'pending' }; });
-  // useId returns a value with colons, which mermaid puts into a CSS selector; only letters and digits survive.
-  const id = 'gitifact-diagram-' + useId().replace(/[^a-zA-Z0-9]/g, '');
 
   useEffect(() => {
     const element = host.current;
@@ -116,35 +164,11 @@ export function MermaidDiagram({ code }: { code: string }) {
     const kept = drawn.get(key);
     if (kept) { setState(current => current.kind === 'ready' && current.svg === kept ? current : { kind: 'ready', svg: kept }); return; }
     let cancelled = false;
-    void (async () => {
-      try {
-        const mermaid = (await import('mermaid')).default;
-        // Mermaid sizes every box from the width it measures, so measuring before the theme font arrives leaves the
-        // text hanging outside its box once the font swaps in.
-        await document.fonts?.ready;
-        // strict keeps mermaid's own sanitizer on and refuses click handlers in the source. Labels are plain SVG
-        // text rather than HTML in a foreignObject, because a drawing wider than the column is scaled down to fit
-        // and only SVG text scales with it; HTML labels keep their pixel size and spill out of their boxes.
-        // The neo look draws rounded boxes with thin borders; rounded curves bend edges at corners instead of
-        // sweeping splines, which keeps parallel edges from crossing each other's labels.
-        mermaid.initialize({
-          startOnLoad: false, securityLevel: 'strict', theme: 'base', look: 'neo', themeVariables: themeVariables(element), themeCSS,
-          // The per-diagram switches alone leave the labels as HTML; the top-level one is what turns them off.
-          htmlLabels: false, flowchart: { htmlLabels: false, curve: 'rounded', nodeSpacing: 36, rankSpacing: 44, padding: 12 }, class: { htmlLabels: false },
-          // Commit labels upright; the actors once, at the top; entity boxes sized to their names.
-          gitGraph: { rotateCommitLabel: false }, sequence: { mirrorActors: false }, er: { minEntityWidth: 80, minEntityHeight: 44, entityPadding: 12 },
-          fontFamily: getComputedStyle(element).fontFamily,
-        });
-        const { svg } = await mermaid.render(id, code, measuringHost());
-        drawn.set(key, svg);
-        if (drawn.size > DRAWN_KEPT) drawn.delete(drawn.keys().next().value!);
-        if (!cancelled) setState({ kind: 'ready', svg });
-      } catch (error) {
-        if (!cancelled) setState({ kind: 'failed', message: error instanceof Error ? error.message : String(error) });
-      }
-    })();
+    draw(code, signature, element).then(
+      svg => { if (!cancelled) setState({ kind: 'ready', svg }); },
+      (error: unknown) => { if (!cancelled) setState({ kind: 'failed', message: error instanceof Error ? error.message : String(error) }); });
     return () => { cancelled = true; };
-  }, [code, signature, id, key]);
+  }, [code, signature, key]);
 
   if (state.kind === 'failed') return (
     <VStack gap={2} className={styles.codeblock}>

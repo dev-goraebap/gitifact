@@ -42,31 +42,67 @@ const orderBy = (page: Page, column: string) => page.getByRole('button', { name:
 // The feature's own title link; the row's link to its designs points at the design tab.
 const titles = (rows: ReturnType<Page['locator']>) => rows.locator('a[href^="/features/S-"]:not([href*="tab=design"])').allInnerTexts();
 
-test('the list appears once and whole: one loader covers the frame and the rows until both have answered', async ({ page }) => {
+/** Holds one API path until released, counting how often it was asked. */
+async function gate(page: Page, path: string) {
+  let release!: () => void; const held = { asked: 0, release: () => release() };
+  const open = new Promise<void>(resolve => { release = resolve; });
+  await page.route(url => url.pathname === path, async route => { held.asked++; await open; await route.fallback(); });
+  return held;
+}
+
+test('the first visit shows the rocket alone until the list has answered, then the whole screen at once', async ({ page }) => {
   await mockApi(page);
   await serve(page, many);
-  let releaseFrame!: () => void; let releaseRows!: () => void; let asked = 0;
-  const frame = new Promise<void>(resolve => { releaseFrame = resolve; });
-  const rows = new Promise<void>(resolve => { releaseRows = resolve; });
-  await page.route(url => url.pathname === '/api/v1/checkout', async route => { await frame; await route.fallback(); });
-  await page.route(url => url.pathname === '/api/v1/features', async route => { asked++; await rows; await route.fallback(); });
+  const rows = await gate(page, '/api/v1/features');
   await page.goto('/features');
-  const loader = page.getByRole('status', { name: '불러오는 중' });
-  const content = page.locator('[data-scroll-restoration-id="content"]');
-  await expect(loader).toBeVisible();
-  releaseFrame();
-  // The frame has answered and the rows are asked for: the same loader stays, with no second placeholder under the filters.
-  await expect.poll(() => asked).toBe(1);
-  await expect(loader).toBeVisible();
-  await expect(page.getByRole('status', { name: '프로젝트 불러오는 중' })).toHaveCount(0);
-  await expect(content).toHaveAttribute('aria-busy', 'true');
-  releaseRows();
-  await expect(loader).toHaveCount(0);
-  await expect(content).toHaveAttribute('aria-busy', 'false');
-  await expect(content.locator('> *').first()).toHaveCSS('opacity', '1');
+  await expect(page.getByRole('status', { name: '불러오는 중' })).toBeVisible();
+  await expect.poll(() => rows.asked).toBe(1);
+  await expect(page.getByRole('table')).toHaveCount(0);
+  rows.release();
   await expect(rowsOf(page)).toHaveCount(3);
+  await expect(page.getByRole('status', { name: '불러오는 중' })).toHaveCount(0);
 });
 
+test('a move keeps the current screen under the rocket until the next one is ready, then shows it whole', async ({ page }) => {
+  await listing(page);
+  const feature = await gate(page, '/api/v1/feature');
+  await rowsOf(page).first().locator('a[href^="/features/S-"]').first().click();
+  // The list stays in view, veiled, while the feature is read; its page is not shown half-drawn.
+  await expect(page.getByRole('status', { name: '불러오는 중' })).toBeVisible();
+  await expect(page.getByRole('table')).toBeVisible();
+  await expect(page.getByRole('article', { name: '기능 명세' })).toHaveCount(0);
+  expect(feature.asked).toBeGreaterThan(0);
+  feature.release();
+  await expect(page.getByRole('heading', { level: 1, name: '알림 기능' })).toBeVisible();
+  await expect(page.getByRole('table')).toHaveCount(0);
+  await expect(page.getByRole('status', { name: '불러오는 중' })).toHaveCount(0);
+});
+
+test('a new search on the same screen is not a move: no rocket, and the rows stay until the answer replaces them', async ({ page }) => {
+  await listing(page);
+  const rows = await gate(page, '/api/v1/features');
+  await page.getByRole('textbox', { name: '검색', exact: true }).fill('보관');
+  await expect.poll(() => rows.asked).toBeGreaterThan(0);
+  await expect(rowsOf(page)).toHaveCount(3);
+  await expect(page.getByRole('status', { name: '불러오는 중' })).toHaveCount(0);
+  rows.release();
+  await expect(rowsOf(page)).toHaveCount(1);
+});
+test('a failure the loader met is shown by the screen: a missing feature says so, and a failed list offers to try again', async ({ page }) => {
+  await mockApi(page);
+  await serve(page, many);
+  await page.goto('/features/S-zzzzzzzzzz');
+  await expect(page.getByRole('heading', { name: '기능을 찾을 수 없습니다' })).toBeVisible();
+  let failing = true;
+  await page.route(url => url.pathname === '/api/v1/features', route => failing
+    ? route.fulfill({ status: 500, json: { contract: 'browser-http-error', version: 1, error: { code: 'INTERNAL', message: '목록을 읽지 못했습니다.' } } })
+    : route.fallback());
+  await page.goto('/features');
+  await expect(page.getByRole('alert')).toContainText('불러오지 못했습니다');
+  failing = false;
+  await page.getByRole('button', { name: '다시 연결' }).click();
+  await expect(rowsOf(page)).toHaveCount(3);
+});
 test('the columns that hold comparable values order the list, and the header says which one does', async ({ page }) => {
   const rows = await listing(page);
   // Recent first by default: the store's own order says nothing about where the work is.
