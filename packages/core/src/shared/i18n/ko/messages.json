@@ -3,6 +3,8 @@
   "config.invalidFields": "프로젝트 설정의 필드나 값이 올바르지 않습니다.",
   "config.jsonUnreadableShort": "설정 JSON을 읽지 못했습니다.",
   "config.schemaFields": "schemaVersion과 baseline 설정 필드를 확인하세요.",
+  "config.cliVersion": "설정의 cli는 0.8.3 같은 배포 버전이어야 합니다.",
+  "config.language": "설정의 language는 {languages} 중 하나여야 합니다.",
   "document.pathTooLong": "위키 페이지 경로 깊이 또는 길이 한도를 초과했습니다: {path}",
   "document.fileName": "위키 페이지 파일 이름은 소문자·숫자·하이픈과 .md여야 합니다(루트의 README.md·ARCHITECTURE.md 같은 대문자 이름 예외): {path}",
   "document.folderName": "위키 폴더 이름은 소문자·숫자·하이픈이어야 합니다: {path}",

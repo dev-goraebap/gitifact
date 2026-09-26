@@ -12,6 +12,7 @@ import { runGuideList, runGuideShow } from './commands/guide.js';
 import { formats } from './commands/output.js';
 import { runUpdate } from './commands/update.js';
 import { runUpdateCheck } from './commands/update-check.js';
+import { noticeVersion, REFRESH_COMMAND, refreshUpdateCache, runUpdateLater } from './commands/version-notice.js';
 import { agentPresetNames } from './commands/agent-block.js';
 import { t, configureLanguage, environmentLanguage, type Language } from './shared/i18n/index.js';
 
@@ -34,6 +35,14 @@ const program = new Command()
   .allowExcessArguments(false)
   .addHelpText('after', '\n' + t('help.notYet'))
   .action(() => program.outputHelp());
+// Every command opens with at most one line about versions, on stderr so no output format changes. The detached
+// process that refreshes the release cache runs this CLI too, and says nothing.
+program.hook('preAction', async (_program, action) => {
+  let top = action;
+  while (top.parent && top.parent !== program) top = top.parent;
+  if (top.name() !== REFRESH_COMMAND) await noticeVersion(__CLI_VERSION__, top.name());
+});
+program.command(REFRESH_COMMAND, { hidden: true }).allowExcessArguments(false).action(() => refreshUpdateCache(__CLI_VERSION__));
 // Queries print text by default; --format json gives the same result with the {contract, version, ok} envelope.
 const format = () => new Option('--format <format>', t('help.format')).choices(formats).default('text');
 
@@ -60,7 +69,9 @@ program.command('update')
   .addOption(new Option('--format <format>', t('help.format')).choices(['json', 'text']).default('json'))
   .option('--commit', t('help.updateCommit'))
   .addOption(new Option('--check', t('help.updateCheck')).conflicts('commit'))
-  .action(options => options.check ? runUpdateCheck(options.format, __CLI_VERSION__) : runUpdate(options, __CLI_VERSION__));
+  .addOption(new Option('--later', t('help.updateLater')).conflicts(['check', 'commit']))
+  .action(options => options.later ? runUpdateLater(options.format, __CLI_VERSION__)
+    : options.check ? runUpdateCheck(options.format, __CLI_VERSION__) : runUpdate(options, __CLI_VERSION__));
 
 // Every list takes the same options with the same meaning; each resource adds its own filters and sort keys.
 const listed = (command: Command, sorts?: readonly string[]) => {

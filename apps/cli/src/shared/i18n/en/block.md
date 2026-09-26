@@ -1,14 +1,11 @@
 ## Gitifact Guide
 
-gitifact v{version} · {language} · storage schemaVersion 3
-
 Product behavior (requirements and designs), instructions and decision records live in `.gitifact/` and are managed with the CLI `gitifact`. If the project specifies another way to run it, that is what `gitifact` means.
 
 ### At the start of a session
 
-1. Check that `gitifact --version` is {version}. If it is missing or different, suggest `npm i -g gitifact@{version}`, and until then run `npx --yes gitifact@{version} <cmd>`. If execution is blocked, request approval.
-2. Run `gitifact update --check` once. If a newer version exists, ask whether to update; only with consent, install it, run `update` and reread this block.
-3. Read every instruction with `gitifact instructions list --all`, and check git status and existing staging.
+1. If `gitifact` is missing, suggest a global install of the `cli` version in `.gitifact/config.json` with `npm i -g gitifact@<version>`. If installing is blocked, request approval.
+2. Read every instruction with `gitifact instructions list --all`, and check git status and existing staging.
 
 ### What belongs in requirements
 
@@ -35,6 +32,7 @@ Record product behavior and constraints that must be maintained.
 
 ### Rules
 
+- When a version notice appears before a command's output, ask the user before the next step: update now (recommended) or later (`gitifact update --later`). To update, install as the notice says, run `gitifact update` and reread this block.
 - Commit only on a user request or project policy; push only when asked separately. Commit each decision with its record, documents, code and tests, and suggest a commit once when work is finished and left uncommitted.
 - Do not issue IDs, check or commit without running the CLI, or report that as done.
 - Write requirements and designs together for a new feature, in the project's language. Ask only about unclear product behavior and carry on with the rest.
@@ -43,6 +41,6 @@ Record product behavior and constraints that must be maintained.
 ### Commands
 
 - `specs`·`instructions`·`records`: `list`·`show`·`new`. `check`: whole check. `changes list`·`changes commit --file <json> [--dry-run]`
-- `browser`, `feedback`, `update [--check | --commit]`, `init`, `guide list`·`guide show <topic>` ({topics}). Lists show 20 at a time; read on with the `--after <value>` at the end (`--all` for everything). They take `--fields` and `--format json`; see `--help` for options.
+- `browser`, `feedback`, `update [--check | --commit | --later]`, `init`, `guide list`·`guide show <topic>` ({topics}). Lists show 20 at a time; read on with the `--after <value>` at the end (`--all` for everything). They take `--fields` and `--format json`; see `--help` for options.
 
 ---

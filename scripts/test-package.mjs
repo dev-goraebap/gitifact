@@ -10,6 +10,8 @@ import { parseChangelog } from '../packages/core/dist/index.js';
 
 // Keep the original Korean fixtures deterministic; English is checked separately below.
 process.env.GITIFACT_LANG = 'ko';
+// Every command may check for a newer release in the background; the package check never asks the registry or touches the user's cache.
+process.env.GITIFACT_NO_UPDATE_CHECK = '1';
 const workspace = fileURLToPath(new URL('../', import.meta.url));
 const packageManager = process.env.npm_execpath;
 assert.ok(packageManager, 'Run this check through pnpm test or pnpm test:built.');
@@ -31,7 +33,7 @@ try {
   assert.equal(name, 'gitifact');
   const installedRoot = join(temporaryRoot, 'node_modules', 'gitifact');
   assert.match(await readFile(join(installedRoot, 'LICENSE'), 'utf8'), /MIT License/);
-  assert.match(await readFile(join(installedRoot, 'README.md'), 'utf8'), /npx gitifact@latest init/);
+  assert.match(await readFile(join(installedRoot, 'README.md'), 'utf8'), /npm install -g gitifact\ngitifact init/);
   assert.match(await readFile(join(installedRoot, 'dist/THIRD_PARTY_NOTICES.txt'), 'utf8'), /Meta Platforms/);
   assert.deepEqual(dependencies, {}, 'The initial bundled CLI must be self-contained.');
   // Publishing a version without its release notes is the mistake this guards against.
@@ -111,8 +113,12 @@ try {
   assert.deepEqual(initialized.agentDocs, { mode: 'install', paths: ['AGENTS.md', 'CLAUDE.md'] });
   assert.equal(await readFile(join(temporaryRoot, 'CLAUDE.md'), 'utf8'), '@AGENTS.md\n', 'init must add a CLAUDE.md that imports AGENTS.md.');
   assert.match(agents, /^# AGENTS\.md\n\nProject-specific guidance for AI coding agents\.\n\n<!-- GITIFACT:START -->\n/);
-  assert.ok(agents.includes('gitifact v' + version + ' · ko · 저장 규약 schemaVersion 3'), 'Block must carry the installed version.');
-  assert.ok(agents.includes('npx --yes gitifact@' + version + ' <cmd>'), 'The generated invocation must pin the installed version.');
+  // The project's release and block language live in the config; the block names neither.
+  const configPath = join(temporaryRoot, '.gitifact', 'config.json');
+  const config = JSON.parse(await readFile(configPath, 'utf8'));
+  assert.deepEqual([config.cli, config.language], [version, 'ko'], 'init must set the project to the installed version.');
+  assert.ok(!/gitifact v\d|schemaVersion/.test(agents), 'The block must not name a version.');
+  assert.ok(agents.includes('npm i -g gitifact@<버전>') && !agents.includes('npx'), 'The block must point at a global install of the configured version.');
   assert.ok(agents.includes('gitifact guide show <topic>') && agents.includes('guide show spec'), 'Block must point at the bundled guides.');
   assert.match(agents, /<!-- GITIFACT:END -->\n$/);
   await writeFile(agentsPath, agents + '\n## Project rules\n\nKeep me.\n');
@@ -123,15 +129,18 @@ try {
   assert.equal(await readFile(agentsPath, 'utf8'), '# AGENTS.md\n\nProject-specific guidance for AI coding agents.\n\n## Project rules\n\nKeep me.\n');
   // The package check never contacts the npm registry: the update check is switched off and reported as disabled.
   const offline = { ...process.env, GITIFACT_NO_UPDATE_CHECK: '1' };
-  await writeFile(agentsPath, agents.replace('gitifact v' + version + ' ', 'gitifact v0.0.1 '));
+  // An older block text and an older project version, as a project last updated by 0.0.1 would have.
+  await writeFile(agentsPath, agents.replace('## Gitifact Guide\n', '## Gitifact Guide\n\nOld block text.\n'));
+  await writeFile(configPath, JSON.stringify({ ...config, cli: '0.0.1' }, null, 2) + '\n');
   const beforeCheck = await readFile(agentsPath, 'utf8');
   const checked = JSON.parse(npx('update', '--check'));
   assert.deepEqual([checked.contract, checked.update.status, checked.command], ['update-check', 'disabled', null]);
   assert.equal(await readFile(agentsPath, 'utf8'), beforeCheck, 'Check-only must not refresh an old block.');
   const updated = JSON.parse(execFileSync(process.execPath, [join(installedRoot, 'dist', 'main.js'), 'update'], { cwd: temporaryRoot, env: offline, encoding: 'utf8', timeout: 60_000 }));
-  assert.deepEqual([updated.contract, updated.cliVersion, updated.update, updated.install, updated.agentDocs],
-    ['update', version, { status: 'disabled', latestVersion: null }, null, { state: 'refreshed', paths: ['AGENTS.md'], missing: [] }]);
+  assert.deepEqual([updated.contract, updated.version, updated.cliVersion, updated.update, updated.install, updated.agentDocs, updated.project],
+    ['update', 6, version, { status: 'disabled', latestVersion: null }, null, { state: 'refreshed', paths: ['AGENTS.md'], missing: [] }, { state: 'written', cli: version }]);
   assert.equal(await readFile(agentsPath, 'utf8'), agents, 'update must restore the block of the installed version.');
+  assert.equal(JSON.parse(await readFile(configPath, 'utf8')).cli, version, 'update must set the project to the installed version.');
   const child = spawn(process.execPath, [join(installedRoot, 'dist', 'main.js'), 'browser'], {
     cwd: temporaryRoot, env: offline, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true,
   });

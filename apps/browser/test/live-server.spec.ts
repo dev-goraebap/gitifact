@@ -9,7 +9,8 @@ import { once } from 'node:events';
 test('bundled CLI serves a real checkout and refreshes changed files in the browser', async ({ page }) => {
   const base = await realpath(tmpdir());
   const directory = await mkdtemp(join(base, 'gitifact-browser-'));
-  const env = { ...process.env };
+  // The CLI never asks the real registry or touches the user's release cache from a test.
+  const env: NodeJS.ProcessEnv = { ...process.env, GITIFACT_NO_UPDATE_CHECK: '1' };
   for (const key of ['GIT_DIR', 'GIT_WORK_TREE', 'GIT_INDEX_FILE', 'GIT_COMMON_DIR']) delete env[key];
   execFileSync('git', ['init', '--template=', '-b', 'main'], { cwd: directory, env, stdio: 'pipe' });
   const beforeHead = await readFile(join(directory, '.git', 'HEAD'));
@@ -62,7 +63,7 @@ test('bundled CLI serves a real checkout and refreshes changed files in the brow
     await page.getByRole('link', { name: '시작하기', exact: true }).click();
     await page.reload();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('시작하기');
-    await expect(page.getByRole('article')).toContainText('npx gitifact specs list');
+    await expect(page.getByRole('article')).toContainText('gitifact specs list');
     await page.getByRole('link', { name: 'Git 상태', exact: true }).click();
     await expect(page.getByRole('cell', { name: 'actual-file.txt', exact: true })).toBeVisible();
     expect(await readFile(join(directory, '.git', 'HEAD'))).toEqual(beforeHead);

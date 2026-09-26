@@ -11,7 +11,6 @@ import { startBrowserServer } from '../.test-build/server/browser-server.js';
 
 const root = fileURLToPath(new URL('../../../', import.meta.url));
 const entry = join(root, 'apps/cli/dist/main.js');
-const version = JSON.parse(readFileSync(join(root, 'apps/cli/package.json'), 'utf8')).version;
 function run(f, args, language = 'en', more = {}) {
   const result = spawnSync(process.execPath, [entry, ...args], { cwd: f.repo,
     env: { ...f.env, GITIFACT_LANG: language, GITIFACT_NO_UPDATE_CHECK: '1', ...more }, encoding: 'utf8', timeout: 15000 });
@@ -62,24 +61,34 @@ test('updates preserve Korean blocks and records; explicit language changes only
   const f = fixture(t);
   success(f, ['--lang', 'ko', 'init']);
   const agents = join(f.repo, 'AGENTS.md');
-  const initial = readFileSync(agents, 'utf8').replace('v' + version, 'v0.6.2') + '\nUser instructions outside the block.\n';
+  const language = () => JSON.parse(readFileSync(join(f.repo, '.gitifact/config.json'), 'utf8')).language;
+  assert.equal(language(), 'ko');
+  // An older block text is rewritten; the text outside the block is the user's.
+  const initial = readFileSync(agents, 'utf8').replace('## Gitifact Guide\n', '## Gitifact Guide\n\nOld block text.\n') + '\nUser instructions outside the block.\n';
   writeFileSync(agents, initial);
-  const records = fingerprint(join(f.repo, '.gitifact'));
+  const documents = () => Object.fromEntries(Object.entries(fingerprint(join(f.repo, '.gitifact'))).filter(([path]) => path !== 'config.json'));
+  const records = documents();
+  // The config's language, not the display language, decides the block.
   success(f, ['update'], 'en');
-  assert.ok(readFileSync(agents, 'utf8').includes(`v${version} · ko ·`));
+  assert.ok(readFileSync(agents, 'utf8').includes('### 세션을 시작할 때'));
+  assert.ok(!readFileSync(agents, 'utf8').includes('Old block text.'));
   assert.ok(readFileSync(agents, 'utf8').endsWith('User instructions outside the block.\n'));
   success(f, ['init'], 'en');
-  assert.match(readFileSync(agents, 'utf8'), /· ko ·/);
+  assert.ok(readFileSync(agents, 'utf8').includes('### 세션을 시작할 때'));
+  assert.equal(language(), 'ko');
+  // --lang changes the blocks and the language the config keeps for them.
   success(f, ['--lang', 'en', 'update']);
-  assert.ok(readFileSync(agents, 'utf8').includes(`v${version} · en · storage schemaVersion 3`));
+  assert.ok(readFileSync(agents, 'utf8').includes('### At the start of a session'));
+  assert.equal(language(), 'en');
   assert.ok(readFileSync(agents, 'utf8').endsWith('User instructions outside the block.\n'));
-  assert.deepEqual(fingerprint(join(f.repo, '.gitifact')), records);
+  assert.deepEqual(documents(), records);
   assert.match(success(f, ['--lang', 'en', 'guide', 'show', 'instructions']), /title: Project instruction format/);
 });
 test('English setup ships complete assets and preserves user text', t => {
   const f = fixture(t);
   success(f, ['init']);
-  assert.match(readFileSync(join(f.repo, 'AGENTS.md'), 'utf8'), /· en ·/);
+  assert.ok(readFileSync(join(f.repo, 'AGENTS.md'), 'utf8').includes('### At the start of a session'));
+  assert.equal(JSON.parse(readFileSync(join(f.repo, '.gitifact/config.json'), 'utf8')).language, 'en');
   assert.equal(existsSync(join(f.repo, '.gitifact/wiki')), false);
   // The CLI language changes labels and skeletons, never what the user wrote.
   success(f, ['specs', 'new', 'feature', 'original', '--title', '원래 기능', '--description', '사용자가 쓴 기능'], 'en');

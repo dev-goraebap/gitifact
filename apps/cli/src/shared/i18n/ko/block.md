@@ -1,14 +1,11 @@
 ## Gitifact Guide
 
-gitifact v{version} · {language} · 저장 규약 schemaVersion 3
-
 제품 동작(요구사항·설계), 지침, 결정기록은 `.gitifact/`에 저장하고 CLI `gitifact`로 관리한다. 프로젝트가 별도 실행 방법을 정했다면 해당 방식을 `gitifact`로 적용한다.
 
 ### 세션을 시작할 때
 
-1. `gitifact --version`이 {version}인지 확인한다. 없거나 다르면 `npm i -g gitifact@{version}` 설치를 제안하고, 그전까지는 `npx --yes gitifact@{version} <cmd>`로 실행한다. 실행이 막히면 승인을 요청한다.
-2. `gitifact update --check`를 1회 실행한다. 새 버전이 있으면 업데이트 여부를 묻고, 동의할 때만 설치 후 `update`를 실행한 뒤 이 블록을 다시 읽는다.
-3. `gitifact instructions list --all`로 지침을 모두 확인하고 git status와 기존 staging 상태를 점검한다.
+1. `gitifact`가 없으면 `.gitifact/config.json`의 `cli` 버전으로 `npm i -g gitifact@<버전>` 전역 설치를 제안한다. 설치가 막히면 승인을 요청한다.
+2. `gitifact instructions list --all`로 지침을 모두 확인하고 git status와 기존 staging 상태를 점검한다.
 
 ### 무엇을 요구사항으로 남기는가
 
@@ -35,6 +32,7 @@ gitifact v{version} · {language} · 저장 규약 schemaVersion 3
 
 ### 지킬 것
 
+- 명령 출력 앞에 버전 안내가 보이면 다음 작업 전에 지금 업데이트(권장)와 나중에(`gitifact update --later`) 중 하나를 사용자에게 묻는다. 업데이트하면 안내대로 설치하고 `gitifact update`를 실행한 뒤 이 블록을 다시 읽는다.
 - 커밋은 사용자 요청이나 프로젝트 정책이 있을 때만 수행하고, 푸시는 별도로 요청받는다. 결정 단위마다 기록·문서·코드·테스트를 함께 커밋하며, 작업을 마치고 커밋하지 않았으면 1회 제안한다.
 - CLI를 실행하지 않고 ID 발급·검사·커밋을 대신하거나 완료로 보고하지 않는다.
 - 새 기능은 요구사항과 설계를 함께 작성하고 문서는 프로젝트 언어로 작성한다. 불명확한 제품 동작만 질문하고 나머지는 진행한다.
@@ -43,6 +41,6 @@ gitifact v{version} · {language} · 저장 규약 schemaVersion 3
 ### 명령
 
 - `specs`·`instructions`·`records`: `list`·`show`·`new`. `check`: 전체 검사. `changes list`·`changes commit --file <json> [--dry-run]`
-- `browser`, `feedback`, `update [--check | --commit]`, `init`, `guide list`·`guide show <topic>` ({topics}). 목록은 20개씩 출력되며 끝의 `--after <값>`으로 이어 조회한다(`--all`은 전체). `--fields`, `--format json`을 지원하며 옵션은 `--help`로 확인한다.
+- `browser`, `feedback`, `update [--check | --commit | --later]`, `init`, `guide list`·`guide show <topic>` ({topics}). 목록은 20개씩 출력되며 끝의 `--after <값>`으로 이어 조회한다(`--all`은 전체). `--fields`, `--format json`을 지원하며 옵션은 `--help`로 확인한다.
 
 ---

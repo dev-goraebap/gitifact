@@ -22,21 +22,21 @@ export function boilerplateFor(path: string) {
   const name = path === 'AGENTS.md' ? path : path.split('/').pop()!.replace(/^\./, '').replace(/\.md$/, '');
   return '# ' + name + '\n\nProject-specific guidance for AI coding agents.\n';
 }
-// The block body is one Markdown file per language; only {version}, {language} and {topics} are filled here.
+// The block body is one Markdown file per language; only {topics} is filled here. The block names no version or
+// language: the project's release and block language live in .gitifact/config.json.
 const readBundledBlock = (lang: Language) => readFile(new URL('./i18n/' + lang + '/block.md', import.meta.url), 'utf8');
 export interface AgentBlockControls { readBlock?: (lang: Language) => Promise<string> }
-export async function renderAgentBlock(version: string, controls: AgentBlockControls = {}, lang: Language = getLanguage()) {
+export async function renderAgentBlock(controls: AgentBlockControls = {}, lang: Language = getLanguage()) {
   const body = await (controls.readBlock ?? readBundledBlock)(lang);
-  const filled = body.trimEnd().replace(/\{(version|language|topics)\}/g, (_whole, name: string) =>
-    name === 'version' ? version : name === 'language' ? lang : guideTopics.join(', '));
-  return AGENT_START + '\n' + filled + '\n' + AGENT_END;
+  return AGENT_START + '\n' + body.trimEnd().replace(/\{topics\}/g, guideTopics.join(', ')) + '\n' + AGENT_END;
 }
-// The header carries an optional language token. Blocks written before it existed stay readable, and the
-// text between the language and `schemaVersion` is localized, so it is not matched literally.
-export function parseAgentBlock(text: string) {
-  const match = /^gitifact v(\S+)(?: · ([a-z][a-z-]*))? · .*schemaVersion (\d+)$/m.exec(text);
-  if (!match) return null;
-  return { version: match[1]!, language: (match[2] ?? 'ko') as Language, schemaVersion: Number(match[3]) };
+// Blocks written before 0.8.3 open with `gitifact v<version> · <language> · … schemaVersion <n>`; the language token is
+// what a project without `language` in its config falls back to. Blocks older still had no token and were Korean.
+export function legacyBlockLanguage(text: string): Language | undefined {
+  const match = /^gitifact v\S+(?: · ([a-z][a-z-]*))? · .*schemaVersion \d+$/m.exec(text);
+  if (!match) return undefined;
+  const language = match[1] ?? 'ko';
+  return language === 'ko' || language === 'en' ? language : undefined;
 }
 export function findBlock(text: string) {
   const start = text.indexOf(AGENT_START);

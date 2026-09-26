@@ -44,7 +44,10 @@ test('agent docs block is planned, created, refreshed and removed through init',
   const f = fixture(t); f.write('CLAUDE.md', '# Team\n\nRules.\n');
   // The block body ships as Markdown beside the built entry point, so this reads the source instead.
   const source = readFileSync(fileURLToPath(new URL('../src/shared/i18n/ko/block.md', import.meta.url)), 'utf8');
-  const docs = (extra = {}) => ({ version: '0.0.0-test', readBlock: async () => source, ...extra });
+  // The block names no release; a marker line stands in for each release's block text.
+  const docs = (extra = {}) => { const version = extra.version ?? '0.0.0';
+    return { version, readBlock: async () => source.replace('## Gitifact Guide\n', '## Gitifact Guide\n\n<!-- release ' + version + ' -->\n'), ...extra }; };
+  const config = repo => JSON.parse(readFileSync(join(repo.repo, '.gitifact/config.json'), 'utf8'));
   const run = (repo, dryRun, options) => initializeSpecProject(repo.repo, dryRun, repo.env, undefined, options);
   const before = fingerprint(f.repo);
   const planned = await run(f, true, docs());
@@ -53,13 +56,21 @@ test('agent docs block is planned, created, refreshed and removed through init',
   const created = await run(f, false, docs());
   assert.deepEqual([created.outcome, created.agentDocs.paths], ['created', ['CLAUDE.md']]);
   const text = readFileSync(join(f.repo, 'CLAUDE.md'), 'utf8');
-  assert.match(text, /^# Team\n\nRules\.\n\n<!-- GITIFACT:START -->\n## Gitifact Guide\n\ngitifact v0\.0\.0-test /);
+  assert.match(text, /^# Team\n\nRules\.\n\n<!-- GITIFACT:START -->\n## Gitifact Guide\n\n<!-- release 0\.0\.0 -->\n/);
+  // The config names the release and the block language.
+  assert.deepEqual([config(f).cli, config(f).language], ['0.0.0', 'ko']);
   assert.equal(existsSync(join(f.repo, 'AGENTS.md')), false);
-  const again = await run(f, false, docs({ version: '0.0.1-test' }));
+  const again = await run(f, false, docs({ version: '0.0.1' }));
   assert.equal(again.outcome, 'already-initialized');
-  assert.equal(readFileSync(join(f.repo, 'CLAUDE.md'), 'utf8'), text.replaceAll('0.0.0-test', '0.0.1-test'));
-  assert.equal((await run(f, true, docs({ version: '0.0.2-test' }))).outcome, 'already-initialized');
-  assert.equal(readFileSync(join(f.repo, 'CLAUDE.md'), 'utf8'), text.replaceAll('0.0.0-test', '0.0.1-test'));
+  assert.equal(readFileSync(join(f.repo, 'CLAUDE.md'), 'utf8'), text.replaceAll('0.0.0', '0.0.1'));
+  assert.equal(config(f).cli, '0.0.1');
+  assert.equal((await run(f, true, docs({ version: '0.0.2' }))).outcome, 'already-initialized');
+  assert.equal(readFileSync(join(f.repo, 'CLAUDE.md'), 'utf8'), text.replaceAll('0.0.0', '0.0.1'));
+  assert.equal(config(f).cli, '0.0.1');
+  // An older CLI does not pull the project back, and a pre-release build leaves the release as it is.
+  await run(f, false, docs({ version: '0.0.0' }));
+  await run(f, false, docs({ version: '0.0.9-dev' }));
+  assert.equal(config(f).cli, '0.0.1');
   const removed = await run(f, false, docs({ remove: true }));
   assert.deepEqual(removed.agentDocs, { mode: 'remove', paths: ['CLAUDE.md'] });
   assert.equal(readFileSync(join(f.repo, 'CLAUDE.md'), 'utf8'), '# Team\n\nRules.\n');

@@ -17,11 +17,11 @@ init은 작은 명시적 작업이다. 기존 프로젝트를 추정해 일괄 �
 
 | 파일 | 다루는 것 |
 | :--- | :--- |
-| interface | 지침 파일 후보와 블록 설치·갱신, 지침 문서, 실행 방법(전역 설치와 npx) |
+| interface | 지침 파일 후보와 블록 설치·갱신, 블록 언어, 지침 문서, 실행 방법(설정 버전의 전역 설치) |
 
 ## 설정과 기준선
 
-`config.json`은 `schemaVersion`과 `baseline` 두 필드만 둔다. 모드·승인 묶음은 저장하지 않는다. HEAD가 있으면 기준 커밋과 Git 객체 형식(`sha1`·`sha256`)을, 첫 커밋 전이면 `{ "kind": "empty" }`를 기록한다. 기존 설정을 다시 읽을 때는 객체 형식이 같고 기준 커밋이 HEAD의 조상인지 확인한다(`BASELINE_UNAVAILABLE`).
+`config.json`은 필수 필드 `schemaVersion`·`baseline`과 선택 필드 `cli`(프로젝트 기준 CLI 버전, x.y.z)·`language`(블록 언어, `ko`·`en`)를 둔다. init은 새 설정에 실행 중인 버전과 블록 언어를 쓰고, 이미 있는 설정도 update처럼 맞춘다(`settleConfig`, 기준 버전은 낮추지 않는다). 이 CLI가 모르는 필드는 거부하지 않고 다시 쓸 때도 남긴다. 모드·승인 묶음은 저장하지 않는다. HEAD가 있으면 기준 커밋과 Git 객체 형식(`sha1`·`sha256`)을, 첫 커밋 전이면 `{ "kind": "empty" }`를 기록한다. 기존 설정을 다시 읽을 때는 객체 형식이 같고 기준 커밋이 HEAD의 조상인지 확인한다(`BASELINE_UNAVAILABLE`).
 
 현재 `schemaVersion`은 3이다. 문서 하나가 파일 하나이고 구조 정보를 프론트매터에 두는 0.8.0 문서 형식을 뜻한다. 다른 값은 전환하지 않고 거부한다(`packages/core/src/formats/spec-project.ts`).
 
@@ -77,7 +77,7 @@ flowchart TD
 
 ## 새 버전 확인
 
-init은 `update`·`update --check`와 같은 레지스트리 확인(`resolveUpdate`)을 초기화와 나란히 실행해 결과의 `update`·`install`에 담는다. 확인은 3초 제한이고 실패·시간 초과는 `unavailable`이다. 초기화가 실패하면 확인을 취소한다. 새 버전이 있으면 `install.npx`·`install.npmGlobal`에 설치 명령을 준다.
+init은 `update`·`update --check`와 같은 레지스트리 확인(`resolveUpdate`)을 초기화와 나란히 실행해 결과의 `update`·`install`에 담는다. 확인은 3초 제한이고 실패·시간 초과는 `unavailable`이다. 초기화가 실패하면 확인을 취소한다. 새 버전이 있으면 `install.npx`·`install.npmGlobal`에 설치 명령을 주고, 텍스트 출력은 전역 설치를 안내한다. 끝난 확인은 사용자 캐시에 남겨 명령마다의 안내가 다시 쓴다(D-yrow77r5pf). 설정의 `cli`가 실행 중인 버전보다 새 버전이면 블록을 설치하지 않는다(제거는 한다).
 
 `GITIFACT_NO_UPDATE_CHECK`가 빈 값이나 `0`이 아니면 확인을 끈다. 테스트와 패키지 검사는 이 값으로 레지스트리에 접속하지 않는다. 도입 프롬프트는 `npx gitifact@latest init`으로 최신 CLI를 실행한다.
 
@@ -93,8 +93,8 @@ init은 `update`·`update --check`와 같은 레지스트리 확인(`resolveUpda
 | 초기화 | `apps/cli/test/init.test.mjs` | 독립 저장소에서 첫 커밋 전후, SHA-1·SHA-256, 반복·동시 실행, 중단, linked worktree, clone·submodule, 기존 staging 보존, `.gitifact/.gitattributes`의 생성과 기존 파일 보존 |
 | 줄바꿈 | `apps/cli/test/changes-commit.test.mjs` | `core.autocrlf=true` checkout에서 `.gitifact` 문서는 LF, 밖의 코드는 프로젝트 설정대로. 규칙 파일이 없는 옛 프로젝트의 CRLF checkout도 커밋된다 |
 | 블록 | `apps/cli/test/agent-docs.test.mjs` | 블록의 생성·갱신·제거, wrapper 건너뛰기, CLAUDE.md wrapper의 생성·보존·제거 조건, 프리셋별 대상, 잘못된 마커 거부, CRLF 유지 |
-| 블록 문안 | 같은 파일 | 요청 분류 예시가 workflow 원문에 있는지, 블록이 제목으로 시작해 `---`로 끝나고 일반 줄이 이어 붙지 않는지, 설치 안내가 블록 버전을 쓰는지 |
-| 패키지 | `scripts/test-package.mjs` | 설치된 CLI의 init이 AGENTS.md에 버전을 고정한 블록을 쓰고 `@AGENTS.md`만 담은 CLAUDE.md를 만들며, 제거 때 사용자 문단을 보존하고, `guide show` 출력이 자산 원본과 같은지 |
+| 블록 문안 | 같은 파일 | 요청 분류 예시가 workflow 원문에 있는지, 블록이 제목으로 시작해 `---`로 끝나고 일반 줄이 이어 붙지 않는지, 블록에 버전이 없고 설치 안내가 설정의 버전을 가리키는지 |
+| 패키지 | `scripts/test-package.mjs` | 설치된 CLI의 init이 설정에 `cli`·`language`를 쓰고 AGENTS.md에 버전 없는 블록을 쓰고 `@AGENTS.md`만 담은 CLAUDE.md를 만들며, 제거 때 사용자 문단을 보존하고, `guide show` 출력이 자산 원본과 같은지 |
 
 ## 미결
 

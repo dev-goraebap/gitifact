@@ -3,6 +3,7 @@ import { projectInitV8 } from '@gitifact/contracts';
 import { initializeSpecProject } from './spec-init.js';
 import type { AgentPreset } from './agent-block.js';
 import { fetchLatestVersion } from '../adapters/registry/latest-version.js';
+import { recordUpdateCheck } from '../adapters/filesystem/user-cache.js';
 import { disabledUpdate, resolveUpdate, updateCheckDisabled } from '../shared/update-check.js';
 import { t } from '../shared/i18n/index.js';
 
@@ -17,11 +18,13 @@ export async function runInit(options: InitOptions, version: string) {
     const dto = await initializeSpecProject(process.cwd(), options.dryRun, process.env, undefined,
       { version, agent: options.agent, remove: options.removeAgents, skip: options.skipAgents }, update);
     if (!dto.ok) throw new Error('unreachable');
+    // The notice every command shows reuses this answer instead of asking the registry again.
+    await recordUpdateCheck(process.env, dto.update);
     const docs = dto.agentDocs.mode === 'skip' ? t('init.text.skipped')
       : dto.agentDocs.paths.join(', ') + (dto.agentDocs.mode === 'remove' ? ' (' + t('init.text.blockRemoved') + ')' : dto.outcome === 'planned' ? ' (' + t('init.text.blockPlanned') + ')' : ' (' + t('init.text.blockUpdated') + ')');
     // A project that already had documents may see them as changed once LF applies; one renormalize settles that.
     const lineEndings = dto.lineEndings.created ? t('init.text.lineEndings', { path: dto.lineEndings.path }) + '\n' : '';
-    const newer = dto.install ? t('init.text.updateAvailable', { version: dto.update.latestVersion, command: dto.install.npx }) + '\n' : '';
+    const newer = dto.install ? t('init.text.updateAvailable', { version: dto.update.latestVersion, command: dto.install.npmGlobal }) + '\n' : '';
     process.stdout.write(options.format === 'text'
       ? `${dto.outcome}: ${dto.rootPath}/.gitifact/config.json\n${t('init.text.storage')}: schemaVersion ${dto.schemaVersion}\n${t('init.text.agentDocs')}: ${docs}\n${lineEndings}${newer}`
       : JSON.stringify(dto) + '\n');

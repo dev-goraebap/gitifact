@@ -36,7 +36,7 @@ flowchart TD
 | `apps/cli/src/main.ts` | 프로세스 시작과 명령 연결(Commander) |
 | `commands/` | 인자 해석, 유스케이스 호출, 출력 형식 선택. `changes.ts`가 커밋 잠금과 복구 자료를 맡는다 |
 | `adapters/git/` | Git 실행과 스냅샷 읽기, 0.7 저장소 읽기(`store-reader.ts`) |
-| `adapters/filesystem/` | 설정·문서 파일 쓰기, 커밋 입력 폴더, 에셋·링크 경고, 사용자 편집을 보존하는 원자적 쓰기, 지침 폴더 읽기(`instruction-folder.ts`)와 AGENTS.md 읽기(`agents-file.ts`) |
+| `adapters/filesystem/` | 설정·문서 파일 쓰기, 커밋 입력 폴더, 에셋·링크 경고, 사용자 편집을 보존하는 원자적 쓰기, 지침 폴더 읽기(`instruction-folder.ts`)와 AGENTS.md 읽기(`agents-file.ts`), 사용자 캐시의 새 버전 확인 결과(`user-cache.ts`) |
 | `adapters/cache/` | 캐시 `.gitifact/cache/index.db`: 문서·참조·검색·이력과 커밋 기록(`commit-log.ts`). 목록용으로 Git을 읽는 곳은 여기뿐이다 |
 | `adapters/registry/` | npm 최신 버전 조회 |
 | `adapters/github/` | `feedback`의 `gh` 실행과 이슈 작성 주소 |
@@ -88,11 +88,11 @@ stdout에는 선택한 출력 형식만 내보내고 로그·진행 상황은 st
 
 브라우저 소개 페이지는 원시 HTML을 렌더링하지 않으므로, 소개 글 맨 앞의 로고 블록을 번들한 로고 이미지로 바꾸고 요구사항 링크만 앱 안 경로로 바꾼다.
 
-표시 언어는 프로젝트 설정에 저장하지 않는다. CLI는 `--lang`, `GITIFACT_LANG`, `LC_ALL`, `LC_MESSAGES`, `LANG`, 운영체제 언어 순으로 정하며 미지원 언어는 영어다. 브라우저는 자체 설정을 쓴다. 문서·JSON 키·오류 코드·ID·저장 규약은 표시 언어와 무관하다.
+CLI 메시지의 표시 언어는 프로젝트 설정에 저장하지 않는다. 설정의 `language`는 GITIFACT 블록의 언어이며 표시 언어를 정하지 않는다. CLI는 `--lang`, `GITIFACT_LANG`, `LC_ALL`, `LC_MESSAGES`, `LANG`, 운영체제 언어 순으로 정하며 미지원 언어는 영어다. 브라우저는 자체 설정을 쓴다. 문서·JSON 키·오류 코드·ID·저장 규약은 표시 언어와 무관하다.
 
 ## 저장 규약
 
-`.gitifact/config.json`은 `schemaVersion: 3`과 `baseline`만 쓴다. baseline은 최초 도입 기준점이며 규약 버전 변경으로 갱신하지 않는다.
+`.gitifact/config.json`은 `schemaVersion: 3`과 `baseline`을 필수로, `cli`(프로젝트 기준 CLI 버전)와 `language`(블록 언어)를 선택으로 쓴다. baseline은 최초 도입 기준점이며 규약 버전 변경으로 갱신하지 않는다. `cli`·`language`는 `init`·`update`가 쓰고, `cli`는 낮추지 않는다. 이 CLI가 모르는 필드는 거부하지 않고 다시 쓸 때도 남긴다(`formatManagedConfig`). 그래서 필드를 더해도 이후 버전의 CLI가 멈추지 않는다.
 
 문서는 파일 하나가 문서 하나이고, 구조 정보는 모두 YAML 프론트매터에 둔다. 본문은 산문이며 CLI가 데이터를 뽑으려고 파싱하지 않는다. 형식 규칙은 core의 `formats/document-file.ts`·`formats/record-file.ts`와 `use-cases/check-documents.ts` 한 곳에 있고 `check`와 `changes commit`이 같은 검사를 쓴다.
 
@@ -170,7 +170,7 @@ GET은 정의한 조회만 수행하고 재검사는 별도 POST(`/api/v1/status
 
 ## 외부 요청
 
-CLI가 외부로 보내는 요청은 둘이다. 첫째, `init`·`update`·`update --check` 실행 시 `registry.npmjs.org/gitifact`의 최신 버전을 조회하며 프로젝트 정보는 보내지 않는다. 3초 안에 답이 없으면 확인 불가로 처리하고 동작을 막지 않는다. `GITIFACT_NO_UPDATE_CHECK`로 끈다. 브라우저 서버는 새 버전을 조회하지 않는다. 이 요청은 `adapters/registry/`에만 두고, 테스트는 조회 함수를 주입해 네트워크 없이 실행한다.
+CLI가 외부로 보내는 요청은 둘이다. 첫째, `registry.npmjs.org/gitifact`의 최신 버전을 조회하며 프로젝트 정보는 보내지 않는다. `init`·`update`·`update --check`는 실행 중에 조회하고, 그 밖의 명령은 사용자 캐시만 읽고 확인이 1시간 지났으면 분리 실행한 `__refresh-update` 프로세스가 조회한다. 명령은 이 조회를 기다리지 않는다. 3초 안에 답이 없으면 확인 불가로 처리하고 동작을 막지 않는다. `GITIFACT_NO_UPDATE_CHECK`로 끈다. 브라우저 서버는 새 버전을 조회하지 않는다. 이 요청은 `adapters/registry/`에만 두고, 테스트는 조회 함수를 주입하거나 fetch를 바꾼 preload로 네트워크 없이 실행하며 `GITIFACT_CACHE_DIR`로 캐시를 임시 폴더에 둔다.
 
 둘째, `feedback`은 사용자가 확인한 이슈를 사용자의 `gh`로 Gitifact 저장소에 만든다. CLI는 GitHub API를 직접 부르거나 토큰을 읽지 않고, `gh`가 없으면 이슈 작성 주소만 출력한다. 본문에 붙이는 환경 정보는 버전·운영체제·Node·`schemaVersion`뿐이다. `gh` 실행은 `adapters/github/`에만 두고, 테스트는 실행 함수를 주입하거나 `gh`가 없는 PATH로 실행한다.
 

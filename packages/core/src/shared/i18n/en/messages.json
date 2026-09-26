@@ -3,6 +3,8 @@
   "config.invalidFields": "Invalid project configuration fields or values.",
   "config.jsonUnreadableShort": "Could not read configuration JSON.",
   "config.schemaFields": "Check the schemaVersion and baseline fields.",
+  "config.cliVersion": "The config field cli must be a release version such as 0.8.3.",
+  "config.language": "The config field language must be one of {languages}.",
   "document.pathTooLong": "Wiki page path exceeds the depth or length limit: {path}",
   "document.fileName": "Wiki filenames must use lowercase letters, digits, hyphens and .md; uppercase root names such as README.md and ARCHITECTURE.md are allowed: {path}",
   "document.folderName": "Wiki folder names must use lowercase letters, digits and hyphens: {path}",

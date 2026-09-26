@@ -1,9 +1,8 @@
-import { readFile } from 'node:fs/promises';
 import { release } from 'node:os';
-import { dirname, join } from 'node:path';
 import { createIssue, ghSignedIn, newIssueUrl, runGh, type GhRunner } from '../adapters/github/issue.js';
 import { readJsonInput } from './input.js';
 import { CommandError, runCommand, text, type Format } from './output.js';
+import { findProjectConfig } from '../shared/project-config.js';
 import { t } from '../shared/i18n/index.js';
 
 const types = ['bug', 'idea'] as const;
@@ -22,14 +21,10 @@ export function parseFeedback(input: unknown): Feedback {
 
 /** The project's storage version, from the nearest `.gitifact/config.json` above the folder, or none. */
 async function schemaVersion(from: string): Promise<string> {
-  for (let folder = from; ; folder = dirname(folder)) {
-    const config = await readFile(join(folder, '.gitifact', 'config.json'), 'utf8').catch(() => undefined);
-    if (config !== undefined) {
-      try { const value = (JSON.parse(config) as { schemaVersion?: unknown }).schemaVersion; return typeof value === 'number' ? String(value) : 'none'; }
-      catch { return 'none'; }
-    }
-    if (dirname(folder) === folder) return 'none';
-  }
+  const config = (await findProjectConfig(from))?.text;
+  if (config === undefined) return 'none';
+  try { const value = (JSON.parse(config) as { schemaVersion?: unknown }).schemaVersion; return typeof value === 'number' ? String(value) : 'none'; }
+  catch { return 'none'; }
 }
 
 /** The body as sent: the user's text, then what helps reproduce it. Nothing from the project's files goes in. */

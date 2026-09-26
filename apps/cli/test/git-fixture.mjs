@@ -26,7 +26,9 @@ export function fixture(t, format = 'sha1') {
   writeFileSync(config, '[maintenance]\n\tauto = false\n[gc]\n\tauto = 0\n');
   const env = { ...process.env, GIT_CONFIG_GLOBAL: config, GIT_CONFIG_SYSTEM: config,
     GIT_CONFIG_NOSYSTEM: '1', GIT_TERMINAL_PROMPT: '0', LC_ALL: 'C', TEMP: temp, TMP: temp, TMPDIR: temp,
-    GIT_AUTHOR_DATE: '2026-09-13T00:00:00Z', GIT_COMMITTER_DATE: '2026-09-13T00:00:00Z' };
+    GIT_AUTHOR_DATE: '2026-09-13T00:00:00Z', GIT_COMMITTER_DATE: '2026-09-13T00:00:00Z',
+    // Each fixture has its own release cache, so one test's answer is never another's notice.
+    GITIFACT_CACHE_DIR: join(root, 'cache') };
   for (const key of Object.keys(env)) {
     if (/^GIT_(DIR|WORK_TREE|COMMON_DIR|INDEX_FILE|CONFIG_COUNT|CONFIG_PARAMETERS|CONFIG_KEY_\d+|CONFIG_VALUE_\d+)$/i.test(key)) delete env[key];
   }

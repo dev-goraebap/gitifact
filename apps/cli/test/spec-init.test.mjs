@@ -20,8 +20,10 @@ test('spec init dry-run, repeat and agent docs block preserve existing work and 
   assert.equal(call(f, ['init']).schemaVersion, 3);
   const config = readFileSync(join(f.repo, '.gitifact/config.json'), 'utf8');
   assert.equal(JSON.parse(config).mode, undefined);
+  assert.deepEqual(Object.keys(JSON.parse(config)), ['schemaVersion', 'baseline', 'cli', 'language']);
+  assert.match(JSON.parse(config).cli, /^\d+\.\d+\.\d+$/);
   const agents = readFileSync(join(f.repo, 'AGENTS.md'), 'utf8');
-  assert.match(agents, /^# AGENTS\.md\n\nProject-specific guidance for AI coding agents\.\n\n<!-- GITIFACT:START -->\n## Gitifact Guide\n\ngitifact v\d+\.\d+\.\d+/);
+  assert.match(agents, /^# AGENTS\.md\n\nProject-specific guidance for AI coding agents\.\n\n<!-- GITIFACT:START -->\n## Gitifact Guide\n\n(?!gitifact v)/);
   assert.match(agents, /<!-- GITIFACT:END -->\n$/);
   assert.equal(call(f, ['init']).outcome, 'already-initialized'); assert.equal(readFileSync(join(f.repo, '.gitifact/config.json'), 'utf8'), config);
   assert.equal(readFileSync(join(f.repo, 'AGENTS.md'), 'utf8'), agents);

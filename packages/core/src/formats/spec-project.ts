@@ -9,7 +9,14 @@ export class InitError extends Error {
 export const SCHEMA_VERSION = 3 as const;
 /** The 0.7 convention, the one format a migration starts from. */
 const PREVIOUS_SCHEMA_VERSION = 2;
-export interface SpecProjectConfig { schemaVersion: typeof SCHEMA_VERSION; baseline: Baseline }
+/** The languages the agent block is written in. */
+export const PROJECT_LANGUAGES = ['ko', 'en'] as const;
+export type ProjectLanguage = typeof PROJECT_LANGUAGES[number];
+// `cli` is the release the project was last set to and `language` the language of its agent block; `init` and `update`
+// write both. Neither is required, so a project made before 0.8.3 still reads.
+export interface SpecProjectConfig { schemaVersion: typeof SCHEMA_VERSION; baseline: Baseline; cli?: string; language?: ProjectLanguage }
+/** A plain release number, the only form `cli` takes. */
+export const CLI_VERSION_PATTERN = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
 
 const object = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -38,7 +45,8 @@ export function parseManagedConfig(text: string): SpecProjectConfig {
   try { value = JSON.parse(text); } catch { throw new InitError('INVALID_CONFIG', t('config.jsonUnreadableShort')); }
   // Configurations from before schemaVersion (Tryce's `kind: tryce-project`) are not read.
   if (!object(value) || !('schemaVersion' in value)) throw new InitError('UNSUPPORTED_FORMAT', t('config.unsupportedFormat'));
-  if (!keys(value, ['baseline', 'schemaVersion'])) throw new InitError('INVALID_CONFIG', t('config.schemaFields'));
+  // Fields this CLI does not know are allowed, so a later release can add one without stopping this one.
+  if (!('baseline' in value)) throw new InitError('INVALID_CONFIG', t('config.schemaFields'));
   // Earlier conventions are not converted; the message names the version so the reader knows why.
   // A newer convention means this CLI is the old one, and the way out is to update it.
   if (value.schemaVersion !== SCHEMA_VERSION) {
@@ -47,5 +55,26 @@ export function parseManagedConfig(text: string): SpecProjectConfig {
     if (found === PREVIOUS_SCHEMA_VERSION) throw new InitError('UNSUPPORTED_SCHEMA', t('config.migrationRequired'));
     throw new InitError('UNSUPPORTED_SCHEMA', newer ? t('config.newerSchema', { version: String(found) }) : t('config.unsupportedSchema', { version: String(found) }));
   }
-  return { schemaVersion: SCHEMA_VERSION, baseline: parseBaseline(value.baseline) };
+  const config: SpecProjectConfig = { schemaVersion: SCHEMA_VERSION, baseline: parseBaseline(value.baseline) };
+  if ('cli' in value) {
+    if (typeof value.cli !== 'string' || !CLI_VERSION_PATTERN.test(value.cli)) throw new InitError('INVALID_CONFIG', t('config.cliVersion'));
+    config.cli = value.cli;
+  }
+  if ('language' in value) {
+    if (!PROJECT_LANGUAGES.includes(value.language as ProjectLanguage)) throw new InitError('INVALID_CONFIG', t('config.language', { languages: PROJECT_LANGUAGES.join(', ') }));
+    config.language = value.language as ProjectLanguage;
+  }
+  return config;
+}
+
+/** The config text: the known fields in a fixed order, then the fields the file had that this CLI does not know. */
+export function formatManagedConfig(config: SpecProjectConfig, previous?: string): string {
+  let unknown: Record<string, unknown> = {};
+  if (previous !== undefined) {
+    const value: unknown = JSON.parse(previous);
+    if (object(value)) { const { schemaVersion: _s, baseline: _b, cli: _c, language: _l, ...rest } = value; unknown = rest; }
+  }
+  const known = { schemaVersion: config.schemaVersion, baseline: config.baseline,
+    ...(config.cli === undefined ? {} : { cli: config.cli }), ...(config.language === undefined ? {} : { language: config.language }) };
+  return JSON.stringify({ ...known, ...unknown }, null, 2) + '\n';
 }
