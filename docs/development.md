@@ -1,5 +1,22 @@
 # 개발 환경
 
+## 2026-09-26 조회를 서버 한 곳으로(0.8.2 준비)
+
+목록의 걸러내기·정렬·묶기·자르기를 서버의 조회층(`apps/cli/src/queries/`)으로 모았다(DR-jvbx23yyyj). 캐시에 커밋 기록을 두어 참여자·기능별 작성자를 제한 없이 SQL로 세고, 계보를 쓴 HEAD는 Git에 다시 묻지 않는다(`8b018f3`, DR-h26a5m7tjp). `specs list`·`instructions list`의 가공을 `queries/`로 옮기고 원문 공급원(`Originals`)을 나눴다(`1cde61a`, DR-nth5lnbljj). 커밋 코드 탭은 파일 20개씩(`ab7a9bf`, DR-enqvg4ik7x), 검색창은 분류마다 5개와 분류별 더 보기(`2c28340`, DR-oprvueklea), 체크아웃은 틀과 기능 목록·기능·지침·참여자로 나눴고(`57faef6`, DR-wddo74sdjw), 기록 상세는 그 기록의 문서만 20개씩 받는다(`a6ab852`, DR-brzhskozma). 계획은 `.tmp/0.8.2/plan.md`다. 버전은 올리지 않았고 패치노트는 배포 때 쓴다.
+
+잰 값(이 PC, `node dist/main.js`, 커밋 5,000개 합성 저장소 / 이 저장소 복제):
+
+| 항목 | 전 | 후 |
+| :--- | :--- | :--- |
+| `records list` | 639ms / 382ms | 256ms / 276ms |
+| 캐시 크기 | 5.4MB / 9.8MB | 3.4MB / 6.0MB |
+| 화면 틀 응답 | `/api/v1/specs` 366KB / 354KB | `/api/v1/checkout` 19KB / 18KB |
+| 검색(첫 요청) | 403ms / 156ms | 43ms / 61ms |
+
+측정 스크립트와 합성 저장소 생성은 세션 scratchpad에 두었다(저장소 밖). 남은 한계: 체크아웃의 부분마다 작업 폴더를 다시 읽어(`git status`·HEAD 확인·지문) 요청 하나가 약 200ms다. 틀과 목록을 함께 여는 화면은 이를 두 번 치른다.
+
+검증: 커밋마다 `pnpm check` 통과(마지막: CLI·브라우저 101·contracts·core·intro·패키지 설치 시험). `check` 문제 없음(문서 94개). 화면은 사용자 검수 대신 Claude가 `pnpm cli browser`로 띄워 기능 목록·기능 상세·지침·참여자·대시보드·코드 탭 더 보기·검색창 더 보기를 확인했다(스크린샷은 창이 가려져 찍지 못해 페이지 텍스트와 DOM으로 봤다).
+
 ## 2026-09-24 리소스별 명령, 전역 설치, feedback, 0.8.0 준비
 
 `docs` 명령을 없애고 리소스마다 `list`·`show`·`new`를 뒀다(`specs`·`instructions`·`records`, 최상위 `check`). 목록은 `--q`·`--author`·`--sort`·`--limit`·`--fields`·`--format`을 같은 뜻으로 받고, `specs list`는 `--uncovered`·`--without-design`·`--draft`·`--changed-since`로 고른다. `records list --doc`이 `docs history`를 대신한다(`d0d4d11`, DR-r2k3xmn4dp). 블록은 버전을 고정한 채 전역 `gitifact`를 기본으로 하고, 없거나 버전이 다르면 설치를 제안하며 그동안 npx로 실행하게 했다(`223c408`, DR-uj74m5t5ni). `feedback --file`은 로그인된 `gh`로 Gitifact 저장소에 이슈를 만들고 없으면 작성 주소를 출력한다(`9d01c2c`, DR-oo3hbraydm). 블록은 50줄 한도 안(AGENTS.md 기준 50줄)이다. CLI 버전을 0.8.0으로 올리고 한·영 패치노트를 썼다. 배포는 하지 않았다.

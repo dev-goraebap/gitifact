@@ -57,7 +57,7 @@ requirements:
 | `GET /api/v1/history/summary?head` | browser-history-summary v5 | 종류별 건수, 최근 3주 커밋별 건수, 최신 커밋 셋, 커밋 많은 참여자 셋과 나머지 수·커밋 |
 | `GET /api/v1/commit?commit&after&limit&record` | browser-commit v4 | 커밋 하나의 작성자·시각·메시지와 바꾼 문서의 목록 한 페이지(기본 20, 최대 100). 원문 없이 `total`·`next`(마지막 변경의 key). `record`면 그 기록이 설명하는 문서만(0.7 이유는 같은 글의 다른 ID도) |
 | `GET /api/v1/commit/change?commit&id` | browser-commit-change v1 | 그 커밋이 바꾼 문서 하나의 전후 본문. Git에서 읽는다 |
-| `GET /api/v1/working` | browser-working v1 | 커밋 전 작업: 커밋 전 결정기록(섹션 포함), HEAD 대비 바뀐 문서, 결정기록 없는 변경. 요청마다 계산한다 |
+| `GET /api/v1/working` | browser-working v1 | 커밋 전 작업: 커밋 전 결정기록(섹션 포함), HEAD 대비 바뀐 문서, 결정기록 없는 변경. 요청마다 계산한다. 커밋 전 변경은 대개 작고 `changes list`와 같은 조회라 나누지 않는다 |
 | `GET /api/v1/working/change?id` | browser-working-change v1 | 커밋 전 변경 하나의 HEAD 쪽과 지금 파일 쪽 |
 | `GET /api/v1/record?head&id` | browser-record v2 | `head` 이력에서 그 결정기록(`DR-…`, 기록 도입 전 이유는 `H-…`)의 제목·섹션, 그 기록을 더한 커밋, 그 커밋의 다른 기록 수(0.7 이유는 같은 글을 하나로 센다). 그 이력에 기록이 없으면 404, 쿼리가 형식에 어긋나면 400 |
 | `GET /api/v1/commit/files?commit&after&limit` | browser-commit-files v2 | 첫 부모 대비 바뀐 소스 파일(`.gitifact` 밖)의 경로·상태·줄 수를 Git 순서로 한 페이지(기본 20, 최대 100). 전체 수(`total`)와 다음 커서(`next`, 이 페이지 마지막 파일의 경로). `after`가 목록에 없으면 404 |
