@@ -1,3 +1,10 @@
+## 0.8.4 - 2026-09-27
+### Changed
+- Agents no longer leave installing or updating Gitifact to the user. They show the exact install command, ask whether to run it, and install it themselves once allowed. In Claude Code's auto mode, replying "yes" to a question that names the command is enough. If the tool still blocks it, the agent points to that tool's approval prompt or permission setting. Run `update` to refresh the instruction block.
+- If Windows PowerShell has script execution disabled and cannot load `npm.ps1`, agents run `npm.cmd` and `gitifact.cmd`. Getting started describes the same.
+### Fixed
+- `init` showed "run gitifact update to move the project" right before raising the project itself.
+
 ## 0.8.3 - 2026-09-26
 ### Added
 - Every command prints one version notice before its result: when a newer release is out, when the project is set to a newer version than this CLI, and when this CLI is newer than the project's version. The newer release is read from the user's cache and checked in the background at most once an hour, so commands never wait on the network. `GITIFACT_NO_UPDATE_CHECK` turns off only the release check.

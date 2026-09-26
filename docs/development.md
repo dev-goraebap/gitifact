@@ -1,5 +1,13 @@
 # 개발 환경
 
+## 2026-09-27 설치를 에이전트가 허용을 묻고 직접(0.8.4 준비)
+
+0.8.3을 쓴 한 사용자의 Claude Code 자동 모드 세션에서 검사기가 에이전트의 `npm install -g gitifact`를 막았고, 에이전트가 사용자에게 설치를 넘겼으며 사용자가 친 명령은 Windows PowerShell의 스크립트 실행 제한(`npm.ps1`)에 막혔다. 문서상 자동 모드는 사용자 메시지가 동작을 구체적으로 가리키면 약한 차단을 푼다. 이 저장소 세션(자동 모드)에서 `npm install -g gitifact@0.8.3`을 담아 묻고 "네"만 받았을 때 전역 설치가 통과했다(한 번 시험, 전역을 0.8.1에서 0.8.3으로 올림). 블록·workflow·시작하기를 "정확한 명령으로 허용을 묻고 직접 설치, 막히면 도구의 승인, PowerShell은 `.cmd`"로 바꿨다(`f31800c`, DR-eys4dayunx). 기본 규칙 원문을 `claude auto-mode defaults`로 읽으려 했으나 검사기가 막아 이 차단이 약한 차단이라는 것은 문서로 추정했다. Codex의 승인 동작은 대화형이 필요해 시험하지 않았다.
+
+이 저장소에 `pnpm cli init`을 실행하자 기준을 올리는 명령 앞에 "update로 올리라"는 안내가 나와, `init`도 프로젝트가 뒤짐 안내를 내지 않게 고쳤다(`26ecb6c`, DR-xszf4ve43g).
+
+검증: `pnpm check` 통과(core 45, 계약 10, 소개 2, 브라우저 106, CLI 169, 패키지 설치 시험). 이 저장소는 `pnpm cli init`으로 블록과 config를 0.8.4에 맞췄다.
+
 ## 2026-09-26 명령마다 버전 안내와 config의 cli(0.8.3 준비)
 
 모든 명령이 결과 앞에 stderr 한 줄로 새 버전과 프로젝트 기준 버전을 알린다. 새 버전은 사용자 캐시(`%LOCALAPPDATA%\gitifact\update.json` 등)에서 읽고, 확인이 1시간 지났으면 분리 실행한 `__refresh-update`가 레지스트리를 조회한다. `update --later`는 그 버전을 24시간 조용히 한다(DR-g3rc2m4kgg). `.gitifact/config.json`에 `cli`·`language`를 두고 `init`·`update`가 쓴다. 0.8.2 이하는 이 설정에서 `INVALID_CONFIG`로 멈추고 0.8.3부터는 모르는 필드를 허용한다(DR-nkw5mkycbv). 블록 첫 줄을 없애고 블록 언어도 config로 옮겼다(DR-kuj2k42kae). 설치 안내는 전역 설치로 바꿨다. 구현은 `e84cf65`, 계획은 `.tmp/0.8.3/plan-version-notice.md`다. 이 저장소도 `pnpm cli init`으로 블록과 config를 0.8.3에 맞췄다.
