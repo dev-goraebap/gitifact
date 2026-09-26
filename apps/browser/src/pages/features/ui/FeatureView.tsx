@@ -14,7 +14,7 @@ import { Timestamp } from '@astryxdesign/core/Timestamp';
 import { Avatar } from '@astryxdesign/core/Avatar';
 import { AvatarGroup, AvatarGroupOverflow } from '@astryxdesign/core/AvatarGroup';
 import { useMediaQuery } from '@astryxdesign/core/hooks';
-import { Link, useNavigate } from '@tanstack/react-router';
+import { Link } from '@tanstack/react-router';
 import { DesignDocument, StateToken } from '../../../entities/document';
 import { avatarSource, contributorHref } from '../../../entities/contributor';
 import type { RecordSearch } from '../../../widgets/records-page';
@@ -67,7 +67,6 @@ type Row = { id: string; kind: 'feature' | 'requirement' | 'more'; feature: Feat
  */
 function FeatureList({ session, search, change }: { session: BrowserSessionV3; search: RecordSearch; change: (s: RecordSearch) => void }) {
   useLanguage();
-  const navigate = useNavigate();
   const mobile = useMediaQuery('(max-width: 767px)');
   // The column headers carry the order, so the state is a column and a direction rather than a named preset.
   // Ascending first suits a name; a count and a date are read newest-and-largest first, so they open descending.
@@ -95,11 +94,6 @@ function FeatureList({ session, search, change }: { session: BrowserSessionV3; s
   ]);
   const mostRequirements = Math.max(1, first.mostRequirements);
   const oneLine = (text: string) => text.replace(/[#*_`]/g, '').replace(/\s+/g, ' ').trim();
-  const open = (row: Row) => {
-    const requirement = row.kind === 'requirement' ? row.requirement!.id : undefined;
-    void navigate({ to: '/features/$featureId', params: { featureId: row.feature.id },
-      search: { ...carried, ...(requirement ? { selected: requirement, tab: 'requirements' } : {}) }, ...(requirement ? { hash: requirement } : {}) });
-  };
   const columns: TableColumn<Row>[] = [
     // One column carries both kinds of row: a feature names the group and its requirements sit under it, indented.
     // A feature stacks its title over its description inside the height one line used to take, and ends with one
@@ -113,7 +107,11 @@ function FeatureList({ session, search, change }: { session: BrowserSessionV3; s
             {!row.feature.designs && <Token label={t('features.noDesignMark')} color="yellow" size="sm"/>}
           </HStack>
           {/* The second line is kept even without a description, so every feature row has the same height. */}
-          <Text type="supporting" color="secondary" className={`${styles.featureDescription} ${styles.oneLine}`}>{oneLine(row.feature.description) || ' '}</Text>
+          <Text type="supporting" color="secondary" className={`${styles.featureDescription} ${styles.oneLine}`}>{row.feature.description
+            // The description's words open the feature too; only the words, not the blank rest of the row. The title is
+            // the link keyboards and screen readers reach, so this one stays out of both.
+            ? <Link to="/features/$featureId" params={{ featureId: row.feature.id }} search={carried} tabIndex={-1} aria-hidden className={styles.descriptionLink}>{oneLine(row.feature.description)}</Link>
+            : ' '}</Text>
         </VStack>
         {row.feature.designs > 0 && <Link to="/features/$featureId" params={{ featureId: row.feature.id }} search={{ ...carried, tab: 'design' }} className={styles.featureDesignLink}>{t('features.designMark', { count: row.feature.designs })}</Link>}
       </HStack>
@@ -123,7 +121,8 @@ function FeatureList({ session, search, change }: { session: BrowserSessionV3; s
           <Text type="supporting" color="secondary" className={styles.requirementNumber}>{String(row.number!).padStart(2, '0')}</Text>
           <Link to="/features/$featureId" params={{ featureId: row.feature.id }} search={{ ...carried, selected: row.requirement!.id, tab: 'requirements' }} hash={row.requirement!.id} className={styles.requirementLink} data-state-title>{row.requirement!.title}</Link>
           <StateToken state={row.requirement!.state}/>
-          {row.requirement!.description && <Text type="supporting" color="secondary" className={`${styles.requirementDescription} ${styles.oneLine}`}>{oneLine(row.requirement!.description)}</Text>}
+          {row.requirement!.description && <Text type="supporting" color="secondary" className={`${styles.requirementDescription} ${styles.oneLine}`}>
+            <Link to="/features/$featureId" params={{ featureId: row.feature.id }} search={{ ...carried, selected: row.requirement!.id, tab: 'requirements' }} hash={row.requirement!.id} tabIndex={-1} aria-hidden className={styles.descriptionLink}>{oneLine(row.requirement!.description)}</Link></Text>}
           {/* Designs are the norm, so a requirement marks only that no design of its feature explains it. */}
           {row.feature.designs > 0 && !row.requirement!.designed && <Text type="supporting" color="secondary" className={styles.requirementNoDesign}>{t('features.noDesignMark')}</Text>}
         </HStack> },
@@ -142,13 +141,12 @@ function FeatureList({ session, search, change }: { session: BrowserSessionV3; s
   if (!mobile) columns.push({ key: 'updatedAt', header: t('common.recentChange'), sortable: true, width: pixel(110), align: 'end', renderCell: row => row.kind !== 'feature' ? null : row.feature.updatedAt ? <Timestamp value={row.feature.updatedAt} format="relative"/> : <Text type="supporting" color="secondary">{t('common.inProgress')}</Text> });
   // A row not committed as it is carries its state, which draws the bar at its start (global.css).
   const stateOf = (row: Row) => { const state = row.kind === 'feature' ? row.feature.state : row.kind === 'requirement' ? row.requirement!.state : undefined; return state === 'committed' ? undefined : state; };
-  const interaction: TablePlugin<Row> = { transformBodyRow: (props, item) => ({ ...props, htmlProps: { ...props.htmlProps, tabIndex: 0, 'data-row': item.kind, 'data-state': stateOf(item),
-    // Links inside the row (title, contributor avatars) navigate on their own; only bare surface clicks open it.
-    onClick: (event: { target: EventTarget | null }) => { if (!(event.target as HTMLElement | null)?.closest('a, button')) open(item); }, onKeyDown: event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); open(item); } } } }) };
+  // Only the words of a row open it (its title and description links); the rest of the row is not a target.
+  const rowKinds: TablePlugin<Row> = { transformBodyRow: (props, item) => ({ ...props, htmlProps: { ...props.htmlProps, 'data-row': item.kind, 'data-state': stateOf(item) } }) };
   if (!features.length) return <PageState kind={first.all ? 'search' : 'empty'} title={t('features.emptyTitle')} description={first.all ? t('features.changeFilters') : t('features.emptyDescription')}/>;
   return <VStack gap={3} className={styles.featureTable}>
     <Text type="supporting" color="secondary">{t('features.count', { count: first.total })}{first.total < first.all ? t('features.ofTotal', { total: first.all }) : ''} · {t('features.requirementCount', { count: first.requirements })} · {t('features.countNote')}</Text>
-    <Table data={rows} idKey="id" columns={columns} plugins={{ sorting, interaction }} density="compact" dividers="rows" hasHover textOverflow="truncate"/>
+    <Table data={rows} idKey="id" columns={columns} plugins={{ sorting, rowKinds }} density="compact" dividers="rows" hasHover textOverflow="truncate"/>
     <HStack gap={0}><LoadMore label={t('features.more')} query={query}/></HStack>
   </VStack>;
 }

@@ -39,8 +39,8 @@ async function choose(page: Page, filter: string, option: string) {
 // The order lives in the column headers, so ordering the list means pressing the one that holds the values.
 const orderBy = (page: Page, column: string) => page.getByRole('button', { name: new RegExp('^' + column + ' 기준 정렬') }).click();
 
-// The feature's own title link; the row's link to its designs points at the design tab.
-const titles = (rows: ReturnType<Page['locator']>) => rows.locator('a[href^="/features/S-"]:not([href*="tab=design"])').allInnerTexts();
+// The feature's own title link; the row's link to its designs points at the design tab, and its description link is hidden.
+const titles = (rows: ReturnType<Page['locator']>) => rows.locator('a[href^="/features/S-"]:not([href*="tab=design"]):not([aria-hidden])').allInnerTexts();
 
 /** Holds one API path until released, counting how often it was asked. */
 async function gate(page: Page, path: string) {
@@ -102,6 +102,18 @@ test('a failure the loader met is shown by the screen: a missing feature says so
   failing = false;
   await page.getByRole('button', { name: '다시 연결' }).click();
   await expect(rowsOf(page)).toHaveCount(3);
+});
+test('only the words of a row open it: a blank cell does nothing, a description opens its feature or requirement', async ({ page }) => {
+  const rows = await listing(page);
+  // The contributors cell of a requirement row holds nothing: pressing it stays on the list.
+  await requirementsOf(page).first().locator('td').nth(2).click();
+  await expect(page).toHaveURL(/\/features$/);
+  await expect(rows.first()).toHaveCSS('cursor', 'default');
+  // The description's words are a link the pointer can use, kept out of the keyboard's way beside the title.
+  const description = rows.first().locator('a[aria-hidden="true"]');
+  await expect(description).toHaveAttribute('tabindex', '-1');
+  await description.click();
+  await expect(page).toHaveURL(/\/features\/S-bbbbbbbbbb/);
 });
 test('the columns that hold comparable values order the list, and the header says which one does', async ({ page }) => {
   const rows = await listing(page);

@@ -1,6 +1,9 @@
 /* Feature list: a table in the centered column; the detail page replaces the list at the same width. */
 .featureTable table { border-radius:0; }
-.featureTable tbody tr { cursor:pointer; }
+.featureTable tbody tr { cursor:default; }
+/* A description is a link on its words only; it reads as the text it is until pointed at. */
+.descriptionLink { color:inherit; text-decoration:none; }
+.descriptionLink:hover { color:var(--color-text-primary); text-decoration:underline; }
 .featureTitle { color:var(--color-text-primary); font-weight:600; text-decoration:none; }
 .featureTitle:hover { text-decoration:underline; }
 .featureDetail { min-width:0; overflow-wrap:anywhere; padding-inline:var(--spacing-5); }
