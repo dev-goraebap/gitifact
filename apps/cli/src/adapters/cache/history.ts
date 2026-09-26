@@ -69,6 +69,16 @@ export function createHistory(database: CacheDatabase, git: GitAccess) {
   }
 
   async function build(head: string) {
+    // A HEAD whose lineage is written was read whole: its commits never change, so Git is not asked again.
+    const known = await database.with(db => {
+      const seen = !!db.prepare('SELECT 1 FROM heads WHERE head = ?').get(head);
+      if (seen) db.prepare('UPDATE heads SET seen = ? WHERE head = ?').run(Date.now(), head);
+      return seen;
+    });
+    if (!known) await read(head);
+  }
+
+  async function read(head: string) {
     const lineage = await changes.lineage(head);
     const readers = await changes.readers(head, lineage);
     const known = await database.with(db => new Map((db.prepare('SELECT oid, reader FROM commits').all() as { oid: string; reader: string }[]).map(r => [r.oid, r.reader])));
@@ -79,6 +89,8 @@ export function createHistory(database: CacheDatabase, git: GitAccess) {
         db.prepare('DELETE FROM commits WHERE oid = ?').run(oid); db.prepare('DELETE FROM changes WHERE oid = ?').run(oid); db.prepare('DELETE FROM records WHERE oid = ?').run(oid);
         db.prepare("DELETE FROM search WHERE scope = 'history' AND oid = ?").run(oid);
       }
+      // Other HEADs listed these commits as they were read before; they are read again when next asked for.
+      db.prepare('DELETE FROM lineage WHERE head != ?').run(head); db.prepare('DELETE FROM heads WHERE head != ?').run(head);
     }));
     const missing = lineage.filter(oid => !known.has(oid) || stale.includes(oid));
     // Written a hundred commits at a time, so a long first read that is interrupted keeps what it had read.

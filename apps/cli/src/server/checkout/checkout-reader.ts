@@ -5,15 +5,11 @@ import { storeReader } from '../../adapters/git/store-reader.js';
 import { readConfigFile } from '../../adapters/filesystem/config-file.js';
 import { readInstructionFiles } from '../../adapters/filesystem/instruction-folder.js';
 import { readAgentsFile } from '../../adapters/filesystem/agents-file.js';
-import { MIGRATION_TRAILER, type Cache } from '../../adapters/cache/index.js';
+import type { Cache, FolderAuthors } from '../../adapters/cache/index.js';
 import { documentStates, type DocumentStates } from '../../queries/document-states.js';
 import { createStampReader } from './stamp.js';
 import { t, getLanguage } from '../../shared/i18n/index.js';
 
-type Contributor = BrowserSpecsV7['contributors'][number];
-const tally = (people: Map<string, Contributor>, name: string, email: string, latest: string) => {
-  const person = people.get(email); if (person) person.commits++; else people.set(email, { name, email, latest, commits: 1 });
-};
 /**
  * Like Promise.all, but a failure is reported only once every read has finished. The reads run side by side, and
  * answering on the first failure left Git processes running in the project after the request had ended.
@@ -65,39 +61,6 @@ export function createCheckoutReader(root: string, sessionId: string, cache: Cac
   };
   const pending = new Map<string, Promise<{ checkout: BrowserSpecsV7; head: string | null }>>();
   const readStamp = createStampReader(root, inherited);
-  // A format migration rewrites every document but is nobody's work on them: it counts toward no author or date.
-  const notMigration = ['-E', '--invert-grep', `--grep=^${MIGRATION_TRAILER}: `];
-
-  /**
-   * Authors per feature folder and the latest commit per instruction folder and AGENTS.md, from one walk over the commits that touched the
-   * store. It used to be one `git log` per feature and one per page — 85 processes for a project with 22 features
-   * and 63 pages, about 80 ms each on Windows. A feature still counts at most 2000 commits.
-   */
-  async function storeAuthors(head: string) {
-    const text = await git(['log', ...notMigration, '--format=%x1e%aN%x00%aE%x00%aI', '-z', '--name-only', '--no-renames', '--max-count=20000', head, '--', '.gitifact/spec', INSTRUCTIONS_ROOT, 'AGENTS.md']);
-    const folders = new Map<string, { people: Map<string, Contributor>; count: number; latest: string }>();
-    const instructions = new Map<string, string>();
-    for (const chunk of text.split('\x1e')) {
-      if (!chunk) continue;
-      const [name, email, date, ...paths] = chunk.split('\0');
-      if (!name || !email || !date) throw new StoreError(t('specReader.authorUnreadable'));
-      const seen = new Set<string>();
-      for (const raw of paths) {
-        const path = raw.replace(/^\n/, ''); if (!path) continue;
-        const folder = /^(\.gitifact\/spec\/[^/]+)\//.exec(path)?.[1];
-        if (folder && !seen.has(folder)) {
-          seen.add(folder);
-          let entry = folders.get(folder); if (!entry) folders.set(folder, entry = { people: new Map(), count: 0, latest: date });
-          if (entry.count < 2000) { entry.count++; tally(entry.people, name, email, date); }
-        }
-        // Any file of an instruction folder counts: the instruction is the folder. AGENTS.md is kept under its own path.
-        const instruction = path === 'AGENTS.md' ? path : /^(\.gitifact\/instructions\/[^/]+)\//.exec(path)?.[1];
-        if (instruction && !instructions.has(instruction)) instructions.set(instruction, date);
-      }
-    }
-    return { folders, instructions };
-  }
-
   async function read() {
     const raw = await readConfigFile(root);
     if (!raw) throw new StoreError(t('specReader.schemaRequired'));
@@ -105,37 +68,31 @@ export function createCheckoutReader(root: string, sessionId: string, cache: Cac
     const head = await readHead();
     // Taken before the reads, so a change made while they run leaves the stamp behind and the browser says so.
     const stamp = await readStamp();
-    const [current, dirty, authors, everyone] = await settled([
+    const [current, dirty, authors, people] = await settled([
       cache.documents.list(),
       head ? git(['status', '--porcelain=v1', '--', '.gitifact/spec', INSTRUCTIONS_ROOT]) : Promise.resolve(''),
-      head ? storeAuthors(head) : Promise.resolve(undefined),
-      // Git mailmap may change without a new HEAD; refresh names with every observation that carries them.
-      head ? git(['log', ...notMigration, '--format=%aN%x00%aE%x00%aI', '--max-count=10001', head]) : Promise.resolve(''),
+      // Who touched each folder and who committed at all, counted over the commit log in the cache.
+      head ? cache.log.folders(head) : Promise.resolve(new Map<string, FolderAuthors>()),
+      head ? cache.log.contributors(head) : Promise.resolve([]),
     ] as const);
-    const people = new Map<string, Contributor>();
-    const lines = everyone.trim().split('\n').filter(Boolean);
-    for (const line of lines.slice(0, 10000)) {
-      const [name, email, latest] = line.split('\0'); if (!name || !email || !latest) throw new StoreError(t('specReader.authorUnreadable'));
-      tally(people, name, email, latest);
-    }
     const states = await documentStates({ head: async () => head, reader }, current.documents);
     const arranged = checkoutDocuments(states);
     const features = arranged.features.map(feature => {
-      const entry = authors?.folders.get(folderOf(feature.path));
-      return { ...feature, contributors: entry ? [...entry.people.values()].sort((a, b) => b.commits - a.commits) : [], updatedAt: entry?.latest ?? null };
+      const entry = authors.get(folderOf(feature.path));
+      return { ...feature, contributors: entry?.people ?? [], updatedAt: entry?.latest ?? null };
     });
     const instructions = await Promise.all(arranged.instructions.map(async instruction => {
       // A deleted instruction's folder is gone; it lists no files until the commit takes it away.
       const { files, limited } = instruction.state === 'deleted' ? { files: [], limited: false } : await readInstructionFiles(root, instruction.path);
-      return { ...instruction, files, filesLimited: limited, updatedAt: authors?.instructions.get(instruction.path.split('/').slice(0, 3).join('/')) ?? null };
+      return { ...instruction, files, filesLimited: limited, updatedAt: authors.get(folderOf(instruction.path))?.latest ?? null };
     }));
     const agentsText = await readAgentsFile(root);
-    const agents = agentsText === null ? null : { path: 'AGENTS.md', body: agentsText, updatedAt: authors?.instructions.get('AGENTS.md') ?? null };
+    const agents = agentsText === null ? null : { path: 'AGENTS.md', body: agentsText, updatedAt: authors.get('AGENTS.md')?.latest ?? null };
     const problems = [...current.problems, ...arranged.orphans.map(feature => docProblem('FEATURE_INDEX_REQUIRED', `.gitifact/spec/${feature}/index.md`, { feature }))];
     if (await readHead() !== head) throw new StoreError(t('specReader.projectChanged'));
     const checkout = browserSpecsV7.parse({ contract: 'browser-specs', version: 7, sessionId, head, observedAt: new Date().toISOString(), stamp,
       working: head ? !!dirty.trim() : features.length > 0 || instructions.length > 0, features, instructions, agents, problems,
-      contributors: [...people.values()].sort((a, b) => b.commits - a.commits), contributorsLimited: lines.length > 10000 });
+      contributors: people, contributorsLimited: false });
     return { checkout, head };
   }
 

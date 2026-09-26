@@ -111,7 +111,6 @@
   "agentBlock.duplicateStart": "Multiple GITIFACT start markers found. Remove duplicate blocks before retrying.",
   "specReader.headUnreadable": "Could not read HEAD.",
   "specReader.schemaRequired": "A project using the supported schema is required.",
-  "specReader.authorUnreadable": "Could not read Git authors.",
   "specReader.historyUnreadable": "Could not read Git history.",
   "specReader.projectChanged": "The project changed while reading. Refresh to continue.",
   "browser.invalidPort": "Port must be an integer between 0 and 65535.",

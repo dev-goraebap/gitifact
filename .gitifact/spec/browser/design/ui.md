@@ -158,7 +158,7 @@ CLI 로컬 서버가 정적 앱과 API를 함께 제공하고, 브라우저는 �
 | 기본 | 최근 변경 내림차순. 주소에 쓰지 않음 |
 | 처음 누른 열 | 이름은 오름차순, 개수와 날짜는 내림차순 |
 
-서버는 `.gitifact/spec`·`.gitifact/instructions`·AGENTS.md를 건드린 커밋을 Git 로그 한 번으로 읽어, 기능 폴더마다 `contributors`와 `updatedAt`을 응답에 담는다. 로그는 커밋 20,000개까지 읽고 기능마다 2000개까지 세며, 마이그레이션 커밋은 뺀다.
+서버는 캐시의 커밋 기록에서 기능 폴더마다 `contributors`와 `updatedAt`을 세어 응답에 담는다. 커밋 기록은 HEAD의 모든 커밋과 그 커밋이 건드린 `.gitifact/spec`·`.gitifact/instructions`의 폴더와 AGENTS.md를 담고, 개수 제한 없이 세며 마이그레이션 커밋은 뺀다.
 
 ### 기능 상세
 

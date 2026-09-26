@@ -111,7 +111,6 @@
   "agentBlock.duplicateStart": "GITIFACT 시작 마커가 여러 개입니다. 중복 블록을 정리한 뒤 다시 실행하세요.",
   "specReader.headUnreadable": "HEAD를 읽지 못했습니다.",
   "specReader.schemaRequired": "새 스키마 프로젝트가 필요합니다.",
-  "specReader.authorUnreadable": "Git 작성자를 읽지 못했습니다.",
   "specReader.historyUnreadable": "Git 이력 형식을 읽지 못했습니다.",
   "specReader.projectChanged": "조회 중 프로젝트가 바뀌었습니다. 새로고침하세요.",
   "browser.invalidPort": "포트는 0부터 65535 사이의 정수여야 합니다.",

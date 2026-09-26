@@ -37,7 +37,7 @@ flowchart TD
 | `commands/` | 인자 해석, 유스케이스 호출, 출력 형식 선택. `changes.ts`가 커밋 잠금과 복구 자료를 맡는다 |
 | `adapters/git/` | Git 실행과 스냅샷 읽기, 0.7 저장소 읽기(`store-reader.ts`) |
 | `adapters/filesystem/` | 설정·문서 파일 쓰기, 커밋 입력 폴더, 에셋·링크 경고, 사용자 편집을 보존하는 원자적 쓰기, 지침 폴더 읽기(`instruction-folder.ts`)와 AGENTS.md 읽기(`agents-file.ts`) |
-| `adapters/cache/` | 캐시 `.gitifact/cache/index.db`: 문서·참조·검색·이력 |
+| `adapters/cache/` | 캐시 `.gitifact/cache/index.db`: 문서·참조·검색·이력과 커밋 기록(`commit-log.ts`). 목록용으로 Git을 읽는 곳은 여기뿐이다 |
 | `adapters/registry/` | npm 최신 버전 조회 |
 | `adapters/github/` | `feedback`의 `gh` 실행과 이슈 작성 주소 |
 | `output/` | core 결과를 버전 있는 DTO로 변환 |
@@ -112,7 +112,7 @@ stdout에는 선택한 출력 형식만 내보내고 로그·진행 상황은 st
 - **개요 파일:** 요구사항이나 설계가 있는 기능은 `index.md`, 설계가 하나라도 있으면 `design/overview.md`가 필수다.
 - **결정기록:** 기록 하나가 파일 하나다. 기록에는 종류가 없고 맥락·결정(필수)과 검토한 대안(선택)을 섹션으로 두며, 섹션은 한국어나 영어 제목으로 쓰며 500자까지다. `docs`는 지워진 문서도 가리킬 수 있다. 작성자·시각은 기록을 더한 커밋에서 읽는다. 아직 커밋하지 않은 기록은 `.gitifact/records/`의 `git status`로 찾고, 이력은 커밋이 더한 기록 파일만 읽는다. 모든 기록 파일을 읽는 경로를 만들지 않는다. 작업 폴더에 남은 `.gitifact/history.jsonl`은 `REASONS_FILE_REMOVED` 문제다.
 - **에셋:** `.gitifact/assets/` 아래 파일이며 ID가 없다. 권장 크기(파일당 1MB, 전체 50MB)와 확장자를 넘거나 참조가 없으면 경고만 낸다.
-- **캐시:** `.gitifact/cache/index.db`는 문서·참조·검색·이력의 파생물이다. 원본은 파일과 Git이며 지우거나 형식 번호가 다르면 다시 만든다. 폴더 안의 `.gitignore`(`*`)로 커밋에서 빠진다. Git에 있는 원문은 담지 않고 다시 읽을 커밋과 경로만 둔다(0.7 이력은 예외).
+- **캐시:** `.gitifact/cache/index.db`는 문서·참조·검색·이력·커밋 기록의 파생물이다. 원본은 파일과 Git이며 지우거나 형식 번호가 다르면 다시 만든다. 이력은 HEAD마다 계보를 한 번 읽고, 계보를 쓴 HEAD는 Git에 다시 묻지 않는다. 커밋 기록은 코드 커밋까지 HEAD의 모든 커밋(작성자·시각·마이그레이션 여부·건드린 기능·지침 폴더와 AGENTS.md)을 담고 한 HEAD를 따라간다. 새 HEAD는 앞 HEAD와의 차이만 읽고, `.mailmap`이 바뀌면 이름을 새로 읽으려고 전부 다시 읽는다. 폴더 안의 `.gitignore`(`*`)로 커밋에서 빠진다. Git에 있는 원문은 담지 않고 다시 읽을 커밋과 경로만 둔다(0.7 이력은 예외).
 - **줄바꿈:** `init`이 쓰는 `.gitifact/.gitattributes`(`* text=auto eol=lf`)가 `.gitifact` 아래 텍스트를 LF로 저장하고 꺼낸다. Git에서 읽은 원문과 작업 폴더 파일이 같다는 가정은 이 파일에 기댄다.
 
 > [!IMPORTANT]

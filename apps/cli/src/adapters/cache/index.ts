@@ -1,11 +1,13 @@
 import { createCacheDatabase } from './database.js';
 import { createDocumentCache } from './documents.js';
 import { createHistory } from './history.js';
+import { createCommitLog } from './commit-log.js';
 import type { GitAccess } from './commit-changes.js';
 
 export type { GitAccess, DocSnapshot, HistoryEvent, ChangeType, CommitReader } from './commit-changes.js';
 export { MIGRATION_TRAILER } from './commit-changes.js';
 export type { HistoryFilter, ListedEvent, RecordFilter, SearchHit } from './history.js';
+export type { Person, FolderAuthors } from './commit-log.js';
 export { CACHE_DIR, CACHE_FORMAT } from './database.js';
 
 /**
@@ -17,8 +19,9 @@ export function openCache(root: string, git: GitAccess) {
   const database = createCacheDatabase(root);
   const documents = createDocumentCache(root, database);
   const history = createHistory(database, git);
+  const log = createCommitLog(database, git, root);
   return {
-    documents, history, location: database.location,
+    documents, history, log, location: database.location,
     /** Documents first, so a search right after an edit finds the edited text. */
     async search(head: string | null, query: string) { await documents.sync(); return history.search(head, query); },
   };
