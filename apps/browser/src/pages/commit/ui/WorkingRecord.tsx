@@ -41,7 +41,7 @@ export function WorkingRecord({ recordId, documentId, session, features, head }:
     <RecordSections record={record}/>
     <VStack as="section" gap={3} aria-label={t('record.documents')} className={styles.commitSection}>
       <Heading level={2}>{t('record.documents')}</Heading>
-      {explained.length ? <RecordDocuments label={t('record.documents')} changes={explained} useChange={workingChange(session)} features={features} head={head} documentId={documentId}
+      {explained.length ? <RecordDocuments label={t('record.documents')} changes={explained} source={workingChange(session)} features={features} head={head} documentId={documentId}
         href={id => `/records/${encodeURIComponent(recordId)}#${encodeURIComponent(id)}`}/>
         : <Text color="secondary">{t('working.noExplained')}</Text>}
     </VStack>

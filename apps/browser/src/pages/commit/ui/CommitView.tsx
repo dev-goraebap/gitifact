@@ -79,7 +79,7 @@ export function CommitView({ commit, search, documentId, session, features, head
     </VStack>}
 
     {tab === 'documents' && <VStack id="commit-documents" role="tabpanel" aria-label={t('commit.documents')} gap={0} className={styles.commitPanel}>
-      {data.changes.length ? <RecordDocuments label={t('commit.documents')} changes={data.changes.map(listed)} useChange={commitChange(session, commit)}
+      {data.changes.length ? <RecordDocuments label={t('commit.documents')} changes={data.changes.map(listed)} source={commitChange(session, commit)}
         features={features} head={head} documentId={documentId} more={<LoadMore label={t('commit.moreDocuments')} query={query}/>}
         href={id => `/records/commits/${encodeURIComponent(commit)}?tab=documents#${encodeURIComponent(id)}`}/>
         : <PageState isCompact title={t('commit.noDocuments')} description={t('commit.noDocumentsDescription')}/>}

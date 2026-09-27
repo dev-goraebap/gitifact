@@ -418,3 +418,25 @@ test('a filtered commit shows the decisions about its target and counts the rest
  await expect(card.getByRole('link',{name:'검색어 입력'})).toBeVisible();
  await expect(card.getByRole('link',{name:'이 커밋의 다른 결정기록 1건 →'})).toBeVisible();
 });
+
+test('choosing another document keeps the one on screen until the next is read, veiled past a short wait', async ({page}) => {
+ const data=mixedCommit();const commit='e'.repeat(40);
+ const body=(id:string,title:string,text:string)=>({before:null,after:{id,title,body:text,specId:'S-abcdefghij',path:'.gitifact/x/'+id+'.md'}});
+ changeBodies[commit+':R-abcdefghij']=body('R-abcdefghij','검색어 입력','첫 문서의 본문');
+ changeBodies[commit+':I-bbbbbbbbbb']=body('I-bbbbbbbbbb','레이아웃 지침','다음 문서의 본문');
+ await mockApi(page, data);
+ await page.goto('/records/commits/'+commit+'?tab=documents');
+ const article=page.getByRole('article',{name:'커밋 상세'});
+ await expect(article).toContainText('첫 문서의 본문');
+ // The next document answers late: the first stays in view under a veil until it does.
+ let answer=()=>{};const answered=new Promise<void>(resolve=>{answer=resolve;});
+ await page.route(url=>url.pathname==='/api/v1/commit/change'&&url.searchParams.get('id')==='I-bbbbbbbbbb',async route=>{await answered;await route.fallback();});
+ await article.getByRole('navigation',{name:'바뀐 문서'}).getByRole('link',{name:/레이아웃 지침/}).click();
+ await expect(article.getByRole('status',{name:'불러오는 중'})).toBeVisible();
+ await expect(article).toContainText('첫 문서의 본문');
+ answer();
+ await expect(article).toContainText('다음 문서의 본문');
+ await expect(article).not.toContainText('첫 문서의 본문');
+ await expect(article.getByRole('status',{name:'불러오는 중'})).toHaveCount(0);
+ delete changeBodies[commit+':R-abcdefghij'];delete changeBodies[commit+':I-bbbbbbbbbb'];
+});

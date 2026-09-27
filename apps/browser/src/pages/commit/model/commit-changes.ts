@@ -1,8 +1,9 @@
 import { useQuery, type InfiniteData } from '@tanstack/react-query';
+import { prepareDiagrams } from '../../../shared/ui/document';
 import type { BrowserCommitV4, BrowserSessionV3, SpecEvent } from '@gitifact/contracts';
 import { commitChangeOptions } from '../../../entities/project';
 import type { ListedChange } from '../ui/ChangeBody';
-import type { UseChange } from '../ui/RecordDocuments';
+import type { ChangeSource } from '../ui/RecordDocuments';
 
 /** A change of a commit as a list names it: its title from whichever side it has. */
 export const listed = (event: SpecEvent): ListedChange =>
@@ -15,7 +16,11 @@ export function loadedCommit(data: InfiniteData<BrowserCommitV4> | undefined) {
   return first ? { ...first, changes: pages!.flatMap(p => p.changes) } : undefined;
 }
 
-/** The hook the document list reads a commit's document with: its text on both sides, from Git, when it is opened. */
-export const commitChange = (session: BrowserSessionV3, commit: string): UseChange => function useCommitChange(id: string) {
-  return useQuery(commitChangeOptions(session, commit, id));
-};
+/** How the document list reads a commit's document: its text on both sides, from Git, when it is opened. */
+export const commitChange = (session: BrowserSessionV3, commit: string): ChangeSource => ({
+  use: function useCommitChange(id: string) { return useQuery(commitChangeOptions(session, commit, id)); },
+  prepare: async (client, id) => {
+    const change = await client.ensureQueryData(commitChangeOptions(session, commit, id));
+    await prepareDiagrams([change.before?.body, change.after?.body]);
+  },
+});

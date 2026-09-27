@@ -5,8 +5,8 @@ import { Text } from '@astryxdesign/core/Text';
 import styles from './page-loading.module.css';
 import { t, useLanguage } from '../../i18n';
 
-/** How long the rocket keeps moving after its loader starts to fade (--duration-medium, 410ms), so it never freezes in sight. */
-const FADE_OUT_MS = 450;
+/** How long the rocket keeps moving after its loader starts to fade (700ms), so it never freezes in sight. */
+const FADE_OUT_MS = 750;
 /**
  * The player and the drawing (Rocket in Space by Steven Monson after Ilya Pavlov, LottieFiles, Lottie Simple License), asked for when
  * this module loads so they are in hand before a loader is due: it shows 100ms into a read at the earliest.

@@ -57,7 +57,7 @@ export function RecordView({ recordId, documentId, session, features, head }: { 
 
     <VStack as="section" gap={3} aria-label={t('record.documents')} className={styles.commitSection}>
       <Heading level={2}>{t('record.documents')}</Heading>
-      <RecordDocuments label={t('record.documents')} changes={explained} useChange={commitChange(session, commit)} features={features} head={head} documentId={documentId}
+      <RecordDocuments label={t('record.documents')} changes={explained} source={commitChange(session, commit)} features={features} head={head} documentId={documentId}
         more={<LoadMore label={t('commit.moreDocuments')} query={query}/>} href={id => `/records/${encodeURIComponent(recordId)}#${encodeURIComponent(id)}`}/>
     </VStack>
   </VStack>;

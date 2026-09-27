@@ -70,7 +70,7 @@ export function WorkingView({ search, documentId, session, features, head }: { s
     </VStack>}
 
     {tab === 'documents' && <VStack id="working-documents" role="tabpanel" aria-label={t('commit.documents')} gap={0} className={styles.commitPanel}>
-      {data.changes.length ? <RecordDocuments label={t('commit.documents')} changes={data.changes.map(listedWorking)} useChange={workingChange(session)}
+      {data.changes.length ? <RecordDocuments label={t('commit.documents')} changes={data.changes.map(listedWorking)} source={workingChange(session)}
         features={features} head={head} documentId={documentId} href={id => `/records/working?tab=documents#${encodeURIComponent(id)}`}/>
         : <PageState isCompact title={t('working.noDocuments')}/>}
     </VStack>}
