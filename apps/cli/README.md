@@ -8,6 +8,7 @@ Give this prompt to the agent you use in your project:
 
 ```text
 Install Gitifact with npm install -g gitifact and run gitifact init in this project.
+If the install is blocked, don't hand it to me: show me the exact command and ask for my approval.
 Read the GITIFACT block that init adds to AGENTS.md or the relevant agent instructions file, and follow it from this session onward.
 ```
 

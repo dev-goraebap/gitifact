@@ -6,6 +6,7 @@
 
 ```text
 npm install -g gitifact로 Gitifact를 설치하고 이 프로젝트에서 gitifact init을 실행하세요.
+설치가 막히면 저에게 넘기지 말고 명령을 그대로 보여 주며 허용을 물어보세요.
 init이 AGENTS.md 등에 쓴 GITIFACT 블록을 읽고 이번 세션부터 따르세요.
 ```
 
