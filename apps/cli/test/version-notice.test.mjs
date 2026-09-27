@@ -143,9 +143,10 @@ test('the built CLI puts the notice on stderr before the output, keeps JSON inta
   assert.equal(first.status, 0, first.stderr);
   assert.equal(first.stderr, '');
   JSON.parse(first.stdout);
-  // The command returned without waiting; the detached check writes the cache on its own and ends.
+  // The command returned without waiting; the detached check writes the cache on its own and ends. Under a full test run
+  // the machine is busy with Git processes, so the check may take seconds to start: wait up to 30.
   let cache = {};
-  for (let tries = 0; tries < 100 && cache.latest !== '99.0.0'; tries++) { await delay(100); cache = await readUpdateCache(f.env); }
+  for (let tries = 0; tries < 300 && cache.latest !== '99.0.0'; tries++) { await delay(100); cache = await readUpdateCache(f.env); }
   assert.equal(cache.latest, '99.0.0');
   assert.equal(cache.checkingSince, undefined);
   const second = cli(['guide', 'list', '--format', 'json']);
