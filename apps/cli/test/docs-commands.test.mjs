@@ -159,6 +159,37 @@ test('specs show prints the file as written with references both ways, and --ref
   assert.match(f.run(['instructions', 'show', R1]).stderr, /^UNKNOWN_DOCUMENT: .*specs show/);
 });
 
+test('the changes commands warn when a requirement they carry leaves the guide\'s shape, and check warns of a large design overview', t => {
+  const f = projectFixture(t); payment(f); f.commit('Add payment');
+  const codes = warnings => warnings.filter(w => w.code.startsWith('REQUIREMENT_')).map(w => [w.code, w.path]);
+  const body = (path, text) => writeFileSync(join(f.repo, path), readFileSync(join(f.repo, path), 'utf8').replace(/\n---\n\n[\s\S]*$/, '\n---\n\n' + text + '\n'));
+  // A scope paragraph after the criteria, and a paragraph added below the numbered items: only the revised requirement is told.
+  body(paths.cancel, '구매자로서 결제를 취소하고 싶다.\n\n### 수용 조건\n\n1. 조건: 승인 후 3일에 취소합니다.\n   기대 동작: 취소됩니다.\n\n취소 기록은 남긴다.\n\n### 범위와 제약\n\n취소는 승인 후 7일 안에만 된다.');
+  const listed = f.ok(['changes', 'list']);
+  assert.deepEqual(codes(listed.warnings), [['REQUIREMENT_SCOPE_FORMAT', paths.cancel], ['REQUIREMENT_CRITERIA_FORMAT', paths.cancel]]);
+  assert.match(f.run(['changes', 'list']).stdout, /^형식 경고 2개 \(이번에 바뀐 요구사항, 커밋은 막지 않음\)\n  REQUIREMENT_SCOPE_FORMAT /m);
+  assert.deepEqual(codes(f.ok(['check']).warnings), []);
+  const input = join(f.root, 'input.json');
+  writeFileSync(input, JSON.stringify({ paths: [paths.cancel], message: 'Revise cancel', authorization }));
+  const dry = f.ok(['changes', 'commit', '--file', input, '--dry-run']);
+  assert.deepEqual(codes(dry.warnings), [['REQUIREMENT_SCOPE_FORMAT', paths.cancel], ['REQUIREMENT_CRITERIA_FORMAT', paths.cancel]]);
+  // In the guide's shape, with lines indented under an item continuing it, the requirement is not warned.
+  body(paths.cancel, '구매자로서 결제를 취소하고 싶다.\n\n### 범위와 제약\n\n- 취소는 승인 후 7일 안에만 된다.\n  주말도 센다.\n\n### 수용 조건\n\n1. 조건: 승인 후 3일에 취소합니다.\n   기대 동작: 취소됩니다.');
+  assert.deepEqual(codes(f.ok(['changes', 'list']).warnings), []);
+  // The skeleton of a new requirement is already in shape.
+  const made = f.ok(['specs', 'new', 'requirement', 'payment/refund', '--title', '환불', '--description', '환불한다']);
+  const skeleton = readFileSync(join(f.repo, made.path), 'utf8');
+  assert.ok(skeleton.indexOf('### 범위와 제약') < skeleton.indexOf('### 수용 조건'));
+  assert.deepEqual(codes(f.ok(['changes', 'list']).warnings), []);
+  rmSync(join(f.repo, made.path));
+  // A design overview of seven sections is worth splitting; check says so without failing.
+  body(paths.overview, Array.from({ length: 7 }, (_, i) => '## 절 ' + i + '\n\n본문.').join('\n\n'));
+  const check = f.run(['check', '--format', 'json']);
+  assert.deepEqual(JSON.parse(check.stdout).warnings.filter(w => w.code === 'DESIGN_OVERVIEW_LARGE').map(w => w.path), [paths.overview]);
+  body(paths.overview, Array.from({ length: 6 }, (_, i) => '## 절 ' + i + '\n\n본문.').join('\n\n'));
+  assert.deepEqual(f.ok(['check']).warnings.filter(w => w.code === 'DESIGN_OVERVIEW_LARGE'), []);
+});
+
 test('specs new and instructions new issue an ID and a draft skeleton that the check refuses until the draft line is gone', t => {
   const f = projectFixture(t);
   const feature = f.ok(['specs', 'new', 'feature', 'payment', '--title', '결제', '--description', '결제 승인과 취소']);

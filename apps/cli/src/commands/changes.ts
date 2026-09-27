@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { mkdir, open, readFile, rename, rmdir, unlink, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { checkDocuments, kindOfId, HISTORY_PATH, SPEC_ROOT, WIKI_ROOT,
-  type DecisionRecord, type DocChange, type DocProblem } from '@gitifact/core';
+import { checkDocuments, kindOfId, requirementFormatWarnings, HISTORY_PATH, SPEC_ROOT, WIKI_ROOT,
+  type DecisionRecord, type Doc, type DocChange, type DocProblem } from '@gitifact/core';
 import { createGitRunner } from '../adapters/git/run-git.js';
 import { initRepository } from '../adapters/git/init-repository.js';
 import { discardAgentInput, prepareAgentInputs, type AgentInputControls } from '../adapters/filesystem/agent-inputs.js';
@@ -36,6 +36,14 @@ const recordLine = (r: DecisionRecord, changes: DocChange[]) => {
   const changed = new Set(changes.map(c => c.id));
   return `${r.id} ${r.title}${r.draft ? ' (' + t('docs.draft') + ')' : ''} — ${r.docs.map(d => changed.has(d) ? d : d + '*').join(', ')}`;
 };
+/**
+ * Format advice for the requirements these changes add or revise: a requirement is brought into the guide's shape when
+ * it is worked on, not all at once, so `check` does not give it.
+ */
+const formatWarnings = (changes: DocChange[], documents: readonly Doc[]) => {
+  const touched = new Set(changes.map(c => c.id));
+  return documents.filter(d => touched.has(d.id)).flatMap(requirementFormatWarnings);
+};
 const recordSummary = (r: DecisionRecord) => ({ id: r.id, title: r.title, docs: r.docs, path: r.path, ...(r.draft ? { draft: true } : {}) });
 
 /**
@@ -53,7 +61,8 @@ export const runChangesList = (options: { format: Format }, controls: AgentInput
   const withoutRecord = uncovered(changes, records); const sharedDocuments = shared(changes, records);
   const problems = [...working.problems, ...pending.problems, ...checked.problems];
   // Warnings do not stop the commit; they are counted here so a broken link shows up before it is committed.
-  const warnings = await readDocumentWarnings(project.root, checked.documents);
+  const formats = formatWarnings(changes, checked.documents);
+  const warnings = [...await readDocumentWarnings(project.root, checked.documents), ...formats];
   // The input folder rides on the read an agent runs before committing; a failure only leaves it out.
   const inputs = await prepareAgentInputs(project.root, controls).catch(() => undefined);
   const out = changes.length ? [t('changes.changed', { count: changes.length }), ...changes.map(c => '  ' + changeLine(c))] : [t('changes.none')];
@@ -62,7 +71,9 @@ export const runChangesList = (options: { format: Format }, controls: AgentInput
   if (sharedDocuments.length) out.push(t('changes.sharedDocuments', { ids: sharedDocuments.join(', ') }));
   if (pending.altered.length) out.push(t('changes.recordAltered', { paths: pending.altered.join(', ') }));
   out.push(problems.length ? t('changes.problems', { count: problems.length }) : t('changes.clean'));
-  if (warnings.length) out.push(t('changes.warnings', { count: warnings.length }));
+  if (warnings.length > formats.length) out.push(t('changes.warnings', { count: warnings.length - formats.length }));
+  // `check` does not give these, so they are written out here.
+  out.push(...section(t('changes.formatWarnings', { count: formats.length }), formats.map(w => w.code + ' ' + w.message)));
   if (inputs) out.push(t('changes.input', { path: inputs.commit }));
   return { json: { head, changes, pendingRecords: records.map(recordSummary), withoutRecord, sharedDocuments, alteredRecords: pending.altered, problems, warnings, inputs: inputs ?? null }, text: text(out) };
 });
@@ -80,6 +91,7 @@ export const runChangesCommit = (options: { format: Format; file: string; dryRun
       ...result.changes.map(c => '  ' + changeLine(c)),
       ...result.records.map(r => '  ' + r.id + ' ' + r.title),
       ...(result.withoutRecord.length ? [t('changes.withoutRecord', { ids: result.withoutRecord.join(', ') })] : []),
+      ...section(t('changes.formatWarnings', { count: result.warnings.length }), result.warnings.map(w => w.code + ' ' + w.message)),
       ...result.trailers];
     return { json: { ...json, ...(inputRemoved === undefined ? {} : { inputRemoved }) }, text: text(out) };
   });
@@ -133,6 +145,7 @@ export async function commitChanges(cwd: string, input: unknown, dryRun: boolean
   const split = changes.filter(c => c.previousPath !== undefined && !(selected.includes(c.path) && selected.includes(c.previousPath)));
   if (split.length) fail(t('commit.selectMove', { ids: split.map(c => c.id).join(', ') }));
   const withoutRecord = uncovered(changes, records);
+  const warnings = formatWarnings(changes, checked.documents);
 
   // Deleted files under the document folders are committed as deletions; everything else in .gitifact must be a store file.
   const status = (await git(['status', '--porcelain=v1', '-z', '--untracked-files=all', '--no-renames', '--', '.gitifact'])).toString('utf8').split('\0').filter(Boolean);
@@ -149,7 +162,7 @@ export async function commitChanges(cwd: string, input: unknown, dryRun: boolean
   const hashes = async (list: string[]) => new Map(await Promise.all(list.map(async p => [p, await fingerprint(root, p)] as const)));
   // Policies and the selected files are bound now and compared again under the lock and before the commit.
   const started = await hashes([...new Set([...selected, ...contextPaths])]);
-  const summary = { root, head: base.head, message, paths: selected, changes, records: records.map(recordSummary), withoutRecord, trailers };
+  const summary = { root, head: base.head, message, paths: selected, changes, records: records.map(recordSummary), withoutRecord, warnings, trailers };
   if (dryRun) {
     if (!same(base, await project.reader.baseline())) fail(t('commit.headChanged'));
     return { outcome: 'dry-run' as const, committed: false, ...summary, commit: undefined };

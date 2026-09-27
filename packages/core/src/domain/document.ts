@@ -53,7 +53,8 @@ export type DocProblemCode = typeof docProblemCodes[number];
 export interface DocProblem { code: DocProblemCode; path: string; message: string }
 
 /** Findings the checks report without blocking a commit: broken relative links and assets outside the recommendations. */
-export const docWarningCodes = ['MISSING_LINK_TARGET', 'ASSET_SIZE', 'ASSET_EXTENSION', 'UNREFERENCED_ASSET', 'ASSETS_TOTAL_SIZE'] as const;
+export const docWarningCodes = ['MISSING_LINK_TARGET', 'ASSET_SIZE', 'ASSET_EXTENSION', 'UNREFERENCED_ASSET', 'ASSETS_TOTAL_SIZE',
+  'DESIGN_OVERVIEW_LARGE', 'REQUIREMENT_SCOPE_FORMAT', 'REQUIREMENT_CRITERIA_FORMAT'] as const;
 export type DocWarningCode = typeof docWarningCodes[number];
 export interface DocWarning { code: DocWarningCode; path: string; message: string }
 export const docWarning = (code: DocWarningCode, path: string, values: Record<string, unknown> = {}): DocWarning => ({ code, path, message: t(`warn.${code}`, { path, ...values }) });

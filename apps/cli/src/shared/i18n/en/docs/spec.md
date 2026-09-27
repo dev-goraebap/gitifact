@@ -1,6 +1,6 @@
 ---
 title: Requirement format
-description: Feature and requirement files, frontmatter, user stories and acceptance criteria, creating, editing and moving
+description: Feature and requirement files, frontmatter, user stories, scope and constraints and acceptance criteria, where quality targets go, creating, editing and moving
 ---
 
 A feature is one folder, `.gitifact/spec/<feature>/`. The feature introduction is `index.md`, each requirement is its own `requirements/<slug>.md`, and the design is the files under `design/` (`gitifact guide show design`). Why a document changed is kept in records (`.gitifact/records/`, `gitifact guide show records`).
@@ -38,13 +38,18 @@ order: 10
 
 As a post author, I want to save a title and body so that I can return to my writing later.
 
+### Scope and constraints
+
+- A title takes up to 100 characters.
+- Uploading attachments is not part of this requirement.
+
 ### Acceptance criteria
 
 1. Condition: The user requests a save with an empty title.
    Expected: The system asks for a title and does not save the post.
 ```
 
-These IDs and sentences illustrate the structure and are not valid input.
+These IDs and sentences illustrate the structure and are not valid input. The body is the user story, `### Scope and constraints` (left out when there is none), then `### Acceptance criteria`.
 
 - **`id`:** issued by the CLI. Features use `S-`, requirements `R-`, followed by ten lowercase base32 characters. It stays the same when the file moves or its title changes.
 - **`title` and `description`:** required, one line each. Do not repeat the title as a `#` heading in the body. Write the description so that the list (`specs list`) tells what the document is without opening it.
@@ -84,15 +89,35 @@ Do not duplicate a document under a new ID when moving or renaming it, and do no
 
 ## Grouping features
 
-Group requirements into cohesive features that mean something to users. Do not reproduce code modules or DDD layers. Before creating a feature, check whether an existing one is a suitable home. Use the feature name as its title without a suffix such as “requirements.” Slugs and folder names use lowercase letters, digits and hyphens.
+Group requirements into cohesive features that mean something to users. Do not reproduce code modules or DDD layers. Before creating a feature, check whether an existing one is a suitable home. A common feature that gathers system-wide quality targets (see "Scope and constraints" below) is the exception. Use the feature name as its title without a suffix such as “requirements.” Slugs and folder names use lowercase letters, digits and hyphens.
 
 ## User stories and acceptance criteria
 
 Start each requirement with a user story: one or two sentences explaining who wants what and why. The default pattern is “As a [role], I want [goal] so that [reason],” expressed naturally in the project's language. Use an actual user or operator of the product. Do not copy the post author in this example, or a Gitifact user, into an unrelated product.
 
-Follow the story with an acceptance-criteria heading (`###`) and numbered condition/expected pairs, in the project's language. Do not substitute paths, IDs or storage conventions for user goals. Put additional agreed constraints in a scope-and-constraints section and implementation details in the design. Base roles, goals and reasons on the conversation and verified context. Do not invent motives to fill the template; ask only for information needed to settle the meaning.
+The acceptance-criteria section (`###`) holds numbered condition/expected pairs only, in the project's language, with no paragraphs added outside them. Do not substitute paths, IDs or storage conventions for user goals. Base roles, goals and reasons on the conversation and verified context. Do not invent motives to fill the template; ask only for information needed to settle the meaning.
 
-Apply this to new requirements and those being revised for the current request. Preserve existing IDs, agreed constraints and the meaning of acceptance criteria. Do not rewrite unrelated requirements in bulk. When done, check that the story states a role, goal and reason, and that its criteria determine success or failure. The CLI does not enforce particular sentences or validate user intent.
+Apply this to new requirements and those being revised for the current request. Preserve existing IDs, agreed constraints and the meaning of acceptance criteria. Do not rewrite unrelated requirements in bulk. When done, check that the story states a role, goal and reason, and that its criteria determine success or failure. `changes list` and `changes commit` warn with `REQUIREMENT_SCOPE_FORMAT` or `REQUIREMENT_CRITERIA_FORMAT` when a requirement changed in this work leaves this order and shape. The warnings do not block a commit, and `check` does not give them. The CLI does not validate what sentences mean or what the user intends.
+
+## Scope and constraints
+
+`### Scope and constraints` is optional. It comes after the user story and before the acceptance criteria, as `-` items only. Each item is one independent rule that is either true or false.
+
+- Put business rules (input limits, retention, the result of sending the same request twice) and what is not provided yet ("… is not part of this requirement") here.
+- A rule whose result can be checked in a given situation becomes an acceptance criterion instead. Do not write the same rule in both places.
+- A quality target for this feature alone (performance, availability, security, accessibility, compatibility) is one item with a number. Example: "- One page of the list shows within 1 second for 95% of requests." Do not write targets without an agreed number ("fast", "stable").
+
+System-wide quality targets (response time of every query, supported browsers, session expiry) are not repeated per requirement; gather them in one common feature. For example, `.gitifact/spec/quality/` holds one target per requirement, with what can be judged written as acceptance criteria. Do not put them in project instructions: instructions describe how to work, and what the product promises belongs in the specs.
+
+## What stays out of a requirement
+
+A requirement says what to build, as results the user can check. Keep the following in the design (ui, interface, data). In a requirement, every design or screen change would also change the requirement and add records.
+
+- Screen layout, components, the columns a table shows, items per page, the shape of addresses
+- API paths, field names, storage structure
+- The libraries used, and details settled only after implementation
+
+Example: instead of "each row shows the applicant, period and status columns", write "the user can tell applications apart by applicant, period and status".
 
 Follow `gitifact guide show writing` for prose. Its style rules do not replace the user-story pattern and the condition/expected format above. Write project content in the project's language; the language of these instructions does not change it.
 

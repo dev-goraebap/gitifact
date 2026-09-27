@@ -58,8 +58,16 @@ core `documentWarnings`(`use-cases/document-warnings.ts`)가 모든 문서 본�
 | `ASSET_EXTENSION` | 확장자가 png·jpg·jpeg·gif·webp·svg·pdf가 아님 |
 | `ASSETS_TOTAL_SIZE` | 에셋 전체가 50MB 초과 |
 | `UNREFERENCED_ASSET` | 어떤 본문도 가리키지 않는 에셋 |
+| `DESIGN_OVERVIEW_LARGE` | 설계 `overview.md`의 `##` 절이 7개 이상(`OVERVIEW_SECTION_LIMIT`). 덧붙이기 전에 축 파일로 나눌지 묻게 한다 |
 
-`check`는 문제 목록 뒤에 경고를 따로 보이고, `changes list`는 경고 수를 알린다. 브라우저 서버는 `/api/v1/assets/<경로>`로 에셋을 제공한다. 이미지는 inline, 그 밖은 attachment다.
+`check`는 문제 목록 뒤에 경고를 따로 보이고, `changes list`는 경고 수를 알린다.
+
+요구사항의 형식 경고는 core `requirementFormatWarnings`가 본문의 절 제목(`### 범위와 제약`·`### 수용 조건`, 영어 `Scope and constraints`·`Acceptance criteria`)으로 판정한다. `changes list`와 `changes commit`이 이번에 바뀐 요구사항에만 내고 줄마다 보인다. `check`는 내지 않는다. 기존 요구사항은 고칠 때 하나씩 새 형식으로 맞춘다.
+
+| 경고 | 조건 |
+| :--- | :--- |
+| `REQUIREMENT_SCOPE_FORMAT` | 범위와 제약이 수용 조건 뒤에 있거나, `-` 항목과 그 아래 들여쓴 줄 밖의 문단이 있음 |
+| `REQUIREMENT_CRITERIA_FORMAT` | 수용 조건 아래에 번호 항목과 그 아래 들여쓴 줄 밖의 문단이나 다른 절이 있음 | 브라우저 서버는 `/api/v1/assets/<경로>`로 에셋을 제공한다. 이미지는 inline, 그 밖은 attachment다.
 
 > [!IMPORTANT]
 > 경고는 종료 코드를 바꾸지 않고 `changes commit`도 막지 않는다. 한도는 core 상수(`ASSET_SIZE_LIMIT`, `ASSETS_TOTAL_LIMIT`, `RECOMMENDED_ASSET_EXTENSIONS`)다.

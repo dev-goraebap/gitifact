@@ -113,5 +113,8 @@
   "warn.ASSET_EXTENSION": "The browser does not preview this extension and offers it only as a download: {path}",
   "warn.UNREFERENCED_ASSET": "No document refers to this asset: {path}",
   "warn.ASSETS_TOTAL_SIZE": "All assets together are over the recommended size (50 MB): {bytes} bytes",
+  "warn.DESIGN_OVERVIEW_LARGE": "The design overview.md has {sections} sections. Before adding to it, ask the user whether to split it into axis files (revising, in guide show design): {path}",
+  "warn.REQUIREMENT_SCOPE_FORMAT": "Scope and constraints come before the acceptance criteria, as - items only (guide show spec): {path}",
+  "warn.REQUIREMENT_CRITERIA_FORMAT": "The acceptance criteria hold numbered items only; move rules to scope and constraints (guide show spec): {path}",
   "config.migrationRequired": "This project uses the 0.7 storage convention (schemaVersion 2). The 0.8.0 CLI does not read the old format. Move the documents to the new structure by following gitifact guide show migrate."
 }
