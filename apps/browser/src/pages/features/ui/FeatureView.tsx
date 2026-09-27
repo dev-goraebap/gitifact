@@ -189,7 +189,7 @@ function FeatureDetail({ feature: selected, features, search, change }: { featur
           <DesignDocument design={d} path={d.path} features={features}
             eyebrow={<HStack gap={2} vAlign="center"><NumberLine label={t('features.designNumber', { number: number(index) })} id={d.id}/><StateToken state={d.state}/></HStack>}
             footer={<RelatedList label={t('features.requirementHistoryLabel')}>
-              <RelatedItem title={<Link to="/records" search={{ feature: selected.id, q: d.id }}>{t('features.designHistory')}</Link>}/>
+              <RelatedItem title={<Link to="/records/docs/$docId" params={{ docId: d.id }}>{t('features.designHistory')}</Link>}/>
             </RelatedList>}/>
         </VStack>)}
       </VStack>
@@ -218,7 +218,7 @@ function FeatureDetail({ feature: selected, features, search, change }: { featur
               {explained.map(d => <RelatedItem key={d.id} title={<Link to="/features/$featureId" params={{ featureId: selected.id }} search={{ ...search, tab: 'design', selected: d.id }} hash={d.id}>{d.title}</Link>} description={d.description}/>)}
             </RelatedList>}
             <RelatedList label={t('features.requirementHistoryLabel')}>
-              <RelatedItem title={<Link to="/records" search={{ feature: selected.id, q: r.id }}>{t('features.requirementHistory')}</Link>}/>
+              <RelatedItem title={<Link to="/records/docs/$docId" params={{ docId: r.id }}>{t('features.requirementHistory')}</Link>}/>
             </RelatedList>
           </VStack>
         </VStack>;

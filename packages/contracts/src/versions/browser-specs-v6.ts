@@ -252,6 +252,22 @@ export const browserRecordV2 = z.strictObject({
 export const browserRecordQueryV1 = z.strictObject({ head: oid, id: recordId });
 export type BrowserRecordV2 = z.infer<typeof browserRecordV2>;
 
+/**
+ * One document's decision flow in `head`'s history: every commit that changed it, newest first, a page of whole commits
+ * with the records that explain each change. `doc` names it as the working tree holds it, or by its last change once it
+ * is gone. Counted over all its commits: how many a record explains, and how many changed it without one (adding it
+ * needs none). `next` is the last commit of this page, or null at the end.
+ */
+export const browserDocumentHistoryV1 = z.strictObject({
+  contract: z.literal('browser-document-history'), version: z.literal(1), sessionId: z.string(), head: oid,
+  doc: z.strictObject({ id: z.string(), title: z.string().nullable(), kind: kind.nullable(), path: z.string().nullable() }),
+  total: z.number().int().nonnegative(), recorded: z.number().int().nonnegative(), withoutRecord: z.number().int().nonnegative(),
+  next: oid.nullable(), events: z.array(event),
+});
+export const browserDocumentHistoryQueryV1 = z.strictObject({ head: oid, id: z.string().regex(/^[SRDWI]-[a-z2-7]{10}$/),
+  after: oid.optional(), limit: count(50).pipe(z.number().min(1)).optional() });
+export type BrowserDocumentHistoryV1 = z.infer<typeof browserDocumentHistoryV1>;
+
 /** One file of an instruction folder from the working tree: its text, or why there is none (binary, over 512 KB). */
 export const browserInstructionFileV1 = z.strictObject({
   contract: z.literal('browser-instruction-file'), version: z.literal(1), sessionId: z.string(), id: z.string(), path: z.string(),

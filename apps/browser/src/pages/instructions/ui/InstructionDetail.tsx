@@ -58,7 +58,7 @@ export function InstructionDetail({ instruction, color, file, session }: { instr
         <MetadataListItem label="ID">{instruction.id}</MetadataListItem>
         <MetadataListItem label={t('common.recentChange')}>{instruction.updatedAt ? <Timestamp value={instruction.updatedAt} format="relative"/> : t('common.inProgress')}</MetadataListItem>
       </MetadataList>
-      <Link to="/records" search={{ document: 'instruction', q: instruction.id }} className={styles.activity}>{t('instructions.activity')}</Link>
+      <Link to="/records/docs/$docId" params={{ docId: instruction.id }} className={styles.activity}>{t('instructions.activity')}</Link>
     </VStack>
 
     <HStack gap={0} className={styles.reader}>

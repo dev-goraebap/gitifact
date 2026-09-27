@@ -35,7 +35,7 @@ export function ChangeBody({ change: { event, before, after }, features, head }:
         : <Link to="/features/$featureId" params={{ featureId: spec?.specId ?? '' }}
           search={{ ...(event.kind === 'feature' ? {} : { selected: event.id, tab: event.kind === 'design' ? 'design' : 'requirements' }) }}
           {...(event.kind === 'feature' ? {} : { hash: event.id })}>{t('event.currentFeature')}</Link>}
-      {head && <Link to="/records" search={{ q: event.id }}>{t('commit.documentHistory')}</Link>}
+      {head && <Link to="/records/docs/$docId" params={{ docId: event.id }}>{t('commit.documentHistory')}</Link>}
     </HStack>
     {before && after ? <ChangeDiff before={before} after={after} features={features}/>
       : after ? body(after) : before ? body(before) : <Text color="secondary">{t('event.noContent')}</Text>}

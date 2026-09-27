@@ -59,6 +59,7 @@ requirements:
 | `GET /api/v1/commit/change?commit&id` | browser-commit-change v1 | 그 커밋이 바꾼 문서 하나의 전후 본문. Git에서 읽는다 |
 | `GET /api/v1/working` | browser-working v1 | 커밋 전 작업: 커밋 전 결정기록(섹션 포함), HEAD 대비 바뀐 문서, 결정기록 없는 변경. 요청마다 계산한다. 커밋 전 변경은 대개 작고 `changes list`와 같은 조회라 나누지 않는다 |
 | `GET /api/v1/working/change?id` | browser-working-change v1 | 커밋 전 변경 하나의 HEAD 쪽과 지금 파일 쪽 |
+| `GET /api/v1/document-history?head&id&after&limit` | browser-document-history v1 | `head` 이력에서 한 문서를 바꾼 커밋을 최신순으로 커밋 단위 20개씩(`limit` 최대 50), 커밋마다 변경과 그 변경을 설명하는 기록. 문서의 제목·종류·경로(작업 폴더, 없으면 마지막 변경), 전체 커밋 수·기록이 붙은 커밋 수·기록 없이 바뀐 커밋 수. 작업 폴더에도 이력에도 없으면 404, 없어진 커서는 404 |
 | `GET /api/v1/record?head&id` | browser-record v2 | `head` 이력에서 그 결정기록(`DR-…`, 기록 도입 전 이유는 `H-…`)의 제목·섹션, 그 기록을 더한 커밋, 그 커밋의 다른 기록 수(0.7 이유는 같은 글을 하나로 센다). 그 이력에 기록이 없으면 404, 쿼리가 형식에 어긋나면 400 |
 | `GET /api/v1/commit/files?commit&after&limit` | browser-commit-files v2 | 첫 부모 대비 바뀐 소스 파일(`.gitifact` 밖)의 경로·상태·줄 수를 Git 순서로 한 페이지(기본 20, 최대 100). 전체 수(`total`)와 다음 커서(`next`, 이 페이지 마지막 파일의 경로). `after`가 목록에 없으면 404 |
 | `GET /api/v1/commit/file?commit&path` | browser-commit-file v1 | 그 목록의 파일 하나의 양쪽 원문. 이진 파일과 512KB 넘는 쪽은 원문 없이 표시만 |

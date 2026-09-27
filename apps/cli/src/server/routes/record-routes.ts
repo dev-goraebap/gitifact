@@ -1,7 +1,7 @@
 import { browserCommitChangeQueryV1, browserCommitChangeV1, browserCommitQueryV3, browserCommitV4, browserCommitFileQueryV1, browserCommitFileV1, browserCommitFilesQueryV2, browserCommitFilesV2,
   browserHistoryQueryV4, browserHistorySummaryQueryV1, browserHistorySummaryV5, browserHistoryV6, browserCheckoutV1, browserFeaturesQueryV1, browserFeaturesV1,
   browserFeatureQueryV1, browserFeatureV1, browserInstructionsV1, browserContributorsQueryV1, browserContributorsV1, browserContributorQueryV1, browserContributorV1, browserSearchQueryV2, browserSearchV3, browserInstructionFileQueryV1, browserInstructionFileV1,
-  browserRecordQueryV1, browserRecordV2, browserStampV1, browserWorkingChangeQueryV1, browserWorkingChangeV1, browserWorkingV1 } from '@gitifact/contracts';
+  browserDocumentHistoryQueryV1, browserDocumentHistoryV1, browserRecordQueryV1, browserRecordV2, browserStampV1, browserWorkingChangeQueryV1, browserWorkingChangeV1, browserWorkingV1 } from '@gitifact/contracts';
 import { storeReader } from '../../adapters/git/store-reader.js';
 import { openCache } from '../../adapters/cache/index.js';
 import { readPendingRecords } from '../../adapters/git/pending-records.js';
@@ -11,6 +11,7 @@ import { createCommitFiles } from '../commit/commit-files.js';
 import { readInstructionFile } from '../../adapters/filesystem/instruction-folder.js';
 import { workingChange, workingOverview, type WorkingSource } from '../../queries/working-changes.js';
 import { searchRecords } from '../../queries/search.js';
+import { documentHistoryPage } from '../../queries/document-history.js';
 import type { ListSource } from '../../queries/specs.js';
 import { checkoutIndex, contributorOf, featureOf, listContributors, listFeatures, topContributors } from '../../queries/checkout.js';
 import { HttpError } from '../http/respond.js';
@@ -104,6 +105,13 @@ export function recordRoutes(root: string, sessionId: string, env?: NodeJS.Proce
       const found = await cache.history.recordOf(query.head, query.id);
       if (!found) throw new HttpError(404, 'NOT_FOUND', t('server.recordNotFound'));
       return ok(browserRecordV2.parse({ contract: 'browser-record', version: 2, sessionId, head: query.head, id: query.id, ...found }));
+    } }),
+    // One document's decision flow in the HEAD the reader is on: the commits that changed it, a page of them at a time.
+    route({ method: 'GET', path: '/api/v1/document-history', session: true, query: browserDocumentHistoryQueryV1, unreadable, handle: async ({ query }) => {
+      const found = await documentHistoryPage(source, query.head, query.id, { after: query.after, limit: query.limit ?? PAGE });
+      if (found === undefined) throw new HttpError(404, 'NOT_FOUND', t('server.documentNotFound'));
+      if (found === null) throw cursorGone();
+      return ok(browserDocumentHistoryV1.parse({ contract: 'browser-document-history', version: 1, sessionId, head: query.head, ...found }));
     } }),
     // What is not committed yet, worked out again on every request: the uncommitted entry of the records list.
     route({ method: 'GET', path: '/api/v1/working', session: true, unreadable, handle: async () =>

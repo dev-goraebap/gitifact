@@ -1,6 +1,6 @@
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 import { browserCheckoutV1, browserFeaturesV1, browserFeatureV1, browserInstructionsV1, browserContributorsV1, browserContributorV1, browserHistoryV6, browserHistorySummaryV5, browserSearchV3, browserCommitFilesV2, browserCommitFileV1, browserCommitV4, browserCommitChangeV1, browserInstructionFileV1,
-  browserRecordV2, browserStampV1, browserWorkingV1, browserWorkingChangeV1, type BrowserSessionV3 } from '@gitifact/contracts';
+  browserRecordV2, browserDocumentHistoryV1, browserStampV1, browserWorkingV1, browserWorkingChangeV1, type BrowserSessionV3 } from '@gitifact/contracts';
 import { requestJson, ApiError } from '../../../shared/api/client';
 import { httpFailure } from './repository';
 import { t } from '../../../shared/i18n';
@@ -126,6 +126,21 @@ export const summaryOptions = (session: BrowserSessionV3, head: string) => query
   queryKey: ['browser-history-summary', 5, ...scope(session), head],
   staleTime: Infinity, retry: false,
   queryFn: ({ signal }) => read(session, '/api/v1/history/summary?head=' + head, browserHistorySummaryV5, signal),
+});
+
+/**
+ * One document's decision flow in `head`'s history: the commits that changed it, newest first, twenty at a time, with
+ * the records that explain each change, and counted over all of them. `head` never changes its history.
+ */
+export const documentHistoryOptions = (session: BrowserSessionV3, head: string, id: string) => infiniteQueryOptions({
+  queryKey: ['browser-document-history', 1, ...scope(session), head, id],
+  initialPageParam: undefined as string | undefined, staleTime: Infinity, retry: false,
+  queryFn: ({ signal, pageParam }) => {
+    const query = new URLSearchParams({ head, id });
+    if (pageParam) query.set('after', pageParam);
+    return read(session, '/api/v1/document-history?' + query, browserDocumentHistoryV1, signal);
+  },
+  getNextPageParam: last => last.next ?? undefined,
 });
 
 /**

@@ -50,6 +50,7 @@
   "server.cursorNotFound": "The place to read on from is no longer in the list. Load it again from the start.",
   "server.workingChangeNotFound": "No uncommitted change of that document.",
   "server.recordNotFound": "This history has no such decision record.",
+  "server.documentNotFound": "Neither this history nor the working tree has that document.",
   "server.commitFileNotFound": "That commit did not change this file.",
   "server.instructionFileNotFound": "The instruction file was not found.",
   "server.specsUnreadable": "Could not read specifications.",

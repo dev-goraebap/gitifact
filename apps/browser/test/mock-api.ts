@@ -212,6 +212,23 @@ export async function serve(page: Page, data: Fixture) {
       : route.fulfill({ status: 404, json: notFound });
   });
 
+  // One document's decision flow as the server's query layer works it out: its events newest first, paged by commit.
+  await page.route(url => url.pathname === '/api/v1/document-history', route => {
+    const q = new URL(route.request().url()).searchParams; const id = q.get('id') ?? '';
+    const mine = events.filter(e => e.id === id);
+    const docs = [...checkout.features.flatMap(f => [{ id: f.id, title: f.title, kind: 'feature', path: f.path },
+      ...f.requirements.map(r => ({ id: r.id, title: r.title, kind: 'requirement', path: r.path })), ...f.designs.map(d => ({ id: d.id, title: d.title, kind: 'design', path: d.path }))]),
+      ...checkout.instructions.map(k => ({ id: k.id, title: k.title, kind: 'instruction', path: k.path }))];
+    const current = docs.find(d => d.id === id); const last = mine.map(e => e.after ?? e.before).find(Boolean);
+    if (!current && !mine.length) return route.fulfill({ status: 404, json: notFound });
+    const start = q.get('after') ? mine.findIndex(e => e.commit === q.get('after')) + 1 : 0; const limit = Number(q.get('limit') ?? 20);
+    const shown = mine.slice(start, start + limit);
+    return route.fulfill({ json: { contract: 'browser-document-history', version: 1, sessionId: session.sessionId, head: q.get('head'),
+      doc: { id, title: current?.title ?? last?.title ?? null, kind: current?.kind ?? mine[0]?.kind ?? null, path: current?.path ?? last?.path ?? null },
+      total: mine.length, recorded: mine.filter(e => e.records.length).length, withoutRecord: mine.filter(e => !e.records.length && e.types.some(t => t !== 'created')).length,
+      next: start + shown.length < mine.length ? shown[shown.length - 1]!.commit : null, events: shown } });
+  });
+
   // The source a commit changed: none unless a test lists some in commitSources.
   await page.route(url => url.pathname === '/api/v1/commit/files', route => {
     const q = new URL(route.request().url()).searchParams; const commit = q.get('commit') ?? '';

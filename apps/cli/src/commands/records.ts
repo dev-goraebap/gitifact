@@ -7,6 +7,7 @@ import { findRecord } from '../adapters/git/pending-records.js';
 import { byAuthor, checkFields, contains, aside, pageLine, paginate, PAGE_SIZE, selected, since, sinceRange, type ListOptions } from './list-options.js';
 import { CommandError, runCommand, text, type Format } from './output.js';
 import { openProject, type Project } from './project.js';
+import { documentHistory } from '../queries/document-history.js';
 import type { RecordFilter } from '../adapters/cache/index.js';
 import { getLanguage, t } from '../shared/i18n/index.js';
 
@@ -82,10 +83,9 @@ export const runRecordsList = (options: ListOptions & { doc?: string; since?: st
   if (options.doc !== undefined) {
     const after = await since(project, options.since, head); const by = byAuthor(options.author); const has = contains(options.q);
     const id = options.doc;
-    const events = head ? await project.cache.history.ofDocument(head, id) : [];
-    const { documents } = await project.cache.documents.list();
-    const title = documents.find(d => d.id === id)?.title ?? events.map(e => (e.after ?? e.before)?.title).find(Boolean) ?? null;
-    if (!title && !events.length) throw new CommandError('UNKNOWN_DOCUMENT', t('docs.unknownDocument', { ids: id }));
+    const found = await documentHistory(project, head, id);
+    if (!found) throw new CommandError('UNKNOWN_DOCUMENT', t('docs.unknownDocument', { ids: id }));
+    const { events } = found; const title = found.doc.title;
     const page = paginate(events.filter(e => after(e) && by(e) && has(e.message, ...e.records.flatMap(r => [r.title, ...sectionText(r.sections)]))).map(e => ({
       commit: e.commit, date: e.date, author: e.author, email: e.email, message: e.message, types: e.types, path: (e.after ?? e.before)?.path ?? null, records: e.records })), e => e.commit, options);
     const rows = page.rows; const paging = { total: page.total, next: page.next, unit: 'commit' as const };

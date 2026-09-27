@@ -266,9 +266,9 @@ test('the design tab reads every design in order, each with its number, ID and h
   // Both designs that explain "알림 끄기" list it under their prose.
   await expect(panel.getByRole('link', { name: '알림 끄기' })).toHaveCount(2);
   // Under the prose, each design has its history as one link into the activity, narrowed to that design.
-  const historyOf = (id: string) => page.locator('#' + id).getByRole('region', { name: '변경 이력' }).getByRole('link', { name: '이 설계의 이력 →' });
-  await expect(historyOf(off)).toHaveAttribute('href', new RegExp('q=' + off));
-  await expect(historyOf(shown)).toHaveAttribute('href', new RegExp('q=' + shown));
+  const historyOf = (id: string) => page.locator('#' + id).getByRole('region', { name: '변경 이력' }).getByRole('link', { name: '이 설계의 변경 이력 →' });
+  await expect(historyOf(off)).toHaveAttribute('href', new RegExp('/records/docs/' + off + '$'));
+  await expect(historyOf(shown)).toHaveAttribute('href', new RegExp('/records/docs/' + shown + '$'));
   // The index moves between them on the same page.
   await index.getByRole('link', { name: '02　표시 방식' }).click();
   await expect(page).toHaveURL(new RegExp('#' + shown + '$'));
