@@ -2,7 +2,7 @@ import type { DatabaseSync } from 'node:sqlite';
 import { createCommitChanges, type ChangeType, type CommitChanges, type CommitReader, type GitAccess, type HistoryEvent, type Originals } from './commit-changes.js';
 import type { DocSnapshot, EventRecord } from './events.js';
 import { transaction, type CacheDatabase } from './database.js';
-import { snippet } from './search-text.js';
+import { hashPrefix, snippet } from './search-text.js';
 
 /**
  * What the records list filters by. A change is one the filter is about when it touches the target (a feature's
@@ -176,7 +176,7 @@ export function createHistory(database: CacheDatabase, git: GitAccess, originals
       const record = `EXISTS (SELECT 1 FROM json_each(c.row, '$.records') j JOIN records r ON r.oid = c.oid AND r.id = j.value
         WHERE instr(lower(r.title), ?) > 0 OR instr(lower(r.id), ?) > 0
           OR instr(lower((SELECT group_concat(json_extract(s.value, '$.body'), ' ') FROM json_each(r.sections) s)), ?) > 0)`;
-      const hash = /^[0-9a-f]{7,64}$/.test(q) ? ' OR substr(c.oid, 1, length(?)) = ?' : '';
+      const hash = hashPrefix(q) ? ' OR substr(c.oid, 1, length(?)) = ?' : '';
       clauses.push(`(instr(c.needle, ?) > 0 OR ${record}${hash})`);
       params.push(q, q, q, q, ...(hash ? [q, q] : []));
     }
@@ -272,7 +272,9 @@ export function createHistory(database: CacheDatabase, git: GitAccess, originals
       return database.with(db => {
         const clauses: string[] = []; const params: (string | number)[] = [];
         if (filter.author) { clauses.push("(lower(json_extract(row, '$.author')) = ? OR lower(json_extract(row, '$.email')) = ?)"); params.push(filter.author.toLowerCase(), filter.author.toLowerCase()); }
-        if (filter.q?.trim()) { clauses.push("instr(lower(title || ' ' || body || ' ' || json_extract(row, '$.message')), ?) > 0"); params.push(filter.q.trim().toLowerCase()); }
+        // The fields the search box reads a record by: its title, ID and sections, and the start of its commit's hash.
+        const q = filter.q?.trim().toLowerCase(); const hash = hashPrefix(q);
+        if (q) { clauses.push(`(instr(lower(title || ' ' || id || ' ' || coalesce(body, '')), ?) > 0${hash ? ' OR substr(oid, 1, length(?)) = ?' : ''})`); params.push(q, ...(hash ? [hash, hash] : [])); }
         if (filter.from !== undefined) { clauses.push("unixepoch(json_extract(row, '$.date')) * 1000 >= ?"); params.push(filter.from); }
         if (filter.commits) { clauses.push('oid IN (SELECT value FROM json_each(?))'); params.push(JSON.stringify(filter.commits)); }
         // One commit row names who made it and when; the bodies of the sections are what --q reads, not their keys.

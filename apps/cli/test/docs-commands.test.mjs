@@ -266,6 +266,13 @@ test('records new writes a draft; records list --doc reads the records behind a 
   assert.deepEqual(listed.map(r => [r.id, r.commit === null, [...r.docs].sort()]), [[pending.id, true, [R2]], [extend.id, false, [R1]], [made.id, false, [R1, R2, D1].sort()]]);
   assert.match(f.run(['records', 'list']).stdout, new RegExp(`^${pending.id} 목록 기간 필터\\n  커밋 전 · ${R2}\\n${extend.id} 취소 기간 14일로 연장\\n  \\d{4}-\\d\\d-\\d\\d [a-f0-9]{7} Fixture · ${R1}\\n`));
   assert.deepEqual(f.ok(['records', 'list', '--q', '정산']).records.map(r => r.id), [made.id]);
+  // --q reads what the search box reads: a record's ID and the start of its commit's hash, not the commit message.
+  assert.deepEqual(f.ok(['records', 'list', '--q', extend.id.toLowerCase()]).records.map(r => r.id), [extend.id]);
+  const extended = f.git(['rev-parse', 'HEAD']).stdout.trim();
+  assert.deepEqual(f.ok(['records', 'list', '--q', extended.slice(0, 7)]).records.map(r => r.id), [extend.id]);
+  assert.deepEqual(f.ok(['records', 'list', '--q', 'Extend cancel']).records, []);
+  assert.deepEqual(f.ok(['records', 'list', '--doc', R1, '--q', extended.slice(0, 7)]).events.map(e => e.commit), [extended]);
+  assert.deepEqual(f.ok(['records', 'list', '--doc', R1, '--q', 'Add payment']).events, []);
   assert.deepEqual(f.ok(['records', 'list', '--author', 'fixture']).records.map(r => r.id), [extend.id, made.id]);
   assert.deepEqual(f.ok(['records', 'list', '--since', 'HEAD~1']).records.map(r => r.id), [pending.id, extend.id]);
   assert.equal(f.run(['records', 'list', '--fields', 'id,docs', '--limit', '1']).stdout, `${pending.id}\t${R2}\n`);

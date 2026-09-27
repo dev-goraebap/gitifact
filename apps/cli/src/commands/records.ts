@@ -4,6 +4,7 @@ import { docIdPattern, parseRecordFile, recordDayOf, recordPathOf, renderRecordF
   type DecisionRecord, type RecordSectionKey } from '@gitifact/core';
 import { createDocumentFile, generateId } from '../adapters/filesystem/document-file.js';
 import { findRecord } from '../adapters/git/pending-records.js';
+import { hashPrefix } from '../adapters/cache/index.js';
 import { byAuthor, checkFields, contains, aside, pageLine, paginate, PAGE_SIZE, selected, since, sinceRange, type ListOptions } from './list-options.js';
 import { CommandError, runCommand, text, type Format } from './output.js';
 import { openProject, type Project } from './project.js';
@@ -81,12 +82,12 @@ export const runRecordsList = (options: ListOptions & { doc?: string; since?: st
   const sectionText = (sections: { body: string }[]) => sections.map(s => s.body);
 
   if (options.doc !== undefined) {
-    const after = await since(project, options.since, head); const by = byAuthor(options.author); const has = contains(options.q);
+    const after = await since(project, options.since, head); const by = byAuthor(options.author); const has = contains(options.q); const hash = hashPrefix(options.q);
     const id = options.doc;
     const found = await documentHistory(project, head, id);
     if (!found) throw new CommandError('UNKNOWN_DOCUMENT', t('docs.unknownDocument', { ids: id }));
     const { events } = found; const title = found.doc.title;
-    const page = paginate(events.filter(e => after(e) && by(e) && has(e.message, ...e.records.flatMap(r => [r.title, ...sectionText(r.sections)]))).map(e => ({
+    const page = paginate(events.filter(e => after(e) && by(e) && (has(...e.records.flatMap(r => [r.title, r.id, ...sectionText(r.sections)])) || (!!hash && e.commit.startsWith(hash)))).map(e => ({
       commit: e.commit, date: e.date, author: e.author, email: e.email, message: e.message, types: e.types, path: (e.after ?? e.before)?.path ?? null, records: e.records })), e => e.commit, options);
     const rows = page.rows; const paging = { total: page.total, next: page.next, unit: 'commit' as const };
     const more = pageLine(page, 0, t('list.commits'));
@@ -111,7 +112,7 @@ export const runRecordsList = (options: ListOptions & { doc?: string; since?: st
   const pending = (options.author !== undefined ? [] : [...(await project.pendingRecords()).files].flatMap(([path, source]) => {
     try { return [parseRecordFile(path, source)]; } catch { return []; }
   }).map(r => ({ id: r.id, title: r.title, commit: null, date: null, author: null, docs: r.docs, sections: r.sections.map(s => ({ key: s.key, body: s.body })) })))
-    .filter(r => has(r.title, ...sectionText(r.sections))).sort((a, b) => a.id < b.id ? -1 : 1);
+    .filter(r => has(r.title, r.id, ...sectionText(r.sections))).sort((a, b) => a.id < b.id ? -1 : 1);
   // A page runs through the records not committed yet first, then on into the committed ones.
   const size = options.all ? undefined : options.limit ?? PAGE_SIZE;
   const inPending = options.after === undefined ? 0 : pending.findIndex(r => r.id === options.after) + 1;

@@ -4,6 +4,7 @@ import type { DatabaseSync } from 'node:sqlite';
 import { INSTRUCTIONS_ROOT, SPEC_ROOT } from '@gitifact/core';
 import { transaction, type CacheDatabase } from './database.js';
 import { MIGRATION_TRAILER, type GitAccess } from './commit-changes.js';
+import { hashPrefix } from './search-text.js';
 
 export interface Person { name: string; email: string; commits: number; latest: string }
 /** Who touched one store folder and when it was last touched. */
@@ -115,8 +116,8 @@ export function createCommitLog(database: CacheDatabase, git: GitAccess, root: s
      * prints it. Anything shorter or not a hash names none. Newest first, a page after the commit `after`.
      */
     async commitsNamed(head: string, raw: string, after: string | undefined, limit: number) {
-      const prefix = raw.trim().toLowerCase();
-      if (!/^[0-9a-f]{7,64}$/.test(prefix)) return { total: 0, next: null, hits: [] };
+      const prefix = hashPrefix(raw);
+      if (!prefix) return { total: 0, next: null, hits: [] };
       await ensure(head);
       return database.with(db => {
         const rows = db.prepare('SELECT oid, name, date, subject FROM log WHERE reach = 1 AND substr(oid, 1, length(?)) = ? ORDER BY time DESC, oid')

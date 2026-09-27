@@ -28,3 +28,12 @@ export function snippet(text: string, query: string) {
 
 /** A LIKE pattern that matches the text anywhere, with the pattern characters in it taken literally. */
 export const containing = (query: string) => '%' + query.replace(/[\\%_]/g, c => '\\' + c) + '%';
+
+/**
+ * The words as the start of a commit hash, lowercased: seven to sixty-four hex digits, as the search box reads them.
+ * Anything else names no commit.
+ */
+export function hashPrefix(query: string | undefined): string | undefined {
+  const wanted = query?.trim().toLowerCase();
+  return wanted && /^[0-9a-f]{7,64}$/.test(wanted) ? wanted : undefined;
+}

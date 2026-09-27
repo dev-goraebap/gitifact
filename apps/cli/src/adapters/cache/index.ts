@@ -9,6 +9,7 @@ export { MIGRATION_TRAILER } from './commit-changes.js';
 export type { HistoryFilter, ListedEvent, RecordFilter } from './history.js';
 export type { Person, FolderAuthors } from './commit-log.js';
 export { CACHE_DIR, CACHE_FORMAT } from './database.js';
+export { hashPrefix } from './search-text.js';
 
 /**
  * The derived store behind every list, search, read and history query: `.gitifact/cache/index.db`. Nothing in it is
