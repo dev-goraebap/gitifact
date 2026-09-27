@@ -452,3 +452,17 @@ main을 02f2e86까지 푸시하고, 릴리스 커밋 02f2e86에 주석 태그 v0
 모의 실행과 integrity가 달라 레지스트리 압축 파일을 풀어 비교했다. 파일 214개이고 dist 전체·README·LICENSE가 검증 빌드와 바이트 단위로 같으며 CLI SHA-256도 같다. package.json만 pnpm이 다시 쓴 형식이라 다르다(0.8.1·0.8.2와 같은 원인). 새 임시 폴더에 레지스트리의 0.8.4를 설치해 version을 확인했다. 사용자 프로젝트와 전역 설치는 바꾸지 않았다.
 
 릴리스 커밋 6cbada2에 주석 태그 v0.8.4를 만들어 origin에 푸시했고, 원격 태그가 해당 커밋을 가리키는 것을 확인했다. 이 게시 결과를 남기는 후속 문서 커밋으로 태그를 옮기지 않는다.
+
+## 0.8.5 배포 준비
+
+2026-09-27, 0.8.4 뒤의 브라우저·CLI 변경을 0.8.5로 준비했다. 결정기록 목록의 커밋 단위 필터(대상·문서 종류·결정기록 없는 변경)와 문서 이력 페이지, 짧은 해시 주소, 설계 overview와 요구사항 형식 경고와 가이드(dev-goraebap/gitifact#3·#4), `records list --q`의 검색창 필드(커밋 메시지 제외), 페이지 전환의 불투명 덮개와 문서 영역 교체, 찾아온 절의 빗금 제거, 체크아웃 재사용이다. 이 저장소는 `pnpm cli init`으로 config의 `cli`를 0.8.5에 맞췄다.
+
+릴리스 커밋 ac85b55만 담은 별도 worktree(`C:\tmp\gitifact-085`)에서 `pnpm install --frozen-lockfile`과 `pnpm check`를 돌려 통과했다(core 45, 계약 10, 소개 2, 브라우저 112, CLI 173, 패키지 오프라인 설치·실행). 모의 게시는 215개 파일, 압축 4,422,601바이트, integrity sha512-qw2SG778LOha3JEAkLCyRECOt1zlX1ZBXC/lqJWhQwISDmW/lt2gGIhVBl72cXpNyf5/XIDBa+f0vDiDCy335g==, shasum c86cd38eabe49ef7c0ece535d9329bf367b3a8eb이다. CLI 번들 SHA-256은 26cbea288240006c80cae9678b821b3354a0e75e850fb5f768e3b553c9a3c2e0이다.
+
+## 0.8.5 게시 결과
+
+2026-09-27, 사용자가 worktree에서 `pnpm publish --access public --tag latest --no-git-checks`로 게시했다. 게시 직후 몇 분 동안 레지스트리가 404를 돌려주다가 버전과 latest가 0.8.5로 반영됐다. integrity와 shasum은 모의 실행과 같다.
+
+새 임시 폴더에 레지스트리의 0.8.5를 설치해 version을 확인했고, 설치된 CLI의 SHA-256이 검증 빌드와 같다. 사용자 프로젝트와 전역 설치는 바꾸지 않았다.
+
+릴리스 커밋 ac85b55에 주석 태그 v0.8.5를 만들었다. 이 게시 결과를 남기는 후속 문서 커밋으로 태그를 옮기지 않는다.
