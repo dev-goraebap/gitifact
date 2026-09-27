@@ -67,15 +67,17 @@ export function createCheckoutReader(root: string, cache: Cache, inherited = pro
     return head || null;
   };
   const pending = new Map<string, Promise<CheckoutBase>>();
+  // The last read per language. The stamp covers everything a read depends on, so an equal stamp means an equal read.
+  const last = new Map<string, CheckoutBase>();
   const readStamp = createStampReader(root, inherited);
 
-  async function read(): Promise<CheckoutBase> {
+  // `stamp` is taken before the reads, so a change made while they run leaves it behind: the browser says so, and the
+  // next request reads again instead of reusing this one.
+  async function read(stamp: string): Promise<CheckoutBase> {
     const raw = await readConfigFile(root);
     if (!raw) throw new StoreError(t('specReader.schemaRequired'));
     parseManagedConfig(raw);
     const head = await readHead();
-    // Taken before the reads, so a change made while they run leaves the stamp behind and the browser says so.
-    const stamp = await readStamp();
     const [current, dirty, authors, people] = await settled([
       cache.documents.list(),
       head ? git(['status', '--porcelain=v1', '--', '.gitifact/spec', INSTRUCTIONS_ROOT]) : Promise.resolve(''),
@@ -91,11 +93,22 @@ export function createCheckoutReader(root: string, cache: Cache, inherited = pro
       features, instructions, problems, people, folders: authors };
   }
 
+  // A screen asks for its frame and a part of it one after the other, and every part asked the working tree again (about
+  // 180 ms here). Taking the stamp first (about 40 ms) lets a request whose stamp is unchanged answer with the last read.
+  async function current(language: string): Promise<CheckoutBase> {
+    const stamp = await readStamp();
+    const known = last.get(language);
+    if (known?.stamp === stamp) return { ...known, observedAt: new Date().toISOString() };
+    const fresh = await read(stamp);
+    last.set(language, fresh);
+    return fresh;
+  }
+
   /** Concurrent callers share one read per language, including its errors. */
   const base = () => {
     const language = getLanguage();
     let value = pending.get(language);
-    if (!value) { value = read().finally(() => pending.delete(language)); pending.set(language, value); }
+    if (!value) { value = current(language).finally(() => pending.delete(language)); pending.set(language, value); }
     return value;
   };
   return {

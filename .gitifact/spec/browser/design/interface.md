@@ -31,7 +31,7 @@ requirements:
 | `http/respond.ts` | JSON·오류 응답 |
 | `http/static-files.ts` | 앱 파일 |
 | `routes/` | 경로 표 셋: project(세션·상태·패치노트), record(체크아웃의 부분들·이력·요약·변경·커밋·결정기록·검색), asset(저장소 에셋) |
-| `checkout/` | 작업 폴더 체크아웃 읽기(문서·상태·작성자·지문). 화면별 모양은 `queries/checkout.ts`가 만든다 |
+| `checkout/` | 작업 폴더 체크아웃 읽기(문서·상태·작성자·지문). 요청마다 지문을 먼저 구하고(약 40ms), 그 언어의 마지막 읽기와 지문이 같으면 그 결과를 읽은 때만 새로 해 다시 쓴다(약 180ms 대신). 화면별 모양은 `queries/checkout.ts`가 만든다 |
 | `commit/commit-files.ts` | 커밋의 소스 변경 읽기 |
 
 경로 표의 한 줄은 메서드·경로·세션 필요 여부·쿼리 스키마·처리 함수다. 문서 상태(`document-states.ts`)와 커밋 전 변경(`working-changes.ts`)은 CLI 명령과 서버가 같이 부르는 `apps/cli/src/queries/`에 있다. 쿼리 스키마는 계약 패키지에 있어 서버와 브라우저가 같은 규칙을 쓴다. 커밋별 변경 계산(commit-changes), 0.7 이력 읽기(legacy-changes), SQLite 파일(database), 작업 폴더 문서(documents), 이력 질의(history), 검색 글 다듬기(search-text)는 CLI 명령과 함께 쓰는 `apps/cli/src/adapters/cache/`에 있다.
@@ -52,7 +52,7 @@ requirements:
 | `GET /api/v1/instructions` | browser-instructions v1 | 모든 지침(이름순, 폴더 파일 목록 포함)과 AGENTS.md. 지침은 수가 적어 나누지 않는다 |
 | `GET /api/v1/contributors?q&after&limit` | browser-contributors v1 | 참여자 목록. 이름·이메일 검색, 커밋 수 순, 20명씩(최대 50). 사람마다 참여한 기능 수 |
 | `GET /api/v1/contributor?email` | browser-contributor v1 | 참여자 하나와 참여한 기능(그 기능에서의 커밋 수, 요구사항 수). 없으면 404 |
-| `GET /api/v1/stamp` | browser-stamp v1 | 지금의 지문. HEAD와 `.gitifact`·AGENTS.md의 `git status`, 그 경로들의 수정 시각·크기의 해시 |
+| `GET /api/v1/stamp` | browser-stamp v1 | 지금의 지문. HEAD와 `.gitifact`·AGENTS.md의 `git status`, 그 경로들과 참여자 이름을 정하는 `.mailmap`의 수정 시각·크기의 해시 |
 | `GET /api/v1/history?head&after&limit&kind&document&feature&author&q` | browser-history v6 | 조건에 맞는 변경을 커밋 단위로 한 페이지(기본 20커밋, 최대 50). 전체 변경 수(`total`)·커밋 수(`commits`)와 다음 커서(`next`, 이 페이지 마지막 커밋) |
 | `GET /api/v1/history/summary?head` | browser-history-summary v5 | 종류별 건수, 최근 3주 커밋별 건수, 최신 커밋 셋, 커밋 많은 참여자 셋과 나머지 수·커밋 |
 | `GET /api/v1/commit?commit&after&limit&record` | browser-commit v4 | 커밋 하나의 작성자·시각·메시지와 바꾼 문서의 목록 한 페이지(기본 20, 최대 100). 원문 없이 `total`·`next`(마지막 변경의 key). `record`면 그 기록이 설명하는 문서만(0.7 이유는 같은 글의 다른 ID도) |

@@ -5,9 +5,10 @@ import { createGitRunner } from '../../adapters/git/run-git.js';
 
 /**
  * A fingerprint of what the browser shows: HEAD, Git's status of the store folder and AGENTS.md, and the modification
- * time and size of each file the status names, so a file edited again while already modified still changes it. One
- * `rev-parse` and one `status` (about 50 ms); the checkout carries the stamp it was read at, and the browser asks for a
- * new one when the reader comes back to the tab.
+ * time and size of each file the status names, so a file edited again while already modified still changes it, and of
+ * `.mailmap`, which names the people. One `rev-parse` and one `status` (about 40 ms); the checkout carries the stamp it
+ * was read at, the server answers a request with an unchanged stamp from its last read, and the browser asks for a new
+ * stamp when the reader comes back to the tab.
  */
 export function createStampReader(root: string, inherited = process.env) {
   const runner = createGitRunner();
@@ -24,6 +25,8 @@ export function createStampReader(root: string, inherited = process.env) {
       const info = await lstat(join(root, ...path.split('/'))).catch(() => undefined);
       return path + '\t' + (info ? info.mtimeMs + ':' + info.size : '-');
     }));
+    const mailmap = await lstat(join(root, '.mailmap')).catch(() => undefined);
+    seen.push('.mailmap\t' + (mailmap ? mailmap.mtimeMs + ':' + mailmap.size : '-'));
     return createHash('sha256').update(head.trim() + '\n' + seen.sort().join('\n')).digest('hex').slice(0, 20);
   };
 }
