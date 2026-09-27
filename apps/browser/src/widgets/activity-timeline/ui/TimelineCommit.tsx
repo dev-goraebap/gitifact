@@ -16,6 +16,8 @@ import { t, useLanguage } from '../../../shared/i18n';
 type Props = {events:SpecEvent[];day:string|undefined;features:IndexFeature[];hidden:number};
 /** Records a commit lists before the rest are left to its page: a commit may add a hundred. */
 const RECORDS_SHOWN = 3;
+// Documents no record explains are cut like the documents under a record, and the rest are on the commit page.
+const BARE_SHOWN = 3;
 
 /** Names the day a marker stands for when the reader still counts it by name; other days are left to the date. */
 function nearbyDay(iso:string) {
@@ -38,6 +40,8 @@ export const TimelineCommit = memo(function TimelineCommit({events,day,features,
  const groups=groupRecords(events);
  const recorded=groups.filter(group=>group.record);
  const bare=groups.find(group=>!group.record);
+ // Documents the list leaves out: past the few shown without a record, and those the list did not load at all.
+ const moreDocuments=(bare?Math.max(0,bare.events.length-BARE_SHOWN):0)+hidden;
  return <VStack as="li" gap={0} className={styles.commit}>
   {day&&<HStack gap={2} className={styles.day}>
    <Text type="supporting" weight="semibold">{nearbyDay(day)}</Text>
@@ -69,10 +73,10 @@ export const TimelineCommit = memo(function TimelineCommit({events,day,features,
     {bare&&<VStack gap={2} className={styles.reasonGroup}>
      {bare.missing&&<Text color="secondary">{t('activity.noRecord')}</Text>}
      <VStack as="ul" gap={0} className={styles.records} aria-label={t('commit.documents')}>
-      {bare.events.map(event=><TimelineRecord key={event.key} event={event} features={features}/>)}
+      {bare.events.slice(0,BARE_SHOWN).map(event=><TimelineRecord key={event.key} event={event} features={features}/>)}
      </VStack>
     </VStack>}
-    {hidden>0&&<Link to="/records/commits/$commit" params={{commit:first.commit}} search={{tab:'documents'}} className={styles.commitMore}>{t('activity.moreRecords', { count: hidden })}</Link>}
+    {moreDocuments>0&&<Link to="/records/commits/$commit" params={{commit:first.commit}} search={{tab:'documents'}} className={styles.commitMore}>{t('activity.moreRecords', { count: moreDocuments })}</Link>}
    </VStack>
   </HStack>
  </VStack>;

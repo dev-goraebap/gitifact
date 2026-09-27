@@ -360,3 +360,17 @@ test('an address with the start of a hash moves to the whole hash, and one namin
  await page.getByRole('link', { name: '결정기록으로' }).click();
  await expect(page).toHaveURL(/\/records$/);
 });
+
+test('documents no record explains are cut to three like those under a record, and the rest open on the commit page', async ({page}) => {
+ const data = structuredClone(specs); const base = data.events[0]!; const commit = 'f'.repeat(40);
+ const ids = ['R-bbbbbbbbba', 'R-bbbbbbbbbb', 'R-bbbbbbbbbc', 'R-bbbbbbbbbd', 'R-bbbbbbbbbe'];
+ data.events = ids.map((id, i) => ({ ...base, key: commit + ':' + id, commit, id, types: ['modified' as const], records: [],
+   before: { ...base.after!, id, title: '문서 ' + i }, after: { ...base.after!, id, title: '문서 ' + i } }));
+ await mockApi(page, data);
+ await page.goto('/records');
+ const commits = page.getByRole('list', { name: '결정기록 목록' }).locator('> li');
+ await expect(commits.first()).toContainText('결정기록 없이 바뀐 문서');
+ await expect(commits.first().getByRole('list', { name: '바뀐 문서', exact: true }).locator('> li')).toHaveCount(3);
+ await commits.first().getByRole('link', { name: '문서 2건 더 →' }).click();
+ await expect(page).toHaveURL(new RegExp('/records/commits/' + commit + '[?]tab=documents$'));
+});
