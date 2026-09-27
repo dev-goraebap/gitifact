@@ -1,5 +1,13 @@
 # 개발 환경
 
+## 2026-09-27 결정기록 필터·문서 이력·형식 경고·페이지 전환(0.8.5 준비)
+
+0.8.4 뒤의 브라우저·CLI 변경을 0.8.5로 묶었다. 짧은 해시 주소(`b1391f9`, DR-l7dl2pmkur), 체크아웃 재사용(`18b9fe4`, DR-bstiu25vgk), 문서 이력 페이지(`3a1c9d1`, DR-6uonka7nk7), 기록 없는 변경 3개 제한(`6457f05`, DR-pp4ykwqth7), 결정기록 목록의 커밋 단위 필터(`f3efb23`, DR-nntebi6s7k·DR-flibjifo6e·DR-xo376b3ape), `records list --q`의 검색창 필드(`0dce1c5`, DR-bznhoa4ouq), 이슈 dev-goraebap/gitifact#3·#4의 설계 overview 경고와 요구사항 형식(`27f0c1a`·`2c1b966`, DR-k2zln56pmf·DR-txarkhawi5·DR-4xdukvgxjn), 페이지 전환의 불투명 덮개와 문서 영역 교체(`e99746f`, DR-huhasrkgva·DR-dcmusvtxyw), 찾아온 절의 빗금 제거(`0923ccd`, DR-4of5y37sv4)다. `records list --q`가 커밋 메시지를 찾지 않게 된 것은 배포된 동작의 변경이라 패치노트 Changed에 적었다.
+
+페이지 전환의 끊김은 창이 가려진 상태에서 긴 작업(long task)만 재어 확인했다(결정기록 목록 83~122ms 한 번, 기록 상세 148ms와 127ms 두 번). 프레임 끊김은 재지 못했고 사용자가 눈으로 확인했다.
+
+이 저장소는 `pnpm cli init`으로 config의 `cli`를 0.8.5로 올렸다. 블록 문구는 바뀌지 않아 AGENTS.md는 그대로다.
+
 ## 2026-09-27 설치를 에이전트가 허용을 묻고 직접(0.8.4 준비)
 
 0.8.3을 쓴 한 사용자의 Claude Code 자동 모드 세션에서 검사기가 에이전트의 `npm install -g gitifact`를 막았고, 에이전트가 사용자에게 설치를 넘겼으며 사용자가 친 명령은 Windows PowerShell의 스크립트 실행 제한(`npm.ps1`)에 막혔다. 문서상 자동 모드는 사용자 메시지가 동작을 구체적으로 가리키면 약한 차단을 푼다. 이 저장소 세션(자동 모드)에서 `npm install -g gitifact@0.8.3`을 담아 묻고 "네"만 받았을 때 전역 설치가 통과했다(한 번 시험, 전역을 0.8.1에서 0.8.3으로 올림). 블록·workflow·시작하기를 "정확한 명령으로 허용을 묻고 직접 설치, 막히면 도구의 승인, PowerShell은 `.cmd`"로 바꿨다(`f31800c`, DR-eys4dayunx). 기본 규칙 원문을 `claude auto-mode defaults`로 읽으려 했으나 검사기가 막아 이 차단이 약한 차단이라는 것은 문서로 추정했다. Codex의 승인 동작은 대화형이 필요해 시험하지 않았다.

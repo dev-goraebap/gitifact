@@ -1,3 +1,18 @@
+## 0.8.5 - 2026-09-27
+### Added
+- The browser has a history page for one document (`/records/docs/<document ID>`). It shows every commit that changed the document, newest first, each record with its title and the start of its decision, and opens the context and alternatives in place. Links such as "Change history of this requirement →" on features, instructions and records lead there.
+- A commit address with only the start of its hash, such as `/records/commits/<7 or more characters>`, opens that commit's page.
+- `check` and `changes list` warn with `DESIGN_OVERVIEW_LARGE` when a design `overview.md` has seven or more sections, so splitting it is considered. The warning does not block a commit.
+- `changes list` and `changes commit` show `REQUIREMENT_SCOPE_FORMAT` and `REQUIREMENT_CRITERIA_FORMAT` warnings, one per line, when a requirement changed in this work leaves the guide's shape. `check` does not give them, so existing requirements are brought into shape when they are revised.
+### Changed
+- The records list has new filters: target (a feature or an instruction) instead of feature, document kind (feature overview, requirement, design, instruction) instead of specification type, and "changes without a record" instead of change type. The list shows the commits that hold a matching change; a card keeps the records that explain those changes and counts the commit's other records and each decision's other documents. A card's record and document counts are the whole commit's.
+- The records list's search and `records list --q` look at the same fields as the search box: a record's title, ID and sections, a document's ID and title, and the start of a commit hash (7 or more characters). `records list --q` no longer searches commit messages.
+- The records list shows up to three documents changed without a record and leaves the rest to the commit page.
+- The requirement format is set: the user story, then `### Scope and constraints` (optional, `-` items only), then `### Acceptance criteria` (numbered items only). A scope item is one rule that is either true or false; a quality target for one feature carries a number, and system-wide targets go in one common feature. Screen layout, APIs and storage details belong in the design (`guide show spec`). The `specs new requirement` skeleton follows this order.
+- Revising in `guide show design` now asks to check the splitting and diagram criteria against the whole document, and to ask the user before adding to one that is already past the point of splitting.
+- Moving between browser screens covers the card with an opaque, unblurred cover until the next screen is drawn whole, then fades only the cover. Choosing a document beside a list on record and commit pages works the same way, and hovering the list reads it ahead. A requirement or design section a link opens on is no longer hatched.
+- The browser server answers with its last read of the checkout while the repository has not changed.
+
 ## 0.8.4 - 2026-09-27
 ### Changed
 - Agents no longer leave installing or updating Gitifact to the user. They show the exact install command, ask whether to run it, and install it themselves once allowed. In Claude Code's auto mode, replying "yes" to a question that names the command is enough. If the tool still blocks it, the agent points to that tool's approval prompt or permission setting. Run `update` to refresh the instruction block.
