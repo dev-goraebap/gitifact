@@ -175,7 +175,7 @@ function FeatureDetail({ feature: selected, features, search, change }: { featur
         <Text type="supporting" color="secondary">{t('features.requirementCount', { count: selected.requirements.length })}</Text>
         <Contributors people={selected.contributors}/>
         {selected.updatedAt && <Timestamp value={selected.updatedAt} format="relative"/>}
-        <Link to="/records" search={{ feature: selected.id }}>{t('features.history')}</Link>
+        <Link to="/records" search={{ target: selected.id }}>{t('features.history')}</Link>
       </HStack>
     </VStack>
     <TabList role="tablist" value={tab} onChange={tab => change({ ...search, tab, selected: undefined })} hasDivider>

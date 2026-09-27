@@ -33,7 +33,7 @@ export interface RecordsPageProps {
   /** A screen whose content is compared side by side (the commit page) gets a wider column than reading prose needs. */
   isWide?: boolean;
   /** The filter row under the heading, which stays in view while the list scrolls. */
-  filters?: (checkout: BrowserCheckoutV1) => ReactNode;
+  filters?: (checkout: BrowserCheckoutV1, session: BrowserSessionV3) => ReactNode;
   children: (context: { checkout: BrowserCheckoutV1; session: BrowserSessionV3 }) => ReactNode;
 }
 
@@ -73,7 +73,7 @@ function RecordsPanel({ session, header: Header, title, description, root, trail
       {behind && first && <VStack gap={0} className={styles.staleNotice}><StaleNotice isRefreshing={query.isFetching} onRefresh={refresh}/></VStack>}
       {query.error && first && <VStack padding={4} role="alert"><Text>{query.error.message}</Text><Text>{t('history.staleData')}</Text></VStack>}
       {!first && query.error && <RequestState error={query.error} retry={() => { if (disconnected) window.location.reload(); else void query.refetch(); }}/>}
-      {ready && filters && <HStack gap={3} wrap="wrap" className={`${styles.filters} ${styles.filtersSticky}`}>{filters(first)}</HStack>}
+      {ready && filters && <HStack gap={3} wrap="wrap" className={`${styles.filters} ${styles.filtersSticky}`}>{filters(first, session)}</HStack>}
       {ready && <VStack gap={3} className={styles.content}>
         <DocumentIndexProvider index={first.index}>{children({ checkout: first, session })}</DocumentIndexProvider>
       </VStack>}

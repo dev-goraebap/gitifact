@@ -1,5 +1,5 @@
 import { browserCommitChangeQueryV1, browserCommitChangeV1, browserCommitQueryV3, browserCommitV4, browserCommitFileQueryV1, browserCommitFileV1, browserCommitFilesQueryV2, browserCommitFilesV2,
-  browserHistoryQueryV4, browserHistorySummaryQueryV1, browserHistorySummaryV5, browserHistoryV6, browserCheckoutV1, browserFeaturesQueryV1, browserFeaturesV1,
+  browserHistoryQueryV5, browserHistorySummaryQueryV1, browserHistorySummaryV5, browserHistoryV7, browserCheckoutV1, browserFeaturesQueryV1, browserFeaturesV1,
   browserFeatureQueryV1, browserFeatureV1, browserInstructionsV1, browserContributorsQueryV1, browserContributorsV1, browserContributorQueryV1, browserContributorV1, browserSearchQueryV2, browserSearchV3, browserInstructionFileQueryV1, browserInstructionFileV1,
   browserDocumentHistoryQueryV1, browserDocumentHistoryV1, browserRecordQueryV1, browserRecordV2, browserStampV1, browserWorkingChangeQueryV1, browserWorkingChangeV1, browserWorkingV1 } from '@gitifact/contracts';
 import { storeReader } from '../../adapters/git/store-reader.js';
@@ -72,10 +72,11 @@ export function recordRoutes(root: string, sessionId: string, env?: NodeJS.Proce
     // Whether the screen is behind, asked when the reader comes back to the tab; cheap enough to ask every time.
     route({ method: 'GET', path: '/api/v1/stamp', session: true, unreadable, handle: async () =>
       ok(browserStampV1.parse({ contract: 'browser-stamp', version: 1, sessionId, stamp: await readStamp() })) }),
-    route({ method: 'GET', path: '/api/v1/history', session: true, query: browserHistoryQueryV4, unreadable, handle: async ({ query }) => {
-      const page = await cache.history.commits(query.head, { kind: query.kind, document: query.document, feature: query.feature, author: query.author, q: query.q }, query.after, query.limit ?? PAGE);
+    route({ method: 'GET', path: '/api/v1/history', session: true, query: browserHistoryQueryV5, unreadable, handle: async ({ query }) => {
+      const page = await cache.history.commits(query.head, { target: query.target, document: query.document, unrecorded: query.record === 'missing',
+        author: query.author, q: query.q }, query.after, query.limit ?? PAGE);
       if (!page) throw cursorGone();
-      return ok(browserHistoryV6.parse({ contract: 'browser-history', version: 6, sessionId, head: query.head, ...page }));
+      return ok(browserHistoryV7.parse({ contract: 'browser-history', version: 7, sessionId, head: query.head, ...page }));
     } }),
     route({ method: 'GET', path: '/api/v1/history/summary', session: true, query: browserHistorySummaryQueryV1, unreadable, handle: async ({ query }) =>
       ok(browserHistorySummaryV5.parse({ contract: 'browser-history-summary', version: 5, sessionId, head: query.head, ...await cache.history.summary(query.head),

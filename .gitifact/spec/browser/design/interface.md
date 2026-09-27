@@ -53,7 +53,7 @@ requirements:
 | `GET /api/v1/contributors?q&after&limit` | browser-contributors v1 | 참여자 목록. 이름·이메일 검색, 커밋 수 순, 20명씩(최대 50). 사람마다 참여한 기능 수 |
 | `GET /api/v1/contributor?email` | browser-contributor v1 | 참여자 하나와 참여한 기능(그 기능에서의 커밋 수, 요구사항 수). 없으면 404 |
 | `GET /api/v1/stamp` | browser-stamp v1 | 지금의 지문. HEAD와 `.gitifact`·AGENTS.md의 `git status`, 그 경로들과 참여자 이름을 정하는 `.mailmap`의 수정 시각·크기의 해시 |
-| `GET /api/v1/history?head&after&limit&kind&document&feature&author&q` | browser-history v6 | 조건에 맞는 변경을 커밋 단위로 한 페이지(기본 20커밋, 최대 50). 전체 변경 수(`total`)·커밋 수(`commits`)와 다음 커서(`next`, 이 페이지 마지막 커밋) |
+| `GET /api/v1/history?head&after&limit&target&document&record&author&q` | browser-history v7 | 조건에 맞는 변경이 있는 커밋을 한 페이지(기본 20커밋, 최대 50). 맞는 변경(`events`)과 전체 맞는 변경 수(`total`)·커밋 수(`commits`), 커밋마다 전체 문서 수·기록 없는 문서 수·기록별 문서 수(`whole`), 이력에 있는 문서 종류(`kinds`), 다음 커서(`next`, 이 페이지 마지막 커밋) |
 | `GET /api/v1/history/summary?head` | browser-history-summary v5 | 종류별 건수, 최근 3주 커밋별 건수, 최신 커밋 셋, 커밋 많은 참여자 셋과 나머지 수·커밋 |
 | `GET /api/v1/commit?commit&after&limit&record` | browser-commit v4 | 커밋 하나의 작성자·시각·메시지와 바꾼 문서의 목록 한 페이지(기본 20, 최대 100). 원문 없이 `total`·`next`(마지막 변경의 key). `record`면 그 기록이 설명하는 문서만(0.7 이유는 같은 글의 다른 ID도) |
 | `GET /api/v1/commit/change?commit&id` | browser-commit-change v1 | 그 커밋이 바꾼 문서 하나의 전후 본문. Git에서 읽는다 |

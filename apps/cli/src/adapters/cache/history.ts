@@ -4,7 +4,12 @@ import type { DocSnapshot, EventRecord } from './events.js';
 import { transaction, type CacheDatabase } from './database.js';
 import { snippet } from './search-text.js';
 
-export interface HistoryFilter { kind?: ChangeType | undefined; document?: HistoryEvent['kind'] | undefined; feature?: string | undefined; author?: string | undefined; q?: string | undefined }
+/**
+ * What the records list filters by. A change is one the filter is about when it touches the target (a feature's
+ * documents, or an instruction), is of the document kind, has no record when `unrecorded`, and the words name it, one of
+ * its records or its commit's hash; a commit comes when it holds one, and the author is the commit's.
+ */
+export interface HistoryFilter { target?: string | undefined; document?: HistoryEvent['kind'] | undefined; unrecorded?: boolean | undefined; author?: string | undefined; q?: string | undefined }
 /** What `records list` filters by: the author's name or email, words, a first moment (ms), or the commits allowed. */
 export interface RecordFilter { author?: string | undefined; q?: string | undefined; from?: number | undefined; commits?: string[] | undefined }
 
@@ -160,11 +165,21 @@ export function createHistory(database: CacheDatabase, git: GitAccess, originals
 
   function where(filter: HistoryFilter) {
     const clauses: string[] = []; const params: (string | number)[] = [];
-    if (filter.kind) { clauses.push("instr(',' || c.types || ',', ?) > 0"); params.push(',' + filter.kind + ','); }
+    if (filter.target?.startsWith('I-')) { clauses.push('c.id = ?'); params.push(filter.target); }
+    else if (filter.target) { clauses.push('(c.before_spec = ? OR c.after_spec = ?)'); params.push(filter.target, filter.target); }
     if (filter.document) { clauses.push('c.kind = ?'); params.push(filter.document); }
-    if (filter.feature) { clauses.push('(c.before_spec = ? OR c.after_spec = ?)'); params.push(filter.feature, filter.feature); }
+    if (filter.unrecorded) clauses.push("json_array_length(c.row, '$.records') = 0");
     if (filter.author) { clauses.push('c.email = ?'); params.push(filter.author); }
-    if (filter.q?.trim()) { clauses.push('instr(c.needle, ?) > 0'); params.push(filter.q.trim().toLowerCase()); }
+    const q = filter.q?.trim().toLowerCase();
+    if (q) {
+      // The same fields the search box finds: the document's ID and titles, a record's title, ID and sections, a hash.
+      const record = `EXISTS (SELECT 1 FROM json_each(c.row, '$.records') j JOIN records r ON r.oid = c.oid AND r.id = j.value
+        WHERE instr(lower(r.title), ?) > 0 OR instr(lower(r.id), ?) > 0
+          OR instr(lower((SELECT group_concat(json_extract(s.value, '$.body'), ' ') FROM json_each(r.sections) s)), ?) > 0)`;
+      const hash = /^[0-9a-f]{7,64}$/.test(q) ? ' OR substr(c.oid, 1, length(?)) = ?' : '';
+      clauses.push(`(instr(c.needle, ?) > 0 OR ${record}${hash})`);
+      params.push(q, q, q, q, ...(hash ? [q, q] : []));
+    }
     return { sql: clauses.map(c => ' AND ' + c).join(''), params };
   }
 
@@ -195,8 +210,22 @@ export function createHistory(database: CacheDatabase, git: GitAccess, originals
         const shown = commits.slice(0, limit);
         const rows = !shown.length ? [] : db.prepare(`SELECT c.row ${from} AND l.pos >= ? AND l.pos <= ? ORDER BY l.pos, c.ord`)
           .all(head, ...params, shown[0]!.pos, shown[shown.length - 1]!.pos) as { row: string }[];
+        // Each shown commit as a whole, so a card tells what the filter left out: its documents, those no record
+        // explains, and how many documents each of its records explains.
+        const oids = JSON.stringify(shown.map(c => c.oid));
+        const sizes = db.prepare(`SELECT oid, count(*) AS documents, sum(json_array_length(row, '$.records') = 0) AS unrecorded
+          FROM changes WHERE oid IN (SELECT value FROM json_each(?)) GROUP BY oid`).all(oids) as { oid: string; documents: number; unrecorded: number }[];
+        const explained = db.prepare(`SELECT c.oid AS oid, j.value AS id, count(*) AS documents FROM changes c, json_each(c.row, '$.records') j
+          WHERE c.oid IN (SELECT value FROM json_each(?)) GROUP BY c.oid, j.value ORDER BY c.oid, min(c.ord)`).all(oids) as { oid: string; id: string; documents: number }[];
+        const whole = shown.map(({ oid }) => {
+          const size = sizes.find(s => s.oid === oid);
+          return { commit: oid, documents: Number(size?.documents ?? 0), unrecorded: Number(size?.unrecorded ?? 0),
+            records: explained.filter(r => r.oid === oid).map(r => ({ id: r.id, documents: Number(r.documents) })) };
+        });
+        const kinds = (db.prepare('SELECT DISTINCT c.kind AS kind FROM lineage l JOIN changes c ON c.oid = l.oid WHERE l.head = ?').all(head) as { kind: HistoryEvent['kind'] }[])
+          .map(k => k.kind);
         return { total: Number(counted.n), commits: Number(counted.commits), next: commits.length > limit ? shown[shown.length - 1]!.oid : null,
-          events: hydrate(db, rows.map(r => r.row)) };
+          events: hydrate(db, rows.map(r => r.row)), whole, kinds };
       });
     },
     /**

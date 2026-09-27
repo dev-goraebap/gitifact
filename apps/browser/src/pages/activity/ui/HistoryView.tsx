@@ -1,4 +1,4 @@
-import { useDeferredValue } from 'react';
+import { useDeferredValue, useMemo } from 'react';
 import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query';
 import type { BrowserSessionV3, IndexFeature } from '@gitifact/contracts';
 import { VStack } from '@astryxdesign/core/VStack';
@@ -16,7 +16,8 @@ import { t, useLanguage } from '../../../shared/i18n';
 
 /**
  * The activity timeline. Filters and the search word go to the server, which answers from all of history — a filter
- * finds changes that were never loaded, and the count is the whole count — twenty commits at a time, each whole.
+ * finds changes that were never loaded, and the count is the whole count — twenty commits at a time. A commit comes when
+ * it holds a change the filters are about; its card shows those and counts the rest of the commit.
  * The work not committed yet comes first while no filter is set.
  */
 export function HistoryView({features,search,session,head}: {features:IndexFeature[];search:RecordSearch;session:BrowserSessionV3;head:string|null}) {
@@ -28,16 +29,17 @@ export function HistoryView({features,search,session,head}: {features:IndexFeatu
  // Drawn in the background, so the loader keeps moving while a long timeline is laid out.
  const data=useDeferredValue(query.data);
  const events=data?.pages.flatMap(p=>p.events)??[];
+ const whole=useMemo(()=>new Map(data?.pages.flatMap(p=>p.whole.map(c=>[c.commit,c] as const))??[]),[data]);
  const first=data?.pages[0];
  if(!head) return <PageState kind="empty" title={t('history.emptyTitle')} description={t('history.emptyDescription')}/>;
  if(query.isPending||(!data&&!query.error)) return <RequestState/>;
  if(query.error&&!first) return <RequestState error={query.error} retry={()=>{void query.refetch();}}/>;
  return <VStack gap={0}>
   {!filtering&&<WorkingEntry session={session}/>}
-  {!!events.length&&<ActivityTimeline events={events} features={features}/>}
+  {!!events.length&&<ActivityTimeline events={events} features={features} whole={whole}/>}
   {!events.length&&<PageState kind={filtering?'search':'empty'} title={t('history.emptyTitle')} description={filtering?t('history.changeFilters'):t('history.emptyDescription')}/>}
-  {first&&!!first.total&&<VStack gap={3} padding={5} className={styles.historyPagination}>
-   <Text type="supporting" color="secondary">{t('history.shown', { shown: events.length, total: first.total })} {query.hasNextPage?'':t('history.reachedEnd')}</Text>
+  {first&&!!first.commits&&<VStack gap={3} padding={5} className={styles.historyPagination}>
+   <Text type="supporting" color="secondary">{t('history.shown', { shown: whole.size, total: first.commits })} {query.hasNextPage?'':t('history.reachedEnd')}</Text>
    {query.hasNextPage&&<Button label={query.isFetchingNextPage?t('history.loadingMore'):query.isFetchNextPageError?t('history.retryMore'):t('history.loadMore')} isDisabled={query.isFetching} onClick={()=>{void query.fetchNextPage();}}/>}
   </VStack>}
  </VStack>;

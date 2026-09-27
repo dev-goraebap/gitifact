@@ -141,15 +141,25 @@ export async function serve(page: Page, data: Fixture) {
   });
   await page.route(url => url.pathname === '/api/v1/history', route => {
     const q = new URL(route.request().url()).searchParams;
-    const matching = events.filter(e => (!q.get('kind') || e.types.includes(q.get('kind') as never)) && (!q.get('document') || e.kind === q.get('document'))
-      && (!q.get('feature') || e.before?.specId === q.get('feature') || e.after?.specId === q.get('feature')) && (!q.get('author') || e.email === q.get('author')) && (!q.get('id') || e.id === q.get('id'))
-      && (!q.get('q') || lower([e.id, e.before?.title, e.after?.title].join(' ')).includes(lower(q.get('q')!))));
+    const words = lower(q.get('q') ?? '').trim(); const target = q.get('target');
+    // The changes the filters are about: the target's documents, the kind, no record, the author, and words that name
+    // the document, one of its records or the commit's hash. A commit comes whole when it holds one.
+    const matching = events.filter(e => (!target || (target.startsWith('I-') ? e.id === target : e.before?.specId === target || e.after?.specId === target))
+      && (!q.get('document') || e.kind === q.get('document')) && (q.get('record') !== 'missing' || !e.records.length) && (!q.get('author') || e.email === q.get('author'))
+      && (!words || lower([e.id, e.before?.title, e.after?.title].join(' ')).includes(words)
+        || e.records.some(r => lower([r.title, r.id, ...r.sections.map(x => x.body)].join(' ')).includes(words))
+        || (/^[0-9a-f]{7,64}$/.test(words) && e.commit.startsWith(words))));
     // Whole commits, twenty at a time, each page after the last commit of the one before.
     const commits = [...new Set(matching.map(e => e.commit))];
     const start = q.get('after') ? commits.indexOf(q.get('after')!) + 1 : 0; const limit = Number(q.get('limit') ?? 20);
     const shown = commits.slice(start, start + limit);
-    return route.fulfill({ json: { contract: 'browser-history', version: 6, sessionId: session.sessionId, head: data.head, total: matching.length, commits: commits.length,
-      next: start + shown.length < commits.length ? shown[shown.length - 1] : null, events: matching.filter(e => shown.includes(e.commit)) } });
+    const whole = shown.map(commit => { const all = events.filter(e => e.commit === commit);
+      const ids = [...new Set(all.flatMap(e => e.records.map(r => r.id)))];
+      return { commit, documents: all.length, unrecorded: all.filter(e => !e.records.length).length,
+        records: ids.map(id => ({ id, documents: all.filter(e => e.records.some(r => r.id === id)).length })) }; });
+    return route.fulfill({ json: { contract: 'browser-history', version: 7, sessionId: session.sessionId, head: data.head, total: matching.length, commits: commits.length,
+      next: start + shown.length < commits.length ? shown[shown.length - 1] : null, events: matching.filter(e => shown.includes(e.commit)), whole,
+      kinds: [...new Set(events.map(e => e.kind))] } });
   });
   await page.route('**/api/v1/history/summary*', route => {
     const commits = [...new Set(events.map(e => e.commit))];

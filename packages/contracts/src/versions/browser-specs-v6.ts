@@ -107,13 +107,19 @@ const event = z.strictObject({ key: z.string(), commit: oid, date: z.string(), a
   before: reference, after: reference, records: z.array(record) });
 
 /**
- * Changes matching the query over the whole history of `head`, newest first, a page of whole commits: a commit is never
- * split between two pages. `next` is the last commit of this page, where the next one starts, or null at the end.
+ * The commits of `head`'s history that hold a change the query is about, newest first, a page of whole commits: a commit
+ * is never split between two pages. `events` are the changes the query is about; `whole` tells each commit of the page
+ * as it is, so a card counts what it leaves out. `next` is the last commit of this page, or null at the end.
  */
-export const browserHistoryV6 = z.strictObject({
-  contract: z.literal('browser-history'), version: z.literal(6), sessionId: z.string(), head: oid,
+export const browserHistoryV7 = z.strictObject({
+  contract: z.literal('browser-history'), version: z.literal(7), sessionId: z.string(), head: oid,
   // Matching changes and the commits that hold them in all of history, not in this page.
   total: z.number().int().nonnegative(), commits: z.number().int().nonnegative(), next: oid.nullable(), events: z.array(event),
+  // Every document and those no record explains, and each record with how many documents it explains, in commit order.
+  whole: z.array(z.strictObject({ commit: oid, documents: z.number().int().nonnegative(), unrecorded: z.number().int().nonnegative(),
+    records: z.array(z.strictObject({ id: z.string(), documents: z.number().int().positive() })) })),
+  // The kinds of document the history holds at all, so the filter offers a kind only when it can find something.
+  kinds: z.array(kind),
 });
 /** What the product overview draws from history: counts over all of it, its newest commits, and who committed most. */
 export const browserHistorySummaryV5 = z.strictObject({
@@ -143,7 +149,9 @@ export const browserSearchV3 = z.strictObject({
   groups: z.array(z.strictObject({ group: z.union([searchKind, z.literal('recent')]), total: z.number().int().nonnegative(), next: z.string().nullable(), hits: z.array(searchHit) })),
 });
 export type DocumentState = z.infer<typeof state>;
-export type BrowserHistoryV6 = z.infer<typeof browserHistoryV6>;
+export type BrowserHistoryV7 = z.infer<typeof browserHistoryV7>;
+/** One commit of a history page as a whole: what a card counts beside the changes the filters are about. */
+export type HistoryCommitSize = BrowserHistoryV7['whole'][number];
 export type BrowserHistorySummaryV5 = z.infer<typeof browserHistorySummaryV5>;
 export type BrowserSearchV3 = z.infer<typeof browserSearchV3>;
 export type SearchHit = z.infer<typeof searchHit>;
@@ -162,10 +170,11 @@ export type DesignSource = z.infer<typeof source>;
 const headQuery = oid;
 const count = (max: number) => z.string().regex(/^(0|[1-9]\d{0,6})$/).transform(Number).pipe(z.number().int().min(0).max(max));
 /** `/api/v1/history`: which HEAD, the commit the page starts after, how many commits, and the filters, all optional but the HEAD. */
-export const browserHistoryQueryV4 = z.strictObject({
+export const browserHistoryQueryV5 = z.strictObject({
   head: headQuery, after: oid.optional(), limit: count(50).pipe(z.number().min(1)).optional(),
-  kind: changeType.optional(), document: kind.optional(),
-  feature: z.string().regex(/^S-[a-z2-7]{10}$/).optional(), author: z.string().min(1).max(320).optional(), q: z.string().max(200).optional(),
+  // A feature or an instruction; `record=missing` keeps the changes no record explains.
+  target: z.string().regex(/^[SI]-[a-z2-7]{10}$/).optional(), document: kind.optional(), record: z.literal('missing').optional(),
+  author: z.string().min(1).max(320).optional(), q: z.string().max(200).optional(),
 });
 export const browserHistorySummaryQueryV1 = z.strictObject({ head: headQuery });
 const featureId = z.string().regex(/^S-[a-z2-7]{10}$/);

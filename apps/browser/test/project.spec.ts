@@ -37,11 +37,11 @@ test('load more retains rows, appends the next page and shows completion', async
  await mockApi(page, longHistory());
  await page.goto('/records');
  await expect(page.getByText('검색어 입력',{exact:true})).toBeVisible();
- await expect(page.getByText('전체 21건 중 20건을 보고 있습니다.',{exact:false})).toBeVisible();
+ await expect(page.getByText('커밋 21개 중 20개를 보고 있습니다.',{exact:false})).toBeVisible();
  await page.getByRole('button',{name:'이전 이력 더 보기',exact:true}).click();
  await expect(page.getByText('이전 검색 요구사항',{exact:true})).toBeVisible();
  await expect(page.getByText('검색어 입력',{exact:true})).toBeVisible();
- await expect(page.getByText('전체 21건 중 21건을 보고 있습니다. 마지막 이력까지 확인했습니다.')).toBeVisible();
+ await expect(page.getByText('커밋 21개 중 21개를 보고 있습니다. 마지막 이력까지 확인했습니다.')).toBeVisible();
  await expect(page.getByRole('button',{name:'이전 이력 더 보기',exact:true})).toHaveCount(0);
 });
 
@@ -269,12 +269,12 @@ test('a commit that cannot be read says so on its page instead of leaving it bla
 test('a filter and a search word find changes that were never loaded, with the whole count', async ({page}) => {
  await mockApi(page, longHistory());
  await page.goto('/records');
- await expect(page.getByText('전체 21건 중 20건을 보고 있습니다.',{exact:false})).toBeVisible();
+ await expect(page.getByText('커밋 21개 중 20개를 보고 있습니다.',{exact:false})).toBeVisible();
  await expect(page.getByText('이전 검색 요구사항',{exact:true})).toHaveCount(0);
  // The oldest commit is not on screen, and the word still finds it: the server searches all of history.
  await page.getByRole('textbox',{name:'검색',exact:true}).fill('이전 검색');
  await expect(page.getByText('이전 검색 요구사항',{exact:true})).toBeVisible();
- await expect(page.getByText('전체 1건 중 1건을 보고 있습니다.',{exact:false})).toBeVisible();
+ await expect(page.getByText('커밋 1개 중 1개를 보고 있습니다.',{exact:false})).toBeVisible();
 });
 
 test('a link to any commit opens its page, whether the list loaded it or not', async ({page}) => {
@@ -373,4 +373,48 @@ test('documents no record explains are cut to three like those under a record, a
  await expect(commits.first().getByRole('list', { name: '바뀐 문서', exact: true }).locator('> li')).toHaveCount(3);
  await commits.first().getByRole('link', { name: '문서 2건 더 →' }).click();
  await expect(page).toHaveURL(new RegExp('/records/commits/' + commit + '[?]tab=documents$'));
+});
+
+// One commit of two decisions and a document no record explains: a filter keeps the commit whole in its counts.
+function mixedCommit(){
+ const data=structuredClone(specs);const base=data.events[0]!;const commit='e'.repeat(40);
+ const a={id:'DR-aaaaaaaaaa',title:'레이아웃과 검색을 함께 바꿨다',sections:[{key:'decision' as const,body:'열 폭을 줄인다.'}]};
+ const b={id:'DR-bbbbbbbbbb',title:'이름 규칙을 정했다',sections:[{key:'decision' as const,body:'하이픈을 쓴다.'}]};
+ const change=(id:string,kind:'requirement'|'instruction'|'design',title:string,specId:string,records:typeof a[])=>({...base,commit,key:commit+':'+id,id,kind,types:['modified' as const],message:'여러 결정',
+  before:{id,title,specId,path:'.gitifact/x/'+id+'.md'},after:{id,title,specId,path:'.gitifact/x/'+id+'.md'},records});
+ data.events=[change('R-abcdefghij','requirement','검색어 입력','S-abcdefghij',[a]),change('I-bbbbbbbbbb','instruction','레이아웃 지침','instruction',[a]),
+  change('I-cccccccccc','instruction','이름 규칙','instruction',[b]),change('D-abcdefghij','design','검색 설계','S-abcdefghij',[]),...data.events];
+ return data;
+}
+test('a filtered commit shows the decisions about its target and counts the rest of the commit', async ({page}) => {
+ await mockApi(page, mixedCommit());
+ await page.goto('/records?target=I-bbbbbbbbbb');
+ const card=page.getByRole('listitem').filter({hasText:'eeeeeee'});
+ await expect(card.getByRole('link',{name:'레이아웃과 검색을 함께 바꿨다'})).toBeVisible();
+ await expect(card.getByRole('link',{name:'레이아웃 지침'})).toBeVisible();
+ await expect(card.getByRole('link',{name:'검색어 입력'})).toHaveCount(0);
+ // The commit is counted whole: its two records and four documents, the rest named by where they are read.
+ await expect(card).toContainText('기록 2건');await expect(card).toContainText('문서 4건');
+ await expect(card.getByRole('link',{name:'이 결정의 다른 문서 1건 →'})).toHaveAttribute('href',/\/records\/DR-aaaaaaaaaa$/);
+ await expect(card.getByRole('link',{name:'이 커밋의 다른 결정기록 1건 →'})).toHaveAttribute('href',/tab=records/);
+ await expect(card.getByRole('link',{name:'결정기록 없는 문서 1건 →'})).toHaveAttribute('href',/tab=documents/);
+ await expect(page.getByText('커밋 1개 중 1개를 보고 있습니다.',{exact:false})).toBeVisible();
+ // The document no record explains is found by the record filter, the records of its commit counted beside it.
+ await page.goto('/records?record=missing');
+ await expect(card.getByRole('link',{name:'검색 설계'})).toBeVisible();
+ await expect(card.getByRole('link',{name:'이 커밋의 다른 결정기록 2건 →'})).toBeVisible();
+ // A word in a record finds that record and every document it explains.
+ await page.goto('/records?q=하이픈');
+ await expect(card.getByRole('link',{name:'이름 규칙',exact:true})).toBeVisible();
+ await expect(card.getByRole('link',{name:'이 커밋의 다른 결정기록 1건 →'})).toBeVisible();
+ // No wiki page is in this history, so the kind filter does not offer one.
+ await page.getByRole('combobox',{name:'문서 종류'}).click();
+ await expect(page.getByRole('option',{name:'지침'})).toBeVisible();
+ await expect(page.getByRole('option',{name:'위키 페이지'})).toHaveCount(0);
+ // A feature's history is the list with that feature as its target.
+ await page.keyboard.press('Escape');await page.goto('/features/S-abcdefghij');
+ await page.getByRole('link',{name:'이 기능의 변경 이력 →'}).click();
+ await expect(page).toHaveURL(/\/records\?target=S-abcdefghij$/);
+ await expect(card.getByRole('link',{name:'검색어 입력'})).toBeVisible();
+ await expect(card.getByRole('link',{name:'이 커밋의 다른 결정기록 1건 →'})).toBeVisible();
 });

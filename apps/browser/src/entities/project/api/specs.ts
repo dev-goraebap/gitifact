@@ -1,12 +1,12 @@
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
-import { browserCheckoutV1, browserFeaturesV1, browserFeatureV1, browserInstructionsV1, browserContributorsV1, browserContributorV1, browserHistoryV6, browserHistorySummaryV5, browserSearchV3, browserCommitFilesV2, browserCommitFileV1, browserCommitV4, browserCommitChangeV1, browserInstructionFileV1,
+import { browserCheckoutV1, browserFeaturesV1, browserFeatureV1, browserInstructionsV1, browserContributorsV1, browserContributorV1, browserHistoryV7, browserHistorySummaryV5, browserSearchV3, browserCommitFilesV2, browserCommitFileV1, browserCommitV4, browserCommitChangeV1, browserInstructionFileV1,
   browserRecordV2, browserDocumentHistoryV1, browserStampV1, browserWorkingV1, browserWorkingChangeV1, type BrowserSessionV3 } from '@gitifact/contracts';
 import { requestJson, ApiError } from '../../../shared/api/client';
 import { httpFailure } from './repository';
 import { t } from '../../../shared/i18n';
 
 /** Filters the server applies to the whole of history. */
-export interface HistoryFilter { kind?: string | undefined; document?: string | undefined; feature?: string | undefined; author?: string | undefined; q?: string | undefined }
+export interface HistoryFilter { target?: string | undefined; document?: string | undefined; record?: string | undefined; author?: string | undefined; q?: string | undefined }
 
 // Reads one API answer, checks its shape and that it came from this server session.
 async function read<T extends { sessionId: string }>(session: BrowserSessionV3, path: string, schema: { safeParse(v: unknown): { success: true; data: T } | { success: false } }, signal?: AbortSignal): Promise<T> {
@@ -105,18 +105,19 @@ export const workingChangeOptions = (session: BrowserSessionV3, id: string) => q
 });
 
 /**
- * Changes of `head`'s history that match the filters, twenty commits at a time, each commit whole. The server filters
- * and counts over all of history, so a filter finds what was never loaded and `total` is the whole count. Each page
- * starts after the last commit of the one before. A HEAD's history never changes, so its pages are kept for the session.
+ * The commits of `head`'s history that hold a change the filters are about, twenty at a time, each with those changes and
+ * its size as a whole. The server filters and counts over all of history, so a filter finds what was never loaded and
+ * `commits` is the whole count. Each page starts after the last commit of the one before. A HEAD's history never
+ * changes, so its pages are kept for the session.
  */
 export const historyOptions = (session: BrowserSessionV3, head: string, filter: HistoryFilter, limit = 20) => infiniteQueryOptions({
-  queryKey: ['browser-history', 6, ...scope(session), head, filter, limit],
+  queryKey: ['browser-history', 7, ...scope(session), head, filter, limit],
   initialPageParam: undefined as string | undefined, staleTime: Infinity, retry: false,
   queryFn: ({ signal, pageParam }) => {
     const query = new URLSearchParams({ head, limit: String(limit) });
     if (pageParam) query.set('after', pageParam);
     for (const [key, value] of Object.entries(filter)) if (value) query.set(key, value);
-    return read(session, '/api/v1/history?' + query, browserHistoryV6, signal);
+    return read(session, '/api/v1/history?' + query, browserHistoryV7, signal);
   },
   getNextPageParam: last => last.next ?? undefined,
 });

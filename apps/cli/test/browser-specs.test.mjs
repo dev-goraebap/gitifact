@@ -118,9 +118,11 @@ test('the server refuses bad queries, missing sessions and other methods on ever
   assert.equal(await status('/api/v1/history?head=' + head + '&offset=0'), 400);
   // A cursor that is not a commit of this history is refused rather than read as the start.
   assert.equal(await status('/api/v1/history?head=' + head + '&after=' + '0'.repeat(40)), 404);
-  assert.equal(await status('/api/v1/history?head=' + head + '&kind=renamed'), 400);
+  assert.equal(await status('/api/v1/history?head=' + head + '&kind=created'), 400);
+  assert.equal(await status('/api/v1/history?head=' + head + '&record=present'), 400);
+  assert.equal(await status('/api/v1/history?head=' + head + '&target=R-aaaaaaaaaa'), 400);
   assert.equal(await status('/api/v1/history?head=' + head + '&unknown=1'), 400);
-  assert.equal(await status('/api/v1/history?head=' + head + '&kind=created&document=feature&limit=10&q=x'), 200);
+  assert.equal(await status('/api/v1/history?head=' + head + '&target=S-aaaaaaaaaa&document=feature&record=missing&limit=10&q=x'), 200);
   assert.equal(await status('/api/v1/history?head=' + head + '&id=R-aaaaaaaaaa'), 400);
   assert.equal(await status('/api/v1/history/summary?head=' + head), 200);
   assert.equal(await status('/api/v1/stamp'), 200);
@@ -168,9 +170,8 @@ test('filters and the search word apply to all of history, and the count is the 
   // Bob's changes are older than a first page of twenty commits, and the filter still finds them.
   assert.equal((await page({})).events.some(e => e.email === 'bob@example.invalid'), false);
   const bob = await page({ author: 'bob@example.invalid' }); assert.deepEqual([bob.total, bob.commits], [2, 1]);
-  assert.equal((await page({ feature: 'S-bbbbbbbbbb' })).total, 2);
-  assert.equal((await page({ kind: 'created' })).total, 4);
-  assert.equal((await page({ kind: 'modified' })).total, 59);
+  assert.equal((await page({ target: 'S-bbbbbbbbbb' })).total, 2);
+  assert.equal((await page({ unrecorded: true })).total, 63);
   assert.equal((await page({ document: 'feature' })).total, 2);
   assert.equal((await page({ document: 'wiki' })).total, 0);
   assert.equal((await page({ q: 'tags 요구' })).total, 1);
@@ -179,14 +180,45 @@ test('filters and the search word apply to all of history, and the count is the 
   assert.equal((await history.ofDocument(head, R)).length, 60);
   // Each filter's pages together are exactly the matching changes of the whole list.
   const created = []; let after;
-  do { const next = await history.commits(head, { kind: 'created' }, after, 1); created.push(...next.events); after = next.next ?? undefined; } while (after);
+  do { const next = await history.commits(head, { document: 'feature' }, after, 1); created.push(...next.events); after = next.next ?? undefined; } while (after);
   const everything = []; after = undefined;
   do { const next = await history.commits(head, {}, after, 50); everything.push(...next.events); after = next.next ?? undefined; } while (after);
-  assert.deepEqual(created.map(e => e.key), everything.filter(e => e.types.includes('created')).map(e => e.key));
+  assert.deepEqual(created.map(e => e.key), everything.filter(e => e.kind === 'feature').map(e => e.key));
   const summary = await history.summary(head);
   assert.equal(summary.total, 63); assert.deepEqual(summary.byType, { created: 4, modified: 59, moved: 0, deleted: 0 });
   assert.equal(summary.recent.length, 3); assert.equal(summary.recent[0].events[0].key, all.events[0].key);
   assert.deepEqual((await history.ofDocument(head, 'R-bbbbbbbbbb')).map(e => e.types), [['created']]);
+});
+
+test('a filter chooses commits by the changes it is about, and each commit comes with its size as a whole', async t => {
+  const { f, d } = await adopted(t);
+  d.feature('posts', S, { title: 'Posts' }); d.requirement('posts', 'save', R, { title: 'Save', body: 'First' });
+  d.feature('tags', 'S-bbbbbbbbbb', { title: 'Tags' }); d.requirement('tags', 'list', R2, { title: 'List', body: 'First' });
+  d.instruction('cli-rules', I, { title: 'CLI rules', body: 'First' }); f.commit('Add');
+  // One decision changes both features and the instruction; another changes only tags; the instruction also changes alone.
+  d.requirement('posts', 'save', R, { title: 'Save', body: 'Second' }); d.requirement('tags', 'list', R2, { title: 'List', body: 'Second' });
+  d.instruction('cli-rules', I, { title: 'CLI rules', body: 'Second' });
+  d.record({ id: 'DR-aaaaaaaaaa', docs: [R, I], reason: '저장 규칙을 바꿨다' }); d.record({ id: 'DR-bbbbbbbbbb', docs: [R2], reason: '목록 순서를 바꿨다' }); f.commit('Both');
+  d.instruction('cli-rules', I, { title: 'CLI rules', body: 'Third' }); f.commit('Rules only');
+  const { history } = openRecords(f.repo, f.env); const head = f.git(['rev-parse', 'HEAD']).stdout.trim();
+  const both = f.git(['rev-parse', 'HEAD~1']).stdout.trim();
+  const page = filter => history.commits(head, filter, undefined, 20);
+  const posts = await page({ target: S });
+  assert.deepEqual([posts.commits, posts.events.filter(e => e.commit === both).map(e => e.id)], [2, [R]]);
+  // The commit is counted whole: three documents, one of them without a record, and what each record explains.
+  assert.deepEqual(posts.whole.find(c => c.commit === both), { commit: both, documents: 3, unrecorded: 0,
+    records: [{ id: 'DR-aaaaaaaaaa', documents: 2 }, { id: 'DR-bbbbbbbbbb', documents: 1 }] });
+  // An instruction is a target too, by its own ID.
+  assert.deepEqual((await page({ target: I })).events.map(e => [e.id, e.commit === both]), [[I, false], [I, true], [I, false]]);
+  // The change no record explains is the instruction's last one; the first commit only added documents.
+  const bare = await page({ unrecorded: true });
+  assert.deepEqual([bare.commits, bare.events.filter(e => e.commit === head).map(e => e.id)], [2, [I]]);
+  // Words find a record's title or body and every document it explains, and a hash names its commit whole.
+  assert.deepEqual((await page({ q: '목록 순서' })).events.map(e => e.id), [R2]);
+  assert.deepEqual((await page({ q: 'dr-aaaaaaaaaa' })).events.map(e => e.id).sort(), [I, R].sort());
+  assert.equal((await page({ q: both.slice(0, 7) })).events.length, 3);
+  assert.equal((await page({ q: both.slice(0, 6) })).total, 0);
+  assert.deepEqual((await page({})).kinds.sort(), ['feature', 'instruction', 'requirement']);
 });
 
 test('the cache is kept between readers, grows with new commits, and rebuilds when damaged or of another format', async t => {
@@ -472,7 +504,7 @@ test('instructions and AGENTS.md come in the checkout, instructions in history, 
       { path: 'references/layers.md', size: layers.length, title: 'Layer rules', description: 'Which layer may call which. Read when adding a module.' }], false, true]]);
   assert.deepEqual([specs.agents.path, specs.agents.body, !!specs.agents.updatedAt], ['AGENTS.md', '# Agents\n\nRead the CLI rules first.\n', true]);
   const history = await get('/api/v1/history?head=' + head + '&document=instruction');
-  assert.deepEqual([history.status, history.body.version, history.body.events.map(e => [e.id, e.kind])], [200, 6, [['I-aaaaaaaaaa', 'instruction']]]);
+  assert.deepEqual([history.status, history.body.version, history.body.events.map(e => [e.id, e.kind])], [200, 7, [['I-aaaaaaaaaa', 'instruction']]]);
   const commit = await get('/api/v1/commit?commit=' + head);
   assert.deepEqual([commit.body.version, commit.body.changes.map(e => e.kind)], [4, ['instruction']]);
   assert.equal((await get('/api/v1/commit/change?commit=' + head + '&id=I-aaaaaaaaaa')).body.after.body, 'Rules about layers');
