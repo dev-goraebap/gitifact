@@ -343,3 +343,20 @@ test('the contributors come twenty at a time, most commits first, and read on', 
  await expect(cards).toHaveCount(23);
  await expect(page.getByRole('button',{name:'참여자 더 보기'})).toHaveCount(0);
 });
+
+test('an address with the start of a hash moves to the whole hash, and one naming no commit or several says so', async ({page}) => {
+ const data = longHistory(); const first = data.events[0]!;
+ await mockApi(page, data);
+ // Seven characters, as the search box and `git log --oneline` show a commit, keep the tab and the document named.
+ await page.goto('/records/commits/'+ first.commit.slice(0, 7) + '?tab=documents#' + first.id);
+ await expect(page).toHaveURL(new RegExp('/records/commits/'+ first.commit + '[?]tab=documents#' + first.id + '$'));
+ await expect(page.getByRole('article', { name: '커밋 상세' })).toContainText('검색어 입력');
+ // Twenty commits start with the same seven characters, and none with the other: the page says so and keeps the address.
+ for (const start of ['ddddddd', 'abcdef0', 'not-a-hash']) {
+  await page.goto('/records/commits/'+ start);
+  await expect(page.getByText('커밋을 찾을 수 없습니다')).toBeVisible();
+  await expect(page).toHaveURL(new RegExp('/records/commits/'+ start + '$'));
+ }
+ await page.getByRole('link', { name: '결정기록으로' }).click();
+ await expect(page).toHaveURL(/\/records$/);
+});

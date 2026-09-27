@@ -190,6 +190,20 @@ export const instructionFileOptions = (session: BrowserSessionV3, id: string, pa
   queryFn: ({ signal }) => read(session, '/api/v1/instructions/file?' + new URLSearchParams({ id, path }), browserInstructionFileV1, signal),
 });
 
+/**
+ * The whole hash of the one commit of HEAD whose hash starts with `prefix`, as the search box finds commits (seven
+ * characters or more); null when no commit or more than one does.
+ */
+export const commitNamedOptions = (session: BrowserSessionV3, prefix: string) => queryOptions({
+  queryKey: ['browser-commit-named', 1, ...scope(session), prefix],
+  staleTime: Infinity, retry: false,
+  queryFn: async ({ signal }) => {
+    const found = await read(session, '/api/v1/search?' + new URLSearchParams({ q: prefix, group: 'commit', limit: '2' }), browserSearchV3, signal);
+    const group = found.groups[0];
+    return group?.total === 1 ? group.hits[0]?.commit ?? null : null;
+  },
+});
+
 /** Records whose title, place or text holds the words: the current specs and instructions, then past changes of `head`. */
 /**
  * The search box's groups for some words (none for the documents touched most recently). With `more`, the next page

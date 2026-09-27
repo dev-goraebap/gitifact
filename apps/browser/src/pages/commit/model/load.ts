@@ -1,7 +1,8 @@
 import type { QueryClient } from '@tanstack/react-query';
 import type { BrowserSessionV3 } from '@gitifact/contracts';
-import { commitChangeOptions, commitFilesOptions, commitOptions, primeFrame, recordOptions, settle, workingChangeOptions, workingOptions } from '../../../entities/project';
+import { commitChangeOptions, commitFilesOptions, commitNamedOptions, commitOptions, primeFrame, recordOptions, settle, workingChangeOptions, workingOptions } from '../../../entities/project';
 import { prepareDiagrams } from '../../../shared/ui/document';
+import { isCommitStart, isWholeCommit } from './commit-address';
 
 /** The document a list opens on: the one the address names in its fragment, or the first. */
 const openedOf = (ids: string[], hash: string) => { const named = decodeURIComponent(hash); return ids.includes(named) ? named : ids[0]; };
@@ -14,10 +15,23 @@ async function primeCommitDocument(client: QueryClient, session: BrowserSessionV
   if (change) await prepareDiagrams([change.before?.body, change.after?.body]);
 }
 
+/**
+ * The whole hash an address's commit stands for: itself when whole, the one commit of HEAD a hash's start names, or
+ * nothing when the start names no commit or several.
+ */
+export async function wholeCommitOf(client: QueryClient, commit: string): Promise<string | undefined> {
+  if (isWholeCommit(commit)) return commit;
+  if (!isCommitStart(commit)) return undefined;
+  const { session } = await primeFrame(client);
+  if (!session) return undefined;
+  return await client.ensureQueryData(commitNamedOptions(session, commit.toLowerCase())).catch(() => null) ?? undefined;
+}
+
 /** Primes a commit's page: the frame, its first documents and source files, and the document its documents tab opens on. */
 export async function loadCommit(client: QueryClient, commit: string, tab: string | undefined, hash: string) {
   const { session } = await primeFrame(client);
-  if (!session) return;
+  // An address no whole hash stood for draws its not-found state and asks nothing.
+  if (!session || !isWholeCommit(commit)) return;
   const [documents] = await Promise.all([
     client.ensureInfiniteQueryData(commitOptions(session, commit)).catch(() => undefined),
     settle(client.ensureInfiniteQueryData(commitFilesOptions(session, commit))),

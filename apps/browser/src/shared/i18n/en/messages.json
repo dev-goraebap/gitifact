@@ -335,5 +335,8 @@
   "record.missing": "This commit does not hold that decision record.",
   "record.documents": "Documents this decision changed",
   "record.otherRecords": "{count} other records in this commit →",
-  "record.codeFiles": "Code changes in {count} files →"
+  "record.codeFiles": "Code changes in {count} files →",
+  "commit.notFoundTitle": "Commit not found",
+  "commit.notFoundDescription": "No commit in HEAD's history starts with {commit}, or more than one does. Try more of the hash.",
+  "commit.backToList": "Back to decision records"
 }

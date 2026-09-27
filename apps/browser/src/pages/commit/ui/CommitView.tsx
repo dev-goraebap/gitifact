@@ -18,6 +18,8 @@ import type { CommitSearch, CommitTab } from '../model/commit-search';
 import styles from './commit.module.css';
 import { PageState } from '../../../shared/ui/page-state';
 import { RequestState } from '../../../shared/ui/request-state';
+import { ApiError } from '../../../shared/api/client';
+import { CommitNotFound } from './CommitNotFound';
 import { t, useLanguage } from '../../../shared/i18n';
 
 /**
@@ -38,6 +40,7 @@ export function CommitView({ commit, search, documentId, session, features, head
   const tab: CommitTab = search.tab ?? (documentId || !recorded.length ? 'documents' : 'records');
   // An address typed or shared from outside names its section before the page has drawn it, so the page lands on it.
   useEffect(() => { if (data && documentId && tab === 'documents') document.getElementById(documentId)?.scrollIntoView({ block: 'start' }); }, [data, documentId, tab]);
+  if (query.error instanceof ApiError && query.error.code === 'NOT_FOUND') return <CommitNotFound commit={commit}/>;
   if (query.error) return <RequestState error={query.error} retry={() => { void query.refetch(); }}/>;
   if (!data) return <RequestState/>;
   const bare = groups.find(group => !group.record && group.missing);

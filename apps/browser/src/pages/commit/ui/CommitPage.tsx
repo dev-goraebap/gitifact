@@ -1,6 +1,8 @@
 import { useLocation } from '@tanstack/react-router';
 import { RecordsPage } from '../../../widgets/records-page';
 import { CommitView } from './CommitView';
+import { CommitNotFound } from './CommitNotFound';
+import { isWholeCommit } from '../model/commit-address';
 import type { CommitSearch } from '../model/commit-search';
 import { PageHeader } from '../../../widgets/page-header';
 import { t, useLanguage } from '../../../shared/i18n';
@@ -14,6 +16,6 @@ export function CommitPage({ commit, search }: { commit: string; search: CommitS
   const documentId = useLocation({ select: location => location.hash }) || undefined;
   return <RecordsPage header={PageHeader} title={t('nav.history')} root="/records" hasTitle={false} isWide
     trail={() => [{ label: commit.slice(0, 12) }]}>
-    {({ checkout, session }) => <CommitView commit={commit} search={search} documentId={documentId} session={session} features={checkout.index.features} head={checkout.head}/>}
+    {({ checkout, session }) => !isWholeCommit(commit) ? <CommitNotFound commit={commit}/> : <CommitView commit={commit} search={search} documentId={documentId} session={session} features={checkout.index.features} head={checkout.head}/>}
   </RecordsPage>;
 }
