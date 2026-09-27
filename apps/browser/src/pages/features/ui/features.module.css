@@ -33,10 +33,6 @@
 /* Every requirement and design title is drawn across with a highlighter, so each section stands apart at a glance. */
 .titleMark { background:none; color:inherit; background-image:linear-gradient(transparent 55%, var(--color-background-yellow) 55%, var(--color-background-yellow) 94%, transparent 94%); padding-inline:.15em; box-decoration-break:clone; -webkit-box-decoration-break:clone; }
 .requirementSection[aria-current] { scroll-margin-top:calc(var(--gitifact-topbar-height) + var(--spacing-5)); }
-/* The section a link brought the reader to lies on the same hatching as the feature rows of the list. The padding is
-   taken back by a negative margin so the text stays in line with the sections around it. */
-.requirementSection[aria-current] { background-image:repeating-linear-gradient(-45deg, var(--color-background-muted) 0 1px, transparent 1px 7px);
-  margin-inline:calc(-1 * var(--spacing-4)); padding-inline:var(--spacing-4); }
 .requirementSection p,.requirementSection li { line-height:1.9; }
 .documentHeading a { font-size:.8125rem; }
 .requirementRelations { padding-block-start:var(--spacing-2); }

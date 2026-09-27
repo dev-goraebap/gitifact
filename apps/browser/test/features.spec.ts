@@ -215,15 +215,14 @@ test('a requirement is a row under its feature and opens on its own section', as
   await expect(page).toHaveURL(/#R-bbbbbbbbbc$/);
   const section = page.locator('#R-bbbbbbbbbc');
   await expect(section).toHaveAttribute('aria-current', 'location');
-  // Every title carries the highlighter; the section the link named is the one on hatching.
+  // Every title carries the highlighter; the section the link named is where the page starts, with no mark of its own.
   await expect(section.locator('mark')).toHaveText('알림 끄기');
   await expect(page.locator('[aria-current=location]')).toHaveCount(1);
   await expect(page.locator('#R-bbbbbbbbbb mark')).toHaveText('알림 표시');
-  await expect(section).toHaveCSS('background-image', /repeating-linear-gradient/);
-  await expect(page.locator('#R-bbbbbbbbbb')).toHaveCSS('background-image', 'none');
+  await expect(section).toHaveCSS('background-image', 'none');
 });
 
-test('a fragment typed from outside lands on its section, and only that one lies on hatching', async ({ page }) => {
+test('a fragment typed from outside lands on its section, the one section marked current', async ({ page }) => {
   const long = structuredClone(many);
   long.features[1]!.requirements = long.features[1]!.requirements.map(r => ({ ...r, body: (r.body + ' 본문이 한 화면을 넘도록 길게 이어집니다.').repeat(40) }));
   await mockApi(page);

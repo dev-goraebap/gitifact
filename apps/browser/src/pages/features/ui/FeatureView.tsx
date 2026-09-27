@@ -206,7 +206,7 @@ function FeatureDetail({ feature: selected, features, search, change }: { featur
         return <VStack key={r.id} id={r.id} gap={4} className={styles.requirementSection} data-state={r.state === 'committed' ? undefined : r.state} {...(r.id === target ? { 'aria-current': 'location' as const } : {})}>
           <VStack gap={2}>
             <HStack gap={2} vAlign="center"><NumberLine label={t('features.requirementNumber', { number: number(index) })} id={r.id}/><StateToken state={r.state}/></HStack>
-            {/* Every title carries the highlighter; the one the reader was sent to lies on hatching instead (the section above). */}
+            {/* Every title carries the highlighter; the section the reader was sent to is where the page starts, unmarked. */}
             <Heading level={3}><mark className={styles.titleMark} data-state-title>{r.title}</mark></Heading>
           </VStack>
           {/* Each requirement is its own file one folder below index.md; its links start from there. */}
