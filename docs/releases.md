@@ -466,3 +466,17 @@ main을 02f2e86까지 푸시하고, 릴리스 커밋 02f2e86에 주석 태그 v0
 새 임시 폴더에 레지스트리의 0.8.5를 설치해 version을 확인했고, 설치된 CLI의 SHA-256이 검증 빌드와 같다. 사용자 프로젝트와 전역 설치는 바꾸지 않았다.
 
 릴리스 커밋 ac85b55에 주석 태그 v0.8.5를 만들었다. 이 게시 결과를 남기는 후속 문서 커밋으로 태그를 옮기지 않는다.
+
+## 0.8.6 배포 준비
+
+2026-09-28, 0.8.5 뒤의 변경을 0.8.6으로 준비했다. 선택하는 유즈케이스 방식 요구사항(프론트매터 `style`, config `requirementStyle`, `specs new --style`, 흐름·경로·style 누락 경고, 브라우저의 유즈케이스 표지, 가이드 spec 절)과 요구사항 목록 항목의 줄 나눠 보이기다. browser-feature·commit-change·working-change 계약을 v2로, 캐시 형식을 12로 올렸다. 이 저장소는 `pnpm cli init`으로 config의 `cli`를 0.8.6에 맞췄고 `requirementStyle`은 남았다.
+
+릴리스 커밋 c0f9058로 만든 worktree(`C:\tmp\gitifact-086`)의 첫 검사에서 브라우저 타입 검사가 멈췄다. 유즈케이스 표지 테스트가 mock 타입에 없는 `style`을 썼기 때문이다. mock 타입을 고친 0adfda6에서 다시 검사했다. 두 번째 실행에서 CLI 테스트 하나("changes without a record…", 빈 커밋 판정)가 한 번 실패했으나 그 파일만 다섯 번 돌려 모두 통과했고, 세 번째 전체 실행에서 `pnpm check`가 통과했다(core 46, 계약 10, 소개 2, 브라우저 114, CLI 174, 패키지 오프라인 설치·실행). 그 실패의 원인은 확인하지 못했다. 모의 게시는 215개 파일, 압축 4,430,447바이트, integrity sha512-ouQJ8zhvKjOMWW/QCjDk4mD1wbHFfbEMbPhJeowMinV8c3o2VWo+NaqY5lbd9JzMK+nsmkxKTwiZ+ZkVHB0hRA==, shasum 788fe55b5dc88de2c54071a0024b8642f5a5a735이다. CLI 번들 SHA-256은 59d3a925d5b074519fd535c160eaa1c0c2eb5d6502f779407c3ab6c6f56f9a40이다.
+
+## 0.8.6 게시 결과
+
+2026-09-28, 사용자가 0adfda6의 worktree에서 `pnpm publish --access public --tag latest --no-git-checks`로 게시했다. 게시 직후 몇 분 동안 레지스트리가 404를 돌려주다가 latest가 0.8.6으로 반영됐다. integrity는 sha512-fBaiHPsof8+0BzxjgY/mhLG2mcsQDVoTlt5WslbF6HI/0GH9jeKWimr51KUp+8mpzJ0ZylIPlZLTsNxgp2r1XA==, shasum 65fdea522a0664acf0a92acbff863c201544ad6d로 모의 실행과 다르다. 레지스트리 압축 파일을 풀어 비교하니 파일 215개 중 dist 전체·README·LICENSE가 검증 빌드와 같고 package.json만 pnpm이 다시 쓴 형식이라 다르다(0.8.1·0.8.2와 같은 원인).
+
+새 임시 폴더에 레지스트리의 0.8.6을 설치해 version을 확인했고, 설치된 CLI의 SHA-256이 검증 빌드와 같다. 사용자 프로젝트와 전역 설치는 바꾸지 않았다.
+
+게시한 커밋 0adfda6에 주석 태그 v0.8.6을 만들었다. 릴리스 커밋 c0f9058과는 테스트 mock 타입만 다르다. 이 게시 결과를 남기는 후속 문서 커밋으로 태그를 옮기지 않는다.
