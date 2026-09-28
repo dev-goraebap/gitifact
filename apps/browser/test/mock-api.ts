@@ -42,7 +42,7 @@ export async function mockApi(page: Page, data: Fixture = specs) {
 
 /** A requirement or design as tests write it: paths, descriptions and order are filled in when left out. */
 type Standing = { state?: SpecFeature['state']; previousPath?: string };
-type LooseRequirement = { id: string; title: string; body: string; path?: string; description?: string; order?: number } & Standing;
+type LooseRequirement = { id: string; title: string; body: string; path?: string; description?: string; order?: number; style?: 'default' | 'usecase' } & Standing;
 type LooseDesign = { id?: string; title: string; body: string; requirements: string[]; sources: DesignSource[]; path?: string; description?: string; order?: number } & Standing;
 type LooseFeature = Omit<SpecFeature, 'requirements' | 'designs' | 'body' | 'state'> & Standing & { requirements: LooseRequirement[]; designs?: LooseDesign[]; design?: LooseDesign | undefined; body?: string };
 /** An instruction as tests write it: what is left out is filled in (no other files, never committed). */
