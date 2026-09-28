@@ -1,3 +1,14 @@
+## 0.8.6 - 2026-09-28
+### Added
+- Requirements can be written as use cases (optional). Put `style: usecase` in the frontmatter, write a basic flow and alternative flows (A1…) in the body, and give each acceptance criterion a `Path:` line naming the path it checks. A project that does not use it works as before ("Use-case style" in `guide show spec`).
+- With `"requirementStyle": "usecase"` written into `.gitifact/config.json`, `specs new requirement` writes a use-case skeleton and `style: usecase`. `--style usecase` or `--style default` makes one file differently. `init` and `update` neither write nor change the value.
+- `changes list` and `changes commit` warn `REQUIREMENT_FLOW_FORMAT` (no basic flow, sections out of order) and `REQUIREMENT_PATH_FORMAT` (no `Path:`, a flow that does not exist) for a use-case requirement changed in this work, and `REQUIREMENT_STYLE_MISSING` for a requirement without `style` in a project that writes use cases. They do not block a commit, and `check` does not give them.
+- The browser's feature page puts a "Use case" badge on the number line of a use-case requirement. A change comparison also shows a changed `style`.
+### Changed
+- The browser shows each line indented under a requirement's list item on its own line instead of joining them, so `Condition:` and `Expected:` no longer run together.
+- The history cache is rebuilt once; the first history read after updating takes a little longer.
+- Releases 0.8.5 and earlier cannot read a requirement with the `style` key. Have the team update to 0.8.6 before using use cases (the config's `cli` version notice tells them).
+
 ## 0.8.5 - 2026-09-27
 ### Added
 - The browser has a history page for one document (`/records/docs/<document ID>`). It shows every commit that changed the document, newest first, each record with its title and the start of its decision, and opens the context and alternatives in place. Links such as "Change history of this requirement →" on features, instructions and records lead there.

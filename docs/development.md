@@ -1,5 +1,11 @@
 # 개발 환경
 
+## 2026-09-28 유즈케이스 방식 요구사항(0.8.6 준비)
+
+0.8.5 뒤의 변경을 0.8.6으로 묶었다. 요구사항 목록 항목의 줄 나눠 보이기(`b5362ce`, DR-6loue3zli5)와 선택하는 유즈케이스 방식 요구사항(`c2dc8ef`, DR-qgjduifysd·DR-4kzcepxucn)이다. 그 전에 이 저장소의 11개 기능 요구사항을 기능마다 사용자 확인을 받아 유즈케이스로 바꿨다(`9c8985d`~`94676e5`, 문서만). browser-feature·commit-change·working-change 계약을 v2로, 캐시 형식을 12로 올렸다. `style` 키가 있는 요구사항은 0.8.5 이하가 `FRONTMATTER_UNKNOWN_KEY`로 막으므로 패치노트에 적었다.
+
+이 저장소는 config에 `"requirementStyle": "usecase"`를 두고 요구사항 52개에 `style: usecase`를 붙였다. `pnpm cli init`으로 `cli`를 0.8.6으로 올렸고 `requirementStyle`은 그대로 남았다.
+
 ## 2026-09-27 결정기록 필터·문서 이력·형식 경고·페이지 전환(0.8.5 준비)
 
 0.8.4 뒤의 브라우저·CLI 변경을 0.8.5로 묶었다. 짧은 해시 주소(`b1391f9`, DR-l7dl2pmkur), 체크아웃 재사용(`18b9fe4`, DR-bstiu25vgk), 문서 이력 페이지(`3a1c9d1`, DR-6uonka7nk7), 기록 없는 변경 3개 제한(`6457f05`, DR-pp4ykwqth7), 결정기록 목록의 커밋 단위 필터(`f3efb23`, DR-nntebi6s7k·DR-flibjifo6e·DR-xo376b3ape), `records list --q`의 검색창 필드(`0dce1c5`, DR-bznhoa4ouq), 이슈 dev-goraebap/gitifact#3·#4의 설계 overview 경고와 요구사항 형식(`27f0c1a`·`2c1b966`, DR-k2zln56pmf·DR-txarkhawi5·DR-4xdukvgxjn), 페이지 전환의 불투명 덮개와 문서 영역 교체(`e99746f`, DR-huhasrkgva·DR-dcmusvtxyw), 찾아온 절의 빗금 제거(`0923ccd`, DR-4of5y37sv4)다. `records list --q`가 커밋 메시지를 찾지 않게 된 것은 배포된 동작의 변경이라 패치노트 Changed에 적었다.
