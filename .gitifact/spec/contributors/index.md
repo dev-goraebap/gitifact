@@ -5,3 +5,14 @@ description: Git 작성자별로 참여한 기능과 활동을 보여 주는 참
 ---
 
 Git 이력의 작성자를 참여자로 보여 주고, 누가 어떤 기능의 변경에 참여했는지 따라가게 한다. 커밋 작성자를 요청자나 승인자로 단정하지 않는다.
+
+## 유즈케이스 모델
+
+```mermaid
+flowchart LR
+  member[프로젝트 참여자]
+  subgraph contributors[참여자 조회]
+    uc1([Git 작성자별 참여 조회])
+  end
+  member --- uc1
+```
