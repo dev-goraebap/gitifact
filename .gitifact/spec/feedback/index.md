@@ -5,3 +5,18 @@ description: Gitifact 자체의 버그와 개선 제안을 에이전트가 오�
 ---
 
 Gitifact를 쓰다가 만난 버그나 바라는 개선을 사용자가 대화에서 말하면, 에이전트가 이슈 초안을 쓰고 확인받아 Gitifact 오픈소스 저장소(`dev-goraebap/gitifact`)에 남긴다. 사용자 프로젝트의 요구사항이 아니라 Gitifact라는 도구에 대한 의견만 다룬다.
+
+## 유즈케이스 모델
+
+```mermaid
+flowchart LR
+  user[사용자]
+  agent[에이전트]
+  github[GitHub]
+  subgraph feedback[Gitifact 피드백]
+    uc1([대화에서 Gitifact 이슈 보내기])
+  end
+  user --- uc1
+  agent --- uc1
+  uc1 --- github
+```
