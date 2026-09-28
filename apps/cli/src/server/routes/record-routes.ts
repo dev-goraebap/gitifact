@@ -1,7 +1,7 @@
-import { browserCommitChangeQueryV1, browserCommitChangeV1, browserCommitQueryV3, browserCommitV4, browserCommitFileQueryV1, browserCommitFileV1, browserCommitFilesQueryV2, browserCommitFilesV2,
+import { browserCommitChangeQueryV1, browserCommitChangeV2, browserCommitQueryV3, browserCommitV4, browserCommitFileQueryV1, browserCommitFileV1, browserCommitFilesQueryV2, browserCommitFilesV2,
   browserHistoryQueryV5, browserHistorySummaryQueryV1, browserHistorySummaryV5, browserHistoryV7, browserCheckoutV1, browserFeaturesQueryV1, browserFeaturesV1,
-  browserFeatureQueryV1, browserFeatureV1, browserInstructionsV1, browserContributorsQueryV1, browserContributorsV1, browserContributorQueryV1, browserContributorV1, browserSearchQueryV2, browserSearchV3, browserInstructionFileQueryV1, browserInstructionFileV1,
-  browserDocumentHistoryQueryV1, browserDocumentHistoryV1, browserRecordQueryV1, browserRecordV2, browserStampV1, browserWorkingChangeQueryV1, browserWorkingChangeV1, browserWorkingV1 } from '@gitifact/contracts';
+  browserFeatureQueryV1, browserFeatureV2, browserInstructionsV1, browserContributorsQueryV1, browserContributorsV1, browserContributorQueryV1, browserContributorV1, browserSearchQueryV2, browserSearchV3, browserInstructionFileQueryV1, browserInstructionFileV1,
+  browserDocumentHistoryQueryV1, browserDocumentHistoryV1, browserRecordQueryV1, browserRecordV2, browserStampV1, browserWorkingChangeQueryV1, browserWorkingChangeV2, browserWorkingV1 } from '@gitifact/contracts';
 import { storeReader } from '../../adapters/git/store-reader.js';
 import { openCache } from '../../adapters/cache/index.js';
 import { readPendingRecords } from '../../adapters/git/pending-records.js';
@@ -55,7 +55,7 @@ export function recordRoutes(root: string, sessionId: string, env?: NodeJS.Proce
     route({ method: 'GET', path: '/api/v1/feature', session: true, query: browserFeatureQueryV1, unreadable, handle: async ({ query }) => {
       const feature = featureOf(await checkout.base(), query.id);
       if (!feature) throw new HttpError(404, 'NOT_FOUND', t('server.featureNotFound'));
-      return ok(browserFeatureV1.parse({ contract: 'browser-feature', version: 1, sessionId, feature }));
+      return ok(browserFeatureV2.parse({ contract: 'browser-feature', version: 2, sessionId, feature }));
     } }),
     route({ method: 'GET', path: '/api/v1/instructions', session: true, unreadable, handle: async () =>
       ok(browserInstructionsV1.parse({ contract: 'browser-instructions', version: 1, sessionId, ...await checkout.instructions() })) }),
@@ -99,7 +99,7 @@ export function recordRoutes(root: string, sessionId: string, env?: NodeJS.Proce
     route({ method: 'GET', path: '/api/v1/commit/change', session: true, query: browserCommitChangeQueryV1, unreadable, handle: async ({ query }) => {
       const change = await cache.history.commitChange(query.commit, query.id);
       if (!change) throw new HttpError(404, 'NOT_FOUND', t('server.commitNotFound'));
-      return ok(browserCommitChangeV1.parse({ contract: 'browser-commit-change', version: 1, sessionId, commit: query.commit, event: change.event, before: change.before, after: change.after }));
+      return ok(browserCommitChangeV2.parse({ contract: 'browser-commit-change', version: 2, sessionId, commit: query.commit, event: change.event, before: change.before, after: change.after }));
     } }),
     // A record's page names the record; which commit added it is read from the history of the HEAD the reader is on.
     route({ method: 'GET', path: '/api/v1/record', session: true, query: browserRecordQueryV1, unreadable, handle: async ({ query }) => {
@@ -120,7 +120,7 @@ export function recordRoutes(root: string, sessionId: string, env?: NodeJS.Proce
     route({ method: 'GET', path: '/api/v1/working/change', session: true, query: browserWorkingChangeQueryV1, unreadable, handle: async ({ query }) => {
       const change = await workingChange(working, query.id);
       if (!change) throw new HttpError(404, 'NOT_FOUND', t('server.workingChangeNotFound'));
-      return ok(browserWorkingChangeV1.parse({ contract: 'browser-working-change', version: 1, sessionId, ...change }));
+      return ok(browserWorkingChangeV2.parse({ contract: 'browser-working-change', version: 2, sessionId, ...change }));
     } }),
 
     // The source a commit changed beside its documents, read from Git when the commit or record page asks for it.

@@ -3,6 +3,7 @@ id: R-xqf3xsumye
 title: 기능별 현재 명세
 description: 기능별 최신 요구사항과 수용 조건을 함께 읽는다
 order: 30
+style: usecase
 ---
 
 프로젝트 참여자로서, 기능이 현재 어떤 동작을 요구하는지 이해하기 위해 기능별 최신 명세와 수용 조건을 함께 읽고 싶다.

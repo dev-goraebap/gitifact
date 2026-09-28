@@ -3,6 +3,7 @@ id: R-hcwqzzv3et
 title: 대화에서 Gitifact 이슈 보내기
 description: 사용자가 부탁하면 에이전트가 초안을 보여 주고 확인받은 뒤 Gitifact 저장소에 이슈를 남긴다
 order: 10
+style: usecase
 ---
 
 Gitifact를 쓰는 사용자로서, GitHub 이슈 양식을 따로 찾아 쓰지 않고도 도구의 버그와 개선 제안을 개발자에게 전하기 위해 대화에서 부탁하면 에이전트가 이슈를 대신 남겨 주기를 바란다.

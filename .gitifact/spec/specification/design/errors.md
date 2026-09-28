@@ -7,6 +7,7 @@ requirements:
   - R-uvehohexvw
   - R-rir7dn3eez
   - R-dzowfm436d
+  - R-hldv5qv3zr
 ---
 
 ## 검사
@@ -36,7 +37,7 @@ requirements:
 
 에셋은 `.gitifact/assets/**`이며 core `isAssetPath`(`formats/links.ts`)가 경로를 판정한다. 에셋 폴더 아래 경로는 파일 이름을 포함해 8단계, 전체 경로는 300자까지이고 `..`·역슬래시·콜론은 쓰지 못한다. 에셋은 파싱하지 않으며, `changes commit`의 선택 검사와 브라우저 서버의 제공이 같은 판정을 쓴다.
 
-본문 링크는 그 파일 기준 상대 경로다. CLI는 원문을 바꾸지 않고, 대상이 없는 링크를 경고하며 스킬 사이의 관계를 읽을 때 본다. 브라우저가 링크를 그리는 방식은 [브라우저 문서 설계](../../browser/design/document.md)를 따른다.
+본문 링크는 그 파일 기준 상대 경로다. CLI는 원문을 바꾸지 않고, 대상이 없는 링크를 경고하며 지침 사이의 관계를 읽을 때 본다. 브라우저가 링크를 그리는 방식은 [브라우저 문서 설계](../../browser/design/document.md)를 따른다.
 
 ```mermaid
 flowchart TD
@@ -49,7 +50,7 @@ flowchart TD
   O -->|아니요| M["MISSING_LINK_TARGET"]
 ```
 
-core `documentWarnings`(`use-cases/document-warnings.ts`)가 모든 문서 본문에서 `extractLinks`·`resolveLink`로 링크를 찾는다. 외부·절대 경로·앵커·메일 링크와 코드 펜스 안은 보지 않는다. "밖의 파일"은 `.gitifact` 밖에 있는 일반 파일이고, `.gitifact` 안의 문서도 에셋도 스킬 파일도 아닌 대상은 경고한다. 파일 존재 확인과 에셋 목록은 CLI 어댑터(`adapters/filesystem/document-warnings.ts`)가 맡으며, 심볼릭 링크는 목록에서 뺀다.
+core `documentWarnings`(`use-cases/document-warnings.ts`)가 모든 문서 본문에서 `extractLinks`·`resolveLink`로 링크를 찾는다. 외부·절대 경로·앵커·메일 링크와 코드 펜스 안은 보지 않는다. "밖의 파일"은 `.gitifact` 밖에 있는 일반 파일이고, `.gitifact` 안의 문서도 에셋도 지침 파일도 아닌 대상은 경고한다. 파일 존재 확인과 에셋 목록은 CLI 어댑터(`adapters/filesystem/document-warnings.ts`)가 맡으며, 심볼릭 링크는 목록에서 뺀다.
 
 | 경고 | 조건 |
 | :--- | :--- |
@@ -62,12 +63,15 @@ core `documentWarnings`(`use-cases/document-warnings.ts`)가 모든 문서 본�
 
 `check`는 문제 목록 뒤에 경고를 따로 보이고, `changes list`는 경고 수를 알린다.
 
-요구사항의 형식 경고는 core `requirementFormatWarnings`가 본문의 절 제목(`### 범위와 제약`·`### 수용 조건`, 영어 `Scope and constraints`·`Acceptance criteria`)으로 판정한다. `changes list`와 `changes commit`이 이번에 바뀐 요구사항에만 내고 줄마다 보인다. `check`는 내지 않는다. 기존 요구사항은 고칠 때 하나씩 새 형식으로 맞춘다.
+요구사항의 형식 경고는 core `requirementFormatWarnings`가 본문의 절 제목(`### 범위와 제약`·`### 수용 조건`, 영어 `Scope and constraints`·`Acceptance criteria`)으로 판정한다. `changes list`와 `changes commit`이 이번에 바뀐 요구사항에만 내고 줄마다 보인다. `check`는 내지 않는다. 기존 요구사항은 고칠 때 하나씩 새 형식으로 맞춘다. `style: usecase` 요구사항은 두 경고에 더해 유즈케이스 절(`사전 조건`·`기본 흐름`·`대체 흐름`·`사후 조건`, 영어 `Preconditions`·`Basic flow`·`Alternative flows`·`Postconditions`)과 수용 조건의 `경로:`(`Path:`)를 본다. 대체 흐름은 그 절에서 `- **A1.`처럼 시작하는 항목이고, 경로는 쉼표로 나눈 흐름 이름이다. 설정의 `requirementStyle`이 `usecase`면 `style`이 없는 요구사항도 알린다.
 
 | 경고 | 조건 |
 | :--- | :--- |
 | `REQUIREMENT_SCOPE_FORMAT` | 범위와 제약이 수용 조건 뒤에 있거나, `-` 항목과 그 아래 들여쓴 줄 밖의 문단이 있음 |
-| `REQUIREMENT_CRITERIA_FORMAT` | 수용 조건 아래에 번호 항목과 그 아래 들여쓴 줄 밖의 문단이나 다른 절이 있음 | 브라우저 서버는 `/api/v1/assets/<경로>`로 에셋을 제공한다. 이미지는 inline, 그 밖은 attachment다.
+| `REQUIREMENT_CRITERIA_FORMAT` | 수용 조건 아래에 번호 항목과 그 아래 들여쓴 줄 밖의 문단이나 다른 절이 있음 |
+| `REQUIREMENT_FLOW_FORMAT` | 유즈케이스 요구사항에 기본 흐름이 없거나, 범위와 제약·사전 조건·기본 흐름·대체 흐름·사후 조건·수용 조건의 순서가 다름 |
+| `REQUIREMENT_PATH_FORMAT` | 유즈케이스 요구사항의 수용 조건 항목에 `경로:` 줄이 없거나, 경로가 기본 흐름과 그 요구사항의 대체 흐름 밖을 가리킴 |
+| `REQUIREMENT_STYLE_MISSING` | 설정의 `requirementStyle`이 `usecase`인데 요구사항에 `style`이 없음 | 브라우저 서버는 `/api/v1/assets/<경로>`로 에셋을 제공한다. 이미지는 inline, 그 밖은 attachment다.
 
 > [!IMPORTANT]
 > 경고는 종료 코드를 바꾸지 않고 `changes commit`도 막지 않는다. 한도는 core 상수(`ASSET_SIZE_LIMIT`, `ASSETS_TOTAL_LIMIT`, `RECOMMENDED_ASSET_EXTENSIONS`)다.

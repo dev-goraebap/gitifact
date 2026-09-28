@@ -3,6 +3,7 @@ id: R-jsncmqoqjm
 title: 화면 모드와 색 조합 설정
 description: 밝은·어두운 모드와 색 조합을 골라 그 브라우저에만 저장한다
 order: 50
+style: usecase
 ---
 
 Gitifact 브라우저를 쓰는 사용자로서, 오래 읽어도 편한 화면으로 기록을 보기 위해 밝은·어두운 모드와 색 조합을 내 취향에 맞게 고르고 싶다.

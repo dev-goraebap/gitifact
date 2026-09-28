@@ -94,6 +94,7 @@
   "features.requirementCount": "Requirements: {count}",
   "features.requirementHistory": "Change history of this requirement →",
   "features.requirementNumber": "Requirement {number}",
+  "features.usecase": "Use case",
   "features.tab.design": "Design",
   "features.tab.requirements": "Requirements",
   "filters.allAuthors": "All authors",

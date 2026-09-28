@@ -47,7 +47,7 @@ const folderOf = (path: string) => path.startsWith(SPEC_ROOT + '/') ? path.split
 
 function snapshot(doc: Doc, specId: string): DocSnapshot {
   const base = { id: doc.id, kind: doc.kind, title: doc.title, description: doc.description, body: doc.body, specId, path: doc.path };
-  if (doc.kind === 'requirement') return { ...base, order: doc.order };
+  if (doc.kind === 'requirement') return { ...base, order: doc.order, ...(doc.style ? { style: doc.style } : {}) };
   if (doc.kind === 'design') return { ...base, order: doc.order, requirements: doc.requirements, sources: doc.sources };
   return base;
 }
@@ -66,7 +66,7 @@ function sideOf(files: Map<string, string>): Side {
   return { docs: new Map(docs.map(d => [d.id, snapshot(d, d.kind === 'wiki' || d.kind === 'instruction' ? d.kind : specIds.get(folderOf(d.path)!) ?? '')])), reasons };
 }
 const same = (a: DocSnapshot, b: DocSnapshot) => a.title === b.title && a.description === b.description && a.body === b.body
-  && a.order === b.order && JSON.stringify(a.requirements) === JSON.stringify(b.requirements) && JSON.stringify(a.sources) === JSON.stringify(b.sources);
+  && a.order === b.order && a.style === b.style && JSON.stringify(a.requirements) === JSON.stringify(b.requirements) && JSON.stringify(a.sources) === JSON.stringify(b.sources);
 /** Documents compared by ID: a new path is a move, any other difference a modification. */
 function compare(before: Side, after: Side) {
   const out: { id: string; kind: DocKind; types: ChangeType[]; before: DocSnapshot | null; after: DocSnapshot | null }[] = [];

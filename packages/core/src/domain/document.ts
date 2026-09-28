@@ -25,7 +25,14 @@ export type DocSource = { id: string; note?: string } | { title: string; url: st
 // `draft: true` marks a file `specs new` or `instructions new` made and the author has not finished; the check fails until the line is removed.
 interface DocBase { id: string; path: string; title: string; description: string; body: string; draft?: true }
 export interface FeatureDoc extends DocBase { kind: 'feature'; feature: string }
-export interface RequirementDoc extends DocBase { kind: 'requirement'; feature: string; order: number }
+/**
+ * How a requirement is written: `default` is story, scope and acceptance criteria; `usecase` adds the basic and
+ * alternative flows and gives each criterion the path it tests. Absent means default; `default` is written only where
+ * the project's `requirementStyle` is `usecase` and one requirement keeps the default shape.
+ */
+export const requirementStyles = ['default', 'usecase'] as const;
+export type RequirementStyle = typeof requirementStyles[number];
+export interface RequirementDoc extends DocBase { kind: 'requirement'; feature: string; order: number; style?: RequirementStyle }
 export interface DesignDoc extends DocBase { kind: 'design'; feature: string; order: number; requirements: string[]; sources: DocSource[] }
 /** A wiki page of a commit before 0.8.0, read for the history only; instructions replaced the wiki. */
 export interface WikiDoc extends DocBase { kind: 'wiki' }
@@ -54,7 +61,8 @@ export interface DocProblem { code: DocProblemCode; path: string; message: strin
 
 /** Findings the checks report without blocking a commit: broken relative links and assets outside the recommendations. */
 export const docWarningCodes = ['MISSING_LINK_TARGET', 'ASSET_SIZE', 'ASSET_EXTENSION', 'UNREFERENCED_ASSET', 'ASSETS_TOTAL_SIZE',
-  'DESIGN_OVERVIEW_LARGE', 'REQUIREMENT_SCOPE_FORMAT', 'REQUIREMENT_CRITERIA_FORMAT'] as const;
+  'DESIGN_OVERVIEW_LARGE', 'REQUIREMENT_SCOPE_FORMAT', 'REQUIREMENT_CRITERIA_FORMAT', 'REQUIREMENT_FLOW_FORMAT', 'REQUIREMENT_PATH_FORMAT',
+  'REQUIREMENT_STYLE_MISSING'] as const;
 export type DocWarningCode = typeof docWarningCodes[number];
 export interface DocWarning { code: DocWarningCode; path: string; message: string }
 export const docWarning = (code: DocWarningCode, path: string, values: Record<string, unknown> = {}): DocWarning => ({ code, path, message: t(`warn.${code}`, { path, ...values }) });

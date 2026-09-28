@@ -3,6 +3,7 @@ id: R-srbpytoxpj
 title: 옛 변경 이유 보존
 description: 결정기록 이전의 변경 이유는 과거 커밋에서 읽고 새 형식에는 남기지 않는다
 order: 50
+style: usecase
 ---
 
 기존 Gitifact 사용자로서, 결정기록으로 바뀐 뒤에도 전에 남긴 변경 이유를 이력에서 계속 보고 싶다.

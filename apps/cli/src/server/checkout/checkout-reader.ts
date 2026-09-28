@@ -40,7 +40,7 @@ function checkoutDocuments(states: DocumentStates, authors: Map<string, FolderAu
   const features = arranged.features.map(({ index, requirements, designs }) => {
     const entry = authors.get(folderOf(index.path));
     return { id: index.id, path: index.path, title: index.title, description: index.description, body: index.body, ...standing(index.id),
-      requirements: requirements.map(r => ({ id: r.id, path: r.path, title: r.title, description: r.description, order: r.order, body: r.body, ...standing(r.id) })),
+      requirements: requirements.map(r => ({ id: r.id, path: r.path, title: r.title, description: r.description, order: r.order, ...(r.style ? { style: r.style } : {}), body: r.body, ...standing(r.id) })),
       designs: designs.map(d => ({ id: d.id, path: d.path, title: d.title, description: d.description, order: d.order, body: d.body,
         requirements: d.requirements, sources: d.sources.map(source), ...standing(d.id) })),
       // Who committed to the feature folder, most first, and when it was last touched; nobody until first committed.

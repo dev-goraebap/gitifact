@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { classifyDocPath, parseDocumentFile, renderDocumentFile, INSTRUCTION_FILE, INSTRUCTIONS_ROOT, SPEC_ROOT, type DesignDoc, type Doc, type DocKind } from '@gitifact/core';
+import { classifyDocPath, parseDocumentFile, renderDocumentFile, INSTRUCTION_FILE, INSTRUCTIONS_ROOT, SPEC_ROOT, type DesignDoc, type Doc, type DocKind, type RequirementStyle } from '@gitifact/core';
 import { createDocumentFile, generateId } from '../adapters/filesystem/document-file.js';
 import { readInstructionFiles, type InstructionFile } from '../adapters/filesystem/instruction-folder.js';
 import { CommandError, section, text, type CommandResult } from './output.js';
@@ -110,10 +110,16 @@ function newPath(kind: NewKind, path: string): string {
  * `specs new` and `instructions new`: issues the ID, fills the frontmatter and writes a skeleton body with
  * `draft: true`, which the check refuses until the author has written the document and removed the line.
  */
-export async function createDocument(project: Project, kind: NewKind, path: string, options: { title: string; description: string }): Promise<CommandResult> {
+export async function createDocument(project: Project, kind: NewKind, path: string, options: { title: string; description: string; style?: RequirementStyle }): Promise<CommandResult> {
   for (const [field, value] of [['title', options.title], ['description', options.description]] as const) {
     if (/[\r\n]/.test(value)) throw new CommandError('INVALID_VALUE', t('docs.singleLine', { field }));
   }
+  if (options.style && kind !== 'requirement') throw new CommandError('INVALID_VALUE', t('docs.styleRequirementOnly'));
+  // A requirement takes the shape asked for, else the project's. `style: default` is written only in a project that
+  // writes use cases, where a requirement without the key is warned about; elsewhere the default needs no key.
+  const projectStyle = project.config.requirementStyle;
+  const style = kind === 'requirement' ? options.style ?? projectStyle ?? 'default' : undefined;
+  const styleKey = style === 'usecase' || (style === 'default' && projectStyle === 'usecase') ? { style } : {};
   const target = newPath(kind, path);
   const { documents } = await project.cache.documents.list();
   const taken = new Set(documents.map(d => d.id));
@@ -121,11 +127,12 @@ export async function createDocument(project: Project, kind: NewKind, path: stri
   const folder = target.slice(0, target.lastIndexOf('/') + 1);
   const siblings = documents.filter(d => (d.kind === 'requirement' || d.kind === 'design') && d.path.startsWith(folder) && !d.path.slice(folder.length).includes('/'));
   const order = Math.min(999999, Math.max(0, ...siblings.map(d => (d as { order: number }).order)) + 10);
-  const base = { id, path: target, title: options.title.trim(), description: options.description.trim(), body: skeleton[kind](), draft: true as const };
+  const body = style === 'usecase' ? t('docs.skeleton.requirementUsecase') : skeleton[kind]();
+  const base = { id, path: target, title: options.title.trim(), description: options.description.trim(), body, draft: true as const };
   const feature = target.split('/')[2]!;
   const doc: Doc = kind === 'feature' ? { kind, feature, ...base }
     : kind === 'instruction' ? { kind, name: path, ...base }
-    : kind === 'requirement' ? { kind, feature, order, ...base } : { kind, feature, order, requirements: [], sources: [], ...base };
+    : kind === 'requirement' ? { kind, feature, order, ...styleKey, ...base } : { kind, feature, order, requirements: [], sources: [], ...base };
   const rendered = renderDocumentFile(doc);
   // The same parser as every later read decides whether the title and description are acceptable.
   parseDocumentFile(target, rendered);

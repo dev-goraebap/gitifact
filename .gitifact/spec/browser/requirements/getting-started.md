@@ -3,6 +3,7 @@ id: R-m7fyerzqti
 title: 시작하기 안내
 description: 뷰어 안에서 도입과 사용법 안내를 선택한 언어로 읽는다
 order: 90
+style: usecase
 ---
 
 Gitifact 사용자로서, 도입과 개발 중 사용법을 선택한 언어로 확인하기 위해 브라우저 뷰어 안에서 시작하기 안내를 읽고 싶다.

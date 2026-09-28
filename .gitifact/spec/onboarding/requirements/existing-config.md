@@ -3,6 +3,7 @@ id: R-rmwolikuep
 title: 기존 설정과 명시적 전환
 description: 초기화 재실행과 형식 전환을 구분해 기존 기록과 설정을 지킨다
 order: 20
+style: usecase
 ---
 
 기존 Gitifact 또는 이전 형식의 프로젝트 사용자로서, 이미 쌓인 기록과 설정을 지키기 위해 초기화 재실행과 형식 전환을 구분하고 합의한 범위에서 전환하고 싶다.

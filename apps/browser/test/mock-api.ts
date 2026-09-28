@@ -121,7 +121,7 @@ export async function serve(page: Page, data: Fixture) {
   });
   await page.route(url => url.pathname === '/api/v1/feature', route => {
     const feature = checkout.features.find(f => f.id === new URL(route.request().url()).searchParams.get('id'));
-    return feature ? route.fulfill({ json: { contract: 'browser-feature', version: 1, sessionId: session.sessionId, feature } }) : route.fulfill({ status: 404, json: notFound });
+    return feature ? route.fulfill({ json: { contract: 'browser-feature', version: 2, sessionId: session.sessionId, feature } }) : route.fulfill({ status: 404, json: notFound });
   });
   await page.route(url => url.pathname === '/api/v1/instructions', route => route.fulfill({ json: { contract: 'browser-instructions', version: 1, sessionId: session.sessionId,
     instructions: [...checkout.instructions].sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0), agents: checkout.agents } }));
@@ -193,7 +193,7 @@ export async function serve(page: Page, data: Fixture) {
     const event = events.find(e => e.commit === commit && e.id === q.get('id'));
     if (!event) return route.fulfill({ status: 404, json: notFound });
     const side = (s: Side) => s && { kind: event.kind, description: '', ...s };
-    return route.fulfill({ json: { contract: 'browser-commit-change', version: 1, sessionId: session.sessionId, commit, event,
+    return route.fulfill({ json: { contract: 'browser-commit-change', version: 2, sessionId: session.sessionId, commit, event,
       before: side(changeBodies[event.key]?.before ?? (event.before && { ...event.before, body: '' })),
       after: side(changeBodies[event.key]?.after ?? (event.after && { ...event.after, body: '' })) } });
   });
@@ -208,7 +208,7 @@ export async function serve(page: Page, data: Fixture) {
     const change = working.current?.changes?.find(c => c.id === id); const sides = workingBodies[id];
     if (!change) return route.fulfill({ status: 404, json: notFound });
     const side = (s: Side) => s && { kind: change.kind, description: '', ...s };
-    return route.fulfill({ json: { contract: 'browser-working-change', version: 1, sessionId: session.sessionId, change, before: side(sides?.before ?? null), after: side(sides?.after ?? null) } });
+    return route.fulfill({ json: { contract: 'browser-working-change', version: 2, sessionId: session.sessionId, change, before: side(sides?.before ?? null), after: side(sides?.after ?? null) } });
   });
 
   // Which commit added a record: the first event that carries it.

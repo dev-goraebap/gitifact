@@ -94,6 +94,7 @@
   "features.requirementCount": "요구사항 {count}개",
   "features.requirementHistory": "이 요구사항의 변경 이력 →",
   "features.requirementNumber": "요구사항 {number}",
+  "features.usecase": "유즈케이스",
   "features.tab.design": "설계",
   "features.tab.requirements": "요구사항",
   "filters.allAuthors": "모든 작성자",

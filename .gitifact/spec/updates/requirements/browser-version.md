@@ -3,6 +3,7 @@ id: R-hlndpxflx7
 title: 브라우저의 현재 버전 표시
 description: 브라우저 화면에서 실행 중인 CLI 버전을 본다
 order: 20
+style: usecase
 ---
 
 Gitifact 브라우저를 쓰는 사용자로서, 지금 어떤 버전으로 보고 있는지 알기 위해 화면에서 실행 중인 CLI 버전을 확인하고 싶다.

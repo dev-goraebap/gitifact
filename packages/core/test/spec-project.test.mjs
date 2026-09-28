@@ -38,6 +38,16 @@ test('fields this CLI does not know are allowed; cli and language are checked wh
   for (const language of ['ja', 'KO', null]) {
     assert.throws(()=>parseManagedConfig(JSON.stringify({schemaVersion:3,baseline:empty,language})),{code:'INVALID_CONFIG',message:/language/});
   }
+  assert.equal(parseManagedConfig(JSON.stringify({schemaVersion:3,baseline:empty,requirementStyle:'usecase'})).requirementStyle, 'usecase');
+  for (const requirementStyle of ['UseCase', 'story', null]) {
+    assert.throws(()=>parseManagedConfig(JSON.stringify({schemaVersion:3,baseline:empty,requirementStyle})),{code:'INVALID_CONFIG',message:/requirementStyle/});
+  }
+});
+test('init and update keep the requirement style a project set by hand', () => {
+  // They settle cli and language; the style is written back as it was, after them.
+  const previous = JSON.stringify({schemaVersion:3,baseline:{kind:'empty'},requirementStyle:'usecase',cli:'0.8.5'});
+  const config = {...parseManagedConfig(previous), cli:'0.8.6', language:'ko'};
+  assert.deepEqual(JSON.parse(formatManagedConfig(config, previous)), {schemaVersion:3,baseline:{kind:'empty'},cli:'0.8.6',language:'ko',requirementStyle:'usecase'});
 });
 test('the written config keeps a fixed field order and the fields it does not know', () => {
   const config = {schemaVersion:3,baseline:{kind:'empty'},cli:'0.8.3',language:'ko'};

@@ -22,6 +22,7 @@ flowchart LR
     uc7([에셋 파일 관리])
     uc8([문서 사이의 상대 링크])
     uc9([관계와 상태로 문서 고르기])
+    uc10([유즈케이스 방식 요구사항])
   end
   member --- uc1
   member --- uc2
@@ -35,4 +36,6 @@ flowchart LR
   agent --- uc5
   agent --- uc6
   agent --- uc9
+  member --- uc10
+  agent --- uc10
 ```

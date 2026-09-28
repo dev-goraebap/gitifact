@@ -40,9 +40,9 @@ const recordLine = (r: DecisionRecord, changes: DocChange[]) => {
  * Format advice for the requirements these changes add or revise: a requirement is brought into the guide's shape when
  * it is worked on, not all at once, so `check` does not give it.
  */
-const formatWarnings = (changes: DocChange[], documents: readonly Doc[]) => {
+const formatWarnings = (changes: DocChange[], documents: readonly Doc[], project: Project) => {
   const touched = new Set(changes.map(c => c.id));
-  return documents.filter(d => touched.has(d.id)).flatMap(requirementFormatWarnings);
+  return documents.filter(d => touched.has(d.id)).flatMap(d => requirementFormatWarnings(d, project.config.requirementStyle));
 };
 const recordSummary = (r: DecisionRecord) => ({ id: r.id, title: r.title, docs: r.docs, path: r.path, ...(r.draft ? { draft: true } : {}) });
 
@@ -61,7 +61,7 @@ export const runChangesList = (options: { format: Format }, controls: AgentInput
   const withoutRecord = uncovered(changes, records); const sharedDocuments = shared(changes, records);
   const problems = [...working.problems, ...pending.problems, ...checked.problems];
   // Warnings do not stop the commit; they are counted here so a broken link shows up before it is committed.
-  const formats = formatWarnings(changes, checked.documents);
+  const formats = formatWarnings(changes, checked.documents, project);
   const warnings = [...await readDocumentWarnings(project.root, checked.documents), ...formats];
   // The input folder rides on the read an agent runs before committing; a failure only leaves it out.
   const inputs = await prepareAgentInputs(project.root, controls).catch(() => undefined);
@@ -145,7 +145,7 @@ export async function commitChanges(cwd: string, input: unknown, dryRun: boolean
   const split = changes.filter(c => c.previousPath !== undefined && !(selected.includes(c.path) && selected.includes(c.previousPath)));
   if (split.length) fail(t('commit.selectMove', { ids: split.map(c => c.id).join(', ') }));
   const withoutRecord = uncovered(changes, records);
-  const warnings = formatWarnings(changes, checked.documents);
+  const warnings = formatWarnings(changes, checked.documents, project);
 
   // Deleted files under the document folders are committed as deletions; everything else in .gitifact must be a store file.
   const status = (await git(['status', '--porcelain=v1', '-z', '--untracked-files=all', '--no-renames', '--', '.gitifact'])).toString('utf8').split('\0').filter(Boolean);

@@ -4,8 +4,11 @@ import { checkFields, aside, cursorGone, pageLine, selected, type ListOptions } 
 import { CommandError, runCommand, section, text, type Format } from './output.js';
 import { openProject } from './project.js';
 import { t } from '../shared/i18n/index.js';
+import { requirementStyles, type RequirementStyle } from '@gitifact/core';
 
 export const specKinds = ['feature', 'requirement', 'design'] as const;
+/** The shapes `specs new requirement --style` takes. */
+export const specStyles = requirementStyles;
 export const specSorts = ['order', 'title', 'updated'] as const;
 type SpecKind = typeof specKinds[number];
 const columns = ['id', 'kind', 'feature', 'path', 'title', 'description', 'order', 'draft', 'state', 'previousPath', 'requirements', 'sources', 'designs', 'updated', 'line'] as const;
@@ -72,6 +75,6 @@ export const runSpecsShow = (ids: string[], options: { format: Format; ref?: str
 });
 
 /** `specs new <kind> <path>`: a feature, requirement or design with an issued ID and a draft skeleton. */
-export const runSpecsNew = (kind: SpecKind, path: string, options: { format: Format; title: string; description: string }) => runCommand('specs', options.format, async () =>
+export const runSpecsNew = (kind: SpecKind, path: string, options: { format: Format; title: string; description: string; style?: RequirementStyle }) => runCommand('specs', options.format, async () =>
   createDocument(await openProject(process.cwd()), kind, path, options));
 

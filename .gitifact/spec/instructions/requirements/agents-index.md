@@ -3,6 +3,7 @@ id: R-hjteu77gki
 title: AGENTS.md가 알리는 지침
 description: 모든 세션이 읽는 AGENTS.md가 어떤 작업 때 어느 지침을 읽을지 알리고, 에이전트는 그때 그 지침을 읽는다
 order: 20
+style: usecase
 ---
 
 에이전트와 제품을 만드는 사용자로서, 긴 지침을 매 세션 싣지 않으면서도 에이전트가 알맞은 순간에 따르게 하기 위해 AGENTS.md에는 언제 무엇을 읽을지만 짧게 두고 지침 본문은 그때 읽게 하고 싶다.

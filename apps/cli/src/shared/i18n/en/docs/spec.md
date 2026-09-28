@@ -1,6 +1,6 @@
 ---
 title: Requirement format
-description: Feature and requirement files, frontmatter, user stories, scope and constraints and acceptance criteria, where quality targets go, creating, editing and moving
+description: Feature and requirement files, frontmatter, user stories, scope and constraints and acceptance criteria, the optional use-case style, where quality targets go, creating, editing and moving
 ---
 
 A feature is one folder, `.gitifact/spec/<feature>/`. The feature introduction is `index.md`, each requirement is its own `requirements/<slug>.md`, and the design is the files under `design/` (`gitifact guide show design`). Why a document changed is kept in records (`.gitifact/records/`, `gitifact guide show records`).
@@ -56,7 +56,7 @@ These IDs and sentences illustrate the structure and are not valid input. The bo
 - **`order`:** requirements only. Number them in the order of the feature's use; two in one feature may not share a number. `specs new` uses the folder's highest value plus 10, leaving room to insert between.
 - **Body:** required. Do not use a `#` heading or gitifact comments (`<!-- gitifact-… -->`). The body of a feature's `index.md` states in a paragraph or two what the feature is and where it ends.
 
-Put no other keys in the frontmatter. Relations between documents are expressed by a design's `requirements` and `sources`; the folder decides which feature a requirement belongs to.
+A requirement written as a use case also has `style` (see "Use-case style" below). Put no other keys in the frontmatter. Relations between documents are expressed by a design's `requirements` and `sources`; the folder decides which feature a requirement belongs to.
 
 Links to other documents are relative to this file (from a requirement to an asset: `../../../assets/flow.png`). The browser opens their destinations. `check` and `changes list` report a missing target as a `MISSING_LINK_TARGET` warning. Warnings do not block a commit.
 
@@ -109,6 +109,82 @@ Apply this to new requirements and those being revised for the current request. 
 
 System-wide quality targets (response time of every query, supported browsers, session expiry) are not repeated per requirement; gather them in one common feature. For example, `.gitifact/spec/quality/` holds one target per requirement, with what can be judged written as acceptance criteria. Do not put them in project instructions: instructions describe how to work, and what the product promises belongs in the specs.
 
+## Use-case style (optional)
+
+A requirement can also be written as a use case: it walks through the normal flow and every way it branches, and each acceptance criterion names the path it checks. If you do not use it, the default shape above stays as it is and this section can be skipped.
+
+- **Marker:** `style: usecase` in the requirement's frontmatter. Without it the requirement has the default shape.
+- **Project default:** write `"requirementStyle": "usecase"` into `.gitifact/config.json` by hand, and `specs new requirement` writes `style: usecase` and a use-case skeleton. `init` and `update` neither write nor change the value. To make one file differently, pass `--style usecase` or `--style default`.
+- **In a project with that value:** a changed requirement without `style` draws the `REQUIREMENT_STYLE_MISSING` warning. A requirement that keeps the default shape says `style: default`.
+
+```markdown
+---
+id: R-issued-by-the-CLI
+title: Deleting a post
+description: The author removes their own post
+order: 30
+style: usecase
+---
+
+As a post author, I want to delete my post so that I can take back something posted by mistake.
+
+### Scope and constraints
+
+- A deleted post stays in the trash for 30 days.
+
+### Basic flow
+
+1. The author chooses delete on the post.
+2. The system asks for confirmation.
+3. When the author confirms, the system moves the post to the trash.
+
+### Alternative flows
+
+- **A1. Not the author** (at step 1)
+  1. The delete button is not shown.
+- **A2. Confirmation cancelled** (at step 3)
+  1. The post stays as it is.
+
+### Acceptance criteria
+
+1. Path: Basic flow
+   Condition: The author confirms the deletion.
+   Expected: The post leaves the list and shows in the trash.
+2. Path: Basic flow, A2
+   Condition: The author cancels the confirmation.
+   Expected: The post stays.
+3. Path: A1
+   Condition: Another user opens the post.
+   Expected: There is no delete button.
+```
+
+The body runs: user story, `### Scope and constraints`, `### Preconditions`, `### Basic flow`, `### Alternative flows`, `### Postconditions`, `### Acceptance criteria`. The basic flow and the acceptance criteria are required; the rest only when needed.
+
+- **Basic flow:** the normal exchange between the actor and the system as numbered steps, one action per step.
+- **Alternative flows:** `- **A1. Situation** (at step N)`: a number, where it branches and from which step, with its steps below. Errors and exceptions go here too. Say so when a flow returns to the basic flow.
+- **Pre- and postconditions:** what must hold before it starts and after it ends, as `-` items.
+- **Acceptance criteria:** three lines per item, `Path:`, `Condition:` and `Expected:`. The path joins `Basic flow` and this requirement's alternative flow numbers with commas (for example `Path: Basic flow, A2`). Give every path at least one criterion.
+- **Scope:** write the flows as behavior the user can check; screen layout and APIs belong in the design (see "What stays out of a requirement" below). Implementation order and effort stay out of the requirement.
+
+For a use-case requirement changed in this commit, `changes list` and `changes commit` warn `REQUIREMENT_FLOW_FORMAT` when the basic flow is missing or the sections are out of order, and `REQUIREMENT_PATH_FORMAT` when a criterion has no `Path:` or names a flow that does not exist. As with the default shape, they do not stop the commit and `check` does not give them.
+
+A feature's `index.md` may draw its use-case model as a Mermaid flowchart: the actors, the feature's boundary (`subgraph`) and a use case per requirement, joined. It is optional and the CLI does not check it.
+
+````markdown
+## Use-case model
+
+```mermaid
+flowchart LR
+  writer[Post author]
+  subgraph posts[Posts]
+    uc1([Creating a post])
+    uc2([Deleting a post])
+  end
+  writer --- uc1
+  writer --- uc2
+```
+````
+
 ## What stays out of a requirement
 
 A requirement says what to build, as results the user can check. Keep the following in the design (ui, interface, data). In a requirement, every design or screen change would also change the requirement and add records.
@@ -119,6 +195,6 @@ A requirement says what to build, as results the user can check. Keep the follow
 
 Example: instead of "each row shows the applicant, period and status columns", write "the user can tell applications apart by applicant, period and status".
 
-Follow `gitifact guide show writing` for prose. Its style rules do not replace the user-story pattern and the condition/expected format above. Write project content in the project's language; the language of these instructions does not change it.
+Follow `gitifact guide show writing` for prose. Its style rules do not replace the user-story pattern and the acceptance criteria format above (condition/expected, with a path first in a use case). Write project content in the project's language; the language of these instructions does not change it.
 
 Refine the files during the conversation. When an existing requirement changes or one of several options is chosen, write a draft record then (`gitifact guide show records`). Simply adding a requirement needs no record. While changing code and tests, bring requirements into line with the final agreement.

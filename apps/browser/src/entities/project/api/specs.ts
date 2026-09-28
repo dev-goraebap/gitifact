@@ -1,6 +1,6 @@
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
-import { browserCheckoutV1, browserFeaturesV1, browserFeatureV1, browserInstructionsV1, browserContributorsV1, browserContributorV1, browserHistoryV7, browserHistorySummaryV5, browserSearchV3, browserCommitFilesV2, browserCommitFileV1, browserCommitV4, browserCommitChangeV1, browserInstructionFileV1,
-  browserRecordV2, browserDocumentHistoryV1, browserStampV1, browserWorkingV1, browserWorkingChangeV1, type BrowserSessionV3 } from '@gitifact/contracts';
+import { browserCheckoutV1, browserFeaturesV1, browserFeatureV2, browserInstructionsV1, browserContributorsV1, browserContributorV1, browserHistoryV7, browserHistorySummaryV5, browserSearchV3, browserCommitFilesV2, browserCommitFileV1, browserCommitV4, browserCommitChangeV2, browserInstructionFileV1,
+  browserRecordV2, browserDocumentHistoryV1, browserStampV1, browserWorkingV1, browserWorkingChangeV2, type BrowserSessionV3 } from '@gitifact/contracts';
 import { requestJson, ApiError } from '../../../shared/api/client';
 import { httpFailure } from './repository';
 import { t } from '../../../shared/i18n';
@@ -51,9 +51,9 @@ export const featuresOptions = (session: BrowserSessionV3, filter: FeatureFilter
 });
 /** One feature as written, with its requirements and designs. */
 export const featureOptions = (session: BrowserSessionV3, id: string) => queryOptions({
-  queryKey: ['browser-feature', 1, ...scope(session), id],
+  queryKey: ['browser-feature', 2, ...scope(session), id],
   staleTime: Infinity, retry: false,
-  queryFn: ({ signal }) => read(session, '/api/v1/feature?id=' + encodeURIComponent(id), browserFeatureV1, signal),
+  queryFn: ({ signal }) => read(session, '/api/v1/feature?id=' + encodeURIComponent(id), browserFeatureV2, signal),
 });
 /** Every instruction with its files, and AGENTS.md. */
 export const instructionsOptions = (session: BrowserSessionV3) => queryOptions({
@@ -99,9 +99,9 @@ export const workingOptions = (session: BrowserSessionV3) => queryOptions({
 
 /** One uncommitted change with the document at HEAD and as the file is now, read when the reader opens it. */
 export const workingChangeOptions = (session: BrowserSessionV3, id: string) => queryOptions({
-  queryKey: ['browser-working-change', 1, ...scope(session), id],
+  queryKey: ['browser-working-change', 2, ...scope(session), id],
   staleTime: Infinity, retry: false,
-  queryFn: ({ signal }) => read(session, '/api/v1/working/change?id=' + encodeURIComponent(id), browserWorkingChangeV1, signal),
+  queryFn: ({ signal }) => read(session, '/api/v1/working/change?id=' + encodeURIComponent(id), browserWorkingChangeV2, signal),
 });
 
 /**
@@ -162,9 +162,9 @@ export const commitOptions = (session: BrowserSessionV3, commit: string, record?
 
 /** One document a commit changed with the text on both sides, read from Git when the reader opens it. */
 export const commitChangeOptions = (session: BrowserSessionV3, commit: string, id: string) => queryOptions({
-  queryKey: ['browser-commit-change', 1, ...scope(session), commit, id],
+  queryKey: ['browser-commit-change', 2, ...scope(session), commit, id],
   staleTime: Infinity, retry: false,
-  queryFn: ({ signal }) => read(session, '/api/v1/commit/change?' + new URLSearchParams({ commit, id }), browserCommitChangeV1, signal),
+  queryFn: ({ signal }) => read(session, '/api/v1/commit/change?' + new URLSearchParams({ commit, id }), browserCommitChangeV2, signal),
 });
 
 /** A record of `head`'s history with the commit that added it. History of one HEAD never changes, so the answer is kept. */

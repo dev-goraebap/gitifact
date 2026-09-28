@@ -3,6 +3,7 @@ id: R-fqlesmxflt
 title: 문서 검색
 description: 기억나는 낱말 하나로 문서와 결정기록, 커밋을 바로 찾는다
 order: 80
+style: usecase
 ---
 
 문서를 찾는 참여자로서, 메뉴를 훑고 페이지를 열어 가며 뒤지지 않고 기억나는 낱말 하나로 바로 그 문서에 닿고 싶다.

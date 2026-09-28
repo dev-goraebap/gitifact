@@ -241,7 +241,7 @@ test('a list row carries no body; the text of a document is read once, when it i
  let reads = 0;
  await page.route(url => url.pathname === '/api/v1/commit/change', async route => { reads++;
   const event = specs.events[0]!;
-  await route.fulfill({json:{contract:'browser-commit-change',version:1,sessionId:specs.sessionId,commit:event.commit,event,
+  await route.fulfill({json:{contract:'browser-commit-change',version:2,sessionId:specs.sessionId,commit:event.commit,event,
    before:null,after:{id:'R-abcdefghij',kind:'requirement',title:'검색어 입력',description:'검색어 입력',body:'본문은 **열 때** 읽습니다.',specId:'S-abcdefghij',path:'.gitifact/spec/search/requirements/r-abcdefghij.md'}}}); });
  await page.goto('/records');
  await expect(page.getByRole('list',{name:'결정기록 목록'})).not.toContainText('본문은 열 때 읽습니다.');

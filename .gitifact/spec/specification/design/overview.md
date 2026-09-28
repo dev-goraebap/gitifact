@@ -12,6 +12,7 @@ requirements:
   - R-uvehohexvw
   - R-rir7dn3eez
   - R-dzowfm436d
+  - R-hldv5qv3zr
 ---
 
 ## 개요
@@ -63,17 +64,18 @@ erDiagram
 
 ## 프론트매터와 본문
 
-프론트매터 파서는 `key: value` 스칼라, 스칼라 목록, 평평한 맵 목록만 읽는 YAML의 엄격한 부분집합이다. 그 밖의 줄은 거부해, 손으로 고친 줄이 다른 뜻으로 읽히지 않게 한다. 렌더러는 키를 `id`·`title`·`description`·`order`·`requirements`·`sources`·`draft` 순으로 쓰고, `quoteScalar`가 그대로 두면 다르게 읽힐 값만 큰따옴표로 감싼다.
+프론트매터 파서는 `key: value` 스칼라, 스칼라 목록, 평평한 맵 목록만 읽는 YAML의 엄격한 부분집합이다. 그 밖의 줄은 거부해, 손으로 고친 줄이 다른 뜻으로 읽히지 않게 한다. 렌더러는 키를 `id`·`title`·`description`·`order`·`style`·`requirements`·`sources`·`draft` 순으로 쓰고, `quoteScalar`가 그대로 두면 다르게 읽힐 값만 큰따옴표로 감싼다.
 
 | 키 | 값 |
 | :--- | :--- |
 | `title`·`description` | 한 줄, 각각 200자·300자 이하 |
 | `order` | 0~999999 정수. 같은 기능·종류 폴더 안에서 겹치지 않는다 |
+| `style` | 요구사항만. `usecase`(유즈케이스 방식) 또는 `default`(기본 형식). 없으면 기본 형식이다. 그 밖의 값은 `FRONTMATTER_VALUE` |
 | `requirements` | 이 설계가 설명하는 R-ID 목록. 중복 불가 |
 | `sources` | 저장소 안 문서 `{id, note?}` 또는 외부 자료 `{title, url, note?}`(http·https). 값마다 500자 이하 |
 | `draft` | `true`만 쓴다 |
 
-본문은 비어 있으면 안 되고 `#` 제목과 gitifact HTML 주석을 쓰지 않는다. 코드 펜스 안의 줄은 이 검사에서 빼며, 닫히지 않은 펜스는 문제다. 요구사항 본문은 사용자 역할·목표·이유를 담은 사용자 스토리로 시작하고, 확정 제약은 그다음 범위와 제약 절에 `-` 목록으로, 조건과 기대 동작은 마지막 수용 조건 절에 번호 항목으로 둔다. 이 모양을 벗어난 요구사항은 고칠 때 경고한다([문서 검사와 에셋](errors.md)). 작성 방식은 `gitifact guide show spec`, 설계의 축과 파일 나누기는 `gitifact guide show design`이 안내하며, CLI는 사용자 스토리의 문형이나 의미를 검사하지 않는다.
+본문은 비어 있으면 안 되고 `#` 제목과 gitifact HTML 주석을 쓰지 않는다. 코드 펜스 안의 줄은 이 검사에서 빼며, 닫히지 않은 펜스는 문제다. 요구사항 본문은 사용자 역할·목표·이유를 담은 사용자 스토리로 시작하고, 확정 제약은 그다음 범위와 제약 절에 `-` 목록으로, 조건과 기대 동작은 마지막 수용 조건 절에 번호 항목으로 둔다. `style: usecase` 요구사항은 범위와 제약 뒤에 사전 조건·기본 흐름·대체 흐름·사후 조건을 두고, 수용 조건 항목마다 `경로:` 줄로 확인하는 경로를 적는다. 이 모양을 벗어난 요구사항은 고칠 때 경고한다([문서 검사와 에셋](errors.md)). 작성 방식은 `gitifact guide show spec`, 설계의 축과 파일 나누기는 `gitifact guide show design`이 안내하며, CLI는 사용자 스토리의 문형이나 의미를 검사하지 않는다.
 
 ## ID
 
@@ -96,7 +98,7 @@ flowchart TD
 | 단계 | 명령 | 하는 일 |
 | :--- | :--- | :--- |
 | 목록과 원문 읽기 | `specs list`, `specs show <ID…>` | 목록은 프론트매터만, `show`는 파일 원문과 가리키는·가리켜지는 문서 |
-| 새 문서 만들기 | `specs new <종류> <경로> --title … --description …` | ID 발급, 프론트매터와 종류별 본문 뼈대, `order`는 같은 폴더의 최댓값+10, `draft: true` |
+| 새 문서 만들기 | `specs new <종류> <경로> --title … --description …` | ID 발급, 프론트매터와 종류별 본문 뼈대, `order`는 같은 폴더의 최댓값+10, `draft: true`. 요구사항은 `--style` 또는 설정의 `requirementStyle`이 `usecase`면 유즈케이스 뼈대와 `style: usecase`를 쓴다 |
 | 파일 편집 | (직접 편집) | 본문을 채우고 `draft: true` 줄을 지운다 |
 | 검사 | `check` | [문서 검사와 에셋](errors.md) |
 | 커밋 | `changes commit` | 커밋 직전에 같은 검사를 다시 돌려 문제가 있으면 커밋하지 않는다 |

@@ -1,9 +1,9 @@
-import type { DocKind, RecordSectionKey } from '@gitifact/core';
+import type { DocKind, RecordSectionKey, RequirementStyle } from '@gitifact/core';
 
 /** One document at one side of a change: everything the detail shows. */
 export interface DocSnapshot {
   id: string; kind: DocKind; title: string; description: string; body: string; specId: string; path: string;
-  order?: number; requirements?: string[]; sources?: SnapshotSource[];
+  order?: number; style?: RequirementStyle; requirements?: string[]; sources?: SnapshotSource[];
 }
 /** A design source as the detail shows it: by ID in the current format, by title and path or URL in 0.7. */
 export interface SnapshotSource { id?: string; title?: string; path?: string; url?: string; note?: string }

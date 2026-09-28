@@ -3,6 +3,7 @@ id: R-rir7dn3eez
 title: 에셋 파일 관리
 description: 그림과 첨부 파일을 한곳에 모아 문서와 함께 저장소에 둔다
 order: 70
+style: usecase
 ---
 
 문서를 쓰는 사용자로서, 그림과 첨부 파일을 문서와 함께 저장소에 두기 위해 Markdown이 아닌 파일을 한곳에 모아 관리하고 싶다.

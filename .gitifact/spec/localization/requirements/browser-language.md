@@ -3,6 +3,7 @@ id: R-eeyxmpd37g
 title: 브라우저 언어 선택
 description: 브라우저 설정에서 화면과 안내의 표시 언어를 고른다
 order: 10
+style: usecase
 ---
 
 Gitifact 사용자로서, 익숙한 언어로 화면과 사용 안내를 읽기 위해 브라우저 설정에서 표시 언어를 고르고 싶다.

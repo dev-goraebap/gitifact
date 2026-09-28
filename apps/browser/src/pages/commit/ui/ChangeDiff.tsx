@@ -26,6 +26,7 @@ function fieldChanges(before: SpecSnapshot, after: SpecSnapshot, title: (id: str
   value('title', before.title, after.title);
   value('description', before.description, after.description);
   value('order', before.order?.toString() ?? '', after.order?.toString() ?? '');
+  value('style', before.style ?? '', after.style ?? '');
   list('requirements', before.requirements ?? [], after.requirements ?? [], id => id, title);
   list('sources', before.sources ?? [], after.sources ?? [], sourceKey, sourceName);
   value('path', before.path, after.path);

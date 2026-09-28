@@ -388,3 +388,14 @@ test('each part of an acceptance criterion reads on its own line, as the file wr
   // Three lines, not one run-on line: the item's text holds a break before each part that goes on.
   expect(await item.locator('br').count()).toBe(2);
 });
+
+test('a requirement written as a use case carries a badge on its number line, and one in the default shape none', async ({ page }) => {
+  const data = structuredClone(specs);
+  const [usecase, plain] = data.features[0]!.requirements;
+  usecase!.style = 'usecase';
+  await mockApi(page);
+  await serve(page, data);
+  await page.goto('/features/S-abcdefghij');
+  await expect(page.locator(`#${usecase!.id}`).getByText('유즈케이스', { exact: true })).toBeVisible();
+  if (plain) await expect(page.locator(`#${plain.id}`).getByText('유즈케이스', { exact: true })).toHaveCount(0);
+});

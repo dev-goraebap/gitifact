@@ -7,6 +7,7 @@ requirements:
   - R-qrny2tacwz
   - R-errzmn5edh
   - R-uvehohexvw
+  - R-hldv5qv3zr
 sources:
   - id: I-zdpwuta64o
     note: 명령과 출력 계약, 오류 코드
@@ -79,4 +80,4 @@ JSON은 `documents`(행 목록), `orphans`(`index.md`가 없는 기능 폴더), 
 
 `specs show <ID…>`는 파일 원문을 그대로 보이고, 이어서 그 문서가 가리키는 문서와 그 문서를 가리키는 설계를 제목과 함께 보인다. `--ref <커밋>`은 그 커밋의 원문과 관계를 읽는다. 지침 ID를 받으면 `UNKNOWN_DOCUMENT`로 거부하며 `instructions show`를 쓰라고 알린다.
 
-`specs new <종류> <경로> --title … --description …`의 종류는 `feature`·`requirement`·`design`이다. ID 발급, 프론트매터와 본문 뼈대, `order`, `draft: true`는 [개요](overview.md)의 작성 흐름을 따른다.
+`specs new <종류> <경로> --title … --description …`의 종류는 `feature`·`requirement`·`design`이다. ID 발급, 프론트매터와 본문 뼈대, `order`, `draft: true`는 [개요](overview.md)의 작성 흐름을 따른다. `--style usecase|default`는 요구사항에만 받고(다른 종류면 `INVALID_VALUE`), 없으면 `.gitifact/config.json`의 `requirementStyle`, 그것도 없으면 기본 형식이다. 유즈케이스면 `style: usecase`와 유즈케이스 뼈대를 쓴다. 기본 형식이면 `style` 키를 쓰지 않되, 설정이 `usecase`인 프로젝트에서는 `style: default`를 써서 키 누락 경고가 나지 않게 한다.

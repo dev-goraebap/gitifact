@@ -3,6 +3,7 @@ id: R-errzmn5edh
 title: 기능별 Markdown 명세
 description: 관련 요구사항을 기능별 Markdown 문서로 읽고 관리한다
 order: 10
+style: usecase
 ---
 
 프로젝트 참여자로서, 작업할 기능의 요구사항과 구현 방향을 함께 이해하기 위해 관련 명세를 기능별 Markdown 문서로 읽고 관리하고 싶다.

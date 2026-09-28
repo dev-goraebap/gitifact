@@ -3,6 +3,7 @@ id: R-lwzfbzmgi4
 title: 영문 기본 배포 문서
 description: 저장소와 npm의 README는 영어가 기본이고 한국어 원문으로 이동할 수 있다
 order: 40
+style: usecase
 ---
 
 Gitifact를 처음 접하는 사용자로서, 저장소나 npm에서 영어 안내를 읽고 필요하면 한국어 원문으로 이동하고 싶다.

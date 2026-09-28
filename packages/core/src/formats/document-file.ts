@@ -1,4 +1,4 @@
-import { DocumentError, docIdPattern, idPatternOf, reasonIdPattern, type Doc, type DocKind, type DocReason, type DocSource } from '../domain/document.js';
+import { DocumentError, docIdPattern, idPatternOf, reasonIdPattern, requirementStyles, type Doc, type DocKind, type DocReason, type DocSource, type RequirementStyle } from '../domain/document.js';
 import { parseFrontmatterBlock, renderFrontmatterBlock, type FrontFields } from './frontmatter.js';
 import { t } from '../shared/i18n/index.js';
 import { isRecordPath, RECORDS_ROOT } from './record-file.js';
@@ -81,7 +81,7 @@ export function classifyDocPath(path: string): DocPath {
 
 const KEYS: Record<DocKind, string[]> = {
   feature: ['id', 'title', 'description', 'draft'],
-  requirement: ['id', 'title', 'description', 'order', 'draft'],
+  requirement: ['id', 'title', 'description', 'order', 'style', 'draft'],
   design: ['id', 'title', 'description', 'order', 'requirements', 'sources', 'draft'],
   wiki: ['id', 'title', 'description', 'draft'],
   instruction: ['id', 'title', 'description', 'draft'],
@@ -157,7 +157,11 @@ export function parseDocumentFile(path: string, source: string): Doc {
   if (where.kind === 'feature') return { kind: 'feature', feature: where.feature, ...common };
   if (where.kind === 'wiki') return { kind: 'wiki', ...common };
   if (where.kind === 'instruction') return { kind: 'instruction', name: where.name, ...common };
-  if (where.kind === 'requirement') return { kind: 'requirement', feature: where.feature, order: order(), ...common };
+  if (where.kind === 'requirement') {
+    const style = fields.get('style');
+    if (style && (style.type !== 'scalar' || !(requirementStyles as readonly string[]).includes(style.value))) throw new DocumentError('FRONTMATTER_VALUE', path, t('doc.FRONTMATTER_VALUE', { path, value: 'style' }));
+    return { kind: 'requirement', feature: where.feature, order: order(), ...(style ? { style: style.value as RequirementStyle } : {}), ...common };
+  }
   const refs = fields.get('requirements');
   if (refs && (refs.type !== 'list' || refs.items.some(r => !idPatternOf('requirement').test(r)) || new Set(refs.items).size !== refs.items.length)) {
     throw new DocumentError('FRONTMATTER_VALUE', path, t('doc.FRONTMATTER_VALUE', { path, value: 'requirements' }));
@@ -186,6 +190,7 @@ export function renderDocumentFile(doc: Doc): string {
   const front = renderFrontmatterBlock([
     ['id', doc.id], ['title', doc.title], ['description', doc.description],
     ['order', doc.kind === 'requirement' || doc.kind === 'design' ? doc.order : undefined],
+    ['style', doc.kind === 'requirement' ? doc.style : undefined],
     ['requirements', doc.kind === 'design' ? doc.requirements : undefined],
     ['sources', doc.kind === 'design' ? doc.sources.map(s => ({ ...s })) as Record<string, string>[] : undefined],
     ['draft', doc.draft ? true : undefined],

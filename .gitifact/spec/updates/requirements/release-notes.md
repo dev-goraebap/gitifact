@@ -3,6 +3,7 @@ id: R-yrk7zcukqy
 title: 버전별 패치노트
 description: 버전마다 추가·변경·제거·수정된 내용을 시간순으로 본다
 order: 40
+style: usecase
 ---
 
 Gitifact를 업데이트한 사용자로서, 무엇이 달라졌는지 파악하기 위해 버전마다 추가·변경·제거·수정된 내용을 시간순으로 보고 싶다.

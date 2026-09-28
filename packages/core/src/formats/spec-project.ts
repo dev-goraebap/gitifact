@@ -1,3 +1,4 @@
+import { requirementStyles, type RequirementStyle } from '../domain/document.js';
 import { t } from '../shared/i18n/index.js';
 
 export type Baseline = { kind: 'empty' } | { kind: 'commit'; objectFormat: 'sha1' | 'sha256'; commit: string };
@@ -13,8 +14,10 @@ const PREVIOUS_SCHEMA_VERSION = 2;
 export const PROJECT_LANGUAGES = ['ko', 'en'] as const;
 export type ProjectLanguage = typeof PROJECT_LANGUAGES[number];
 // `cli` is the release the project was last set to and `language` the language of its agent block; `init` and `update`
-// write both. Neither is required, so a project made before 0.8.3 still reads.
-export interface SpecProjectConfig { schemaVersion: typeof SCHEMA_VERSION; baseline: Baseline; cli?: string; language?: ProjectLanguage }
+// write both. Neither is required, so a project made before 0.8.3 still reads. `requirementStyle` is how the project
+// writes its requirements, which `specs new` follows; the project sets it by hand and neither `init` nor `update`
+// writes it, so a project that does not use it keeps the config it had.
+export interface SpecProjectConfig { schemaVersion: typeof SCHEMA_VERSION; baseline: Baseline; cli?: string; language?: ProjectLanguage; requirementStyle?: RequirementStyle }
 /** A plain release number, the only form `cli` takes. */
 export const CLI_VERSION_PATTERN = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
 
@@ -64,6 +67,10 @@ export function parseManagedConfig(text: string): SpecProjectConfig {
     if (!PROJECT_LANGUAGES.includes(value.language as ProjectLanguage)) throw new InitError('INVALID_CONFIG', t('config.language', { languages: PROJECT_LANGUAGES.join(', ') }));
     config.language = value.language as ProjectLanguage;
   }
+  if ('requirementStyle' in value) {
+    if (!(requirementStyles as readonly unknown[]).includes(value.requirementStyle)) throw new InitError('INVALID_CONFIG', t('config.requirementStyle', { styles: requirementStyles.join(', ') }));
+    config.requirementStyle = value.requirementStyle as RequirementStyle;
+  }
   return config;
 }
 
@@ -72,9 +79,10 @@ export function formatManagedConfig(config: SpecProjectConfig, previous?: string
   let unknown: Record<string, unknown> = {};
   if (previous !== undefined) {
     const value: unknown = JSON.parse(previous);
-    if (object(value)) { const { schemaVersion: _s, baseline: _b, cli: _c, language: _l, ...rest } = value; unknown = rest; }
+    if (object(value)) { const { schemaVersion: _s, baseline: _b, cli: _c, language: _l, requirementStyle: _r, ...rest } = value; unknown = rest; }
   }
   const known = { schemaVersion: config.schemaVersion, baseline: config.baseline,
-    ...(config.cli === undefined ? {} : { cli: config.cli }), ...(config.language === undefined ? {} : { language: config.language }) };
+    ...(config.cli === undefined ? {} : { cli: config.cli }), ...(config.language === undefined ? {} : { language: config.language }),
+    ...(config.requirementStyle === undefined ? {} : { requirementStyle: config.requirementStyle }) };
   return JSON.stringify({ ...known, ...unknown }, null, 2) + '\n';
 }

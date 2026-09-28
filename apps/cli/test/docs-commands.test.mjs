@@ -190,6 +190,71 @@ test('the changes commands warn when a requirement they carry leaves the guide\'
   assert.deepEqual(f.ok(['check']).warnings.filter(w => w.code === 'DESIGN_OVERVIEW_LARGE'), []);
 });
 
+test('a project that writes use cases gets a use-case skeleton, and the changes commands check its flows and paths', t => {
+  const f = projectFixture(t); payment(f); f.commit('Add payment');
+  const codes = warnings => warnings.filter(w => w.code.startsWith('REQUIREMENT_')).map(w => w.code);
+  const config = join(f.repo, '.gitifact', 'config.json');
+  const setStyle = style => { const value = JSON.parse(readFileSync(config, 'utf8')); if (style) value.requirementStyle = style; else delete value.requirementStyle; writeFileSync(config, JSON.stringify(value, null, 2) + '\n'); };
+  const front = path => parseDocumentFile(path, readFileSync(join(f.repo, path), 'utf8'));
+  const body = (path, text) => writeFileSync(join(f.repo, path), readFileSync(join(f.repo, path), 'utf8').replace(/\n---\n\n[\s\S]*$/, '\n---\n\n' + text + '\n'));
+
+  // Without the setting nothing changes: the default skeleton, no style key, and no warning for a requirement without one.
+  const plain = f.ok(['specs', 'new', 'requirement', 'payment/plain', '--title', '기본', '--description', '기본 형식']);
+  assert.equal(front(plain.path).style, undefined); assert.doesNotMatch(readFileSync(join(f.repo, plain.path), 'utf8'), /### 기본 흐름/);
+  rmSync(join(f.repo, plain.path));
+  const asked = f.ok(['specs', 'new', 'requirement', 'payment/asked', '--title', '시험', '--description', '하나만 유즈케이스', '--style', 'usecase']);
+  assert.equal(front(asked.path).style, 'usecase');
+  rmSync(join(f.repo, asked.path));
+
+  setStyle('usecase');
+  const made = f.ok(['specs', 'new', 'requirement', 'payment/refund', '--title', '환불', '--description', '환불한다']);
+  const text = readFileSync(join(f.repo, made.path), 'utf8');
+  assert.match(text, /\nstyle: usecase\n/);
+  for (const heading of ['### 범위와 제약', '### 사전 조건', '### 기본 흐름', '### 대체 흐름', '### 사후 조건', '### 수용 조건']) assert.ok(text.includes(heading), heading);
+  // The skeleton is in shape: once the draft line is gone, it draws no warning.
+  writeFileSync(join(f.repo, made.path), text.replace('draft: true\n', ''));
+  assert.deepEqual(codes(f.ok(['changes', 'list']).warnings), []);
+  rmSync(join(f.repo, made.path));
+  // Keeping the default shape in such a project is said in the file, so it is not warned about.
+  const kept = f.ok(['specs', 'new', 'requirement', 'payment/kept', '--title', '유지', '--description', '기본 형식', '--style', 'default']);
+  assert.equal(front(kept.path).style, 'default');
+  rmSync(join(f.repo, kept.path));
+  assert.equal(f.run(['specs', 'new', 'design', 'payment/flow', '--title', '흐름', '--description', '처리', '--style', 'usecase', '--format', 'json']).status, 1);
+
+  // A requirement without the key, in a project that writes use cases, is told to say which it is.
+  body(paths.cancel, '구매자로서 결제를 취소하고 싶다.\n\n### 수용 조건\n\n1. 조건: 승인 후 3일에 취소합니다.\n   기대 동작: 취소됩니다.');
+  assert.deepEqual(codes(f.ok(['changes', 'list']).warnings), ['REQUIREMENT_STYLE_MISSING']);
+  const withStyle = style => writeFileSync(join(f.repo, paths.cancel), readFileSync(join(f.repo, paths.cancel), 'utf8').replace(/\norder: (\d+)\n(?:style: \w+\n)?/, `\norder: $1\nstyle: ${style}\n`));
+  withStyle('default');
+  assert.deepEqual(codes(f.ok(['changes', 'list']).warnings), []);
+
+  // A use case: the flows in order, a path on each criterion, naming flows that exist.
+  withStyle('usecase');
+  const flows = '### 기본 흐름\n\n1. 구매자가 취소를 누른다.\n2. 결제가 취소된다.\n\n### 대체 흐름\n\n- **A1. 기한이 지남** (1단계에서)\n  1. 취소를 거부한다.';
+  const story = '구매자로서 결제를 취소하고 싶다.\n\n### 범위와 제약\n\n- 취소는 승인 후 7일 안에만 된다.';
+  const criteria = paths => '### 수용 조건\n\n' + paths.map((p, i) => `${i + 1}. ${p}조건: 상황입니다.\n   기대 동작: 결과입니다.`).join('\n');
+  const edit = text => { const current = readFileSync(join(f.repo, paths.cancel), 'utf8'); writeFileSync(join(f.repo, paths.cancel), current.replace(/\n---\n\n[\s\S]*$/, '\n---\n\n' + text + '\n')); };
+  edit([story, flows, criteria(['경로: 기본 흐름\n   ', '경로: 기본 흐름, A1\n   '])].join('\n\n'));
+  assert.deepEqual(codes(f.ok(['changes', 'list']).warnings), []);
+  edit([story, criteria(['경로: 기본 흐름\n   '])].join('\n\n'));
+  assert.deepEqual(codes(f.ok(['changes', 'list']).warnings), ['REQUIREMENT_FLOW_FORMAT']);
+  edit([flows, story.replace(/^[^\n]+\n\n/, ''), criteria(['경로: 기본 흐름\n   '])].join('\n\n'));
+  assert.deepEqual(codes(f.ok(['changes', 'list']).warnings), ['REQUIREMENT_FLOW_FORMAT']);
+  edit([story, flows, criteria(['경로: 기본 흐름\n   ', ''])].join('\n\n'));
+  assert.deepEqual(codes(f.ok(['changes', 'list']).warnings), ['REQUIREMENT_PATH_FORMAT']);
+  edit([story, flows, criteria(['경로: 기본 흐름, A3\n   '])].join('\n\n'));
+  assert.deepEqual(codes(f.ok(['changes', 'list']).warnings), ['REQUIREMENT_PATH_FORMAT']);
+  // Advice for what is being revised: check does not give it.
+  assert.deepEqual(codes(f.ok(['check']).warnings), []);
+  // A style the CLI does not know is a problem, as is a project setting it does not know.
+  withStyle('story');
+  assert.equal(f.run(['check']).status, 1);
+  withStyle('usecase');
+  setStyle('stories');
+  assert.match(f.run(['check']).stderr, /INVALID_CONFIG/);
+  setStyle(undefined);
+});
+
 test('specs new and instructions new issue an ID and a draft skeleton that the check refuses until the draft line is gone', t => {
   const f = projectFixture(t);
   const feature = f.ok(['specs', 'new', 'feature', 'payment', '--title', '결제', '--description', '결제 승인과 취소']);

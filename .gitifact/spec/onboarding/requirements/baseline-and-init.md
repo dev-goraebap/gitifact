@@ -3,6 +3,7 @@ id: R-lpwtvv6ldp
 title: Git 기준선과 초기화
 description: Git 저장소에 도입 기준선을 두고 현재 작업을 보존하며 사용을 시작한다
 order: 10
+style: usecase
 ---
 
 기존 또는 새 프로젝트의 사용자로서, 현재 작업을 보존하면서 이후의 기록을 쌓기 위해 Git 저장소에 도입 기준선을 설정하고 Gitifact 사용을 시작하고 싶다.

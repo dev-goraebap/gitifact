@@ -43,7 +43,7 @@ function snapshot(doc: Doc, docs: Doc[]) {
   const folder = doc.path.split('/').slice(0, 3).join('/');
   const specId = doc.kind === 'wiki' || doc.kind === 'instruction' ? doc.kind : docs.find(d => d.kind === 'feature' && d.path === folder + '/index.md')?.id ?? '';
   const base = { id: doc.id, kind: doc.kind, title: doc.title, description: doc.description, body: doc.body, specId, path: doc.path };
-  if (doc.kind === 'requirement') return { ...base, order: doc.order };
+  if (doc.kind === 'requirement') return { ...base, order: doc.order, ...(doc.style ? { style: doc.style } : {}) };
   if (doc.kind === 'design') return { ...base, order: doc.order, requirements: doc.requirements, sources: doc.sources };
   return base;
 }

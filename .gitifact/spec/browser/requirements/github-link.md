@@ -3,6 +3,7 @@ id: R-aplhjskqow
 title: GitHub 저장소 바로가기
 description: 사이드바에서 Gitifact GitHub 저장소를 연다
 order: 100
+style: usecase
 ---
 
 Gitifact 사용자로서, 제품의 소스와 공개 안내를 찾아볼 수 있도록 브라우저에서 GitHub 저장소를 열고 싶다.

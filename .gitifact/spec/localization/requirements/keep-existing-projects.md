@@ -3,6 +3,7 @@ id: R-l2cviw6kk7
 title: 기존 프로젝트 보존
 description: 표시 언어를 바꾸거나 CLI를 올려도 기존 기록과 지침을 계속 쓴다
 order: 30
+style: usecase
 ---
 
 기존 Gitifact 사용자로서, 표시 언어를 바꾸거나 CLI를 업데이트해도 프로젝트 기록과 지침을 계속 사용하고 싶다.

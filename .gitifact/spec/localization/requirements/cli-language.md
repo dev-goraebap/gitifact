@@ -3,6 +3,7 @@ id: R-y6gszx7dg6
 title: CLI 언어 선택
 description: CLI 안내와 오류를 명시한 언어나 실행 환경의 언어로 받는다
 order: 20
+style: usecase
 ---
 
 CLI 사용자로서, 명령과 오류를 이해하기 위해 실행 환경이나 명시한 언어로 안내를 받고 싶다.

@@ -21,7 +21,7 @@ init은 작은 명시적 작업이다. 기존 프로젝트를 추정해 일괄 �
 
 ## 설정과 기준선
 
-`config.json`은 필수 필드 `schemaVersion`·`baseline`과 선택 필드 `cli`(프로젝트 기준 CLI 버전, x.y.z)·`language`(블록 언어, `ko`·`en`)를 둔다. init은 새 설정에 실행 중인 버전과 블록 언어를 쓰고, 이미 있는 설정도 update처럼 맞춘다(`settleConfig`, 기준 버전은 낮추지 않는다). 이 CLI가 모르는 필드는 거부하지 않고 다시 쓸 때도 남긴다. 모드·승인 묶음은 저장하지 않는다. HEAD가 있으면 기준 커밋과 Git 객체 형식(`sha1`·`sha256`)을, 첫 커밋 전이면 `{ "kind": "empty" }`를 기록한다. 기존 설정을 다시 읽을 때는 객체 형식이 같고 기준 커밋이 HEAD의 조상인지 확인한다(`BASELINE_UNAVAILABLE`).
+`config.json`은 필수 필드 `schemaVersion`·`baseline`과 선택 필드 `cli`(프로젝트 기준 CLI 버전, x.y.z)·`language`(블록 언어, `ko`·`en`)·`requirementStyle`(요구사항 형식, `usecase`·`default`)을 둔다. `requirementStyle`은 프로젝트가 직접 쓰고 init·update는 쓰거나 바꾸지 않는다. 값이 목록 밖이면 `INVALID_CONFIG`다. init은 새 설정에 실행 중인 버전과 블록 언어를 쓰고, 이미 있는 설정도 update처럼 맞춘다(`settleConfig`, 기준 버전은 낮추지 않는다). 이 CLI가 모르는 필드는 거부하지 않고 다시 쓸 때도 남긴다. 모드·승인 묶음은 저장하지 않는다. HEAD가 있으면 기준 커밋과 Git 객체 형식(`sha1`·`sha256`)을, 첫 커밋 전이면 `{ "kind": "empty" }`를 기록한다. 기존 설정을 다시 읽을 때는 객체 형식이 같고 기준 커밋이 HEAD의 조상인지 확인한다(`BASELINE_UNAVAILABLE`).
 
 현재 `schemaVersion`은 3이다. 문서 하나가 파일 하나이고 구조 정보를 프론트매터에 두는 0.8.0 문서 형식을 뜻한다. 다른 값은 전환하지 않고 거부한다(`packages/core/src/formats/spec-project.ts`).
 

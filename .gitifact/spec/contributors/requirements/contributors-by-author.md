@@ -3,6 +3,7 @@ id: R-ybmsjjgqtp
 title: Git 작성자별 참여 조회
 description: Git 작성자별로 참여한 기능과 활동을 보고 참여자 페이지로 이동한다
 order: 10
+style: usecase
 ---
 
 프로젝트 참여자로서, 누가 어떤 기능의 변경에 참여했는지 파악하기 위해 Git 작성자별 참여 기능과 관련 활동을 확인하고 싶다.

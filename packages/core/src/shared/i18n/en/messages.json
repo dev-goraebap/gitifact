@@ -5,6 +5,7 @@
   "config.schemaFields": "Check the schemaVersion and baseline fields.",
   "config.cliVersion": "The config field cli must be a release version such as 0.8.3.",
   "config.language": "The config field language must be one of {languages}.",
+  "config.requirementStyle": "The config field requirementStyle must be one of {styles}.",
   "document.pathTooLong": "Wiki page path exceeds the depth or length limit: {path}",
   "document.fileName": "Wiki filenames must use lowercase letters, digits, hyphens and .md; uppercase root names such as README.md and ARCHITECTURE.md are allowed: {path}",
   "document.folderName": "Wiki folder names must use lowercase letters, digits and hyphens: {path}",
@@ -116,5 +117,8 @@
   "warn.DESIGN_OVERVIEW_LARGE": "The design overview.md has {sections} sections. Before adding to it, ask the user whether to split it into axis files (revising, in guide show design): {path}",
   "warn.REQUIREMENT_SCOPE_FORMAT": "Scope and constraints come before the acceptance criteria, as - items only (guide show spec): {path}",
   "warn.REQUIREMENT_CRITERIA_FORMAT": "The acceptance criteria hold numbered items only; move rules to scope and constraints (guide show spec): {path}",
+  "warn.REQUIREMENT_FLOW_FORMAT": "A use-case requirement has a basic flow, and its sections run scope and constraints, preconditions, basic flow, alternative flows, postconditions, acceptance criteria (guide show spec): {path}",
+  "warn.REQUIREMENT_PATH_FORMAT": "Each acceptance criterion of a use-case requirement has a Path: line naming only the basic flow and this requirement's alternative flows (A1…) (guide show spec): {path}",
+  "warn.REQUIREMENT_STYLE_MISSING": "This project writes requirements as use cases (config requirementStyle). Add style: usecase to the frontmatter, or style: default for a requirement that keeps the default shape (guide show spec): {path}",
   "config.migrationRequired": "This project uses the 0.7 storage convention (schemaVersion 2). The 0.8.0 CLI does not read the old format. Move the documents to the new structure by following gitifact guide show migrate."
 }
