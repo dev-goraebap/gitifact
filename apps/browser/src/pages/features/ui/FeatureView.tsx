@@ -26,7 +26,7 @@ import { designsByRequirement } from '../model/design-sections';
 import { featureFilterOf, sortKeyOf, type SortKey } from '../model/feature-filter';
 import styles from './features.module.css';
 import { PageState } from '../../../shared/ui/page-state';
-import { DocumentBody } from '../../../shared/ui/document';
+import { DocumentBody, withItemLineBreaks } from '../../../shared/ui/document';
 import { RelatedList, RelatedItem } from '../../../shared/ui/related-list';
 import { t, useLanguage } from '../../../shared/i18n';
 
@@ -210,7 +210,7 @@ function FeatureDetail({ feature: selected, features, search, change }: { featur
             <Heading level={3}><mark className={styles.titleMark} data-state-title>{r.title}</mark></Heading>
           </VStack>
           {/* Each requirement is its own file one folder below index.md; its links start from there. */}
-          <DocumentBody headingLevelStart={4} path={r.path}>{r.body}</DocumentBody>
+          <DocumentBody headingLevelStart={4} path={r.path}>{withItemLineBreaks(r.body)}</DocumentBody>
           {/* What the requirement connects to, each kind in its own block: the designs that name it, then its history. */}
           <VStack gap={4} className={styles.requirementRelations}>
             {/* A design names the requirements it explains; these are those links read the other way round, every design that names this one. */}

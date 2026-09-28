@@ -376,3 +376,15 @@ test('on a wide screen the index stands to the right and marks the requirement b
   await page.setViewportSize({ width: 800, height: 900 });
   await expect.poll(async () => (await index.boundingBox())!.y).toBeLessThan((await page.locator('#R-bbbbbbbbbb').boundingBox())!.y);
 });
+
+test('each part of an acceptance criterion reads on its own line, as the file writes it', async ({ page }) => {
+  const data = structuredClone(specs);
+  data.features[0]!.requirements[0]!.body = '사용자로서 검색하고 싶다.\n\n### 수용 조건\n\n1. 경로: 기본 흐름\n   조건: 검색어를 입력합니다.\n   기대 동작: 결과를 보여 줍니다.\n';
+  await mockApi(page);
+  await serve(page, data);
+  await page.goto('/features/S-abcdefghij');
+  const item = page.locator('#R-abcdefghij li').first();
+  await expect(item).toContainText('기대 동작');
+  // Three lines, not one run-on line: the item's text holds a break before each part that goes on.
+  expect(await item.locator('br').count()).toBe(2);
+});

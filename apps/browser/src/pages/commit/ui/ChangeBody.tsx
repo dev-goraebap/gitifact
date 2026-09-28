@@ -6,7 +6,7 @@ import { Link } from '@tanstack/react-router';
 import { DesignDocument } from '../../../entities/document';
 import { ChangeDiff } from './ChangeDiff';
 import styles from './commit.module.css';
-import { DocumentBody } from '../../../shared/ui/document';
+import { DocumentBody, withItemLineBreaks } from '../../../shared/ui/document';
 import { t, useLanguage } from '../../../shared/i18n';
 
 /** What names a changed document in a list: enough to show it, whether it comes from a commit or from the working tree. */
@@ -23,7 +23,7 @@ export function ChangeBody({ change: { event, before, after }, features, head }:
   const spec = after ?? before;
   const body = (s: SpecSnapshot) => event.kind === 'design'
     ? <DesignDocument design={s} path={s.path} features={features}/>
-    : <DocumentBody headingLevelStart={4} path={s.path}>{s.body}</DocumentBody>;
+    : <DocumentBody headingLevelStart={4} path={s.path}>{event.kind === 'requirement' ? withItemLineBreaks(s.body) : s.body}</DocumentBody>;
   return <VStack gap={4}>
     <HStack gap={3} wrap="wrap" className={styles.changePlace}>
       <Text type="supporting" color="secondary">{event.id}</Text>
