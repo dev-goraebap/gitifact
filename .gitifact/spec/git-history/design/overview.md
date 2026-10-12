@@ -39,7 +39,7 @@ CLI는 HEAD와 작업 폴더의 문서를 파싱해 ID로 비교한다(core `com
 | 필드 | 형식과 한도 |
 | :--- | :--- |
 | `paths` | 커밋할 문서·결정기록·코드 파일의 저장소 상대 경로 128개까지(`migration`이면 5,000개). Git에는 표준 입력으로 넘겨 명령줄 길이에 걸리지 않는다. `..`·`.git`·역슬래시·콜론·제어 문자 불가 |
-| `message` | 4000자까지. `Gitifact-`로 시작하는 줄 불가(트레일러는 CLI가 붙인다) |
+| `message` | 4000자까지. `Gitifact-<키>:` 형식의 트레일러 줄 불가, 키는 대소문자 무시(트레일러는 CLI가 붙인다) |
 | `authorization` | `{basis, evidence}`. `basis`는 `user-request` 또는 `project-policy`, `evidence`는 2000자까지 |
 | `migration` (선택) | `true`면 `Gitifact-Migration: 0.8.0` 트레일러를 붙인다. 커밋 메시지도 표준 입력으로 넘긴다 |
 

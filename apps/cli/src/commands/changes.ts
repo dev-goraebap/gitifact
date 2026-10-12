@@ -108,7 +108,7 @@ export async function commitChanges(cwd: string, input: unknown, dryRun: boolean
   const selected = paths(request.paths, request.migration === true ? MIGRATION_PATH_LIMIT : PATH_LIMIT); const authorization = object(request.authorization);
   if (Object.keys(authorization).sort().join(',') !== 'basis,evidence' || !['user-request', 'project-policy'].includes(String(authorization.basis))) fail(t('commit.authorizationRequired'));
   bounded(authorization.evidence, 2000);
-  const message = bounded(request.message, 4000); if (/^\s*Gitifact-/im.test(message)) fail(t('commit.trailerInMessage'));
+  const message = bounded(request.message, 4000); if (/^[ \t]*Gitifact-[A-Za-z0-9-]+[ \t]*:/im.test(message)) fail(t('commit.trailerInMessage'));
   if (request.migration !== undefined && request.migration !== true) fail(t('commit.migrationFlag'));
 
   const project = await openProject(cwd, { writing: true });

@@ -43,4 +43,4 @@ description: 커밋 입력, 결정기록과 함께 커밋하기, 나눠 커밋�
 
 ## 메시지와 트레일러
 
-프로젝트의 커밋 메시지 규약을 따른다. 규약이 없으면 첫 줄에 무엇을 바꿨는지, 본문에 왜 바꿨는지를 짧게 쓴다. CLI가 바뀐 문서와 기록이 가리킨 문서로 트레일러를 붙인다(요구사항은 `Gitifact-Req`, 설계는 `Gitifact-Design`, 기능은 `Gitifact-Doc`, 결정기록은 `Gitifact-Record`). 메시지에 `Gitifact-`로 시작하는 줄을 직접 쓰면 거부된다.
+프로젝트의 커밋 메시지 규약을 따른다. 규약이 없으면 첫 줄에 무엇을 바꿨는지, 본문에 왜 바꿨는지를 짧게 쓴다. CLI가 바뀐 문서와 기록이 가리킨 문서로 트레일러를 붙인다(요구사항은 `Gitifact-Req`, 설계는 `Gitifact-Design`, 기능은 `Gitifact-Doc`, 결정기록은 `Gitifact-Record`). 메시지에 `Gitifact-Req: ...` 같은 `Gitifact-` 트레일러 줄을 직접 쓰면 거부된다(키는 대소문자를 가리지 않는다). `Gitifact-`로 시작하는 일반 문장은 쓸 수 있다.

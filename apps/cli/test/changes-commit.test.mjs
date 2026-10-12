@@ -141,6 +141,9 @@ test('unknown documents, the old reasons input and a message with trailers are r
     [{ expected: 'stamp' }, 'INVALID_COMMIT'],
     [{ migration: 'yes' }, 'INVALID_COMMIT'],
     [{ message: 'Add\n\nGitifact-Req: ' + R }, 'INVALID_COMMIT'],
+    [{ message: 'Add\n\nGitifact-Req: R-x' }, 'INVALID_COMMIT'],
+    // Git trailer keys ignore case, so a lowercase key is still a trailer.
+    [{ message: 'Add\n\ngitifact-record: DR-x' }, 'INVALID_COMMIT'],
   ]) {
     const result = f.commit(request(extra));
     assert.equal(result.status, 1, JSON.stringify(extra)); assert.equal(JSON.parse(result.stderr).error.code, code);
@@ -148,6 +151,10 @@ test('unknown documents, the old reasons input and a message with trailers are r
   }
   const bad = join(f.root, 'bad.json'); writeFileSync(bad, 'not json');
   assert.equal(JSON.parse(f.run(['changes', 'commit', '--file', bad, '--format', 'json']).stderr).error.code, 'INVALID_INPUT');
+  // Only trailer lines are refused; a sentence that starts with a gitifact- name is ordinary body text.
+  const message = 'Add post saving\n\ngitifact-playbook 스킬을 참고했다\nGitifact-style naming';
+  f.done(f.commit(request({ message })));
+  assert.ok(f.git(['log', '-1', '--format=%B']).stdout.startsWith(`${message}\n\nGitifact-Req: ${R}\n`));
 });
 
 test('a committed record cannot be edited or deleted; changes list and check name it before the commit is refused', t => {
