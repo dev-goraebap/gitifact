@@ -7,9 +7,6 @@ requirements:
   - R-hqekjinjpa
   - R-o2d2lmrxaw
   - R-3ngq5qsdl6
-sources:
-  - id: I-zdpwuta64o
-    note: core·CLI·계약의 책임과 저장 규약
 ---
 
 ## 개요

@@ -1,51 +1,44 @@
 ---
 id: D-r4umcdt4c6
 title: 프로젝트 지침 설계
-description: 지침 문서와 AGENTS.md의 역할 나눔, 위키에서의 전환
+description: 남은 지침을 막고 안내하는 방식과 옛 지침을 이력에서 읽는 방식
 order: 10
 requirements:
   - R-y5tidh72gk
-  - R-hjteu77gki
   - R-rtualqkge6
 sources:
-  - title: GitHub Copilot 저장소 지침
-    url: https://docs.github.com/en/copilot/customizing-copilot/adding-repository-custom-instructions-for-github-copilot
-    note: 같은 개념을 instructions라는 이름으로 부른다
+  - title: Agent Skills
+    url: https://agentskills.io/
+    note: 지침을 옮길 곳으로 안내하는 스킬 형식
   - title: AGENTS.md
     url: https://agents.md/
-    note: 에이전트가 항상 읽는 프로젝트 지침 파일
+    note: 에이전트가 항상 읽는 프로젝트 파일
 ---
 
 ## 개요
 
-프로젝트 지침은 이 프로젝트에서 어떻게 일하는지를 담는 문서다. 지침 하나는 `.gitifact/instructions/<이름>/` 폴더다. `index.md`는 늘 지킬 짧은 규칙과 어떤 작업 때 어느 참고 파일을 읽을지의 색인이고, 긴 내용은 `references/` 아래 참고 파일로 나눈다. 참고 파일은 프론트매터의 제목과 설명으로 무엇인지 알린다. AGENTS.md는 모든 세션이 읽는 상시 지침으로, 어떤 작업 때 어느 지침을 읽을지 짧게 알린다. gitifact는 지침의 ID·검사·이력·브라우저를 맡고, 지침을 읽고 따르는 일은 에이전트가 한다.
-
-에이전트가 지침을 읽게 하는 장치는 GITIFACT 블록의 규칙 한 줄, AGENTS.md 블록 밖 색인, `instructions list`(AGENTS.md와 지침마다 딸린 파일의 제목·설명), 설계의 `sources`다. CLI는 작업 경로로 읽을 지침을 고르지 않고, 에이전트 훅으로 지침을 주입하지 않는다. 지침에는 경로 조건 같은 적용 조건 필드를 두지 않는다.
+0.9.0부터 Gitifact는 이 프로젝트에서 어떻게 일하는지를 관리하지 않는다. 일하는 방식은 AGENTS.md나 에이전트의 스킬에 두고, 에이전트가 원래 읽는 방식으로 읽는다. Gitifact에 남은 일은 0.8의 지침이 작업 트리에 남았을 때 막고 안내하는 것과, 옛 커밋의 지침을 이력에서 읽는 것 두 가지다. 위키를 뺐을 때(0.8.0)와 같은 방식이다.
 
 ```mermaid
 flowchart LR
-  A["AGENTS.md<br/>상시 지침 · 색인"] -->|"이 작업 때 읽는다"| I[".gitifact/instructions/&lt;이름&gt;/index.md"]
-  I --> R["references/…"]
-  D["설계 sources"] -->|"따르는 지침"| I
-  G["gitifact: ID · 검사 · 이력 · 브라우저"] --- I
+  T[".gitifact/instructions/ (작업 트리)"] -->|check| P["INSTRUCTION_MOVED<br/>폴더마다 한 번"]
+  P --> M["guide show migrate 8절"]
+  M --> S["에이전트의 스킬 폴더<br/>또는 AGENTS.md"]
+  H["0.9.0 이전 커밋의 지침"] -->|이력| B["결정기록 페이지 · records list --doc"]
 ```
 
-| 파일 | 다루는 것 |
-| :--- | :--- |
-| data | 폴더와 파일, 검사, 이력, 관계 |
-| interface | `instructions` 명령, 체크아웃과 파일 API |
-| ui | 프로젝트 지침 화면 |
+## 작업 트리의 지침
 
-## 위키에서의 전환
+`check`는 `.gitifact/instructions/` 아래 파일을 문서로 읽지 않고, 폴더(`.gitifact/instructions/<이름>`)마다 `INSTRUCTION_MOVED` 문제를 한 번 낸다. 문서로 읽지 않으므로 그 지침을 가리키는 설계의 `sources`는 `MISSING_REFERENCE`가 된다. 캐시는 지침의 `index.md`를 문서로 넣지 않고 같은 문제로 남겨, 목록 명령과 브라우저가 읽지 못한 파일로 보인다.
 
-지침은 위키를 대신한다. 이 저장소의 위키는 지침 4개로 옮겼다. 브라우저는 위키를 보이지 않고(메뉴·화면·검색·체크아웃), CLI에는 위키를 만들거나 안내하는 명령이 없다(위키를 만드는 명령과 목록, `guide show wiki`, `init`의 위키 README가 없다). 작업 트리의 `.gitifact/wiki/` 아래 Markdown은 문서로 읽지 않고 `check`가 `WIKI_REMOVED` 문제로 알린다. 과거 커밋의 위키 페이지(`W-`)는 이력에서 계속 읽는다.
+커밋 전 변경을 계산할 때 지침의 Markdown은 원문대로 읽는다. 그대로 둔 지침은 HEAD와 같아 변경으로 나오지 않고, 지운 지침은 삭제로 나와 옮기는 커밋에 함께 실린다. 지침 폴더의 다른 파일은 경로만 넘긴다.
 
-0.7 프로젝트는 `guide show migrate`의 전환 커밋에서 위키를 지침으로 옮긴다. 최상위 폴더 하나 또는 루트 페이지 하나가 지침 하나가 되고, 폴더의 `README.md`가 `index.md`, 나머지 페이지가 `references/`가 된다. 프로젝트가 고쳐 쓴 위키 루트 README는 지침 `overview`가 되고, `init`의 기본 방침 그대로인 README는 지운다. 본문은 그대로 옮기고 명세로 가는 링크만 글자로 바꾸며, 설계 `sources`의 W-는 옮겨 간 지침의 I-로 바꾼다. 지침 본문의 규칙과 결정기록으로 나눠 다시 쓰는 일은 전환 뒤 별도 커밋이다. 아래 표는 그 뒤 정리할 때의 기준이다.
+`instructions` 명령, `guide show instructions`, 브라우저의 프로젝트 지침 화면과 `/api/v1/instructions` 경로는 없다. 체크아웃(v2)의 색인과 검색(v4)에도 지침이 없다.
 
-| 위키에 있던 것 | 옮길 곳 |
-| :--- | :--- |
-| 영역별 규칙 페이지 | 그 영역의 지침(예: `cli-architecture`) |
-| 여러 기능에 걸친 결정 기록(ADR) | 지킬 규칙은 해당 지침 본문에, 결정의 맥락과 검토한 대안은 그 지침을 가리키는 결정기록에 |
-| 한 기능 안의 결정 | 지킬 규칙은 그 기능 설계 본문에, 결정의 맥락과 검토한 대안은 그 설계를 가리키는 결정기록에 |
-| 매 세션 필요한 짧은 사실과 지침 색인 | AGENTS.md(블록 밖, 프로젝트가 씀) |
-| 대체된 결정 기록 | 옮기지 않음(Git 이력) |
+## 옛 지침의 이력
+
+0.9.0 이전 커밋의 지침(`I-`)은 커밋 기록을 읽는 쪽에서 계속 문서로 읽는다. 결정기록 페이지, 문서 이력, 커밋 페이지가 종류(지침)와 본문 비교를 보이고, 현재 문서로 가는 링크는 두지 않는다. `specs show`는 `--ref`로 커밋을 지정할 때만 지침을 보인다. 이력의 문서 종류 필터는 이력에 지침이 있을 때만 지침을 고를 수 있게 한다.
+
+## 옮길 곳
+
+옮기는 절차는 `guide show migrate`의 8절이다. 옮길 곳은 사용자가 정하고, 스킬로 옮기면 `index.md`가 `SKILL.md`가 되며 `id`·`title` 대신 `name`·`description`을 쓴다. Gitifact는 스킬 폴더를 만들거나 동기화하지 않는다. 이 저장소는 `.agents/skills/`에 두고, Claude Code는 세션 시작 훅이 `.claude/skills/`로 복사한 사본을 읽는다.

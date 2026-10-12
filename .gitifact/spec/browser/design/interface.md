@@ -46,10 +46,9 @@ requirements:
 | `GET /api/v1/status` | repository-status v1 | 마지막으로 관측한 Git 상태. 실패는 503 |
 | `POST /api/v1/status/refresh` | repository-status v1 | Git 상태를 다시 관측. 허용된 Origin만(아니면 403) |
 | `GET /api/v1/changelog?lang` | changelog v1 | 패치노트. 그 언어가 없으면 기본 언어로 답하고 `fallback`으로 알림 |
-| `GET /api/v1/checkout` | browser-checkout v1 | 모든 화면이 먼저 읽는 틀: HEAD, 읽은 때와 지문(`stamp`), 미커밋 여부, 읽지 못한 파일, 색인(기능·요구사항·설계·지침의 ID·경로·제목과 상태, 참여자의 이름·이메일). 본문은 없다 |
+| `GET /api/v1/checkout` | browser-checkout v2 | 모든 화면이 먼저 읽는 틀: HEAD, 읽은 때와 지문(`stamp`), 미커밋 여부, 읽지 못한 파일, 색인(기능·요구사항·설계의 ID·경로·제목과 상태, 참여자의 이름·이메일). 본문은 없다 |
 | `GET /api/v1/features?q&design&author&sort&dir&after&limit` | browser-features v1 | 기능 목록. 서버가 거르고(검색어·설계 여부·작성자) 정렬해(이름·요구사항 수·최근 변경, `dir`) 기능 20개씩(최대 50) 준다. 기능마다 요구사항 앞 12개(수용 조건 수·설계 여부), 나머지 수, 참여자. `total`·`all`·`requirements`·`mostRequirements`·`next` |
 | `GET /api/v1/feature?id` | browser-feature v2 | 기능 하나: 요구사항(형식 `style` 포함)·설계 본문, 출처, 참여자, 최근 변경. 없으면 404 |
-| `GET /api/v1/instructions` | browser-instructions v1 | 모든 지침(이름순, 폴더 파일 목록 포함)과 AGENTS.md. 지침은 수가 적어 나누지 않는다 |
 | `GET /api/v1/contributors?q&after&limit` | browser-contributors v1 | 참여자 목록. 이름·이메일 검색, 커밋 수 순, 20명씩(최대 50). 사람마다 참여한 기능 수 |
 | `GET /api/v1/contributor?email` | browser-contributor v1 | 참여자 하나와 참여한 기능(그 기능에서의 커밋 수, 요구사항 수). 없으면 404 |
 | `GET /api/v1/stamp` | browser-stamp v1 | 지금의 지문. HEAD와 `.gitifact`·AGENTS.md의 `git status`, 그 경로들과 참여자 이름을 정하는 `.mailmap`의 수정 시각·크기의 해시 |
@@ -63,8 +62,7 @@ requirements:
 | `GET /api/v1/record?head&id` | browser-record v2 | `head` 이력에서 그 결정기록(`DR-…`, 기록 도입 전 이유는 `H-…`)의 제목·섹션, 그 기록을 더한 커밋, 그 커밋의 다른 기록 수(0.7 이유는 같은 글을 하나로 센다). 그 이력에 기록이 없으면 404, 쿼리가 형식에 어긋나면 400 |
 | `GET /api/v1/commit/files?commit&after&limit` | browser-commit-files v2 | 첫 부모 대비 바뀐 소스 파일(`.gitifact` 밖)의 경로·상태·줄 수를 Git 순서로 한 페이지(기본 20, 최대 100). 전체 수(`total`)와 다음 커서(`next`, 이 페이지 마지막 파일의 경로). `after`가 목록에 없으면 404 |
 | `GET /api/v1/commit/file?commit&path` | browser-commit-file v1 | 그 목록의 파일 하나의 양쪽 원문. 이진 파일과 512KB 넘는 쪽은 원문 없이 표시만 |
-| `GET /api/v1/search?q&head&group&after&limit` | browser-search v3 | 검색창의 분류별 결과: 분류마다 앞의 5개·전체 수·다음 커서. `group`이면 그 분류만 다음 페이지(기본 20, 최대 50), `q`가 비면 최근 변경 6개. 없는 커서는 404 |
-| `GET /api/v1/instructions/file?id&path` | browser-instruction-file v1 | 작업 폴더의 지침 파일 하나. 링크는 따라가지 않고, 이진 파일과 512KB 넘는 파일은 원문 없이 표시만 |
+| `GET /api/v1/search?q&head&group&after&limit` | browser-search v4 | 검색창의 분류별 결과(기능·요구사항·설계·결정기록·커밋): 분류마다 앞의 5개·전체 수·다음 커서. `group`이면 그 분류만 다음 페이지(기본 20, 최대 50), `q`가 비면 최근 변경된 기능 6개. 없는 커서는 404 |
 | `GET /api/v1/assets/*` | — | `.gitifact/assets` 아래 파일. 세션 헤더 불필요 |
 
 > [!WARNING]
@@ -74,7 +72,7 @@ requirements:
 
 ## 체크아웃과 이력
 
-체크아웃과 이력은 따로 조회한다. 체크아웃은 화면마다 필요한 부분으로 나눠 주고, 걸러내기·정렬·묶기·자르기는 서버의 조회(`queries/checkout.ts`)가 한다. 화면은 받은 순서와 범위를 그린다. 예외는 둘이다. 틀의 색인은 문서 링크가 어느 문서든 가리킬 수 있어 전체를 주되 본문 없이 이름만 담고, 지침은 수가 적어 나누지 않는다. 이력은 끝이 없으므로 서버가 전체 이력에 조건을 걸어 세고 커밋 20개씩 준다. 커밋은 페이지 사이에서 쪼개지지 않고, 다음 페이지는 `after`에 받은 커밋 다음부터다. `after`가 그 조건의 이력에 없으면 404다. 상세는 본문과 딸린 목록의 첫 20개, 커서를 주고, 원문처럼 무거운 것은 고를 때 따로 받는다.
+체크아웃과 이력은 따로 조회한다. 체크아웃은 화면마다 필요한 부분으로 나눠 주고, 걸러내기·정렬·묶기·자르기는 서버의 조회(`queries/checkout.ts`)가 한다. 화면은 받은 순서와 범위를 그린다. 예외는 틀의 색인이다. 문서 링크가 어느 문서든 가리킬 수 있어 전체를 주되 본문 없이 이름만 담는다. 이력은 끝이 없으므로 서버가 전체 이력에 조건을 걸어 세고 커밋 20개씩 준다. 커밋은 페이지 사이에서 쪼개지지 않고, 다음 페이지는 `after`에 받은 커밋 다음부터다. `after`가 그 조건의 이력에 없으면 404다. 상세는 본문과 딸린 목록의 첫 20개, 커서를 주고, 원문처럼 무거운 것은 고를 때 따로 받는다.
 
 목록 이벤트의 before·after는 id·title·specId·path만 담고 본문은 커밋 조회로 받는다. 이벤트의 `records`는 그 문서를 설명하는 결정기록 `{id, title, sections: [{key, body}]}`(`key`는 `context`·`decision`·`alternatives`)의 목록이다. 이력 쿼리는 HEAD를 받으므로 같은 HEAD의 답은 바뀌지 않는다.
 
@@ -116,6 +114,6 @@ sequenceDiagram
 
 ## 브라우저의 조회 캐시
 
-TanStack Query 키에는 origin·서버 세션·worktree를 넣는다. 체크아웃과 그 부분들(기능 목록·기능·지침·참여자)의 staleTime은 무한이고, 다시 읽는 것은 헤더의 새로고침 버튼뿐이다. 새로고침은 틀을 다시 읽고 부분들과 커밋 전 작업의 조회를 버린다. 필터나 정렬을 바꾸면 그 조건으로 서버에 새로 묻고, 같은 조건은 보관한 답을 쓴다. 이력은 HEAD·조건별로, 기록을 더한 커밋은 HEAD·기록 ID별로, 커밋은 커밋·페이지 크기별로, 문서 하나의 원문은 커밋·문서별로 세션 동안 보관한다. 탭으로 돌아오면 `/api/v1/stamp`를 묻고, 체크아웃의 `stamp`와 다르면 새 변경 알림을 띄운다(errors 참고).
+TanStack Query 키에는 origin·서버 세션·worktree를 넣는다. 체크아웃과 그 부분들(기능 목록·기능·참여자)의 staleTime은 무한이고, 다시 읽는 것은 헤더의 새로고침 버튼뿐이다. 새로고침은 틀을 다시 읽고 부분들과 커밋 전 작업의 조회를 버린다. 필터나 정렬을 바꾸면 그 조건으로 서버에 새로 묻고, 같은 조건은 보관한 답을 쓴다. 이력은 HEAD·조건별로, 기록을 더한 커밋은 HEAD·기록 ID별로, 커밋은 커밋·페이지 크기별로, 문서 하나의 원문은 커밋·문서별로 세션 동안 보관한다. 탭으로 돌아오면 `/api/v1/stamp`를 묻고, 체크아웃의 `stamp`와 다르면 새 변경 알림을 띄운다(errors 참고).
 
 FSD의 entities는 조회를, 화면별 pages 슬라이스는 화면 구성을, `widgets/records-page`는 명세 화면이 함께 쓰는 틀과 검색 상태를 맡는다.

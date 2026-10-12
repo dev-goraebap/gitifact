@@ -1,10 +1,11 @@
 ---
-id: I-zdpwuta64o
-title: CLI 아키텍처
+name: cli-architecture
 description: CLI·core·contracts의 구조, 계약과 오류, 문구, 저장 규약, 서버, 빌드·배포 규칙. apps/cli, packages/core, packages/contracts 코드를 고칠 때 쓴다.
 ---
 
-CLI는 사용자 입력과 실행 환경을 받아 제품 규칙을 실행하는 진입점이다. 터미널 명령과 브라우저 API가 같은 규칙을 사용한다. 이 지침의 규칙을 정한 맥락과 검토한 대안은 결정기록에 있으므로, 규칙을 바꾸기 전에 `records list --doc I-zdpwuta64o`로 읽는다.
+# CLI 아키텍처
+
+CLI는 사용자 입력과 실행 환경을 받아 제품 규칙을 실행하는 진입점이다. 터미널 명령과 브라우저 API가 같은 규칙을 사용한다. 2026-10-12까지 이 스킬은 Gitifact 지침 I-zdpwuta64o였으므로, 그때까지 규칙을 정한 맥락과 검토한 대안은 `records list --doc I-zdpwuta64o`로 읽는다.
 
 ## 코드 책임
 
@@ -36,13 +37,13 @@ flowchart TD
 | `apps/cli/src/main.ts` | 프로세스 시작과 명령 연결(Commander) |
 | `commands/` | 인자 해석, 유스케이스 호출, 출력 형식 선택. `changes.ts`가 커밋 잠금과 복구 자료를 맡는다 |
 | `adapters/git/` | Git 실행과 스냅샷 읽기, 0.7 저장소 읽기(`store-reader.ts`) |
-| `adapters/filesystem/` | 설정·문서 파일 쓰기, 커밋 입력 폴더, 에셋·링크 경고, 사용자 편집을 보존하는 원자적 쓰기, 지침 폴더 읽기(`instruction-folder.ts`)와 AGENTS.md 읽기(`agents-file.ts`), 사용자 캐시의 새 버전 확인 결과(`user-cache.ts`) |
+| `adapters/filesystem/` | 설정·문서 파일 쓰기, 커밋 입력 폴더, 에셋·링크 경고, 사용자 편집을 보존하는 원자적 쓰기, 사용자 캐시의 새 버전 확인 결과(`user-cache.ts`) |
 | `adapters/cache/` | 캐시 `.gitifact/cache/index.db`: 문서·참조·검색·이력과 커밋 기록(`commit-log.ts`). 목록용으로 Git을 읽는 곳은 여기뿐이다 |
 | `adapters/registry/` | npm 최신 버전 조회 |
 | `adapters/github/` | `feedback`의 `gh` 실행과 이슈 작성 주소 |
 | `output/` | core 결과를 버전 있는 DTO로 변환 |
 | `server/` | `browser-server`(수명), `http/`(검사·라우터·응답·앱 파일), `routes/`(경로 표), `checkout/`(작업 폴더 체크아웃 읽기와 지문), `commit/`(커밋의 소스 변경) |
-| `queries/` | CLI 명령과 브라우저 서버가 함께 부르는 조회. 목록의 걸러내기·정렬·묶기·자르기는 여기서 하고, 명령과 서버는 받은 순서와 범위를 그대로 그린다: 페이지(`paging.ts`, 없는 커서는 undefined), 이력 필터(`filters.ts`), 명세·지침 목록(`specs.ts`·`instructions.ts`), 검색창의 분류별 결과(`search.ts`), 브라우저 체크아웃의 부분들(`checkout.ts`: 틀의 색인, 기능 목록·기능, 참여자), 문서마다 마지막 커밋 대비 상태(`document-states.ts`), 커밋 전 변경(`working-changes.ts`). 같은 조회를 두 곳에 따로 짓지 않는다. 변경의 원문은 캐시가 받은 원문 공급원(`Originals`, 지금은 Git)으로 읽는다 |
+| `queries/` | CLI 명령과 브라우저 서버가 함께 부르는 조회. 목록의 걸러내기·정렬·묶기·자르기는 여기서 하고, 명령과 서버는 받은 순서와 범위를 그대로 그린다: 페이지(`paging.ts`, 없는 커서는 undefined), 이력 필터(`filters.ts`), 명세 목록(`specs.ts`), 검색창의 분류별 결과(`search.ts`), 브라우저 체크아웃의 부분들(`checkout.ts`: 틀의 색인, 기능 목록·기능, 참여자), 문서마다 마지막 커밋 대비 상태(`document-states.ts`), 커밋 전 변경(`working-changes.ts`). 같은 조회를 두 곳에 따로 짓지 않는다. 변경의 원문은 캐시가 받은 원문 공급원(`Originals`, 지금은 Git)으로 읽는다 |
 | `shared/i18n/` | 사용자에게 보이는 문구와 언어별 Markdown |
 | `packages/core/src/domain/` | 문서·저장소 상태·읽기 오류 |
 | `formats/` | 공개 형식별 파싱·검증(문서·이유·0.7 저장소·패치노트) |
@@ -102,12 +103,11 @@ CLI 메시지의 표시 언어는 프로젝트 설정에 저장하지 않는다.
 | `.gitifact/spec/<기능>/requirements/<slug>.md` | `id`(R-), `title`, `description`, `order` |
 | `.gitifact/spec/<기능>/design/<slug>.md` | `id`(D-), `title`, `description`, `order`, `requirements`, `sources` |
 | `.gitifact/wiki/**/*.md` | `id`(W-), `title`, `description` |
-| `.gitifact/instructions/<이름>/index.md` | `id`(I-), `title`, `description` |
-| `.gitifact/instructions/<이름>/**/*.md`(`index.md` 밖) | `title`, `description`. 그 지침에 딸린 참고 파일이며 ID가 없고 본문을 검사하지 않는다. Markdown이 아닌 파일은 프론트매터가 없다 |
+| `.gitifact/instructions/<이름>/index.md` | `id`(I-), `title`, `description`. 0.9.0 이전 커밋에서 이력용으로만 읽는다. 작업 트리에 남은 폴더는 `INSTRUCTION_MOVED`로 막는다 |
 | `.gitifact/records/<yyyymmdd>/<DR-ID>.md` | `id`(DR-), `title`, `docs`, 선택 `draft`. 본문은 맥락·결정·검토한 대안 `##` 섹션뿐이다 |
 
-- **ID:** CLI가 발급하는 소문자 base32 10자다. 기능 S-, 요구사항 R-, 설계 D-, 위키 W-, 지침 I-, 결정기록 DR-(D-·R-와 겹치지 않게 두 글자). `H-`는 기록 도입 전 이유의 ID로, 과거 커밋에서 이력용으로만 읽으며 0.7 파서와 함께 1.0.0에서 지운다. 경로·제목과 독립적이며 파일을 옮겨도 바뀌지 않는다. 소속은 폴더 위치로만 정한다.
-- **필드:** `title`(200자)과 `description`(300자)은 한 줄·필수다. `order`는 0~999999 정수이고 같은 폴더 안에서 겹치면 오류다. 설계의 `requirements`는 있는 R-만, `sources`는 `{id, note?}` 또는 `{title, url, note?}`(http·https)다. 프론트매터 끝의 `draft: true`는 `specs new`·`instructions new`·`records new`가 붙이며 남아 있으면 검사가 실패한다.
+- **ID:** CLI가 발급하는 소문자 base32 10자다. 기능 S-, 요구사항 R-, 설계 D-, 위키 W-와 지침 I-(과거 커밋에서 이력용으로만 읽음), 결정기록 DR-(D-·R-와 겹치지 않게 두 글자). `H-`는 기록 도입 전 이유의 ID로, 과거 커밋에서 이력용으로만 읽으며 0.7 파서와 함께 1.0.0에서 지운다. 경로·제목과 독립적이며 파일을 옮겨도 바뀌지 않는다. 소속은 폴더 위치로만 정한다.
+- **필드:** `title`(200자)과 `description`(300자)은 한 줄·필수다. `order`는 0~999999 정수이고 같은 폴더 안에서 겹치면 오류다. 설계의 `requirements`는 있는 R-만, `sources`는 `{id, note?}` 또는 `{title, url, note?}`(http·https)다. 프론트매터 끝의 `draft: true`는 `specs new`·`records new`가 붙이며 남아 있으면 검사가 실패한다.
 - **본문:** 필수다. 코드 블록 밖의 `#` 제목과 gitifact HTML 주석을 금지한다. UTF-8이며 NUL·단독 CR·BOM을 금지하고 CRLF는 LF로 읽는다. 파일 하나는 1MB까지 읽는다.
 - **개요 파일:** 요구사항이나 설계가 있는 기능은 `index.md`, 설계가 하나라도 있으면 `design/overview.md`가 필수다.
 - **결정기록:** 기록 하나가 파일 하나다. 기록에는 종류가 없고 맥락·결정(필수)과 검토한 대안(선택)을 섹션으로 두며, 섹션은 한국어나 영어 제목으로 쓰며 500자까지다. `docs`는 지워진 문서도 가리킬 수 있다. 작성자·시각은 기록을 더한 커밋에서 읽는다. 아직 커밋하지 않은 기록은 `.gitifact/records/`의 `git status`로 찾고, 이력은 커밋이 더한 기록 파일만 읽는다. 모든 기록 파일을 읽는 경로를 만들지 않는다. 작업 폴더에 남은 `.gitifact/history.jsonl`은 `REASONS_FILE_REMOVED` 문제다.
@@ -125,7 +125,7 @@ CLI 메시지의 표시 언어는 프로젝트 설정에 저장하지 않는다.
 
 ## 조회와 커밋 흐름
 
-문서는 에이전트가 파일을 직접 고치며 저장 명령은 없다. 명령은 리소스마다 `list`·`show`·`new`를 둔다(`specs`·`instructions`·`records`). 새 문서는 `specs new`·`instructions new`가, 결정기록은 결정한 때 `records new`가 ID를 발급하고 뼈대를 쓴다. 검사는 최상위 `check` 하나다. 최상위에는 리소스와 `check` 밖에 시스템 명령(`init`·`update`·`browser`·`guide`)만 둔다. 목록은 같은 공통 옵션(`--q`·`--author`·`--sort`·`--limit`·`--after`·`--all`·`--fields`·`--format`)을 같은 뜻으로 받는다. 목록은 기본 20개씩이고 커서(`--after`, JSON `page.next`)로 넘기며, 명세는 기능 단위, 이력은 커밋 단위로 자른다. 상세는 본문과 딸린 목록의 첫 20개를 주고, 원문처럼 무거운 것은 고를 때 읽는다. 모든 조회는 캐시를 거치며, 캐시는 명령마다 수정 시각·크기가 바뀐 문서만 다시 읽는다.
+문서는 에이전트가 파일을 직접 고치며 저장 명령은 없다. 명령은 리소스마다 `list`·`show`·`new`를 둔다(`specs`·`records`). 새 문서는 `specs new`가, 결정기록은 결정한 때 `records new`가 ID를 발급하고 뼈대를 쓴다. 검사는 최상위 `check` 하나다. 최상위에는 리소스와 `check` 밖에 시스템 명령(`init`·`update`·`browser`·`guide`)만 둔다. 목록은 같은 공통 옵션(`--q`·`--author`·`--sort`·`--limit`·`--after`·`--all`·`--fields`·`--format`)을 같은 뜻으로 받는다. 목록은 기본 20개씩이고 커서(`--after`, JSON `page.next`)로 넘기며, 명세는 기능 단위, 이력은 커밋 단위로 자른다. 상세는 본문과 딸린 목록의 첫 20개를 주고, 원문처럼 무거운 것은 고를 때 읽는다. 모든 조회는 캐시를 거치며, 캐시는 명령마다 수정 시각·크기가 바뀐 문서만 다시 읽는다.
 
 커밋은 `changes list`로 바뀐 문서와 입력 파일 경로를 받고, 에이전트가 그 파일에 JSON(`paths`·`message`·`authorization`, 마이그레이션이면 `migration: true`)을 써서 `changes commit --file`로 넘긴다.
 
@@ -160,7 +160,7 @@ sequenceDiagram
 > [!WARNING]
 > 기존 staging이 있으면 커밋이 거부되므로 문서를 옮기거나 지울 때 `git mv`·`git rm`을 쓰지 않는다. 상세는 `gitifact guide show commit`에 있다.
 
-커밋 메시지 트레일러는 `Gitifact-Req`(요구사항)·`Gitifact-Design`(설계)·`Gitifact-Doc`(기능·위키·지침)·`Gitifact-Record`(결정기록)이고 CLI만 붙인다. 메시지에 `Gitifact-`로 시작하는 줄이 있으면 거부한다.
+커밋 메시지 트레일러는 `Gitifact-Req`(요구사항)·`Gitifact-Design`(설계)·`Gitifact-Doc`(기능, 그리고 과거 커밋의 위키·지침)·`Gitifact-Record`(결정기록)이고 CLI만 붙인다. 메시지에 `Gitifact-`로 시작하는 줄이 있으면 거부한다.
 
 ## 로컬 서버
 
@@ -185,7 +185,7 @@ core·contracts를 먼저 빌드하고 browser, cli 순으로 빌드한다. CLI 
 | CLI | 인자, stdout/stderr, 종료 코드, 잘못된 형식과 실패 후 복구 |
 | 서버 | 조회 범위·재검사·정적 파일·잘못된 입력 |
 
-검증 명령과 기준은 [검증](../verification/index.md)을 따른다.
+검증 명령과 기준은 [검증](../verification/SKILL.md)을 따른다.
 
 ## 배포 버전과 Git 태그
 

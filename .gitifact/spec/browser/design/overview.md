@@ -7,9 +7,6 @@ requirements:
   - R-5eehizubwl
   - R-tkl3lrrlpu
   - R-wa3wnknrlt
-sources:
-  - id: I-zdpwuta64o
-    note: Git 읽기와 오류 처리, 원본 보존
 ---
 
 ## 개요

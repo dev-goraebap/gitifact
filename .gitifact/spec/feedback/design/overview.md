@@ -5,9 +5,6 @@ description: 입력과 검사, 환경 정보, gh 전송과 이슈 작성 URL 대
 order: 10
 requirements:
   - R-hcwqzzv3et
-sources:
-  - id: I-zdpwuta64o
-    note: 외부 요청, 명령 출력과 오류 코드
 ---
 
 ## 흐름

@@ -50,7 +50,7 @@ flowchart TD
 
 블록 언어는 설정의 `language`다. 한 번의 실행에서 모든 블록을 한 언어로 쓰며 `--lang`으로 지정한 언어, 설정의 `language`, 0.8.2 이하가 쓴 블록 첫 줄(`gitifact vX · ko · … schemaVersion N`)의 언어, 현재 표시 언어 순으로 고른다. 첫 줄은 `legacyBlockLanguage`가 줄 전체 일치로 찾고, 언어 토큰이 없으면 한국어로 본다. 고른 언어는 init·update가 설정의 `language`에 쓰므로, 표시 언어가 다른 팀원이 실행해도 블록이 번역본으로 바뀌지 않는다. CLI 메시지의 표시 언어는 설정에 저장하지 않는다.
 
-제목 다음에 `.gitifact`와 `gitifact`가 무엇인지 한 문단으로 알리고, `###` 절 다섯이 이어진다. 세션을 시작할 때(명령이 없을 때 설정 버전의 전역 설치 제안, `instructions list --all`로 지침 읽기)는 순서 목록, 무엇을 요구사항으로 남기는가는 요청 분류 표, 작업할 때는 상황마다 먼저 할 일(읽을 명세·지침·결정 흐름과 `guide show` 주제, 결정기록, 커밋, 브라우저, 피드백)의 표, 지킬 것은 버전 안내에 대한 질문·커밋 권한·CLI 대신 하지 않기·SELF-CHECK 같은 규칙, 명령은 이름과 목록 페이지다. 상세는 주제별 지침에 두고 블록은 언제 무엇을 읽을지만 알린다. 마커를 포함해 50줄 이내다.
+제목 다음에 `.gitifact`와 `gitifact`가 무엇인지 한 문단으로 알리고, `###` 절 다섯이 이어진다. 세션을 시작할 때(명령이 없을 때 설정 버전의 전역 설치 제안, Git 상태와 staging 점검)는 순서 목록, 무엇을 요구사항으로 남기는가는 요청 분류 표, 작업할 때는 상황마다 먼저 할 일(읽을 명세·결정 흐름과 `guide show` 주제, 결정기록, 커밋, 브라우저, 피드백)의 표, 지킬 것은 버전 안내에 대한 질문·커밋 권한·CLI 대신 하지 않기·SELF-CHECK 같은 규칙, 명령은 이름과 목록 페이지다. 상세는 주제별 지침에 두고 블록은 언제 무엇을 읽을지만 알린다. 마커를 포함해 50줄 이내다.
 
 > [!IMPORTANT]
 > Markdown은 연속한 일반 줄을 한 문단으로 합친다. 블록의 모든 줄은 제목·목록·표·독립 문단으로 쓰고, 끝은 빈 줄과 `---`로 마커 바깥 내용과 구분한다. 빈 줄 없이 `---`를 두면 앞 줄이 제목이 된다.
@@ -70,7 +70,7 @@ flowchart TD
 
 ## 지침 문서
 
-상세 규칙은 `apps/cli/src/shared/i18n/<lang>/docs/`의 Markdown이다. workflow·spec·design·instructions·writing·commit·migrate 지침이 있다. 빌드가 `dist/i18n/<lang>/docs`로 복사하고 `gitifact guide show <topic>`이 그대로 출력한다. `guide list`는 각 파일의 `title`·`description` 프론트매터로 목록을 만든다.
+상세 규칙은 `apps/cli/src/shared/i18n/<lang>/docs/`의 Markdown이다. workflow·spec·design·records·writing·commit·migrate 지침이 있다. 빌드가 `dist/i18n/<lang>/docs`로 복사하고 `gitifact guide show <topic>`이 그대로 출력한다. `guide list`는 각 파일의 `title`·`description` 프론트매터로 목록을 만든다.
 
 지침 텍스트의 편집 원본은 이 한 곳이다. 스킬 파일, 매니페스트, 복사본 검사는 두지 않는다.
 

@@ -1,8 +1,9 @@
 ---
-id: I-msbvcgybp7
-title: 서비스데스크
+name: service-desk
 description: Gitifact 저장소에 올라온 이슈(피드백)를 읽고 분류해 처리하는 절차. 사용자가 피드백이나 이슈를 봐 달라고 할 때 쓴다.
 ---
+
+# 서비스데스크
 
 사용자와 다른 사람이 남긴 버그·개선은 GitHub 저장소 `dev-goraebap/gitifact`의 이슈로 들어온다. `gitifact feedback`으로 보낸 이슈도 여기에 쌓인다. 이 지침은 이슈를 읽고, 무엇을 고칠지 정하고, 고친 결과를 보고하는 방법을 둔다.
 
@@ -30,7 +31,7 @@ gh issue view <번호> --repo dev-goraebap/gitifact --json title,body,author,cre
 
 ## 처리
 
-- 고치는 일은 평소 작업과 같다. 제품 동작이 바뀌면 명세·결정기록·코드·테스트를 함께 바꾸고 [검증](../verification/index.md)을 따른다.
+- 고치는 일은 평소 작업과 같다. 제품 동작이 바뀌면 명세·결정기록·코드·테스트를 함께 바꾸고 [검증](../verification/SKILL.md)을 따른다.
 - 결정기록의 맥락에 이슈를 `dev-goraebap/gitifact#<번호>`로 적는다. 커밋 메시지에는 `Refs #<번호>`를 쓴다. `Fixes`·`Closes`는 푸시하면 이슈가 닫히므로 쓰지 않는다.
 - 이슈에 댓글을 달거나 라벨을 붙이거나 닫는 일은 밖으로 나가는 동작이라 사용자가 허락할 때만 한다. 닫는 것은 고친 버전이 배포된 뒤다.
 

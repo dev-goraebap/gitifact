@@ -7,7 +7,7 @@ description: 의존성, 개발 서버, Astryx API 확인, 화면 테스트. 브�
 
 ## 의존성과 명령
 
-의존성은 apps/browser/package.json과 pnpm-lock.yaml이 기준이다. React 19, TanStack Router·Query, Astryx stone 테마를 쓴다. 명령은 루트에서 `pnpm --filter @gitifact/browser dev|typecheck|build|test:built`이고 통합 검증은 `pnpm check`([검증](../../verification/index.md))다. 화면 테스트에 쓰는 Chromium은 `pnpm browser:install`로 설치한다.
+의존성은 apps/browser/package.json과 pnpm-lock.yaml이 기준이다. React 19, TanStack Router·Query, Astryx stone 테마를 쓴다. 명령은 루트에서 `pnpm --filter @gitifact/browser dev|typecheck|build|test:built`이고 통합 검증은 `pnpm check`([검증](../../verification/SKILL.md))다. 화면 테스트에 쓰는 Chromium은 `pnpm browser:install`로 설치한다.
 
 ## 개발 서버
 

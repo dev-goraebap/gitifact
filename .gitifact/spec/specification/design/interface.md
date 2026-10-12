@@ -8,32 +8,28 @@ requirements:
   - R-errzmn5edh
   - R-uvehohexvw
   - R-hldv5qv3zr
-sources:
-  - id: I-zdpwuta64o
-    note: 명령과 출력 계약, 오류 코드
 ---
 
 ## 명령 체계
 
-문서를 다루는 명령은 리소스마다 `list`·`show`·`new`를 둔다. 리소스는 명세(`specs`), 지침(`instructions`), 결정기록(`records`)이고, 커밋 전 변경은 `changes`가 맡는다. 문서 전체 검사는 명세와 지침 사이의 참조까지 함께 보아야 해서 최상위 `check` 하나다. 최상위에는 이 밖에 시스템 명령(`init`·`update`·`browser`·`guide`)만 둔다.
+문서를 다루는 명령은 리소스마다 `list`·`show`·`new`를 둔다. 리소스는 명세(`specs`)와 결정기록(`records`)이고, 커밋 전 변경은 `changes`가 맡는다. 문서 전체 검사는 명세와 결정기록 사이의 참조까지 함께 보아야 해서 최상위 `check` 하나다. 최상위에는 이 밖에 시스템 명령(`init`·`update`·`browser`·`feedback`·`guide`)만 둔다.
 
 | 명령 | 하는 일 | 설계 |
 | :--- | :--- | :--- |
 | `specs list`·`show <ID…>`·`new <종류> <경로>` | 기능·요구사항·설계의 목록, 원문과 참조, ID 발급과 뼈대 | 이 문서 |
-| `instructions list`·`show <이름\|ID…>`·`new <이름>` | 지침의 목록, 원문과 폴더 파일, ID 발급과 뼈대 | [지침 명령과 API](../../instructions/design/interface.md) |
 | `records list`·`show <DR-ID…>`·`new` | 결정기록의 목록과 문서별 흐름, 원문, 초안 | [결정기록 명령과 화면](../../records/design/interface.md) |
 | `changes list`·`commit` | 바뀐 문서와 커밋 | [Git 기록 연결 설계](../../git-history/design/overview.md) |
 | `check` | 문서·결정기록 전체 검사 | [개요](overview.md)의 검사 |
 
-명령은 `apps/cli/src/commands/`에 리소스별 파일(`specs.ts`·`instructions.ts`·`records.ts`·`changes.ts`·`check.ts`)로 두고, 목록 옵션의 해석과 출력은 `list-options.ts`가 함께 쓴다. 출력의 `contract`는 명령의 리소스 이름(`specs`·`instructions`·`records`·`changes`·`check`)이고 버전은 1이다.
+명령은 `apps/cli/src/commands/`에 리소스별 파일(`specs.ts`·`records.ts`·`changes.ts`·`check.ts`)로 두고, 목록 옵션의 해석과 출력은 `list-options.ts`가 함께 쓴다. 출력의 `contract`는 명령의 리소스 이름(`specs`·`records`·`changes`·`check`)이고 버전은 1이다.
 
 ## 목록의 공통 옵션
 
-세 리소스의 `list`는 같은 옵션을 같은 뜻으로 받는다. 조회는 모두 캐시(`.gitifact/cache/index.db`)를 거친다. 이력이 필요한 옵션을 쓸 때만 HEAD 이력을 캐시에 채우므로, 이력 옵션이 없는 목록은 처음 실행에도 Git 이력을 읽지 않는다. 브라우저 서버와 CLI가 함께 쓰는 조회는 `apps/cli/src/queries/`에 한 함수씩 둔다(문서 상태, 커밋 전 변경).
+두 리소스의 `list`는 같은 옵션을 같은 뜻으로 받는다. 조회는 모두 캐시(`.gitifact/cache/index.db`)를 거친다. 이력이 필요한 옵션을 쓸 때만 HEAD 이력을 캐시에 채우므로, 이력 옵션이 없는 목록은 처음 실행에도 Git 이력을 읽지 않는다. 브라우저 서버와 CLI가 함께 쓰는 조회는 `apps/cli/src/queries/`에 한 함수씩 둔다(문서 상태, 커밋 전 변경).
 
 | 옵션 | 뜻 |
 | :--- | :--- |
-| `--q <말>` | 제목·경로·설명·본문(결정기록은 제목·ID·섹션과 7자 이상의 커밋 해시 앞부분)에 그 말이 있는 것만. 대소문자를 가리지 않는다. 명세·지침은 찾은 줄을 함께 보인다 |
+| `--q <말>` | 제목·경로·설명·본문(결정기록은 제목·ID·섹션과 7자 이상의 커밋 해시 앞부분)에 그 말이 있는 것만. 대소문자를 가리지 않는다. 명세는 찾은 줄을 함께 보인다 |
 | `--author <이름\|이메일>` | 그 작성자가 HEAD 이력에서 바꾼 것만. Git 작성자 이름이나 이메일과 대소문자 없이 같아야 한다 |
 | `--sort <기준>` | 정렬. 리소스마다 받는 값이 다르다 |
 | `--limit <n>` | 한 페이지의 개수. 기본 20 |
@@ -42,9 +38,9 @@ sources:
 | `--fields <열,…>` | 고른 열만. 텍스트는 한 줄에 한 항목을 탭으로 나눠 보이고, JSON은 항목마다 그 열만 싣는다. 모르는 열은 `INVALID_VALUE` |
 | `--format text\|json` | 기본은 텍스트. JSON은 `{contract, version, ok}` 봉투에 같은 결과를 싣는다 |
 
-목록은 한 번에 20개씩 보인다. 커서는 그 페이지 마지막 항목의 키다(명세 기능 순서는 기능의 S-ID, 그 밖의 명세·지침은 문서 ID, 결정기록은 기록 ID, `records list --doc`은 커밋). 그래서 앞의 항목이 늘거나 줄어도 다음 페이지는 그 항목 다음에서 시작한다. 더 있으면 텍스트 끝에 `<단위> 20/121개. 다음 페이지: 같은 명령에 --after <값>`을 적고, JSON은 `page`(`{total, next, unit}`, 끝이면 `next`가 null)를 싣는다. `--fields`의 텍스트는 행만 stdout에 두고 이 줄은 stderr로 보낸다.
+목록은 한 번에 20개씩 보인다. 커서는 그 페이지 마지막 항목의 키다(명세 기능 순서는 기능의 S-ID, 그 밖의 명세는 문서 ID, 결정기록은 기록 ID, `records list --doc`은 커밋). 그래서 앞의 항목이 늘거나 줄어도 다음 페이지는 그 항목 다음에서 시작한다. 더 있으면 텍스트 끝에 `<단위> 20/121개. 다음 페이지: 같은 명령에 --after <값>`을 적고, JSON은 `page`(`{total, next, unit}`, 끝이면 `next`가 null)를 싣는다. `--fields`의 텍스트는 행만 stdout에 두고 이 줄은 stderr로 보낸다.
 
-명세·지침 목록은 작업 폴더의 문서와, 마지막 커밋에만 있는 문서(지워서 커밋하면 사라질 문서)를 함께 보인다. 상태는 `git status` 한 번(`.gitifact/spec`·`instructions`·`wiki`)으로 정한다. 새 경로는 추가, 고친 파일은 변경, 지운 경로는 HEAD의 blob을 읽어 그 문서를 삭제 예정으로 둔다. 지운 경로와 새 경로가 같은 ID를 가지면 옮긴 것이라 한 줄의 변경이고 `previousPath`에 옛 경로를 싣는다. 파싱되지 않는 파일은 삭제로 보지 않는다. staging 여부는 가리지 않는다. 텍스트는 커밋되지 않은 문서의 줄 끝에 `(커밋 전: 추가)`·`(커밋 전: 변경)`·`(커밋 전: 삭제 예정)`을 붙이고, JSON은 모든 행에 `state`(`committed`·`added`·`modified`·`deleted`)를 싣는다.
+명세 목록은 작업 폴더의 문서와, 마지막 커밋에만 있는 문서(지워서 커밋하면 사라질 문서)를 함께 보인다. 상태는 `git status` 한 번(`.gitifact/spec`·`instructions`·`wiki`)으로 정한다. 새 경로는 추가, 고친 파일은 변경, 지운 경로는 HEAD의 blob을 읽어 그 문서를 삭제 예정으로 둔다. 지운 경로와 새 경로가 같은 ID를 가지면 옮긴 것이라 한 줄의 변경이고 `previousPath`에 옛 경로를 싣는다. 파싱되지 않는 파일은 삭제로 보지 않는다. staging 여부는 가리지 않는다. 텍스트는 커밋되지 않은 문서의 줄 끝에 `(커밋 전: 추가)`·`(커밋 전: 변경)`·`(커밋 전: 삭제 예정)`을 붙이고, JSON은 모든 행에 `state`(`committed`·`added`·`modified`·`deleted`)를 싣는다.
 
 날짜나 커밋을 받는 옵션(`--changed-since`, `--since`)은 `YYYY-MM-DD`로 시작하는 값을 날짜로, 그 밖의 값은 커밋으로 읽는다. 날짜는 그날 0시(UTC)부터의 커밋, 커밋은 `<커밋>..HEAD`에 든 커밋이다. 커밋을 찾지 못하면 `INVALID_VALUE`다.
 
@@ -78,6 +74,6 @@ JSON은 `documents`(행 목록), `orphans`(`index.md`가 없는 기능 폴더), 
 
 ## specs show·new
 
-`specs show <ID…>`는 파일 원문을 그대로 보이고, 이어서 그 문서가 가리키는 문서와 그 문서를 가리키는 설계를 제목과 함께 보인다. `--ref <커밋>`은 그 커밋의 원문과 관계를 읽는다. 지침 ID를 받으면 `UNKNOWN_DOCUMENT`로 거부하며 `instructions show`를 쓰라고 알린다.
+`specs show <ID…>`는 파일 원문을 그대로 보이고, 이어서 그 문서가 가리키는 문서와 그 문서를 가리키는 설계를 제목과 함께 보인다. `--ref <커밋>`은 그 커밋의 원문과 관계를 읽는다. 작업 폴더에 없는 ID와 명세가 아닌 문서의 ID는 `UNKNOWN_DOCUMENT`로 거부한다. `--ref`로 0.9.0 이전 커밋을 읽으면 그 커밋의 지침(I-)도 보인다.
 
 `specs new <종류> <경로> --title … --description …`의 종류는 `feature`·`requirement`·`design`이다. ID 발급, 프론트매터와 본문 뼈대, `order`, `draft: true`는 [개요](overview.md)의 작성 흐름을 따른다. `--style usecase|default`는 요구사항에만 받고(다른 종류면 `INVALID_VALUE`), 없으면 `.gitifact/config.json`의 `requirementStyle`, 그것도 없으면 기본 형식이다. 유즈케이스면 `style: usecase`와 유즈케이스 뼈대를 쓴다. 기본 형식이면 `style` 키를 쓰지 않되, 설정이 `usecase`인 프로젝트에서는 `style: default`를 써서 키 누락 경고가 나지 않게 한다.

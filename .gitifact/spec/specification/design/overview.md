@@ -41,12 +41,11 @@ erDiagram
   FEATURE["기능 index"]
   REQUIREMENT["요구사항"]
   DESIGN["설계"]
-  INSTRUCTION["지침"]
   RECORD["결정기록"]
   FEATURE ||--o{ REQUIREMENT : "폴더"
   FEATURE ||--o{ DESIGN : "폴더"
   DESIGN }o--o{ REQUIREMENT : "requirements"
-  DESIGN }o--o{ INSTRUCTION : "sources"
+  DESIGN }o--o{ DESIGN : "sources"
   RECORD }o--o{ REQUIREMENT : "docs"
   RECORD }o--o{ DESIGN : "docs"
 ```
@@ -58,7 +57,7 @@ erDiagram
 | 설계 | `<기능>/design/<slug>.md` | D- | 위 셋과 `order` | `requirements`·`sources`·`draft` |
 | 결정기록 | `.gitifact/records/<yyyymmdd>/<DR-ID>.md` | DR- | `id`·`title`·`docs` | `draft` |
 
-`sources`는 지침뿐 아니라 자기 자신이 아닌 모든 문서를 ID로 가리킬 수 있고, 외부 자료를 가리킬 수도 있다. 결정기록의 `docs`도 모든 종류의 문서 ID를 담으며, 지워진 문서(과거 위키 페이지의 W- 포함)도 가리킬 수 있다. 지침의 경로 규칙은 프로젝트 지침 기능이 다룬다.
+`sources`는 자기 자신이 아닌 기능·요구사항·설계를 ID로 가리킬 수 있고, 외부 자료를 가리킬 수도 있다. 결정기록의 `docs`는 모든 종류의 문서 ID를 담으며, 지워진 문서(과거 위키 페이지의 W-, 과거 지침의 I- 포함)도 가리킬 수 있다.
 
 기능 폴더와 slug 이름은 소문자·숫자·하이픈 80자 이하다. 설계가 하나라도 있으면 `design/overview.md`가 있어야 한다. 기능 폴더에 이 밖의 파일(0.7의 `requirements.md`·`design.md`·폴더별 `history.jsonl` 포함)이 있으면 검사가 문제로 알린다. 설계는 파일 하나 전체가 비교 단위이며 파일 안의 문단에는 ID가 없다. 그래서 설계와 요구사항도 절이 아니라 파일 단위(`requirements` 목록)로 이어진다.
 
@@ -79,7 +78,7 @@ erDiagram
 
 ## ID
 
-ID는 종류 접두어(S·R·D·I·W, 결정기록은 DR)와 소문자 base32 10자다. `generateId`만 발급하며 `specs new`·`instructions new`·`records new`는 이미 쓰인 ID와 겹치지 않을 때까지 다시 뽑는다. ID는 이름·폴더와 독립적이어서 제목 변경, 파일 이동, 다른 기능 폴더로의 이동에도 유지한다. 이름 변경을 다른 요구사항 생성으로 처리하지 않으며, 설계의 `requirements`는 현재 전체 문서에서 찾으므로 다른 기능으로 옮긴 요구사항도 계속 가리킨다.
+ID는 종류 접두어(S·R·D, 결정기록은 DR)와 소문자 base32 10자다. 과거 커밋의 위키 페이지는 W-, 지침은 I-다. `generateId`만 발급하며 `specs new`·`records new`는 이미 쓰인 ID와 겹치지 않을 때까지 다시 뽑는다. ID는 이름·폴더와 독립적이어서 제목 변경, 파일 이동, 다른 기능 폴더로의 이동에도 유지한다. 이름 변경을 다른 요구사항 생성으로 처리하지 않으며, 설계의 `requirements`는 현재 전체 문서에서 찾으므로 다른 기능으로 옮긴 요구사항도 계속 가리킨다.
 
 ## 작성 흐름
 

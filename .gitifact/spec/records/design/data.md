@@ -7,9 +7,6 @@ requirements:
   - R-hqekjinjpa
   - R-ecmf4ddygu
   - R-srbpytoxpj
-sources:
-  - id: I-zdpwuta64o
-    note: 저장 규약과 캐시
 ---
 
 ## 기록 파일
@@ -17,7 +14,7 @@ sources:
 | 항목 | 규칙 |
 | :--- | :--- |
 | 경로 | `.gitifact/records/<yyyymmdd>/<DR-ID>.md`. 폴더는 기록을 쓴 날(쓴 사람의 시간대)이며 커밋한 날과 다를 수 있다. 파일 이름이 ID와 같아야 한다(`RECORD_PATH`). 그 밖의 파일은 `PATH_UNSUPPORTED` |
-| 프론트매터 | `id`(`DR-` + 소문자 base32 10자), `title`(한 줄 80자, 명사형 짧은 구는 지침이 안내하고 CLI는 길이만 검사), `docs`(S·R·D·W·I ID 목록, 비지 않고 중복 없음), 선택 `draft: true`. 그 밖의 키(옛 `type` 포함)는 `FRONTMATTER_UNKNOWN_KEY` |
+| 프론트매터 | `id`(`DR-` + 소문자 base32 10자), `title`(한 줄 80자, 명사형 짧은 구는 지침이 안내하고 CLI는 길이만 검사), `docs`(S·R·D ID 목록, 과거 위키·지침을 가리키는 W·I 포함, 비지 않고 중복 없음), 선택 `draft: true`. 그 밖의 키(옛 `type` 포함)는 `FRONTMATTER_UNKNOWN_KEY` |
 | 본문 | `##` 섹션만. 첫 섹션 앞의 글, 정해진 목록에 없는 섹션, 두 번 나온 섹션은 `RECORD_SECTION_UNKNOWN`. 코드 블록 안의 제목은 글이다. `#` 제목과 gitifact 주석은 문서와 같이 금지 |
 | 섹션 | 맥락(`context`, 필수), 결정(`decision`, 필수), 검토한 대안(`alternatives`, 선택). 기록에 종류가 없어 모두 같은 목록이다. 제목은 한국어·영어 이름을 모두 받아 키로 읽는다. 빈 필수 섹션은 `RECORD_SECTION_MISSING` |
 | 길이 | 섹션 하나 500자(코드 포인트)까지, 넘으면 `RECORD_SECTION_TOO_LONG` |

@@ -8,9 +8,6 @@ requirements:
   - R-cr5rajcs4a
   - R-hlndpxflx7
   - R-yrk7zcukqy
-sources:
-  - id: I-zdpwuta64o
-    note: 패키지 경계·로컬 실행·지침 단일 원본
 ---
 
 ## 개요

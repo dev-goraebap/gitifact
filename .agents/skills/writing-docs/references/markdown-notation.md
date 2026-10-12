@@ -3,7 +3,7 @@ title: 문서 표기
 description: 문서에 쓸 수 있는 Markdown 표기와 브라우저가 그리는 범위. 표·알림·다이어그램 같은 표기를 쓸 때 읽는다.
 ---
 
-지침·명세·설계 본문에서 쓰는 표기를 정한다. 브라우저가 그리는 것과 에디터·GitHub가 그리는 것이 같아야 하므로, 양쪽이 모두 아는 표기만 쓴다.
+스킬·명세·설계 본문에서 쓰는 표기를 정한다. 브라우저가 그리는 것과 에디터·GitHub가 그리는 것이 같아야 하므로, 양쪽이 모두 아는 표기만 쓴다.
 
 ## 쓸 수 있는 표기
 
@@ -24,7 +24,7 @@ description: 문서에 쓸 수 있는 Markdown 표기와 브라우저가 그리�
 ```mermaid
 flowchart LR
   U[사용자] --> A[에이전트]
-  A -->|파일 수정| S[".gitifact/spec · instructions"]
+  A -->|파일 수정| S[".gitifact/spec · records"]
   A -->|changes commit| G[(Git)]
   S --> B[브라우저]
   G --> B
@@ -69,4 +69,4 @@ sequenceDiagram
 
 ## 제한
 
-문법이 틀린 다이어그램은 그 자리에 원문과 이유가 보이고 나머지 문서는 그대로 열린다. 수식(KaTeX)과 각주는 그리지 않는다. 번들 규칙은 [브라우저 아키텍처](../../browser-architecture/index.md)에 있다.
+문법이 틀린 다이어그램은 그 자리에 원문과 이유가 보이고 나머지 문서는 그대로 열린다. 수식(KaTeX)과 각주는 그리지 않는다. 번들 규칙은 [브라우저 아키텍처](../../browser-architecture/SKILL.md)에 있다.

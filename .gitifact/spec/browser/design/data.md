@@ -7,9 +7,6 @@ requirements:
   - R-tkl3lrrlpu
   - R-hsflueyc4b
   - R-5eehizubwl
-sources:
-  - id: I-zdpwuta64o
-    note: CLI와 함께 쓰는 재생성 가능한 캐시
 ---
 
 ## 커밋별 변경 계산
@@ -32,7 +29,7 @@ flowchart LR
 | 바뀐 파일 목록 | `git log --stdin --no-walk --raw`: 묶음이 바꾼 기록 파일과 blob, 상태가 `A`인 결정기록 파일 |
 | 양쪽 문서 원문 | `git cat-file --batch`: 커밋과 첫 부모 양쪽의 바뀐 문서와 그 기능의 `index.md`, 커밋이 더한 결정기록을 `<커밋>:<경로>`로 |
 
-기록 파일은 기능 `index.md`, `requirements/*.md`, `design/*.md`, 지침 `index.md`, 결정기록 `.gitifact/records/*/*.md`, 0.8.0 이전 커밋의 위키 `*.md`와 `.gitifact/history.jsonl`이다. 기능 `index.md`는 기능 S-ID를 알려고 함께 읽으며, 그 커밋에서 바뀌지 않았으면 변경에 넣지 않는다.
+기록 파일은 기능 `index.md`, `requirements/*.md`, `design/*.md`, 결정기록 `.gitifact/records/*/*.md`, 과거 커밋의 지침 `index.md`, 0.8.0 이전 커밋의 위키 `*.md`와 `.gitifact/history.jsonl`이다. 기능 `index.md`는 기능 S-ID를 알려고 함께 읽으며, 그 커밋에서 바뀌지 않았으면 변경에 넣지 않는다.
 
 | 양쪽 비교 | 결과 |
 | :--- | :--- |
@@ -100,13 +97,13 @@ gitGraph
 
 ## 체크아웃의 작성자 집계
 
-기능별 작성자·최근 커밋과 지침 폴더·AGENTS.md의 최근 커밋, 전체 참여자는 캐시의 커밋 기록(`adapters/cache/commit-log.ts`)에서 SQL로 센다. 커밋 기록은 HEAD의 모든 커밋과 그 커밋이 건드린 `.gitifact/spec`·`.gitifact/instructions`의 폴더와 AGENTS.md를 담으며, 개수 제한이 없다. 새 HEAD는 앞 HEAD와의 차이만 읽는다(`git log <새> ^<앞>`, `git rev-list <앞> ^<새>`).
+기능별 작성자·최근 커밋과 전체 참여자는 캐시의 커밋 기록(`adapters/cache/commit-log.ts`)에서 SQL로 센다. 커밋 기록은 HEAD의 모든 커밋과 그 커밋이 건드린 `.gitifact/spec`·`.gitifact/instructions`의 폴더와 AGENTS.md를 담으며, 개수 제한이 없다. 새 HEAD는 앞 HEAD와의 차이만 읽는다(`git log <새> ^<앞>`, `git rev-list <앞> ^<새>`).
 
 병합 커밋은 파일 목록이 없어 집계에 들지 않는다. 마이그레이션 커밋은 문서를 모두 다시 쓰지만 누구의 작업도 아니므로 뺀다. 체크아웃 읽기 안의 여러 읽기는 나란히 돌리고 실패는 모두 끝난 뒤 알린다. 실패를 먼저 돌려주면 요청이 끝난 뒤에도 git 프로세스가 프로젝트에서 돈다.
 
 ## 캐시
 
-이력과 작업 폴더 문서는 SQLite 캐시 `.gitifact/cache/index.db`에서 거르고 세고 찾는다(`apps/cli/src/adapters/cache/`). 브라우저 서버와 CLI의 조회 명령(`specs list`·`instructions list`·`records list`와 `show` 등)이 같은 파일을 쓰고, 질의는 SQL이며 git을 부르지 않는다. SQLite는 Node 24에 내장된 `node:sqlite`다.
+이력과 작업 폴더 문서는 SQLite 캐시 `.gitifact/cache/index.db`에서 거르고 세고 찾는다(`apps/cli/src/adapters/cache/`). 브라우저 서버와 CLI의 조회 명령(`specs list`·`records list`와 `show` 등)이 같은 파일을 쓰고, 질의는 SQL이며 git을 부르지 않는다. SQLite는 Node 24에 내장된 `node:sqlite`다.
 
 ### 이력과 계보
 
@@ -134,7 +131,7 @@ pull 뒤에는 새 커밋만 읽고, 브랜치를 오가면 대개 아무것도 
 
 ### 작업 폴더 문서
 
-에이전트가 파일을 직접 고치므로, 읽을 때마다 `.gitifact/spec`·`.gitifact/instructions`·`.gitifact/wiki` 아래 파일의 수정 시각·크기를 캐시가 마지막에 본 값과 견주어 달라진 파일만 다시 파싱한다(`documents.ts`). 훑기와 읽기는 폴더의 항목을 동시에 묻고 결과를 경로순으로 모은다. 파일을 여는 횟수가 비용이라, 파일 5,000개를 하나씩 읽으면 2,150ms, 동시에 읽으면 677ms였다. 1MB를 넘는 문서 파일은 읽지 않고 문제로 알리며, 파일 2만 개에서 훑기를 멈춘다. 위키 아래 Markdown은 문서로 읽지 않고 `WIKI_REMOVED` 문제로만 남긴다.
+에이전트가 파일을 직접 고치므로, 읽을 때마다 `.gitifact/spec`·`.gitifact/instructions`·`.gitifact/wiki` 아래 파일의 수정 시각·크기를 캐시가 마지막에 본 값과 견주어 달라진 파일만 다시 파싱한다(`documents.ts`). 훑기와 읽기는 폴더의 항목을 동시에 묻고 결과를 경로순으로 모은다. 파일을 여는 횟수가 비용이라, 파일 5,000개를 하나씩 읽으면 2,150ms, 동시에 읽으면 677ms였다. 1MB를 넘는 문서 파일은 읽지 않고 문제로 알리며, 파일 2만 개에서 훑기를 멈춘다. 위키 아래 Markdown은 문서로 읽지 않고 `WIKI_REMOVED` 문제로만 남긴다. 지침 폴더도 문서로 읽지 않고 폴더마다 `index.md`에서 `INSTRUCTION_MOVED` 문제 하나로 남긴다.
 
 ### 표
 

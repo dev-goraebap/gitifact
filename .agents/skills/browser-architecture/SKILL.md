@@ -1,10 +1,11 @@
 ---
-id: I-5x5yhjlk4u
-title: 브라우저 아키텍처
+name: browser-architecture
 description: 브라우저 React 앱의 경로·코드 구성·데이터 흐름·레이아웃·디자인 시스템 규칙. apps/browser 코드를 고칠 때 쓴다.
 ---
 
-브라우저는 CLI 로컬 서버가 제공하는 읽기 전용 React SPA다. 대시보드, 요구사항, 프로젝트 지침, 결정기록, 참여자, Git 상태를 보여 주며 요구사항을 편집하거나 승인을 만들지 않는다. 이 지침은 브라우저 코드를 고칠 때 따르는 규칙을 둔다. 규칙을 정한 맥락과 검토한 대안은 결정기록에 있으므로, 규칙을 바꾸기 전에 `records list --doc I-5x5yhjlk4u`로 읽는다.
+# 브라우저 아키텍처
+
+브라우저는 CLI 로컬 서버가 제공하는 읽기 전용 React SPA다. 대시보드, 요구사항, 결정기록, 참여자, Git 상태를 보여 주며 요구사항을 편집하거나 승인을 만들지 않는다. 이 스킬은 브라우저 코드를 고칠 때 따르는 규칙을 둔다. 2026-10-12까지 이 스킬은 Gitifact 지침 I-5x5yhjlk4u였으므로, 그때까지 규칙을 정한 맥락과 검토한 대안은 `records list --doc I-5x5yhjlk4u`로 읽는다.
 
 ## 경로와 URL 상태
 
@@ -13,7 +14,7 @@ description: 브라우저 React 앱의 경로·코드 구성·데이터 흐름·
 | 상태 | 둘 곳 |
 | :--- | :--- |
 | 목록을 대체하는 상세의 대상(기능 ID·참여자 이메일·문서 ID·커밋) | Router 경로 매개변수 |
-| 같은 화면 안의 상태(기능 상세의 `tab`, 지침의 `file`, 검색어 `q`, 필터·정렬·페이지) | Router의 검증된 search params |
+| 같은 화면 안의 상태(기능 상세의 `tab`, 검색어 `q`, 필터·정렬·페이지) | Router의 검증된 search params |
 | CLI 응답·조회 오류·재조회 상태 | TanStack Query |
 | 모바일 메뉴 등 일시 UI | 컴포넌트 또는 app provider |
 | 표시 언어·화면 모드·색 조합·메뉴 폭 | 그 브라우저의 localStorage |
@@ -56,7 +57,7 @@ flowchart TD
 | 슬라이스 | 맡는 것 |
 | :--- | :--- |
 | `app/routes` | 라우트 파일과 search params 검증. 화면 컴포넌트는 pages에 둔다 |
-| `pages/*` | 화면마다 하나: overview·features·instructions·activity·commit·contributors·git-status·settings·about·getting-started·changelog·not-found. `commit`은 커밋 페이지, 기록 상세, 커밋 전 페이지(`/records/working`)를 함께 맡는다 |
+| `pages/*` | 화면마다 하나: overview·features·activity·commit·contributors·git-status·settings·about·getting-started·changelog·not-found. `commit`은 커밋 페이지, 기록 상세, 커밋 전 페이지(`/records/working`)를 함께 맡는다 |
 | `widgets/records-page` | 명세·문서 화면이 함께 쓰는 틀: 세션·명세 조회, 머리 막대, 골격, 오류, 검색 인자 |
 | `widgets/activity-timeline` | 결정기록 목록·대시보드가 쓰는 타임라인. 커밋 페이지와 기록 상세도 그 기록 묶기(`groupRecords`)를 쓴다 |
 | `widgets/diff-view` | 줄 단위 diff(`LineDiff`) |
@@ -68,7 +69,7 @@ flowchart TD
 
 틀(`records-page`)은 다른 위젯을 직접 부르지 않도록 머리 막대 부품(`PageHeader`)을 화면에서 받는다. CSS 모듈은 파일마다 클래스 이름을 바꾸므로 한 선택자에 다른 슬라이스의 클래스를 섞지 않는다. 틀이 화면의 요소를 알아봐야 하면 속성(`data-page-footer`)으로 표시한다.
 
-화면 문구는 `shared/i18n`의 `t()`·`tNodes()`로 가져오고, 규칙은 [CLI 아키텍처](../cli-architecture/index.md)의 사용자에게 보이는 문구 절을 따른다. 소개 본문은 `packages/intro/<lang>/intro.md`를 `shared/i18n`이 가져오고, 맨 앞 로고 블록은 같은 패키지의 로고 파일을 번들한 이미지로 보여 준다.
+화면 문구는 `shared/i18n`의 `t()`·`tNodes()`로 가져오고, 규칙은 [CLI 아키텍처](../cli-architecture/SKILL.md)의 사용자에게 보이는 문구 절을 따른다. 소개 본문은 `packages/intro/<lang>/intro.md`를 `shared/i18n`이 가져오고, 맨 앞 로고 블록은 같은 패키지의 로고 파일을 번들한 이미지로 보여 준다.
 
 ## 데이터 흐름
 
@@ -87,7 +88,7 @@ flowchart TD
   H -->|예| N["새 HEAD 이력을 50건씩"]
 ```
 
-같은 HEAD의 이력은 바뀌지 않으므로 새로고침은 체크아웃의 틀을 다시 읽고 그 부분들(기능 목록·기능·지침·참여자)의 조회를 버린다. 셸은 미커밋 변경을 보이려고 체크아웃 API를 따로 호출하지 않는다.
+같은 HEAD의 이력은 바뀌지 않으므로 새로고침은 체크아웃의 틀을 다시 읽고 그 부분들(기능 목록·기능·참여자)의 조회를 버린다. 셸은 미커밋 변경을 보이려고 체크아웃 API를 따로 호출하지 않는다.
 
 화면이 처음 그리는 조회는 그 경로의 `loader`(`pages/<화면>/model/load.ts`)가 캐시에 채우고, 부품은 같은 조회 옵션으로 읽는다. 주소에서 조회 인자를 만드는 함수(예: `featureFilterOf`)는 `loader`와 부품이 함께 쓴다. 인자가 어긋나면 두 번 조회한다. `loader`는 실패를 삼키고(`settle`) 화면이 오류를 보이게 한다. 검색 조건은 `loaderDeps`에 넣지 않는다. 같은 화면 안의 변경은 이동이 아니다. 새 화면을 그리는 첫 조회를 부품 안에만 두면, 그 부분이 화면이 뜬 뒤에 조각으로 그려진다. 이동하는 동안 셸이 이전 화면 위에 로켓을 띄우고(100ms 뒤, 최소 300ms), 처음 접속할 때는 창 전체에 띄운다. 화면별 골격은 두지 않고, 같은 화면 안의 조회는 제자리의 작은 로켓(`RequestState`)을 쓴다. 큰 목록은 받은 데이터를 `useDeferredValue`로 넘겨 조건이 바뀔 때 나눠 그린다. 검색어 입력은 타자가 멈춘 뒤 500ms에 반영하며, `shared/lib/search`의 값(`typingDelay`) 하나를 화면 검색창과 검색창 팔레트가 함께 쓴다. 재조회 중에는 현재 목록을 유지한다.
 
@@ -103,7 +104,6 @@ AppShell은 wash 변형의 inset 배치다. 왼쪽 메뉴는 기본 240px이고 
 | :--- | :--- |
 | 검색 입구 | 아이콘만 남김 |
 | 조회 시각 | 숨김 |
-| 지침 파일 목록 | 내용 위로 옮김 |
 | 목록 필터 | 검색칸이 한 줄을 다 쓰고, 선택 상자는 같은 폭 두 칸 |
 
 머리 막대, 페이지 제목, 필터 줄, 본문은 같은 좌우 여백(`--spacing-5`)을 써서 화면의 왼쪽 끝이 한 줄에 선다. 화면이 본문 안에서 여백을 더 두지 않는다.
@@ -153,9 +153,9 @@ diff의 지운 줄·더한 줄 바탕은 `--color-background-red`·`--color-back
 
 서버 경로는 `server/routes/`의 경로 표에 한 줄씩 둔다(메서드·경로·세션·쿼리 스키마·처리 함수). 쿼리 스키마는 `@gitifact/contracts`에 두어 브라우저와 함께 쓴다. 모든 요청의 공통 검사는 `server/http/guard.ts` 한 곳이고 서버 프레임워크는 쓰지 않는다.
 
-목록의 걸러내기·정렬·묶기·자르기는 서버가 하고 화면은 받은 순서와 범위를 그린다(DR-jvbx23yyyj). 체크아웃은 부분으로 받는다. 모든 화면은 틀(`/api/v1/checkout`: HEAD·지문·미커밋·색인)을 먼저 읽고, 기능 목록·기능·지침·참여자는 각 화면이 따로 묻는다. 색인은 링크 해석·이동 경로·필터 선택지가 쓰며 본문 없이 전체다. 이력도 화면이 받은 범위에서 거르거나 세지 않는다. 필터·검색어·건수·페이지는 서버가 전체 이력에 대해 답하고(`/api/v1/history`), 개요의 집계도 서버 요약(`/api/v1/history/summary`)을 쓴다. 참여자와 기능별 작성자는 캐시의 커밋 기록에서 HEAD의 모든 커밋을 센다.
+목록의 걸러내기·정렬·묶기·자르기는 서버가 하고 화면은 받은 순서와 범위를 그린다(DR-jvbx23yyyj). 체크아웃은 부분으로 받는다. 모든 화면은 틀(`/api/v1/checkout`: HEAD·지문·미커밋·색인)을 먼저 읽고, 기능 목록·기능·참여자는 각 화면이 따로 묻는다. 색인은 링크 해석·이동 경로·필터 선택지가 쓰며 본문 없이 전체다. 이력도 화면이 받은 범위에서 거르거나 세지 않는다. 필터·검색어·건수·페이지는 서버가 전체 이력에 대해 답하고(`/api/v1/history`), 개요의 집계도 서버 요약(`/api/v1/history/summary`)을 쓴다. 참여자와 기능별 작성자는 캐시의 커밋 기록에서 HEAD의 모든 커밋을 센다.
 
-이력은 CLI와 함께 쓰는 캐시 `.gitifact/cache/index.db`가 답하고, git은 캐시에 없는 커밋을 읽을 때만 부른다([CLI 아키텍처](../cli-architecture/index.md)). Windows에서 git 프로세스는 하는 일과 무관하게 한 번에 약 80ms이므로, 기록 수나 파일 수만큼 git을 띄우는 읽기를 새로 만들지 않는다.
+이력은 CLI와 함께 쓰는 캐시 `.gitifact/cache/index.db`가 답하고, git은 캐시에 없는 커밋을 읽을 때만 부른다([CLI 아키텍처](../cli-architecture/SKILL.md)). Windows에서 git 프로세스는 하는 일과 무관하게 한 번에 약 80ms이므로, 기록 수나 파일 수만큼 git을 띄우는 읽기를 새로 만들지 않는다.
 
 ## 문서 렌더링
 

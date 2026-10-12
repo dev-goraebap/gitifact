@@ -5,14 +5,13 @@ description: 문서 본문 렌더링, 코드·다이어그램·알림 표시, �
 order: 50
 requirements:
   - R-xqf3xsumye
-  - R-oh4oevufr3
   - R-wa3wnknrlt
   - R-wgi4sahmou
 ---
 
 ## 문서 읽기
 
-프로젝트 지침·AGENTS.md·요구사항·설계·활동 전후 본문·소개는 `shared/ui/document`의 `DocumentBody`로 렌더링한다. 읽기 영역은 48rem 한 폭이고 Astryx Markdown의 `contentWidth`는 100%다. Astryx는 문단만 680px로 제한하고 표·코드·구분선은 전체 폭으로 그려 오른쪽 끝이 어긋나기 때문이다.
+요구사항·설계·활동 전후 본문·소개는 `shared/ui/document`의 `DocumentBody`로 렌더링한다. 읽기 영역은 48rem 한 폭이고 Astryx Markdown의 `contentWidth`는 100%다. Astryx는 문단만 680px로 제한하고 표·코드·구분선은 전체 폭으로 그려 오른쪽 끝이 어긋나기 때문이다.
 
 크기는 읽기 영역에서 Astryx 글자 토큰을 재정의해 맞춘다. 제목은 어느 단계에서도 본문보다 크고 위 간격이 아래보다 넓다. `density`로 compact 표시를 고를 수 있지만 지금 compact를 넘기는 화면은 없다.
 
@@ -27,9 +26,9 @@ requirements:
 | 알림 | 목록과 같은 15px, 줄 간격 1.65 |
 | 링크 | 테마상 글자색과 같으므로 밑줄 |
 
-목록 항목과 표 셀의 여백·크기는 Astryx 원자 클래스가 ID 두 개 무게로 정하므로 같은 무게(`:not(#\#)` 두 번)로 덮는다. List 테마를 바꾸면 문서 이력·지침 목록까지 바뀌므로 읽기 영역 안에서만 덮는다. 인라인 코드의 띠가 회색인 것은 요구사항·설계 제목의 노란 형광펜과 구별하기 위해서다.
+목록 항목과 표 셀의 여백·크기는 Astryx 원자 클래스가 ID 두 개 무게로 정하므로 같은 무게(`:not(#\#)` 두 번)로 덮는다. List 테마를 바꾸면 문서 이력 목록까지 바뀌므로 읽기 영역 안에서만 덮는다. 인라인 코드의 띠가 회색인 것은 요구사항·설계 제목의 노란 형광펜과 구별하기 위해서다.
 
-요구사항 본문의 목록 항목은 파일에 쓴 줄 그대로 나눠 보인다. 수용 조건의 `경로:`·`조건:`·`기대 동작:`처럼 항목 아래에 들여 쓴 줄이 이어지면, 그리기 직전에 앞 줄 끝에 줄바꿈을 넣는다(`shared/ui/document`의 `withItemLineBreaks`). Markdown은 한 항목의 줄을 한 문단으로 합쳐 한 줄로 이어 보이기 때문이다. 파일은 바꾸지 않고, 설계·지침과 코드 블록은 그대로 둔다. 기능 상세와 커밋·기록 페이지의 요구사항 비교에 쓴다.
+요구사항 본문의 목록 항목은 파일에 쓴 줄 그대로 나눠 보인다. 수용 조건의 `경로:`·`조건:`·`기대 동작:`처럼 항목 아래에 들여 쓴 줄이 이어지면, 그리기 직전에 앞 줄 끝에 줄바꿈을 넣는다(`shared/ui/document`의 `withItemLineBreaks`). Markdown은 한 항목의 줄을 한 문단으로 합쳐 한 줄로 이어 보이기 때문이다. 파일은 바꾸지 않고, 설계와 코드 블록은 그대로 둔다. 기능 상세와 커밋·기록 페이지의 요구사항 비교에 쓴다.
 
 ## 코드·다이어그램·알림
 
@@ -82,7 +81,7 @@ sequenceDiagram
 
 ## 문서 링크
 
-문서 링크는 원문을 두고 렌더링 때 번역한다. `resolveDocumentLink.ts`가 문서의 저장소 경로(`from`)와 링크로 대상을 정한다. 문서 경로는 `DocumentBody`의 `path`로 받아 context에 두고, `DocumentIndexProvider`가 첫 명세 응답의 페이지·기능 목록을 준다.
+문서 링크는 원문을 두고 렌더링 때 번역한다. `resolveDocumentLink.ts`가 문서의 저장소 경로(`from`)와 링크로 대상을 정한다. 문서 경로는 `DocumentBody`의 `path`로 받아 context에 두고, `DocumentIndexProvider`가 체크아웃 색인의 기능 목록을 준다.
 
 ```mermaid
 flowchart TD
@@ -92,11 +91,10 @@ flowchart TD
   K -->|"/"| APP["앱 경로"]
   K -->|"상대 경로"| R["from 기준으로 풀기"]
   R --> T{"대상"}
-  T -->|"지침·AGENTS.md"| INS["/instructions/I-ID · /instructions/agents"]
   T -->|"기능 문서"| FEAT["/features/S-ID"]
   T -->|"에셋"| ASSET["/api/v1/assets/…"]
   T -->|"그 밖"| OUT["브라우저 밖"]
-  INS & FEAT -.->|"목록에 없음"| MISS["대상 없음"]
+  FEAT -.->|"목록에 없음"| MISS["대상 없음"]
 ```
 
 | 결과 | 표시 |
@@ -104,7 +102,7 @@ flowchart TD
 | 기능 `index.md` | 요구사항 탭(기능 소개가 그 맨 위) |
 | 요구사항·설계 파일 | 같은 기능의 해당 탭. 프래그먼트가 없으면 그 문서의 ID를 붙임 |
 | 대상 없음 | 취소선 Text와 툴팁. 비활성 button은 hover가 없어 툴팁이 뜨지 않으므로 쓰지 않는다 |
-| 브라우저 밖 | href 없는 Astryx Link를 흐린 색·점선 밑줄로, Tooltip과 함께. 클릭하면 저장소 경로를 복사하고 toast로 알림 |
+| 브라우저 밖 | href 없는 Astryx Link를 흐린 색·점선 밑줄로, Tooltip과 함께. 클릭하면 저장소 경로를 복사하고 toast로 알림. AGENTS.md와 `.gitifact/instructions/` 아래 파일도 여기에 든다 |
 | 이미지 | 같은 규칙으로 src를 바꾸고, 해석되지 않으면 대체 텍스트만 |
 
 서버는 `.gitifact` 밖 파일을 제공하지 않는다.

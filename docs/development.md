@@ -1,5 +1,11 @@
 # 개발 환경
 
+## 2026-10-12 프로젝트 지침 기능 정리(0.9.0 준비)
+
+0.8.6 뒤에 만든 프로젝트 스킬 관리(커밋 5개)는 `skills-0.9-experiment` 브랜치에 보관하고, `main`을 0.8.6(`e4186ca`)으로 되돌린 뒤 지침 기능을 걷어냈다(DR-r4q7qxngiw). `instructions` 명령·`guide show instructions`·브라우저 지침 화면과 API를 지우고, 작업 트리에 남은 지침은 `INSTRUCTION_MOVED`로 막는다. 옛 커밋의 지침은 이력에서 읽는다. browser-checkout을 v2, browser-search를 v4로, 캐시 형식을 13으로 올렸다. 보관 브랜치에서 PowerShell 목록 수정(`--docs`·`--fields`가 쉼표와 공백으로 나눔)을 다시 넣었다.
+
+이 저장소의 지침 5개는 `.agents/skills/<이름>/SKILL.md`로 옮겼다. `.claude/skills/`는 Git이 무시하고, `.claude/settings.json`의 세션 시작 훅이 `scripts/sync-claude-skills.mjs`로 `.agents/skills/`를 복사한다. 버전은 아직 올리지 않았고 패치노트는 배포 때 쓴다.
+
 ## 2026-09-28 유즈케이스 방식 요구사항(0.8.6 준비)
 
 0.8.5 뒤의 변경을 0.8.6으로 묶었다. 요구사항 목록 항목의 줄 나눠 보이기(`b5362ce`, DR-6loue3zli5)와 선택하는 유즈케이스 방식 요구사항(`c2dc8ef`, DR-qgjduifysd·DR-4kzcepxucn)이다. 그 전에 이 저장소의 11개 기능 요구사항을 기능마다 사용자 확인을 받아 유즈케이스로 바꿨다(`9c8985d`~`94676e5`, 문서만). browser-feature·commit-change·working-change 계약을 v2로, 캐시 형식을 12로 올렸다. `style` 키가 있는 요구사항은 0.8.5 이하가 `FRONTMATTER_UNKNOWN_KEY`로 막으므로 패치노트에 적었다.

@@ -8,3 +8,4 @@ playwright-report/
 *.tgz
 apps/browser/src/app/routeTree.gen.ts
 apps/cli/LICENSE
+/.claude/skills/

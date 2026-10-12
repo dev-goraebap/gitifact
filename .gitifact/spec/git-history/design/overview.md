@@ -22,7 +22,7 @@ requirements:
 | 기능 개요(`index.md`) | `S-` | `Gitifact-Doc` |
 | 요구사항(파일마다) | `R-` | `Gitifact-Req` |
 | 설계(축 파일마다) | `D-` | `Gitifact-Design` |
-| 지침(`index.md`) | `I-` | `Gitifact-Doc` |
+| 지침(`index.md`, 0.9.0 이전 커밋) | `I-` | `Gitifact-Doc` |
 | 위키 페이지(0.8.0 이전 커밋) | `W-` | `Gitifact-Doc` |
 
 결정기록 하나는 `.gitifact/records/<yyyymmdd>/<DR-ID>.md` 파일 하나다. 프론트매터는 `id`(DR-)·`title`·`docs`와 선택 키 `draft`이고, 본문은 맥락·결정(필수)과 검토한 대안(선택) `##` 섹션뿐이다. 기록에는 종류가 없다(형식은 `gitifact guide show records`). 작성자·시각은 파일에 두지 않고 기록을 더한 커밋에서 읽는다. 기록은 결정한 때 `records new`가 초안(`draft: true`)으로 만들고 에이전트가 채운다. 기록이 파일마다 따로 있어 두 브랜치가 함께 기록을 더해도 병합 규칙 없이 합쳐진다.
