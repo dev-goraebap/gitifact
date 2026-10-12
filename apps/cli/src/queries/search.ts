@@ -1,7 +1,7 @@
 import type { ListSource } from './specs.js';
 
 /** The groups the search box shows, in this order. */
-export const SEARCH_GROUPS = ['feature', 'requirement', 'design', 'instruction', 'record', 'commit'] as const;
+export const SEARCH_GROUPS = ['feature', 'requirement', 'design', 'record', 'commit'] as const;
 export type SearchGroup = typeof SEARCH_GROUPS[number];
 /** Hits a group shows before the reader asks for more of it, and how many the opening list shows. */
 const FIRST = 5; const RECENT = 6;
@@ -14,8 +14,8 @@ const place = (path: string) => path.replace(/^\.gitifact\//, '');
 const folderOf = (path: string) => path.split('/').slice(0, 3).join('/');
 
 /**
- * What the search box shows, worked out here so the browser only draws it. Nothing typed: the features and
- * instructions touched most recently. Words: each group's first hits and how many it has — the current documents by
+ * What the search box shows, worked out here so the browser only draws it. Nothing typed: the features touched
+ * most recently. Words: each group's first hits and how many it has — the current documents by
  * kind, the records of HEAD's history one per record file, and the commits a hash names. With `group` only that group,
  * a page after the hit `after`. A cursor that no longer matches answers undefined.
  */
@@ -36,15 +36,14 @@ export async function searchRecords(source: ListSource, request: SearchRequest):
 }
 const empty = () => ({ total: 0, next: null, hits: [] as SearchHit[] });
 
-/** The features and instructions touched most recently, by the newest commit in their folder. */
+/** The features touched most recently, by the newest commit in their folder. */
 async function recent(source: ListSource, head: string | null): Promise<SearchResult> {
   const [{ documents }, folders] = await Promise.all([source.cache.documents.list(), head ? source.cache.log.folders(head) : new Map()]);
-  const hits = documents.filter(d => d.kind === 'feature' || d.kind === 'instruction')
+  const hits = documents.filter(d => d.kind === 'feature')
     .map(d => ({ doc: d, latest: folders.get(folderOf(d.path))?.latest as string | undefined }))
     .filter((d): d is { doc: typeof d.doc; latest: string } => !!d.latest)
     .sort((a, b) => Date.parse(b.latest) - Date.parse(a.latest) || a.doc.id.localeCompare(b.doc.id))
     .slice(0, RECENT)
-    .map(({ doc }): SearchHit => ({ id: doc.id, kind: doc.kind as 'feature' | 'instruction', title: doc.title, where: place(doc.path), line: doc.description,
-      ...(doc.kind === 'feature' ? { featureId: doc.id } : {}) }));
+    .map(({ doc }): SearchHit => ({ id: doc.id, kind: 'feature', title: doc.title, where: place(doc.path), line: doc.description, featureId: doc.id }));
   return { group: 'recent', total: hits.length, next: null, hits };
 }

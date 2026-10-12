@@ -5,7 +5,8 @@ import { z } from 'zod';
 // search v2, and records replaced reasons in history v5, summary v4 and commit v3. Specs v7 says where each document
 // stands against the last commit; history v6 pages by commit with a cursor; commit v4 lists changes without their text,
 // which commit change v1 reads when one is opened. In 0.8.2 the checkout (specs v7) became checkout, features,
-// feature, instructions and contributors, each shaped by the server. The versions before them had no consumers
+// feature, instructions and contributors, each shaped by the server. In 0.9.0 Gitifact stopped keeping instructions:
+// checkout v2 and search v4 dropped them, and the history still names the instructions of older commits. The versions before them had no consumers
 // outside the CLI and were removed.
 
 // Where a document stands against the last commit. A deleted one is still listed until the commit that removes it.
@@ -24,15 +25,6 @@ const feature = z.strictObject({ id: z.string(), path: z.string(), title: z.stri
   requirements: z.array(requirement), designs: z.array(design),
   // Authors of commits touching the feature folder and the latest such commit; empty until first committed.
   contributors: z.array(contributor), updatedAt: z.string().nullable() });
-// A project instruction: its index.md and the other files of its folder, which the browser reads one at a time.
-// `title` and `description` come from a reference file's frontmatter; the browser names the file by the title instead of
-// its file name. Files that are not Markdown, or whose frontmatter cannot be read, have neither.
-const instructionFile = z.strictObject({ path: z.string(), size: z.number().int().nonnegative(), title: z.string().optional(), description: z.string().optional() });
-const instruction = z.strictObject({ id: z.string(), name: z.string(), path: z.string(), title: z.string(), description: z.string(), body: z.string(), ...standing,
-  // Paths relative to the instruction folder, index.md left out; `limited` when the folder holds more than the list carries.
-  files: z.array(instructionFile), filesLimited: z.boolean(), updatedAt: z.string().nullable() });
-// AGENTS.md at the repository root: the instructions every session loads, which point at the ones above.
-const agents = z.strictObject({ path: z.string(), body: z.string(), updatedAt: z.string().nullable() });
 // A file the cache could not read: the browser says so instead of silently leaving the document out.
 const problem = z.strictObject({ code: z.string(), path: z.string(), message: z.string() });
 const oid = z.string().regex(/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/);
@@ -44,17 +36,16 @@ const oid = z.string().regex(/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/);
 const indexFeature = z.strictObject({ id: z.string(), path: z.string(), title: z.string(), state,
   requirements: z.array(z.strictObject({ id: z.string(), path: z.string(), title: z.string(), description: z.string() })),
   designs: z.array(z.strictObject({ id: z.string(), path: z.string(), title: z.string() })) });
-const indexInstruction = z.strictObject({ id: z.string(), name: z.string(), path: z.string(), title: z.string() });
 /**
  * The frame every records screen reads first: HEAD, when it was read and its stamp, whether anything is uncommitted,
  * the files that could not be read, and the index of every document and person — what links resolve with, crumbs
  * name, and filters offer. `stamp` changes whenever HEAD or the uncommitted documents do; the browser compares it with
  * `/api/v1/stamp` to tell the reader the screen is behind.
  */
-export const browserCheckoutV1 = z.strictObject({
-  contract: z.literal('browser-checkout'), version: z.literal(1), sessionId: z.string(),
+export const browserCheckoutV2 = z.strictObject({
+  contract: z.literal('browser-checkout'), version: z.literal(2), sessionId: z.string(),
   head: oid.nullable(), observedAt: z.string(), working: z.boolean(), stamp: z.string(), problems: z.array(problem),
-  index: z.strictObject({ features: z.array(indexFeature), instructions: z.array(indexInstruction), people: z.array(z.strictObject({ name: z.string(), email: z.string() })) }),
+  index: z.strictObject({ features: z.array(indexFeature), people: z.array(z.strictObject({ name: z.string(), email: z.string() })) }),
 });
 // A row of the feature list: the feature, its first requirements (those the words matched), and how many more.
 const featureRow = z.strictObject({ id: z.string(), path: z.string(), title: z.string(), description: z.string(), state,
@@ -74,9 +65,6 @@ export const browserFeaturesV1 = z.strictObject({
 });
 /** One feature with its requirements and designs as written, its authors and its last change. */
 export const browserFeatureV2 = z.strictObject({ contract: z.literal('browser-feature'), version: z.literal(2), sessionId: z.string(), feature });
-/** Every instruction by name and AGENTS.md: few enough to send whole, each with the files of its folder. */
-export const browserInstructionsV1 = z.strictObject({ contract: z.literal('browser-instructions'), version: z.literal(1), sessionId: z.string(),
-  instructions: z.array(instruction), agents: agents.nullable() });
 /** The contributors that match, most commits first, a page at a time; `features` is how many features each touched. */
 export const browserContributorsV1 = z.strictObject({ contract: z.literal('browser-contributors'), version: z.literal(1), sessionId: z.string(),
   total: z.number().int().nonnegative(), next: z.string().nullable(),
@@ -84,11 +72,10 @@ export const browserContributorsV1 = z.strictObject({ contract: z.literal('brows
 /** One contributor and the features they touched, with their commits there and each feature's requirement count. */
 export const browserContributorV1 = z.strictObject({ contract: z.literal('browser-contributor'), version: z.literal(1), sessionId: z.string(), person: contributor,
   features: z.array(z.strictObject({ id: z.string(), title: z.string(), commits: z.number().int().nonnegative(), requirements: z.number().int().nonnegative() })) });
-export type BrowserCheckoutV1 = z.infer<typeof browserCheckoutV1>;
+export type BrowserCheckoutV2 = z.infer<typeof browserCheckoutV2>;
 export type IndexFeature = z.infer<typeof indexFeature>;
 export type BrowserFeaturesV1 = z.infer<typeof browserFeaturesV1>;
 export type FeatureRow = z.infer<typeof featureRow>;
-export type BrowserInstructionsV1 = z.infer<typeof browserInstructionsV1>;
 export type BrowserContributorsV1 = z.infer<typeof browserContributorsV1>;
 export type BrowserContributorV1 = z.infer<typeof browserContributorV1>;
 export type Contributor = z.infer<typeof contributor>;
@@ -135,10 +122,10 @@ export const browserHistorySummaryV5 = z.strictObject({
   recent: z.array(z.strictObject({ commit: oid, count: z.number().int().positive(), events: z.array(event) })),
 });
 // What the search box finds: current documents by kind, records one per record file, and commits a hash names.
-const searchKind = z.enum(['feature', 'requirement', 'design', 'instruction', 'record', 'commit']);
+const searchKind = z.enum(['feature', 'requirement', 'design', 'record', 'commit']);
 const searchHit = z.strictObject({
   id: z.string(), kind: searchKind, title: z.string(), where: z.string(), line: z.string(),
-  // What the hit opens: a feature (with the requirement or design tab), an instruction, a record, or a commit.
+  // What the hit opens: a feature (with the requirement or design tab), a record, or a commit.
   featureId: z.string().optional(), commit: oid.optional(),
 });
 /**
@@ -146,8 +133,8 @@ const searchHit = z.strictObject({
  * has and where the next page starts; asked for one group, that group's next page; with no words, the documents
  * touched most recently (`recent`).
  */
-export const browserSearchV3 = z.strictObject({
-  contract: z.literal('browser-search'), version: z.literal(3), sessionId: z.string(), query: z.string(),
+export const browserSearchV4 = z.strictObject({
+  contract: z.literal('browser-search'), version: z.literal(4), sessionId: z.string(), query: z.string(),
   groups: z.array(z.strictObject({ group: z.union([searchKind, z.literal('recent')]), total: z.number().int().nonnegative(), next: z.string().nullable(), hits: z.array(searchHit) })),
 });
 export type DocumentState = z.infer<typeof state>;
@@ -155,7 +142,7 @@ export type BrowserHistoryV7 = z.infer<typeof browserHistoryV7>;
 /** One commit of a history page as a whole: what a card counts beside the changes the filters are about. */
 export type HistoryCommitSize = BrowserHistoryV7['whole'][number];
 export type BrowserHistorySummaryV5 = z.infer<typeof browserHistorySummaryV5>;
-export type BrowserSearchV3 = z.infer<typeof browserSearchV3>;
+export type BrowserSearchV4 = z.infer<typeof browserSearchV4>;
 export type SearchHit = z.infer<typeof searchHit>;
 export type SpecEvent = z.infer<typeof event>;
 export type SpecRecord = z.infer<typeof record>;
@@ -163,9 +150,6 @@ export type SpecSnapshot = NonNullable<z.infer<typeof snapshot>>;
 export type SpecFeature = z.infer<typeof feature>;
 export type SpecRequirement = z.infer<typeof requirement>;
 export type SpecDesign = z.infer<typeof design>;
-export type SpecInstruction = z.infer<typeof instruction>;
-export type InstructionFile = z.infer<typeof instructionFile>;
-export type AgentsFile = z.infer<typeof agents>;
 export type DesignSource = z.infer<typeof source>;
 
 // Query strings the browser API accepts. Every value arrives as text; a key given twice is refused before these run.
@@ -194,10 +178,8 @@ export const browserContributorQueryV1 = z.strictObject({ email: z.string().min(
  * `/api/v1/search`: the words (none for the opening list), the HEAD whose history to look through (the server's own when
  * left out), and for more of one group, the group, the hit the page starts after and how many (default 20).
  */
-export const browserSearchQueryV2 = z.strictObject({ q: z.string().max(200), head: headQuery.optional(), group: searchKind.optional(),
+export const browserSearchQueryV3 = z.strictObject({ q: z.string().max(200), head: headQuery.optional(), group: searchKind.optional(),
   after: z.string().min(1).max(200).optional(), limit: count(50).pipe(z.number().min(1)).optional() });
-/** `/api/v1/instructions/file`: one file of an instruction folder, by the instruction's ID and the path inside the folder. */
-export const browserInstructionFileQueryV1 = z.strictObject({ id: z.string().regex(/^I-[a-z2-7]{10}$/), path: z.string().min(1).max(1000) });
 export const changelogQueryV1 = z.strictObject({ lang: z.string().regex(/^[a-z]{2}(?:-[A-Z]{2})?$/).optional() });
 
 // The source files a commit changed beside its documents, for the activity detail. Paths under `.gitifact` are left
@@ -279,12 +261,6 @@ export const browserDocumentHistoryQueryV1 = z.strictObject({ head: oid, id: z.s
   after: oid.optional(), limit: count(50).pipe(z.number().min(1)).optional() });
 export type BrowserDocumentHistoryV1 = z.infer<typeof browserDocumentHistoryV1>;
 
-/** One file of an instruction folder from the working tree: its text, or why there is none (binary, over 512 KB). */
-export const browserInstructionFileV1 = z.strictObject({
-  contract: z.literal('browser-instruction-file'), version: z.literal(1), sessionId: z.string(), id: z.string(), path: z.string(),
-  text: z.string().nullable(), size: z.number().int().nonnegative(), binary: z.boolean(), tooLarge: z.boolean(),
-});
-export type BrowserInstructionFileV1 = z.infer<typeof browserInstructionFileV1>;
 
 // What is not committed yet, as `changes list` sees it: the records written for the next commit and the documents that
 // differ from HEAD. It is worked out on every request and never kept.

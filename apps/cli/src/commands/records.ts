@@ -21,8 +21,11 @@ type Options = { format: Format };
  */
 export const runRecordsNew = (options: Options & { title: string; docs: string[] }) => runCommand('records', options.format, async () => {
   if (/[\r\n]/.test(options.title)) throw new CommandError('INVALID_VALUE', t('docs.singleLine', { field: 'title' }));
-  const docs = [...new Set(options.docs.flatMap(d => d.split(',')).map(d => d.trim()).filter(Boolean))];
-  if (!docs.length || docs.some(d => !docIdPattern.test(d))) throw new CommandError('INVALID_VALUE', t('records.invalidDocs'));
+  // Commas or spaces: Windows PowerShell hands an unquoted `a,b` through npm's shim as the one value `a b`.
+  const docs = [...new Set(options.docs.flatMap(d => d.split(/[\s,]+/)).filter(Boolean))];
+  if (!docs.length) throw new CommandError('INVALID_VALUE', t('records.invalidDocs'));
+  const invalid = docs.filter(d => !docIdPattern.test(d));
+  if (invalid.length) throw new CommandError('INVALID_VALUE', t('records.notDocIds', { ids: invalid.join(', ') }));
   const project = await openProject(process.cwd());
   let id: string; do id = generateId(RECORD_ID_PREFIX); while (await findRecord(project.root, id));
   const lang = getLanguage();

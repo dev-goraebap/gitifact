@@ -2,7 +2,6 @@ import type { DesignSource, IndexFeature, SpecSnapshot } from '@gitifact/contrac
 import { VStack } from '@astryxdesign/core/VStack';
 import { HStack } from '@astryxdesign/core/HStack';
 import { Text } from '@astryxdesign/core/Text';
-import { useDocumentIndex } from '../../../shared/ui/document';
 import { LineDiff } from '../../../widgets/diff-view';
 import styles from './ChangeDiff.module.css';
 import { t, useLanguage } from '../../../shared/i18n';
@@ -39,9 +38,8 @@ function fieldChanges(before: SpecSnapshot, after: SpecSnapshot, title: (id: str
  */
 export function ChangeDiff({ before, after, features }: { before: SpecSnapshot; after: SpecSnapshot; features: IndexFeature[] }) {
   useLanguage();
-  const index = useDocumentIndex();
   // A requirement or a page named by ID reads by its current title; one that no longer exists keeps its ID.
-  const title = (id: string) => features.flatMap(f => f.requirements).find(r => r.id === id)?.title ?? index.instructions?.find(d => d.id === id)?.title ?? id;
+  const title = (id: string) => features.flatMap(f => f.requirements).find(r => r.id === id)?.title ?? id;
   const fields = fieldChanges(before, after, title);
   return <VStack gap={4}>
     {!!fields.length && <VStack as="section" gap={2} aria-label={t('diff.fields')} className={styles.fields}>

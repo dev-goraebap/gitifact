@@ -36,7 +36,7 @@ test('rendered block is marker-delimited, Markdown-structured, short and names n
   for (const pinned of ['.gitifact/config.json', '`cli`', 'npm i -g gitifact@<버전>', 'gitifact update --later', '명령 그대로 보여 주며', '떠넘기지 않는다', '`npm.cmd`']) assert.ok(shipped.includes(pinned), pinned);
   assert.ok(!shipped.includes('npx'));
   assert.ok(lines.length >= 25 && lines.length <= 50, String(lines.length));
-  for (const topic of ['guide show spec', 'guide show commit', 'guide show <topic>', 'specs list', 'specs new', 'instructions list', 'records list --doc', 'gitifact check', 'changes commit', 'SELF-CHECK']) assert.ok(shipped.includes(topic), topic);
+  for (const topic of ['guide show spec', 'guide show commit', 'guide show <topic>', 'specs list', 'specs new', 'records list --doc', 'gitifact check', 'changes commit', 'SELF-CHECK']) assert.ok(shipped.includes(topic), topic);
   for (const removed of ['spec working', 'spec save', 'spec commit', '`docs <topic>`', 'docs list', 'docs check']) assert.ok(!shipped.includes(removed), removed);
   assert.equal(boilerplateFor('.claude/CLAUDE.md'), '# CLAUDE\n\nProject-specific guidance for AI coding agents.\n');
   assert.equal(boilerplateFor('.cursorrules'), '# cursorrules\n\nProject-specific guidance for AI coding agents.\n');

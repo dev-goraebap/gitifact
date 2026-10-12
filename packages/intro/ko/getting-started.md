@@ -26,14 +26,6 @@ init이 AGENTS.md 등에 쓴 GITIFACT 블록을 읽고 이번 세션부터 따�
 이 프로젝트의 요구사항과 설계를 정리해주세요.
 ```
 
-## 프로젝트 지침 만들기
-
-개발 규칙이나 아키텍처 결정은 작업별 프로젝트 지침으로 관리할 수 있습니다. 어떤 지침을 둘지, 어떤 작업 때 읽을지도 에이전트와 대화하며 정하세요.
-
-```text
-우리 프로젝트의 개발 규칙을 프로젝트 지침으로 정리해주세요.
-```
-
 ## 문서와 변경 이력 확인하기
 
 보고 싶은 내용을 에이전트에게 말하면 됩니다. 예를 들어 다음과 같이 요청할 수 있습니다.
@@ -49,12 +41,11 @@ init이 AGENTS.md 등에 쓴 GITIFACT 블록을 읽고 이번 세션부터 따�
 | :--- | :--- |
 | 대시보드 | 프로젝트 규모와 최신 활동 |
 | 기능별 요구사항 | 현재 요구사항과 기능별 설계 |
-| 프로젝트 지침 | AGENTS.md와 개발 규칙·아키텍처 결정 등 작업별 지침 |
 | 결정기록 | 커밋된 결정기록과 그 기록이 설명하는 문서의 변경 전후 내용 |
 | 참여자 | Git 작성자별 참여 내역 |
 | Git 상태 | 현재 작업 폴더의 변경 파일 |
 
-요구사항·설계·지침에는 작업 중인 내용이, 결정기록에는 커밋된 이력이 보입니다.
+요구사항·설계에는 작업 중인 내용이, 결정기록에는 커밋된 이력이 보입니다.
 
 ## Gitifact에 의견 보내기
 
@@ -131,18 +122,16 @@ npx gitifact browser
 | `gitifact guide list` | 에이전트 작업 지침의 주제 목록 |
 | `gitifact guide show spec` | 요구사항 파일 형식과 작성 규칙 |
 | `gitifact guide show design` | 기능 설계 작성 규칙 |
-| `gitifact guide show instructions` | 프로젝트 지침 형식과 AGENTS.md 색인 |
 | `gitifact guide show records` | 결정기록을 쓰는 때와 형식 |
 | `gitifact guide show commit` | 결정기록과 관련 파일을 함께 커밋하는 방법 |
 
 ### 문서 조회와 커밋
 
-요구사항·설계·지침은 `.gitifact/` 아래의 Markdown 파일이며 직접 고칩니다. 새 문서는 CLI로 만들어 ID를 받습니다.
+요구사항·설계는 `.gitifact/` 아래의 Markdown 파일이며 직접 고칩니다. 새 문서는 CLI로 만들어 ID를 받습니다.
 
 | 명령 | 용도 |
 | :--- | :--- |
 | `gitifact specs list` | 기능·요구사항·설계 목록(본문 없이 ID·제목·설명). `--uncovered`·`--changed-since`·`--q` 등으로 거른다 |
-| `gitifact instructions list` | AGENTS.md와 프로젝트 지침 목록 |
 | `gitifact specs show <ID>` | 문서 원문과 그 문서를 가리키는 설계. `--ref <커밋>`으로 과거 원문 |
 | `gitifact records list --doc <ID>` | 문서의 결정기록과 커밋 |
 | `gitifact specs new requirement <기능>/<이름>` | ID를 발급하고 뼈대를 채운 새 문서 생성 |

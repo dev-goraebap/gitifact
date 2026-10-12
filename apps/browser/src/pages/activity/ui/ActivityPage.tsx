@@ -1,6 +1,6 @@
 import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query';
 import { Selector } from '@astryxdesign/core/Selector';
-import type { BrowserCheckoutV1, BrowserSessionV3 } from '@gitifact/contracts';
+import type { BrowserCheckoutV2, BrowserSessionV3 } from '@gitifact/contracts';
 import { RecordsPage, SearchFilter, type RecordSearch, type ChangeSearch } from '../../../widgets/records-page';
 import { HistoryView } from './HistoryView';
 import { PageHeader } from '../../../widgets/page-header';
@@ -11,7 +11,7 @@ import { t, useLanguage } from '../../../shared/i18n';
 
 /**
  * The decision records: the commits whose changes the filters are about, each with the records that explain them,
- * filtered by the server over all of history. The target is a feature or an instruction.
+ * filtered by the server over all of history. The target is a feature.
  */
 export function ActivityPage({ search, change }: { search: RecordSearch; change: ChangeSearch }) {
   useLanguage();
@@ -19,8 +19,7 @@ export function ActivityPage({ search, change }: { search: RecordSearch; change:
     filters={(checkout, session) => <>
       <SearchFilter label={t('filters.search')} placeholder={t('filters.searchEvents')} value={search.q ?? ''} onChange={q => change({ ...search, q: q || undefined }, true)}/>
       <Selector label={t('filters.target')} isLabelHidden startIcon={FeatureIcon} value={search.target ?? ''} options={[{ value: '', label: t('filters.allTargets') },
-        ...(checkout.index.features.length ? [{ type: 'section' as const, title: t('nav.features'), options: checkout.index.features.map(f => ({ value: f.id, label: f.title })) }] : []),
-        ...(checkout.index.instructions.length ? [{ type: 'section' as const, title: t('nav.instructions'), options: checkout.index.instructions.map(i => ({ value: i.id, label: i.title })) }] : [])]}
+        ...(checkout.index.features.length ? [{ type: 'section' as const, title: t('nav.features'), options: checkout.index.features.map(f => ({ value: f.id, label: f.title })) }] : [])]}
         onChange={target => change({ ...search, target: target || undefined })}/>
       <DocumentKindFilter checkout={checkout} session={session} search={search} change={change}/>
       <Selector label={t('filters.record')} isLabelHidden startIcon={RecordIcon} value={search.record ?? ''} options={[{ value: '', label: t('filters.allRecords') }, { value: 'missing', label: t('filters.recordMissing') }]} onChange={record => change({ ...search, record: record || undefined })}/>
@@ -31,14 +30,14 @@ export function ActivityPage({ search, change }: { search: RecordSearch; change:
 }
 
 /**
- * The kind of document. Wiki pages left the project, so they are offered only when the history holds one — the list's
- * own answer says which kinds it holds — or when the address already asks for them.
+ * The kind of document. Wiki pages and instructions left the project, so each is offered only when the history holds
+ * one — the list's own answer says which kinds it holds — or when the address already asks for it.
  */
-function DocumentKindFilter({ checkout, session, search, change }: { checkout: BrowserCheckoutV1; session: BrowserSessionV3; search: RecordSearch; change: ChangeSearch }) {
+function DocumentKindFilter({ checkout, session, search, change }: { checkout: BrowserCheckoutV2; session: BrowserSessionV3; search: RecordSearch; change: ChangeSearch }) {
   // The same query the list asks, so it is answered once.
   const history = useInfiniteQuery({ ...historyOptions(session, checkout.head ?? '', historyFilterOf(search)), enabled: !!checkout.head, placeholderData: keepPreviousData });
-  const wiki = search.document === 'wiki' || !!history.data?.pages[0]?.kinds.includes('wiki');
-  const kinds = ['feature', 'requirement', 'design', 'instruction', ...(wiki ? ['wiki'] as const : [])] as const;
+  const held = (kind: 'wiki' | 'instruction') => search.document === kind || !!history.data?.pages[0]?.kinds.includes(kind);
+  const kinds = ['feature', 'requirement', 'design', ...(held('instruction') ? ['instruction'] as const : []), ...(held('wiki') ? ['wiki'] as const : [])] as const;
   return <Selector label={t('filters.document')} isLabelHidden startIcon={DocumentKindIcon} value={search.document ?? ''}
     options={[{ value: '', label: t('filters.allDocuments') }, ...kinds.map(kind => ({ value: kind, label: t(`kind.${kind}`) }))]}
     onChange={document => change({ ...search, document: document || undefined })}/>;

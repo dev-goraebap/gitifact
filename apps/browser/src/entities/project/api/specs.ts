@@ -1,5 +1,5 @@
 import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
-import { browserCheckoutV1, browserFeaturesV1, browserFeatureV2, browserInstructionsV1, browserContributorsV1, browserContributorV1, browserHistoryV7, browserHistorySummaryV5, browserSearchV3, browserCommitFilesV2, browserCommitFileV1, browserCommitV4, browserCommitChangeV2, browserInstructionFileV1,
+import { browserCheckoutV2, browserFeaturesV1, browserFeatureV2, browserContributorsV1, browserContributorV1, browserHistoryV7, browserHistorySummaryV5, browserSearchV4, browserCommitFilesV2, browserCommitFileV1, browserCommitV4, browserCommitChangeV2,
   browserRecordV2, browserDocumentHistoryV1, browserStampV1, browserWorkingV1, browserWorkingChangeV2, type BrowserSessionV3 } from '@gitifact/contracts';
 import { requestJson, ApiError } from '../../../shared/api/client';
 import { httpFailure } from './repository';
@@ -25,12 +25,12 @@ const scope = (session: BrowserSessionV3) => [window.location.origin, session.se
  * project says an observation is explicit.
  */
 export const checkoutOptions = (session: BrowserSessionV3) => queryOptions({
-  queryKey: ['browser-checkout', 1, ...scope(session)],
+  queryKey: ['browser-checkout', 2, ...scope(session)],
   staleTime: Infinity, retry: false,
-  queryFn: ({ signal }) => read(session, '/api/v1/checkout', browserCheckoutV1, signal),
+  queryFn: ({ signal }) => read(session, '/api/v1/checkout', browserCheckoutV2, signal),
 });
 /** The parts of the checkout the refresh reads again with the frame: each is the working tree, seen another way. */
-export const checkoutParts = ['browser-features', 'browser-feature', 'browser-instructions', 'browser-contributors', 'browser-contributor'];
+export const checkoutParts = ['browser-features', 'browser-feature', 'browser-contributors', 'browser-contributor'];
 
 /** The feature list's filters and order, as the server takes them. */
 export interface FeatureFilter { q?: string | undefined; design?: string | undefined; author?: string | undefined; sort?: string | undefined; dir?: string | undefined }
@@ -54,12 +54,6 @@ export const featureOptions = (session: BrowserSessionV3, id: string) => queryOp
   queryKey: ['browser-feature', 2, ...scope(session), id],
   staleTime: Infinity, retry: false,
   queryFn: ({ signal }) => read(session, '/api/v1/feature?id=' + encodeURIComponent(id), browserFeatureV2, signal),
-});
-/** Every instruction with its files, and AGENTS.md. */
-export const instructionsOptions = (session: BrowserSessionV3) => queryOptions({
-  queryKey: ['browser-instructions', 1, ...scope(session)],
-  staleTime: Infinity, retry: false,
-  queryFn: ({ signal }) => read(session, '/api/v1/instructions', browserInstructionsV1, signal),
 });
 /** The contributors whose name or email holds the words, most commits first, twenty at a time. */
 export const contributorsOptions = (session: BrowserSessionV3, q: string | undefined) => infiniteQueryOptions({
@@ -197,16 +191,6 @@ export const commitFileOptions = (session: BrowserSessionV3, commit: string, pat
 });
 
 /**
- * One file of an instruction folder from the working tree, read when the reader opens it. Kept like the checkout: the header's
- * refresh reads the checkout again, and a file whose size changed there is a new query.
- */
-export const instructionFileOptions = (session: BrowserSessionV3, id: string, path: string, size: number) => queryOptions({
-  queryKey: ['browser-instruction-file', 1, ...scope(session), id, path, size],
-  staleTime: Infinity, retry: false,
-  queryFn: ({ signal }) => read(session, '/api/v1/instructions/file?' + new URLSearchParams({ id, path }), browserInstructionFileV1, signal),
-});
-
-/**
  * The whole hash of the one commit of HEAD whose hash starts with `prefix`, as the search box finds commits (seven
  * characters or more); null when no commit or more than one does.
  */
@@ -214,13 +198,12 @@ export const commitNamedOptions = (session: BrowserSessionV3, prefix: string) =>
   queryKey: ['browser-commit-named', 1, ...scope(session), prefix],
   staleTime: Infinity, retry: false,
   queryFn: async ({ signal }) => {
-    const found = await read(session, '/api/v1/search?' + new URLSearchParams({ q: prefix, group: 'commit', limit: '2' }), browserSearchV3, signal);
+    const found = await read(session, '/api/v1/search?' + new URLSearchParams({ q: prefix, group: 'commit', limit: '2' }), browserSearchV4, signal);
     const group = found.groups[0];
     return group?.total === 1 ? group.hits[0]?.commit ?? null : null;
   },
 });
 
-/** Records whose title, place or text holds the words: the current specs and instructions, then past changes of `head`. */
 /**
  * The search box's groups for some words (none for the documents touched most recently). With `more`, the next page
  * of one group after the hit its last page ended with. The server reads its own HEAD for history.
@@ -228,5 +211,5 @@ export const commitNamedOptions = (session: BrowserSessionV3, prefix: string) =>
 export function searchRecords(session: BrowserSessionV3, words: string, signal?: AbortSignal, more?: { group: string; after: string }) {
   const query = new URLSearchParams({ q: words });
   if (more) { query.set('group', more.group); query.set('after', more.after); }
-  return read(session, '/api/v1/search?' + query, browserSearchV3, signal);
+  return read(session, '/api/v1/search?' + query, browserSearchV4, signal);
 }

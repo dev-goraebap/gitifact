@@ -1,16 +1,16 @@
 import type { DocProblem } from '@gitifact/core';
-import type { FeatureRow, SpecFeature, SpecInstruction } from '@gitifact/contracts';
+import type { FeatureRow, SpecFeature } from '@gitifact/contracts';
 import type { FolderAuthors, Person } from '../adapters/cache/index.js';
 import { pageOf, type PageRequest } from './paging.js';
 
 /**
- * The working tree as the browser reads it, before any screen's shape: features and instructions with where each
+ * The working tree as the browser reads it, before any screen's shape: features with where each
  * stands and who wrote them, whether anything is uncommitted, and the stamp. The server reads it
  * (`server/checkout/checkout-reader.ts`); the functions here give each screen what it draws.
  */
 export interface CheckoutBase {
   head: string | null; stamp: string; observedAt: string; working: boolean; problems: DocProblem[];
-  features: SpecFeature[]; instructions: Omit<SpecInstruction, 'files' | 'filesLimited'>[];
+  features: SpecFeature[];
   people: Person[]; folders: Map<string, FolderAuthors>;
 }
 
@@ -26,7 +26,6 @@ export function checkoutIndex(base: CheckoutBase) {
     features: base.features.map(f => ({ id: f.id, path: f.path, title: f.title, state: f.state,
       requirements: f.requirements.map(r => ({ id: r.id, path: r.path, title: r.title, description: r.description })),
       designs: f.designs.map(d => ({ id: d.id, path: d.path, title: d.title })) })),
-    instructions: base.instructions.map(k => ({ id: k.id, name: k.name, path: k.path, title: k.title })),
     people: base.people.map(p => ({ name: p.name, email: p.email })),
   };
 }

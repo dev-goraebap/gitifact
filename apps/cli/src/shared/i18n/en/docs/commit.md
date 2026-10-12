@@ -43,4 +43,4 @@ If the project has its own rules for grouping commits, follow them. Under a spli
 
 ## Message and trailers
 
-Follow the project's commit message convention. If none exists, state briefly what changed on the first line and why in the body. The CLI adds trailers for the changed documents and the documents records name (`Gitifact-Req` for requirements, `Gitifact-Design` for designs, `Gitifact-Doc` for features and instructions, `Gitifact-Record` for records). A message with a line starting `Gitifact-` is refused.
+Follow the project's commit message convention. If none exists, state briefly what changed on the first line and why in the body. The CLI adds trailers for the changed documents and the documents records name (`Gitifact-Req` for requirements, `Gitifact-Design` for designs, `Gitifact-Doc` for features, `Gitifact-Record` for records). A message with a line starting `Gitifact-` is refused.

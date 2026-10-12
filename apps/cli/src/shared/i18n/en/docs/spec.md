@@ -107,7 +107,7 @@ Apply this to new requirements and those being revised for the current request. 
 - A rule whose result can be checked in a given situation becomes an acceptance criterion instead. Do not write the same rule in both places.
 - A quality target for this feature alone (performance, availability, security, accessibility, compatibility) is one item with a number. Example: "- One page of the list shows within 1 second for 95% of requests." Do not write targets without an agreed number ("fast", "stable").
 
-System-wide quality targets (response time of every query, supported browsers, session expiry) are not repeated per requirement; gather them in one common feature. For example, `.gitifact/spec/quality/` holds one target per requirement, with what can be judged written as acceptance criteria. Do not put them in project instructions: instructions describe how to work, and what the product promises belongs in the specs.
+System-wide quality targets (response time of every query, supported browsers, session expiry) are not repeated per requirement; gather them in one common feature. For example, `.gitifact/spec/quality/` holds one target per requirement, with what can be judged written as acceptance criteria. Do not put them with how the project works (AGENTS.md or skills): those describe how to work, and what the product promises belongs in the specs.
 
 ## Use-case style (optional)
 

@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test';
-import { browserSessionV3, changelogV1, repositoryStatusSuccessV1, type BrowserWorkingV1, type CommitFile, type Contributor, type DesignSource, type SpecEvent, type SpecFeature, type SpecInstruction, type AgentsFile } from '@gitifact/contracts';
+import { browserSessionV3, changelogV1, repositoryStatusSuccessV1, type BrowserWorkingV1, type CommitFile, type Contributor, type DesignSource, type SpecEvent, type SpecFeature } from '@gitifact/contracts';
 
 export const session = browserSessionV3.parse({
   contract: 'browser-session',
@@ -45,19 +45,17 @@ type Standing = { state?: SpecFeature['state']; previousPath?: string };
 type LooseRequirement = { id: string; title: string; body: string; path?: string; description?: string; order?: number; style?: 'default' | 'usecase' } & Standing;
 type LooseDesign = { id?: string; title: string; body: string; requirements: string[]; sources: DesignSource[]; path?: string; description?: string; order?: number } & Standing;
 type LooseFeature = Omit<SpecFeature, 'requirements' | 'designs' | 'body' | 'state'> & Standing & { requirements: LooseRequirement[]; designs?: LooseDesign[]; design?: LooseDesign | undefined; body?: string };
-/** An instruction as tests write it: what is left out is filled in (no other files, never committed). */
-type LooseInstruction = Pick<SpecInstruction, 'id' | 'name' | 'title' | 'body'> & Partial<SpecInstruction>;
 type Problem = { code: string; path: string; message: string };
-/** The whole checkout the server's parts are cut from: every feature and instruction with their text, and the people. */
+/** The whole checkout the server's parts are cut from: every feature with its text, and the people. */
 export type FullCheckout = { contract?: string; version?: number; sessionId: string; head: string | null; observedAt: string; working: boolean; stamp: string;
-  features: SpecFeature[]; instructions: SpecInstruction[]; agents: AgentsFile | null; problems: Problem[]; contributors: Contributor[]; contributorsLimited?: boolean };
+  features: SpecFeature[]; problems: Problem[]; contributors: Contributor[]; contributorsLimited?: boolean };
 /** A checkout with the history the mock serves beside it, in a shorthand the tests can write by hand. */
-export type Fixture = Omit<FullCheckout, 'version' | 'features' | 'instructions' | 'agents' | 'problems' | 'stamp'> & { version?: number; stamp?: string; features: LooseFeature[];
-  instructions?: LooseInstruction[]; agents?: AgentsFile | null; problems?: Problem[]; events: SpecEvent[] };
+export type Fixture = Omit<FullCheckout, 'version' | 'features' | 'problems' | 'stamp'> & { version?: number; stamp?: string; features: LooseFeature[];
+  problems?: Problem[]; events: SpecEvent[] };
 /** Joins a relative link onto the folder of `from`, as a document link resolves. */
 const joined = (from: string, href: string) => { const parts = from.split('/').slice(0, -1); for (const p of href.split('/')) { if (p === '..') parts.pop(); else if (p && p !== '.') parts.push(p); } return parts.join('/'); };
 /** The checkout part of a fixture: the shorthand filled out to the whole shape, committed unless a state is given. */
-export const checkoutOf = ({ events: _events, features, instructions, agents, problems, stamp, ...rest }: Fixture): FullCheckout => ({ ...rest, version: 7, stamp: stamp ?? 'stamp-1',
+export const checkoutOf = ({ events: _events, features, problems, stamp, ...rest }: Fixture): FullCheckout => ({ ...rest, version: 7, stamp: stamp ?? 'stamp-1',
   features: features.map(({ design, designs, requirements, body, state = 'committed', ...f }) => {
     const path = f.path.replace(/requirements\.md$/, 'index.md'); const folder = path.replace(/\/index\.md$/, '');
     // A design written the old way names its sources relative to design.md; they become repository paths.
@@ -67,8 +65,6 @@ export const checkoutOf = ({ events: _events, features, instructions, agents, pr
       designs: all.map((d, i) => ({ id: 'D-' + f.id.slice(2, 11) + i, path: `${folder}/design/${i ? 'part-' + i : 'overview'}.md`, description: d.title, order: (i + 1) * 10, state: 'committed' as const, ...d,
         sources: d.sources.map(s => s.path ? { ...s, path: joined(folder + '/design.md', s.path) } : s) })) };
   }),
-  instructions: (instructions ?? []).map(k => ({ path: `.gitifact/instructions/${k.name}/index.md`, description: k.title + ' 설명', files: [], filesLimited: false, updatedAt: null, state: 'committed' as const, ...k })),
-  agents: agents ?? null,
   problems: problems ?? [] });
 const lower = (text: string) => text.toLowerCase();
 const plainText = (text: string) => text.replace(/[*_`#>]/g, '').replace(/\s+/g, ' ').trim();
@@ -76,12 +72,11 @@ const line = (text: string, query: string) => { const at = lower(text).indexOf(q
 const notFound = { contract: 'browser-http-error', version: 1, error: { code: 'NOT_FOUND', message: 'no change' } };
 
 /** The frame `/api/v1/checkout` answers: HEAD, stamp, uncommitted, problems, and the index of documents and people. */
-export const frameOf = (full: FullCheckout) => ({ contract: 'browser-checkout', version: 1, sessionId: full.sessionId, head: full.head, observedAt: full.observedAt,
+export const frameOf = (full: FullCheckout) => ({ contract: 'browser-checkout', version: 2, sessionId: full.sessionId, head: full.head, observedAt: full.observedAt,
   working: full.working, stamp: full.stamp, problems: full.problems,
   index: { features: full.features.map(f => ({ id: f.id, path: f.path, title: f.title, state: f.state,
       requirements: f.requirements.map(r => ({ id: r.id, path: r.path, title: r.title, description: r.description })),
       designs: f.designs.map(d => ({ id: d.id, path: d.path, title: d.title })) })),
-    instructions: full.instructions.map(k => ({ id: k.id, name: k.name, path: k.path, title: k.title })),
     people: full.contributors.map(p => ({ name: p.name, email: p.email })) } });
 const acceptance = (body: string) => { const lines = body.split('\n'); const start = lines.findIndex(l => /^###\s+(?:수용 조건|acceptance criteria)\s*$/i.test(l.trim()));
   if (start < 0) return null; let n = 0; for (const l of lines.slice(start + 1)) { if (/^#{1,6}\s/.test(l)) break; if (/^\d+\.\s/.test(l)) n++; } return n || null; };
@@ -123,8 +118,6 @@ export async function serve(page: Page, data: Fixture) {
     const feature = checkout.features.find(f => f.id === new URL(route.request().url()).searchParams.get('id'));
     return feature ? route.fulfill({ json: { contract: 'browser-feature', version: 2, sessionId: session.sessionId, feature } }) : route.fulfill({ status: 404, json: notFound });
   });
-  await page.route(url => url.pathname === '/api/v1/instructions', route => route.fulfill({ json: { contract: 'browser-instructions', version: 1, sessionId: session.sessionId,
-    instructions: [...checkout.instructions].sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0), agents: checkout.agents } }));
   await page.route(url => url.pathname === '/api/v1/contributors', route => {
     const q = new URL(route.request().url()).searchParams; const words = lower(q.get('q') ?? '');
     const people = checkout.contributors.filter(p => !words || lower(p.name + ' ' + p.email).includes(words));
@@ -227,8 +220,7 @@ export async function serve(page: Page, data: Fixture) {
     const q = new URL(route.request().url()).searchParams; const id = q.get('id') ?? '';
     const mine = events.filter(e => e.id === id);
     const docs = [...checkout.features.flatMap(f => [{ id: f.id, title: f.title, kind: 'feature', path: f.path },
-      ...f.requirements.map(r => ({ id: r.id, title: r.title, kind: 'requirement', path: r.path })), ...f.designs.map(d => ({ id: d.id, title: d.title, kind: 'design', path: d.path }))]),
-      ...checkout.instructions.map(k => ({ id: k.id, title: k.title, kind: 'instruction', path: k.path }))];
+      ...f.requirements.map(r => ({ id: r.id, title: r.title, kind: 'requirement', path: r.path })), ...f.designs.map(d => ({ id: d.id, title: d.title, kind: 'design', path: d.path }))])];
     const current = docs.find(d => d.id === id); const last = mine.map(e => e.after ?? e.before).find(Boolean);
     if (!current && !mine.length) return route.fulfill({ status: 404, json: notFound });
     const start = q.get('after') ? mine.findIndex(e => e.commit === q.get('after')) + 1 : 0; const limit = Number(q.get('limit') ?? 20);
@@ -256,10 +248,9 @@ export async function serve(page: Page, data: Fixture) {
   // The search box's groups as the server works them out: documents by kind, records once each, commits by hash.
   await page.route('**/api/v1/search*', route => {
     const q = new URL(route.request().url()).searchParams; const query = lower(q.get('q') ?? '').trim();
-    const reply = (groups: unknown[]) => route.fulfill({ json: { contract: 'browser-search', version: 3, sessionId: session.sessionId, query: q.get('q') ?? '', groups } });
+    const reply = (groups: unknown[]) => route.fulfill({ json: { contract: 'browser-search', version: 4, sessionId: session.sessionId, query: q.get('q') ?? '', groups } });
     if (!query) {
-      const recent = [...checkout.features.map(f => ({ id: f.id, kind: 'feature', title: f.title, where: f.path.replace(/^\.gitifact\//, ''), line: f.description, featureId: f.id, at: f.updatedAt })),
-        ...checkout.instructions.map(k => ({ id: k.id, kind: 'instruction', title: k.title, where: k.path.replace(/^\.gitifact\//, ''), line: k.description, at: k.updatedAt }))]
+      const recent = [...checkout.features.map(f => ({ id: f.id, kind: 'feature', title: f.title, where: f.path.replace(/^\.gitifact\//, ''), line: f.description, featureId: f.id, at: f.updatedAt }))]
         .filter(r => r.at).sort((a, b) => (b.at ?? '').localeCompare(a.at ?? '')).slice(0, 6).map(({ at: _at, ...r }) => r);
       return reply([{ group: 'recent', total: recent.length, next: null, hits: recent }]);
     }
@@ -267,7 +258,6 @@ export async function serve(page: Page, data: Fixture) {
       ...checkout.features.flatMap(f => [{ id: f.id, kind: 'feature', title: f.title, where: f.path.replace(/^\.gitifact\//, ''), body: f.description, featureId: f.id },
         ...f.requirements.map(r => ({ id: r.id, kind: 'requirement', title: r.title, where: r.path.replace(/^\.gitifact\//, ''), body: r.body, featureId: f.id })),
         ...f.designs.map(x => ({ id: x.id, kind: 'design', title: x.title, where: x.path.replace(/^\.gitifact\//, ''), body: x.description + ' ' + x.body, featureId: f.id }))]),
-      ...checkout.instructions.map(k => ({ id: k.id, kind: 'instruction', title: k.title, where: k.path.replace(/^\.gitifact\//, ''), body: k.description + ' ' + k.body })),
     ].map(r => ({ ...r, body: plainText(r.body) })).filter(r => [r.title, r.where, r.body].some(text => lower(text).includes(query)))
       .map(({ body, ...r }) => ({ ...r, line: line(body, query) }));
     const seen = new Set<string>();
@@ -277,7 +267,7 @@ export async function serve(page: Page, data: Fixture) {
     const commits = /^[0-9a-f]{7,64}$/.test(query) ? [...new Map(events.filter(e => e.commit.startsWith(query)).map(e => [e.commit, e])).values()]
       .map(e => ({ id: e.commit, kind: 'commit', title: e.message, where: e.commit.slice(0, 7) + ' · ' + e.author, line: e.date.slice(0, 10), commit: e.commit })) : [];
     const all = [...documents, ...records, ...commits];
-    const kinds = ['feature', 'requirement', 'design', 'instruction', 'record', 'commit'];
+    const kinds = ['feature', 'requirement', 'design', 'record', 'commit'];
     const group = q.get('group');
     const groups = (group ? [group] : kinds).map(kind => {
       const hits = all.filter(h => h.kind === kind);
@@ -287,27 +277,17 @@ export async function serve(page: Page, data: Fixture) {
     if (groups.some(g => !g)) return route.fulfill({ status: 404, json: notFound });
     return reply(groups.filter(g => group || g!.total > 0));
   });
-  // One file of an instruction folder: the text a test put in instructionFiles, or not found.
-  await page.route(url => url.pathname === '/api/v1/instructions/file', route => {
-    const q = new URL(route.request().url()).searchParams; const id = q.get('id') ?? ''; const path = q.get('path') ?? '';
-    const found = instructionFiles[id + ':' + path];
-    return found ? route.fulfill({ json: { contract: 'browser-instruction-file', version: 1, sessionId: session.sessionId, id, path, size: found.text?.length ?? 0, binary: false, tooLarge: false, ...found } })
-      : route.fulfill({ status: 404, json: notFound });
-  });
 }
 /** The stamp /api/v1/stamp answers; a test sets `current` to make the screen behind. */
 export const stamps: { current?: string | undefined } = {};
 /** The uncommitted work /api/v1/working answers, and the text of its changes by document ID. */
 export const working: { current?: Partial<Omit<BrowserWorkingV1, 'contract' | 'version' | 'sessionId'>> | undefined } = {};
 export const workingBodies: Record<string, { before: Side; after: Side }> = {};
-/** Text of instruction folder files by `<instruction id>:<path>`, for the instruction page's file view. */
-export const instructionFiles: Record<string, { text: string | null; binary?: boolean; tooLarge?: boolean }> = {};
 
 export const specs: Fixture = {
  contract:'browser-specs',version:7,sessionId:session.sessionId,head:'c'.repeat(40),observedAt:'2026-09-14T00:00:00Z',working:false,
  features:[{id:'S-abcdefghij',path:'.gitifact/spec/search/requirements.md',title:'검색 기능',description:'',contributors:[{name:'Fixture',email:'fixture@example.test',commits:2,latest:'2026-09-14T00:00:00Z'},{name:'Second',email:'second@example.test',commits:1,latest:'2026-09-13T00:00:00Z'}],updatedAt:'2026-09-14T00:00:00Z',requirements:[{id:'R-abcdefghij',title:'검색어 입력',body:'**검색어**를 입력합니다.\n\n조건: 검색어를 입력합니다.\n기대 동작: 결과를 보여줍니다.'}]}],
  events:[{key:'c'.repeat(40)+':R-abcdefghij',commit:'c'.repeat(40),id:'R-abcdefghij',date:'2026-09-14T00:00:00Z',author:'Fixture',email:'fixture@example.test',committer:'Fixture',message:'검색 도입',types:['created'],before:null,after:{id:'R-abcdefghij',title:'검색어 입력',specId:'S-abcdefghij',path:'.gitifact/spec/search/requirements.md'},kind:'requirement',records:[{id:'H-aaaaaaaaaa',title:'사용자가 검색을 요청했습니다.',sections:[{key:'context',body:'사용자가 검색을 요청했습니다.'}]}]}],
- instructions:[{id:'I-bbbbbbbbbb',name:'layout',title:'레이아웃 지침',description:'열과 폭',body:'중앙 컬럼은 64rem입니다.',updatedAt:'2026-09-14T00:00:00Z'},{id:'I-cccccccccc',name:'naming',title:'이름 규칙',description:'이름 짓기',body:'소문자와 하이픈을 씁니다.'}],
  contributors:[{name:'Fixture',email:'fixture@example.test',commits:3,latest:'2026-09-14T00:00:00Z'},{name:'Second',email:'second@example.test',commits:1,latest:'2026-09-13T00:00:00Z'}],contributorsLimited:false,
 };
 

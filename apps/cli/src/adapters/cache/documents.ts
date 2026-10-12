@@ -1,6 +1,6 @@
 import { lstat, readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { DocumentError, classifyDocPath, docProblem, isWikiPage, parseDocumentFile, HISTORY_PATH, INSTRUCTIONS_ROOT, SPEC_ROOT, WIKI_ROOT, type Doc, type DocProblem } from '@gitifact/core';
+import { DocumentError, classifyDocPath, docProblem, instructionFolderOf, isInstructionPath, isWikiPage, parseDocumentFile, HISTORY_PATH, INSTRUCTIONS_ROOT, SPEC_ROOT, WIKI_ROOT, type Doc, type DocProblem } from '@gitifact/core';
 import { transaction, type CacheDatabase } from './database.js';
 import { containing, plain, snippet } from './search-text.js';
 
@@ -48,6 +48,8 @@ export function createDocumentCache(root: string, database: CacheDatabase) {
     try {
       // Pages left from the wiki are named by the check and listed as unreadable until they are moved.
       if (isWikiPage(path)) return { problem: docProblem('WIKI_REMOVED', path) };
+      // So are instructions, which Gitifact stopped keeping in 0.9.0: each folder is named once, at its index.md.
+      if (isInstructionPath(path)) return path.endsWith('/index.md') && classifyDocPath(path).type === 'doc' ? { problem: docProblem('INSTRUCTION_MOVED', instructionFolderOf(path)!) } : {};
       if (classifyDocPath(path).type !== 'doc') return {};
       if (seen.link) return { problem: docProblem('PATH_UNSUPPORTED', path) };
       if (seen.size > FILE_LIMIT) return { problem: docProblem('FILE_TOO_LARGE', path) };
@@ -106,7 +108,6 @@ export function createDocumentCache(root: string, database: CacheDatabase) {
 
   /** Whether a walked path is read as a document or reason source; unknown paths are kept so the check names them. */
   const readable = (path: string) => { try { return classifyDocPath(path).type !== 'ignored'; } catch { return true; } };
-  const instructionFile = (path: string) => { try { return classifyDocPath(path).type === 'instruction-file'; } catch { return false; } };
 
   return {
     sync,
@@ -122,9 +123,10 @@ export function createDocumentCache(root: string, database: CacheDatabase) {
       // Read side by side, then gathered in path order so the result does not depend on which read finished first.
       const read = await Promise.all([...seen].map(async ([path, s]): Promise<{ path: string; text?: string; problem?: DocProblem }> => {
         if (!readable(path)) return { path };
-        // The other files of an instruction folder are references and images: the check needs their paths, and the
-        // text of the Markdown ones only, for the links an instruction must not make.
-        if (instructionFile(path) && !path.endsWith('.md')) return { path, text: '' };
+        // An instruction folder left in the tree is refused by the check. Its Markdown is read as it is, so the
+        // uncommitted changes see a removed instruction as deleted and one left alone as unchanged; other files need
+        // only their paths.
+        if (isInstructionPath(path) && !path.endsWith('.md')) return { path, text: '' };
         if (s.link) return { path, problem: docProblem('PATH_UNSUPPORTED', path) };
         // The reason file grows with every commit, so it alone may pass the one-document limit.
         if (s.size > (path === HISTORY_PATH ? 64 * FILE_LIMIT : FILE_LIMIT)) return { path, problem: docProblem('FILE_TOO_LARGE', path) };

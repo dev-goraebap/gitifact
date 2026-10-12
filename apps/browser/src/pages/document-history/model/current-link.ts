@@ -1,11 +1,10 @@
-import type { BrowserCheckoutV1 } from '@gitifact/contracts';
+import type { BrowserCheckoutV2 } from '@gitifact/contracts';
 
 /**
- * Where a document is shown now, found in the checkout's index: its feature, the requirement or design on its tab, or
- * its instruction. A document the working tree no longer holds has no page, and undefined says so.
+ * Where a document is shown now, found in the checkout's index: its feature, or the requirement or design on its tab.
+ * A document the working tree no longer holds has no page, and undefined says so.
  */
-export function currentLink(index: BrowserCheckoutV1['index'], id: string) {
-  if (index.instructions.some(i => i.id === id)) return { to: '/instructions/$instructionId', params: { instructionId: id } } as const;
+export function currentLink(index: BrowserCheckoutV2['index'], id: string) {
   for (const feature of index.features) {
     if (feature.id === id) return { to: '/features/$featureId', params: { featureId: id } } as const;
     if (feature.requirements.some(r => r.id === id)) return { to: '/features/$featureId', params: { featureId: feature.id }, search: { selected: id, tab: 'requirements' as const }, hash: id } as const;

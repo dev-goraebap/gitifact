@@ -7,9 +7,9 @@ import { t } from '../shared/i18n/index.js';
 const problemLines = (problems: (DocProblem | DocWarning)[]) => problems.map(p => p.code + ' ' + p.message);
 
 /**
- * `check`: every problem in the whole set of specs, instructions and uncommitted records; exit code 1 when there is
- * any. It stays one command above the resources because a problem often lies between them — a design naming an
- * instruction that was removed. Link and asset warnings are listed after the problems and never change the exit code.
+ * `check`: every problem in the whole set of specs and uncommitted records; exit code 1 when there is any. It stays
+ * one command above the resources because a problem often lies between them — a design naming a requirement that
+ * was removed. Link and asset warnings are listed after the problems and never change the exit code.
  */
 export const runCheck = (options: { format: Format }) => runCommand('check', options.format, async (): Promise<CommandResult> => {
   const project = await openProject(process.cwd());

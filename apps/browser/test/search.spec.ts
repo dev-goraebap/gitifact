@@ -35,21 +35,6 @@ test('the palette opens from the shortcut and from the header, and closes with e
   await expect(page.getByRole('dialog', palette)).toContainText('최근 변경');
 });
 
-test('an instruction is found by its body and opens on enter', async ({ page }) => {
-  await mockApi(page); await page.goto('/dashboard');
-  await ask(page, '중앙 컬럼');
-  // The word is in the body, not the title; the row shows the title, the folder it lives in and the line it matched.
-  const row = page.getByRole('option').filter({ hasText: '레이아웃 지침' });
-  await expect(row).toBeVisible();
-  await expect(row).toContainText('layout');
-  await expect(row).toContainText('중앙 컬럼');
-  await expect(page.getByRole('dialog', palette)).toContainText('프로젝트 지침');
-  // Nothing is highlighted yet, and enter still opens the first result.
-  await page.keyboard.press('Enter');
-  await expect(page).toHaveURL(/\/instructions\/I-bbbbbbbbbb$/);
-  await expect(page.getByRole('dialog', palette)).toHaveCount(0);
-});
-
 test('a requirement opens its feature on the requirements tab', async ({ page }) => {
   await mockApi(page); await page.goto('/dashboard');
   await ask(page, '검색어 입력');

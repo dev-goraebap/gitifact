@@ -13,7 +13,6 @@ import { HgiMembers } from '../../../shared/ui/icons/HgiMembers';
 import { HgiGit } from '../../../shared/ui/icons/HgiGit';
 import { HgiGithub } from '../../../shared/ui/icons/HgiGithub';
 import { HgiDashboard } from '../../../shared/ui/icons/HgiDashboard';
-import { HgiInstruction } from '../../../shared/ui/icons/HgiInstruction';
 import { HgiRocket } from '../../../shared/ui/icons/HgiRocket';
 import { HgiInfo } from '../../../shared/ui/icons/HgiInfo';
 import { HgiSettings } from '../../../shared/ui/icons/HgiSettings';
@@ -26,7 +25,6 @@ import { t, useLanguage } from '../../../shared/i18n';
 const destinations = () => ([
   ['/dashboard', t('nav.product'), HgiDashboard],
   ['/features', t('nav.features'), HgiRequirement],
-  ['/instructions', t('nav.instructions'), HgiInstruction],
   ['/records', t('nav.history'), HgiHistory],
   ['/contributors', t('nav.contributors'), HgiMembers],
   ['/git', t('nav.git'), HgiGit],

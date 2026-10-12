@@ -1,11 +1,11 @@
 ## Gitifact Guide
 
-Product behavior (requirements and designs), instructions and decision records live in `.gitifact/` and are managed with the CLI `gitifact`. If the project specifies another way to run it, that is what `gitifact` means.
+Product behavior (requirements and designs) and decision records live in `.gitifact/` and are managed with the CLI `gitifact`. If the project specifies another way to run it, that is what `gitifact` means.
 
 ### At the start of a session
 
 1. If `gitifact` is missing, show the user the exact command `npm i -g gitifact@<version>` with the `cli` version in `.gitifact/config.json` (`npm.cmd` in Windows PowerShell), ask whether to run it, and run it yourself once allowed. Do not leave the install to the user.
-2. Read every instruction with `gitifact instructions list --all`, and check git status and existing staging.
+2. Check git status and existing staging.
 
 ### What belongs in requirements
 
@@ -23,8 +23,8 @@ Record product behavior and constraints that must be maintained.
 | Situation | First |
 | --- | --- |
 | Product behavior comes up | Check existing specs and conflicts with `specs list --type requirement` |
-| Before changing code or documents | Read the feature's requirements and designs (`specs show <ID>`), the instructions the index outside this block points to, and the document's decision flow (`records list --doc <ID>`) |
-| Writing a new document | Read `guide show spec` (`design` for designs, `instructions` for instructions) and `guide show writing`. Get IDs with `specs new` or `instructions new`, and verify with `gitifact check` after editing |
+| Before changing code or documents | Read the feature's requirements and designs (`specs show <ID>`) and the document's decision flow (`records list --doc <ID>`) |
+| Writing a new document | Read `guide show spec` (`design` for designs) and `guide show writing`. Get IDs with `specs new`, and verify with `gitifact check` after editing |
 | Changing a document or choosing between options | Write a decision record with `records new` (`guide show records`) |
 | Asked to commit | Read `guide show commit`, write the input to the file `changes list` names, then run `changes commit` |
 | Asked to show the records | Run `gitifact browser` in the background and give the URL |
@@ -40,7 +40,7 @@ Record product behavior and constraints that must be maintained.
 
 ### Commands
 
-- `specs`·`instructions`·`records`: `list`·`show`·`new`. `check`: whole check. `changes list`·`changes commit --file <json> [--dry-run]`
+- `specs`·`records`: `list`·`show`·`new`. `check`: whole check. `changes list`·`changes commit --file <json> [--dry-run]`
 - `browser`, `feedback`, `update [--check | --commit | --later]`, `init`, `guide list`·`guide show <topic>` ({topics}). Lists show 20 at a time; read on with the `--after <value>` at the end (`--all` for everything). They take `--fields` and `--format json`; see `--help` for options.
 
 ---

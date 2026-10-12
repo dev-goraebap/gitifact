@@ -1,5 +1,5 @@
 import type { QueryClient } from '@tanstack/react-query';
-import type { BrowserCheckoutV1, BrowserSessionV3 } from '@gitifact/contracts';
+import type { BrowserCheckoutV2, BrowserSessionV3 } from '@gitifact/contracts';
 import { sessionOptions } from './repository';
 import { checkoutOptions } from './specs';
 
@@ -13,7 +13,7 @@ export const settle = (read: Promise<unknown>) => read.then(() => undefined, () 
  * The frame every records screen is drawn over, primed before the screen is: the server session, then the checkout's
  * frame (HEAD, the index). Undefined parts are reads that failed; the screen shows why.
  */
-export async function primeFrame(client: QueryClient): Promise<{ session?: BrowserSessionV3; checkout?: BrowserCheckoutV1 }> {
+export async function primeFrame(client: QueryClient): Promise<{ session?: BrowserSessionV3; checkout?: BrowserCheckoutV2 }> {
   const session = await client.ensureQueryData(sessionOptions()).catch(() => undefined);
   if (!session) return {};
   const checkout = await client.ensureQueryData(checkoutOptions(session)).catch(() => undefined);

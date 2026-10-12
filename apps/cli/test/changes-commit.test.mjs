@@ -266,7 +266,7 @@ test('a hook changing the commit keeps recovery evidence and blocks retries', t 
   const head = f.git(['rev-parse', 'HEAD']).stdout; assert.equal(f.commit(input).status, 1); assert.equal(f.git(['rev-parse', 'HEAD']).stdout, head);
 });
 
-test('a migration commit removes the 0.7 files, moves the wiki and the reasons to instructions and records, and stays out of the history', t => {
+test('a migration commit removes the 0.7 files, moves the wiki out and the reasons to records, and stays out of the history', t => {
   const f = setup(t);
   // The 0.7 layout at HEAD: one requirements.md per feature and a reason file in its folder.
   for (const p of docPaths) unlinkSync(join(f.repo, p));
@@ -279,7 +279,8 @@ test('a migration commit removes the 0.7 files, moves the wiki and the reasons t
   unlinkSync(join(f.repo, '.gitifact/spec/posts/requirements.md')); unlinkSync(join(f.repo, '.gitifact/spec/posts/history.jsonl'));
   put(f, { kind: 'feature', path: docPaths[0], id: S, feature: 'posts', title: '게시물', description: '게시물 작성과 조회', body: '게시물 기능.' });
   put(f, { kind: 'requirement', path: docPaths[1], id: R, feature: 'posts', order: 10, title: '저장', description: '제목을 입력해 저장한다', body: '작성자로서 게시물을 저장하고 싶다.' });
-  const instruction = '.gitifact/instructions/guide/index.md';
+  // The wiki page becomes an agent's skill, outside what Gitifact keeps.
+  const skill = '.claude/skills/guide/SKILL.md';
   const reason = record(f, H, [S, R], '게시물 저장을 처음 정리함');
   const old = ['.gitifact/spec/posts/requirements.md', '.gitifact/spec/posts/history.jsonl', '.gitifact/wiki/guide.md', '.gitifact/wiki/history.jsonl'];
   const migration = { paths: [reason, ...docPaths, ...old], message: 'Migrate to 0.8.0', authorization, migration: true };
@@ -290,8 +291,9 @@ test('a migration commit removes the 0.7 files, moves the wiki and the reasons t
   assert.deepEqual(JSON.parse(refused.stderr).error.problems.map(p => p.code).sort(), ['REASONS_FILE_REMOVED', 'WIKI_REMOVED']);
   unlinkSync(join(f.repo, '.gitifact/history.jsonl'));
   unlinkSync(join(f.repo, '.gitifact/wiki/guide.md')); unlinkSync(join(f.repo, '.gitifact/wiki/history.jsonl'));
-  put(f, { kind: 'instruction', path: instruction, id: 'I-dddddddddd', name: 'guide', title: '안내', description: '작업 규칙. 코드를 바꿀 때 읽는다.', body: '규칙.' });
-  const result = f.done(f.commit({ ...migration, paths: [...migration.paths, instruction] }));
+  mkdirSync(join(f.repo, '.claude/skills/guide'), { recursive: true });
+  f.write(skill, '---\nname: guide\ndescription: 작업 규칙. 코드를 바꿀 때 읽는다.\n---\n\n규칙.\n');
+  const result = f.done(f.commit({ ...migration, paths: [...migration.paths, skill] }));
   assert.ok(result.trailers.includes('Gitifact-Migration: 0.8.0'));
   assert.match(f.git(['log', '-1', '--format=%B']).stdout, /\nGitifact-Migration: 0\.8\.0\n/);
   assert.equal(f.git(['status', '--porcelain']).stdout, '');

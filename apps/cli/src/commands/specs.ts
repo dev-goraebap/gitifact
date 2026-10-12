@@ -71,7 +71,7 @@ export const runSpecsList = (options: SpecsListOptions) => runCommand('specs', o
 export const runSpecsShow = (ids: string[], options: { format: Format; ref?: string }) => runCommand('specs', options.format, async () => {
   const project = await openProject(process.cwd());
   const at = options.ref === undefined ? undefined : await project.reader.resolve(options.ref);
-  return showDocuments(project, ids, at, specKinds, 'instructions show');
+  return showDocuments(project, ids, at, at === undefined ? specKinds : [...specKinds, 'instruction']);
 });
 
 /** `specs new <kind> <path>`: a feature, requirement or design with an issued ID and a draft skeleton. */

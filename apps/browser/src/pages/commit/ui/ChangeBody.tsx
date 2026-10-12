@@ -28,10 +28,8 @@ export function ChangeBody({ change: { event, before, after }, features, head }:
     <HStack gap={3} wrap="wrap" className={styles.changePlace}>
       <Text type="supporting" color="secondary">{event.id}</Text>
       <Text type="supporting" color="secondary">{spec?.path}</Text>
-      {/* A wiki page from before the wiki left the browser has no current page to open. */}
-      {event.kind === 'wiki' ? null
-        : event.kind === 'instruction'
-        ? after && <Link to="/instructions/$instructionId" params={{ instructionId: event.id }}>{t('event.currentInstruction')}</Link>
+      {/* A wiki page or an instruction, both gone from what Gitifact keeps, has no current page to open. */}
+      {event.kind === 'wiki' || event.kind === 'instruction' ? null
         : <Link to="/features/$featureId" params={{ featureId: spec?.specId ?? '' }}
           search={{ ...(event.kind === 'feature' ? {} : { selected: event.id, tab: event.kind === 'design' ? 'design' : 'requirements' }) }}
           {...(event.kind === 'feature' ? {} : { hash: event.id })}>{t('event.currentFeature')}</Link>}

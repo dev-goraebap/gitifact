@@ -160,7 +160,7 @@ test('built update command prints the contract and a text form without contactin
   writeFileSync(configPath, JSON.stringify({ ...current, schemaVersion: 2 }, null, 2) + '\n');
   assert.equal(updateV6.parse(JSON.parse(cli('update').stdout)).migrationRequired, true);
   const notice = cli('update', '--format', 'text').stdout;
-  assert.match(notice, /^이 프로젝트의 문서는 아직 0\.7 저장 규약\(schemaVersion 2\)입니다\. .*specs·instructions·records·check·changes 명령이 .*guide show migrate/m);
+  assert.match(notice, /^이 프로젝트의 문서는 아직 0\.7 저장 규약\(schemaVersion 2\)입니다\. .*specs·records·check·changes 명령이 .*guide show migrate/m);
   // The notice names the commands that exist, never the docs command that was removed.
   assert.doesNotMatch(notice, /\bdocs\b/);
 });

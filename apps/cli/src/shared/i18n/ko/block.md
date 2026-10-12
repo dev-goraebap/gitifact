@@ -1,11 +1,11 @@
 ## Gitifact Guide
 
-제품 동작(요구사항·설계), 지침, 결정기록은 `.gitifact/`에 저장하고 CLI `gitifact`로 관리한다. 프로젝트가 별도 실행 방법을 정했다면 해당 방식을 `gitifact`로 적용한다.
+제품 동작(요구사항·설계)과 결정기록은 `.gitifact/`에 저장하고 CLI `gitifact`로 관리한다. 프로젝트가 별도 실행 방법을 정했다면 해당 방식을 `gitifact`로 적용한다.
 
 ### 세션을 시작할 때
 
 1. `gitifact`가 없으면 `.gitifact/config.json`의 `cli` 버전으로 `npm i -g gitifact@<버전>`(Windows PowerShell은 `npm.cmd`)을 실행해도 되는지 명령 그대로 보여 주며 묻고, 허용하면 직접 실행한다. 사용자에게 설치를 떠넘기지 않는다.
-2. `gitifact instructions list --all`로 지침을 모두 확인하고 git status와 기존 staging 상태를 점검한다.
+2. git status와 기존 staging 상태를 점검한다.
 
 ### 무엇을 요구사항으로 남기는가
 
@@ -23,8 +23,8 @@
 | 상황 | 선행 작업 |
 | --- | --- |
 | 제품 동작 관련 요구 | `specs list --type requirement`로 기존 명세와 충돌 여부를 확인한다 |
-| 코드나 문서 수정 전 | 해당 기능의 요구사항·설계(`specs show <ID>`), 블록 밖 색인이 가리키는 지침, 대상 문서의 결정 흐름(`records list --doc <ID>`)을 확인한다 |
-| 문서 신규 작성 | `guide show spec`(설계는 `design`, 지침은 `instructions`)과 `guide show writing`을 읽는다. ID는 `specs new`·`instructions new`로 발급받고, 수정 후 `gitifact check`로 확인한다 |
+| 코드나 문서 수정 전 | 해당 기능의 요구사항·설계(`specs show <ID>`)와 대상 문서의 결정 흐름(`records list --doc <ID>`)을 확인한다 |
+| 문서 신규 작성 | `guide show spec`(설계는 `design`)과 `guide show writing`을 읽는다. ID는 `specs new`로 발급받고, 수정 후 `gitifact check`로 확인한다 |
 | 기존 문서 수정 또는 대안 결정 | `records new`로 결정기록을 작성한다(`guide show records`) |
 | 커밋을 요청받았을 때 | `guide show commit`을 확인하고, `changes list`가 안내한 파일에 입력을 작성한 뒤 `changes commit`한다 |
 | 기록 조회를 요청받았을 때 | `gitifact browser`를 백그라운드로 실행하고 URL을 안내한다 |
@@ -40,7 +40,7 @@
 
 ### 명령
 
-- `specs`·`instructions`·`records`: `list`·`show`·`new`. `check`: 전체 검사. `changes list`·`changes commit --file <json> [--dry-run]`
+- `specs`·`records`: `list`·`show`·`new`. `check`: 전체 검사. `changes list`·`changes commit --file <json> [--dry-run]`
 - `browser`, `feedback`, `update [--check | --commit | --later]`, `init`, `guide list`·`guide show <topic>` ({topics}). 목록은 20개씩 출력되며 끝의 `--after <값>`으로 이어 조회한다(`--all`은 전체). `--fields`, `--format json`을 지원하며 옵션은 `--help`로 확인한다.
 
 ---

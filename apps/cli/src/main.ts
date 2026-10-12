@@ -2,7 +2,6 @@ import { Argument, Command, Option } from 'commander';
 import { runBrowser, parsePort } from './commands/browser.js';
 import { runInit } from './commands/init.js';
 import { runSpecsList, runSpecsNew, runSpecsShow, specKinds, specSorts, specStyles } from './commands/specs.js';
-import { instructionSorts, runInstructionsList, runInstructionsNew, runInstructionsShow } from './commands/instructions.js';
 import { runCheck } from './commands/check.js';
 import { parseFields, parseLimit } from './commands/list-options.js';
 import { runChangesCommit, runChangesList } from './commands/changes.js';
@@ -102,16 +101,6 @@ specs.command('new').description(t('help.specsNew')).allowExcessArguments(false)
   .requiredOption('--title <title>', t('help.newTitle')).requiredOption('--description <text>', t('help.newDescription'))
   .addOption(new Option('--style <style>', t('help.specsNewStyle')).choices(specStyles))
   .addOption(format()).action((kind: typeof specKinds[number], path: string, o) => runSpecsNew(kind, path, o));
-
-const instructions = program.command('instructions').description(t('help.instructions'));
-listed(instructions.command('list').description(t('help.instructionsList')), instructionSorts).action(o => runInstructionsList(o));
-instructions.command('show').description(t('help.instructionsShow')).argument('<targets...>', t('help.instructionsShowTargets'))
-  .option('--ref <commit>', t('help.showRef')).option('--file <path>', t('help.instructionsShowFile'))
-  .addOption(format()).action((targets: string[], o) => runInstructionsShow(targets, o));
-instructions.command('new').description(t('help.instructionsNew')).allowExcessArguments(false)
-  .argument('<name>', t('help.instructionsNewName'))
-  .requiredOption('--title <title>', t('help.newTitle')).requiredOption('--description <text>', t('help.newDescription'))
-  .addOption(format()).action((name: string, o) => runInstructionsNew(name, o));
 
 const records = program.command('records').description(t('help.records'));
 listed(records.command('list').description(t('help.recordsList'))

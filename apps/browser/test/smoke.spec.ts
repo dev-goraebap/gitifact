@@ -102,7 +102,7 @@ test('getting started follows the intro and keeps Korean guidance on reload', as
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('시작하기');
   const article = page.getByRole('article', { name: '시작하기' });
   await expect(article).toContainText('npm install -g gitifact로 Gitifact를 설치하고 이 프로젝트에서 gitifact init을 실행하세요.');
-  await expect(article).toContainText('프로젝트 지침 만들기');
+  await expect(article).toContainText('문서와 변경 이력 확인하기');
   await expect(article).toContainText('gitifact changes commit');
   await page.reload();
   await expect(article).toBeVisible();

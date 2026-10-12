@@ -11,8 +11,8 @@ export function parseLimit(value: string): number {
   if (!/^[1-9]\d{0,5}$/.test(value)) throw new InvalidArgumentError(t('list.limit'));
   return Number(value);
 }
-/** Commander parser for `--fields`: comma-separated column names, checked against the resource's columns later. */
-export const parseFields = (value: string) => value.split(',').map(f => f.trim()).filter(Boolean);
+/** Commander parser for `--fields`: column names split by commas or spaces (PowerShell joins an unquoted `a,b` with a space), checked against the resource's columns later. */
+export const parseFields = (value: string) => value.split(/[\s,]+/).filter(Boolean);
 
 /** The columns asked for, or undefined for the whole row; a column the resource does not have is refused. */
 export function checkFields(fields: string[] | undefined, columns: readonly string[]): string[] | undefined {

@@ -104,9 +104,9 @@ try {
     await readFile(join(workspace, 'apps/cli/src/shared/i18n/en/docs/spec.md'), 'utf8'), 'The offline package must include English guides.');
   const [englishNotes] = parseChangelog(await readFile(join(installedRoot, 'dist/i18n/en/changelog.md'), 'utf8'));
   assert.equal(englishNotes.version, version);
-  // The instruction guide ships with the package; init writes no wiki.
-  assert.equal(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', 'guide', 'show', 'instructions'], temporaryRoot),
-    await readFile(join(workspace, 'apps/cli/src/shared/i18n/ko/docs/instructions.md'), 'utf8'), 'The instruction guide must match the asset source.');
+  // The migration guide ships with the package; init writes no wiki and no instructions.
+  assert.equal(pnpm(['--dir', temporaryRoot, 'exec', 'gitifact', 'guide', 'show', 'migrate'], temporaryRoot),
+    await readFile(join(workspace, 'apps/cli/src/shared/i18n/ko/docs/migrate.md'), 'utf8'), 'The migration guide must match the asset source.');
   assert.equal(existsSync(join(temporaryRoot, '.gitifact', 'wiki')), false, 'init must not write a wiki.');
   const agentsPath = join(temporaryRoot, 'AGENTS.md');
   const agents = await readFile(agentsPath, 'utf8');

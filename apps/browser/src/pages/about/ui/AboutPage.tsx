@@ -5,7 +5,6 @@ import { PageHeader } from '../../../widgets/page-header';
 import { localDocument, t, useLanguage } from '../../../shared/i18n';
 import logoUrl from '@gitifact/intro/assets/gitifact-logo.svg?url';
 import featuresUrl from '@gitifact/intro/assets/screenshots/feature-requirements.jpg?url';
-import instructionsUrl from '@gitifact/intro/assets/screenshots/project-instructions.jpg?url';
 import activityUrl from '@gitifact/intro/assets/screenshots/activity.jpg?url';
 import styles from './about.module.css';
 
@@ -16,7 +15,7 @@ const screenshotRoot = 'https://raw.githubusercontent.com/dev-goraebap/gitifact/
 const inAppLinks: [string, string][] = [
   ['](' + repository + '/blob/main/apps/cli/README.md)', '](/getting-started)'],
   ['](' + repository + '/tree/main/.gitifact/spec)', '](/features)'],
-  ...Object.entries({ 'feature-requirements.jpg': featuresUrl, 'project-instructions.jpg': instructionsUrl, 'activity.jpg': activityUrl })
+  ...Object.entries({ 'feature-requirements.jpg': featuresUrl, 'activity.jpg': activityUrl })
     .map(([name, url]): [string, string] => ['](' + screenshotRoot + name + ')', '](' + url + ')']),
 ];
 // The README opens with an HTML logo block, which Markdown here does not render; it becomes an image of the bundled file.

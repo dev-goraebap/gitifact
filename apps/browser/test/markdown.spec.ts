@@ -1,16 +1,19 @@
 import { expect, test } from '@playwright/test';
 import { mockApi, specs, serve } from './mock-api';
 
-// Every case below is one instruction, because the document body renders the same way for instructions and specs.
-function withBody(body: string) {
+// Every case below is a feature's introduction, because every document body renders the same way. A second feature
+// is there for links between documents and for moving from one page to another.
+const naming = { id: 'S-cccccccccc', path: '.gitifact/spec/naming/requirements.md', title: '이름 규칙', description: '', contributors: [], updatedAt: null, requirements: [] };
+function withBody(body: string, other?: string) {
   const payload = structuredClone(specs);
-  payload.instructions![0]!.body = body;
+  payload.features[0]!.body = body;
+  payload.features.push({ ...naming, ...(other ? { body: other } : {}) });
   return payload;
 }
 async function openPage(page: Parameters<typeof mockApi>[0], body: string) {
   await mockApi(page);
   await serve(page, withBody(body));
-  await page.goto('/instructions/I-bbbbbbbbbb');
+  await page.goto('/features/S-abcdefghij');
 }
 
 test('a mermaid fence is drawn as a diagram, other fences stay code', async ({ page }) => {
@@ -55,7 +58,7 @@ test('an alert keeps the markup inside it', async ({ page }) => {
   await expect(page.getByText('팁', { exact: true })).toBeVisible();
   await expect(page.getByText('굵게')).toBeVisible();
   await page.getByRole('link', { name: '링크' }).click();
-  await expect(page).toHaveURL(/\/instructions\/I-cccccccccc$/);
+  await expect(page).toHaveURL(/\/features\/S-cccccccccc(\?|$)/);
 });
 
 test('a node is drawn wide enough for its own label', async ({ page }) => {
@@ -82,12 +85,10 @@ test('drawing diagrams never makes the document itself scroll', async ({ page })
   const diagram = (n: number) => ['```mermaid', 'flowchart TD',
     ...Array.from({ length: 12 }, (_, i) => `  A${n}${i}[아주 긴 이름을 가진 단계 ${i}] --> A${n}${i + 1}[다음 단계 ${i}]`),
     '```'].join('\n');
-  const payload = structuredClone(specs);
-  payload.instructions![1]!.body = `${diagram(1)}\n\n${diagram(2)}`;
-  await serve(page, payload);
+  await serve(page, withBody('중앙 컬럼은 64rem입니다.', `${diagram(1)}\n\n${diagram(2)}`));
   // The first load has settling of its own, so the watch starts on a page without diagrams and the diagrams are
   // opened from there without remounting the shell.
-  await page.goto('/instructions/I-bbbbbbbbbb');
+  await page.goto('/features/S-abcdefghij');
   await expect(page.getByText('중앙 컬럼은 64rem입니다.')).toBeVisible();
   await page.evaluate(() => {
     const w = window as unknown as { overflow: number };
@@ -100,8 +101,8 @@ test('drawing diagrams never makes the document itself scroll', async ({ page })
     requestAnimationFrame(watch);
   });
   // Moving between pages inside the app keeps the shell mounted, which is where the shift showed.
-  await page.getByRole('navigation', { name: '사이드 탐색' }).getByRole('link', { name: '프로젝트 지침' }).click();
-  await page.getByRole('list', { name: '작업별 지침' }).getByRole('link', { name: /이름 규칙/ }).click();
+  await page.getByRole('navigation', { name: '사이드 탐색' }).getByRole('link', { name: '기능별 요구사항' }).click();
+  await page.getByRole('link', { name: '이름 규칙' }).click();
   await page.getByRole('img', { name: '다이어그램' }).nth(1).locator('svg').waitFor();
   await page.waitForTimeout(300);
   expect(await page.evaluate(() => (window as unknown as { overflow: number }).overflow)).toBe(0);

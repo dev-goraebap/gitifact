@@ -22,7 +22,7 @@ export const kindOfId = (id: string): DocKind | undefined =>
 /** A document the design refers to: another Gitifact document by ID, or an outside page by title and URL. */
 export type DocSource = { id: string; note?: string } | { title: string; url: string; note?: string };
 
-// `draft: true` marks a file `specs new` or `instructions new` made and the author has not finished; the check fails until the line is removed.
+// `draft: true` marks a file `specs new` made and the author has not finished; the check fails until the line is removed.
 interface DocBase { id: string; path: string; title: string; description: string; body: string; draft?: true }
 export interface FeatureDoc extends DocBase { kind: 'feature'; feature: string }
 /**
@@ -34,11 +34,11 @@ export const requirementStyles = ['default', 'usecase'] as const;
 export type RequirementStyle = typeof requirementStyles[number];
 export interface RequirementDoc extends DocBase { kind: 'requirement'; feature: string; order: number; style?: RequirementStyle }
 export interface DesignDoc extends DocBase { kind: 'design'; feature: string; order: number; requirements: string[]; sources: DocSource[] }
-/** A wiki page of a commit before 0.8.0, read for the history only; instructions replaced the wiki. */
+/** A wiki page of a commit before 0.8.0, read for the history only. */
 export interface WikiDoc extends DocBase { kind: 'wiki' }
 /**
- * A project instruction: `.gitifact/instructions/<name>/index.md`, what agents read for one kind of work when AGENTS.md
- * sends them there. `name` is the folder; the other files of the folder (references) belong to it.
+ * A project instruction of a commit before 0.9.0 (`.gitifact/instructions/<name>/index.md`), read for the history only;
+ * instructions now live with the agent's skills. `name` is the folder.
  */
 export interface InstructionDoc extends DocBase { kind: 'instruction'; name: string }
 export type Doc = FeatureDoc | RequirementDoc | DesignDoc | WikiDoc | InstructionDoc;
@@ -51,7 +51,7 @@ export const docProblemCodes = [
   'PATH_UNSUPPORTED', 'FRONTMATTER_REQUIRED', 'FRONTMATTER_UNCLOSED', 'FRONTMATTER_LINE', 'FRONTMATTER_VALUE',
   'FRONTMATTER_UNKNOWN_KEY', 'FRONTMATTER_MISSING_KEY', 'ID_FORMAT', 'SOURCE_INVALID', 'BODY_REQUIRED', 'BODY_HEADING',
   'BODY_MARKER', 'BODY_UNCLOSED_FENCE', 'INVALID_CHARACTERS', 'FILE_TOO_LARGE', 'REASON_INVALID',
-  'INSTRUCTION_INDEX_REQUIRED', 'INSTRUCTION_SPEC_LINK', 'WIKI_REMOVED', 'REASONS_FILE_REMOVED',
+  'INSTRUCTION_MOVED', 'WIKI_REMOVED', 'REASONS_FILE_REMOVED',
   'RECORD_PATH', 'RECORD_SECTION_UNKNOWN', 'RECORD_SECTION_MISSING', 'RECORD_SECTION_TOO_LONG', 'RECORD_ALTERED',
   // Across files
   'DOC_DRAFT', 'DUPLICATE_ID', 'DUPLICATE_RECORD_ID', 'DUPLICATE_ORDER', 'MISSING_REFERENCE', 'FEATURE_INDEX_REQUIRED', 'DESIGN_OVERVIEW_REQUIRED',

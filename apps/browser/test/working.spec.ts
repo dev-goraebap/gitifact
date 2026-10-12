@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { mockApi, specs, stamps, working, workingBodies, type Fixture } from './mock-api';
 
 const R2 = 'R-bbbbbbbbbb', R3 = 'R-cccccccccc';
-/** One feature whose documents stand three ways against the last commit, and an instruction added since. */
+/** One feature whose documents stand three ways against the last commit. */
 const uncommitted: Fixture = {
   ...specs,
   working: true,
@@ -11,7 +11,6 @@ const uncommitted: Fixture = {
     { id: R2, title: '새 요구사항', body: '작성자로서 원한다.', state: 'added' },
     { id: R3, title: '지울 요구사항', body: '지운다.', state: 'deleted' },
   ] }],
-  instructions: [{ id: 'I-bbbbbbbbbb', name: 'layout', title: '레이아웃 지침', body: '폭.', state: 'added' }],
 };
 
 test.afterEach(() => { stamps.current = undefined; working.current = undefined; });
@@ -28,8 +27,6 @@ test('a document not committed as it is says so in the lists; a committed one sa
   const struck = await table.locator('[data-state="deleted"] [data-state-title]').evaluate(el => getComputedStyle(el).textDecorationLine);
   expect(struck).toContain('line-through');
   await expect(table.locator('[data-row="feature"][data-state]')).toHaveCount(0);
-  await page.goto('/instructions');
-  await expect(page.getByRole('list', { name: '작업별 지침' })).toContainText('커밋 전: 추가');
 });
 
 test('coming back to the tab after the project changed offers a refresh, which reads it again', async ({ page }) => {

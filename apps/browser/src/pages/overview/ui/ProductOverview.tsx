@@ -89,7 +89,7 @@ function Pulse({ pulse, total }: { pulse: BrowserHistorySummaryV5['pulse']; tota
  * over all of history and who did it, then the reasons behind the last commits — what the product records and what a returning
  * reader comes back for.
  */
-export function ProductOverview({ session, head, features, instructions, contributors, working }: { session: BrowserSessionV3; head: string | null; features: IndexFeature[]; instructions: number; contributors: number; working: boolean }) {
+export function ProductOverview({ session, head, features, contributors, working }: { session: BrowserSessionV3; head: string | null; features: IndexFeature[]; contributors: number; working: boolean }) {
   useLanguage();
   // Counts over all of history and its newest commits, from the server's index; nothing before the first commit.
   const history = useQuery({ ...summaryOptions(session, head ?? ''), enabled: !!head });
@@ -122,7 +122,6 @@ export function ProductOverview({ session, head, features, instructions, contrib
         <HStack as="ul" gap={6} wrap="wrap" className={styles.facts} aria-label={t('overview.summary')}>
           {fact(t('overview.stat.features'), features.length)}
           {fact(t('overview.stat.requirements'), requirements)}
-          {fact(t('overview.stat.instructions'), instructions)}
           {fact(t('overview.stat.contributors'), contributors)}
         </HStack>
         <HStack gap={3} wrap="wrap" className={styles.heroState}>

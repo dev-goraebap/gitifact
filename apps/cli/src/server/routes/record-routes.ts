@@ -1,6 +1,6 @@
 import { browserCommitChangeQueryV1, browserCommitChangeV2, browserCommitQueryV3, browserCommitV4, browserCommitFileQueryV1, browserCommitFileV1, browserCommitFilesQueryV2, browserCommitFilesV2,
-  browserHistoryQueryV5, browserHistorySummaryQueryV1, browserHistorySummaryV5, browserHistoryV7, browserCheckoutV1, browserFeaturesQueryV1, browserFeaturesV1,
-  browserFeatureQueryV1, browserFeatureV2, browserInstructionsV1, browserContributorsQueryV1, browserContributorsV1, browserContributorQueryV1, browserContributorV1, browserSearchQueryV2, browserSearchV3, browserInstructionFileQueryV1, browserInstructionFileV1,
+  browserHistoryQueryV5, browserHistorySummaryQueryV1, browserHistorySummaryV5, browserHistoryV7, browserCheckoutV2, browserFeaturesQueryV1, browserFeaturesV1,
+  browserFeatureQueryV1, browserFeatureV2, browserContributorsQueryV1, browserContributorsV1, browserContributorQueryV1, browserContributorV1, browserSearchQueryV3, browserSearchV4,
   browserDocumentHistoryQueryV1, browserDocumentHistoryV1, browserRecordQueryV1, browserRecordV2, browserStampV1, browserWorkingChangeQueryV1, browserWorkingChangeV2, browserWorkingV1 } from '@gitifact/contracts';
 import { storeReader } from '../../adapters/git/store-reader.js';
 import { openCache } from '../../adapters/cache/index.js';
@@ -8,7 +8,6 @@ import { readPendingRecords } from '../../adapters/git/pending-records.js';
 import { createCheckoutReader } from '../checkout/checkout-reader.js';
 import { createStampReader } from '../checkout/stamp.js';
 import { createCommitFiles } from '../commit/commit-files.js';
-import { readInstructionFile } from '../../adapters/filesystem/instruction-folder.js';
 import { workingChange, workingOverview, type WorkingSource } from '../../queries/working-changes.js';
 import { searchRecords } from '../../queries/search.js';
 import { documentHistoryPage } from '../../queries/document-history.js';
@@ -22,7 +21,7 @@ import { t } from '../../shared/i18n/index.js';
 const PAGE = 20;
 
 /**
- * The records: the checkout (current features, instructions, AGENTS.md and contributors, a part at a time), history,
+ * The records: the checkout (current features and contributors, a part at a time), history,
  * which the server filters, pages by commit, counts and searches over all of it, and the uncommitted work. They come from the cache the
  * CLI uses too (`.gitifact/cache/index.db`) and from the same queries (`apps/cli/src/queries/`).
  */
@@ -41,10 +40,10 @@ export function recordRoutes(root: string, sessionId: string, env?: NodeJS.Proce
 
   return [
     // The checkout a part at a time, each shaped by the query layer (`queries/checkout.ts`): the frame every screen reads
-    // first, the feature list and one feature, the instructions, and the contributors.
+    // first, the feature list and one feature, and the contributors.
     route({ method: 'GET', path: '/api/v1/checkout', session: true, unreadable, handle: async () => {
       const base = await checkout.base();
-      return ok(browserCheckoutV1.parse({ contract: 'browser-checkout', version: 1, sessionId, head: base.head, observedAt: base.observedAt, stamp: base.stamp,
+      return ok(browserCheckoutV2.parse({ contract: 'browser-checkout', version: 2, sessionId, head: base.head, observedAt: base.observedAt, stamp: base.stamp,
         working: base.working, problems: base.problems, index: checkoutIndex(base) }));
     } }),
     route({ method: 'GET', path: '/api/v1/features', session: true, query: browserFeaturesQueryV1, unreadable, handle: async ({ query }) => {
@@ -57,8 +56,6 @@ export function recordRoutes(root: string, sessionId: string, env?: NodeJS.Proce
       if (!feature) throw new HttpError(404, 'NOT_FOUND', t('server.featureNotFound'));
       return ok(browserFeatureV2.parse({ contract: 'browser-feature', version: 2, sessionId, feature }));
     } }),
-    route({ method: 'GET', path: '/api/v1/instructions', session: true, unreadable, handle: async () =>
-      ok(browserInstructionsV1.parse({ contract: 'browser-instructions', version: 1, sessionId, ...await checkout.instructions() })) }),
     route({ method: 'GET', path: '/api/v1/contributors', session: true, query: browserContributorsQueryV1, unreadable, handle: async ({ query }) => {
       const page = listContributors(await checkout.base(), query.q, { after: query.after, limit: query.limit ?? PAGE });
       if (!page) throw cursorGone();
@@ -135,18 +132,11 @@ export function recordRoutes(root: string, sessionId: string, env?: NodeJS.Proce
       if (!found) throw new HttpError(404, 'NOT_FOUND', t('server.commitFileNotFound'));
       return ok(browserCommitFileV1.parse({ contract: 'browser-commit-file', version: 1, sessionId, commit: query.commit, ...found }));
     } }),
-    // One file of an instruction folder, read from the working tree when the reader opens it; the checkout lists the files.
-    route({ method: 'GET', path: '/api/v1/instructions/file', session: true, query: browserInstructionFileQueryV1, unreadable, handle: async ({ query }) => {
-      const instruction = (await cache.documents.list()).documents.find(d => d.id === query.id && d.kind === 'instruction');
-      const found = instruction && await readInstructionFile(root, instruction.path, query.path);
-      if (!found) throw new HttpError(404, 'NOT_FOUND', t('server.instructionFileNotFound'));
-      return ok(browserInstructionFileV1.parse({ contract: 'browser-instruction-file', version: 1, sessionId, id: query.id, path: query.path, ...found }));
-    } }),
     // The search box's groups as the query layer works them out (`queries/search.ts`); the browser only draws them.
-    route({ method: 'GET', path: '/api/v1/search', session: true, query: browserSearchQueryV2, unreadable, handle: async ({ query }) => {
+    route({ method: 'GET', path: '/api/v1/search', session: true, query: browserSearchQueryV3, unreadable, handle: async ({ query }) => {
       const groups = await searchRecords(source, query);
       if (!groups) throw cursorGone();
-      return ok(browserSearchV3.parse({ contract: 'browser-search', version: 3, sessionId, query: query.q, groups }));
+      return ok(browserSearchV4.parse({ contract: 'browser-search', version: 4, sessionId, query: query.q, groups }));
     } }),
   ];
 }

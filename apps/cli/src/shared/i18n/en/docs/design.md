@@ -32,8 +32,8 @@ order: 20
 requirements:
   - R-actual-related-requirement
 sources:
-  - id: I-actual-instruction-followed
-    note: Layers and dependency direction
+  - id: D-actual-design-referred-to
+    note: Uses the same storage flow
   - title: Library docs
     url: https://example.test/docs
 ---
@@ -58,7 +58,7 @@ A design keeps no decision table. A choice among options goes into a record with
 
 For diagrams, follow `gitifact guide show writing` for choosing the kind and drawing it, and place each in the file for the axis it explains. Each axis has kinds that suit it: `erDiagram` and a `flowchart` of cache or read flows for data, a `sequenceDiagram` of requests between components for interface, a `stateDiagram-v2` of screen states for ui, and failure and recovery flows for errors.
 
-Before writing a design, read the instructions for the area of work from the AGENTS.md index and list the ones you followed in `sources`. Do not repeat what an instruction already says; a design holds only what is particular to this feature. Instructions do not point at designs, so the relation is written in this one direction only. If the design conflicts with an instruction, agree with the user on whether to change the instruction first.
+Do not repeat what the project's rules for working (AGENTS.md or the agent's skills) already say; a design holds only what is particular to this feature. If the design conflicts with those rules, agree with the user on whether to change the rules first.
 
 ## When to write one
 

@@ -12,26 +12,25 @@ import { Skeleton } from '@astryxdesign/core/Skeleton';
 import { PageState } from '../../../shared/ui/page-state';
 import { useHotkeys } from '@astryxdesign/core/hooks';
 import type { SearchableItem, SearchSource } from '@astryxdesign/core/Typeahead';
-import type { BrowserSessionV3, BrowserSearchV3, SearchHit } from '@gitifact/contracts';
+import type { BrowserSessionV3, BrowserSearchV4, SearchHit } from '@gitifact/contracts';
 import { sessionOptions, searchRecords } from '../../../entities/project';
 import { useSearchOpen, openSearch, setSearchOpen, closeSearch, typingDelay } from '../../../shared/lib/search';
 import { t, useLanguage } from '../../../shared/i18n';
 import styles from './search-palette.module.css';
 
 type Kind = SearchHit['kind'];
-type Group = BrowserSearchV3['groups'][number];
+type Group = BrowserSearchV4['groups'][number];
 type Target = { to: string; params?: Record<string, string>; search?: Record<string, string>; hash?: string };
 // A row is a hit, or the last row of a group that has more: choosing it reads the group's next page.
 type Hit = SearchableItem<{ group: string; kind: Kind | 'more'; where: string; line: string; target?: Target; more?: Group['group'] }>;
 
 const groupNames: () => Record<Group['group'], string> = () => ({
   feature: t('search.group.feature'), requirement: t('search.group.requirement'), design: t('search.group.design'),
-  instruction: t('search.group.instruction'), record: t('search.group.record'), commit: t('search.group.commit'), recent: t('search.group.recent'),
+  record: t('search.group.record'), commit: t('search.group.commit'), recent: t('search.group.recent'),
 });
 
-/** Where a hit opens: the feature on the right tab, the instruction, the record, or the commit. */
+/** Where a hit opens: the feature on the right tab, the record, or the commit. */
 function targetOf(hit: SearchHit): Target {
-  if (hit.kind === 'instruction') return { to: '/instructions/$instructionId', params: { instructionId: hit.id } };
   if (hit.kind === 'record') return { to: '/records/$recordId', params: { recordId: hit.id } };
   if (hit.kind === 'commit') return { to: '/records/commits/$commit', params: { commit: hit.id } };
   const params = { featureId: hit.featureId ?? '' };
@@ -108,7 +107,7 @@ function LoadedPalette({ session, isOpen }: { session: BrowserSessionV3; isOpen:
   const current = useRef<{ query: string; groups: Group[] }>({ query: '', groups: [] });
   const [opening, setOpening] = useState(true);
   const source = useMemo(() => ({
-    // Nothing typed yet: the features and instructions touched most recently.
+    // Nothing typed yet: the features touched most recently.
     bootstrap: async (): Promise<Hit[]> => {
       try { return rowsOf((await searchRecords(session, '')).groups); } catch { return []; } finally { setOpening(false); }
     },

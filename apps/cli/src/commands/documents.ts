@@ -1,17 +1,16 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { classifyDocPath, parseDocumentFile, renderDocumentFile, INSTRUCTION_FILE, INSTRUCTIONS_ROOT, SPEC_ROOT, type DesignDoc, type Doc, type DocKind, type RequirementStyle } from '@gitifact/core';
+import { classifyDocPath, parseDocumentFile, renderDocumentFile, SPEC_ROOT, type DesignDoc, type Doc, type DocKind, type RequirementStyle } from '@gitifact/core';
 import { createDocumentFile, generateId } from '../adapters/filesystem/document-file.js';
-import { readInstructionFiles, type InstructionFile } from '../adapters/filesystem/instruction-folder.js';
 import { CommandError, section, text, type CommandResult } from './output.js';
 import { documentsOf, type Project } from './project.js';
 import type { DocState } from '../queries/document-states.js';
 import { t } from '../shared/i18n/index.js';
 
-// What `specs` and `instructions` share: reading documents as written with the documents on either side, and
-// creating one with an issued ID. Each resource decides which kinds it takes.
+// What `specs show` and `specs new` rest on: reading documents as written with the documents on either side, and
+// creating one with an issued ID.
 
-export type NewKind = 'feature' | 'requirement' | 'design' | 'instruction';
+export type NewKind = 'feature' | 'requirement' | 'design';
 
 export const draftMark = (doc: { draft?: true }) => doc.draft ? ' (' + t('docs.draft') + ')' : '';
 /** A document not committed as it is says so at the end of its line; a committed one says nothing. */
@@ -22,8 +21,6 @@ export const stateMark = (state: DocState) => state === 'committed' ? '' : ' (' 
 /** The path people type and the viewer shows: inside `.gitifact`, without that prefix. */
 export const place = (path: string) => path.replace(/^\.gitifact\//, '');
 export const line = (doc: Doc) => `${doc.id} ${doc.title}${draftMark(doc)} — ${doc.description}`;
-/** One file of an instruction folder: its path, then the title and description of a reference file. */
-export const fileLine = (f: InstructionFile) => f.title ? `${f.path} ${f.title} — ${f.description}` : f.path;
 /** A design's sources with the titles of the documents they name. */
 export { titledSources } from '../queries/specs.js';
 
@@ -53,16 +50,16 @@ export async function committed(project: Project, commit: string): Promise<Docum
 }
 
 /**
- * `specs show` and `instructions show`: each file exactly as it is, so an agent quotes and edits the same bytes,
- * followed by the documents it points at and the documents that point at it. With a commit, everything is read from
- * that commit. An ID of the other resource is refused with the command that reads it.
+ * `specs show`: each file exactly as it is, so an agent quotes and edits the same bytes, followed by the documents it
+ * points at and the documents that point at it. With a commit, everything is read from that commit, an instruction of a
+ * commit before 0.9.0 included; a kind outside `kinds` is refused.
  */
-export async function showDocuments(project: Project, ids: string[], at: string | undefined, kinds: readonly DocKind[], otherResource: string): Promise<CommandResult> {
+export async function showDocuments(project: Project, ids: string[], at: string | undefined, kinds: readonly DocKind[]): Promise<CommandResult> {
   const view = at === undefined ? await working(project) : await committed(project, at);
   const unknown = ids.filter(id => !view.byId.has(id));
   if (unknown.length) throw new CommandError('UNKNOWN_DOCUMENT', t('docs.unknownDocument', { ids: unknown.join(', ') }));
   const other = ids.filter(id => !kinds.includes(view.byId.get(id)!.kind));
-  if (other.length) throw new CommandError('UNKNOWN_DOCUMENT', t('docs.otherResource', { ids: other.join(', '), command: otherResource }));
+  if (other.length) throw new CommandError('UNKNOWN_DOCUMENT', t('docs.unknownDocument', { ids: other.join(', ') }));
   const shown = await Promise.all([...new Set(ids)].map(async id => {
     const doc = view.byId.get(id)!;
     const references = doc.kind === 'design' ? [
@@ -70,9 +67,7 @@ export async function showDocuments(project: Project, ids: string[], at: string 
       ...doc.sources.map(s => 'id' in s ? { id: s.id, title: view.byId.get(s.id)?.title ?? null } : { title: s.title, url: s.url }),
     ] : [];
     const referencedBy = (await view.referencing(id)).map(from => ({ id: from, title: view.byId.get(from)?.title ?? null }));
-    // An instruction is its folder: agents read the files beside index.md when the instruction points at them.
-    const files = doc.kind === 'instruction' && at === undefined ? { files: (await readInstructionFiles(project.root, doc.path)).files } : {};
-    return { id, kind: doc.kind, path: doc.path, title: doc.title, text: await view.read(doc.path), references, referencedBy, ...files };
+    return { id, kind: doc.kind, path: doc.path, title: doc.title, text: await view.read(doc.path), references, referencedBy };
   }));
   const named = (r: { id?: string; title: string | null; url?: string }) => r.id ? r.id + ' ' + (r.title ?? '(' + t('docs.missing') + ')') : r.title + ' <' + r.url + '>';
   const blocks = shown.map(d => [
@@ -80,7 +75,6 @@ export async function showDocuments(project: Project, ids: string[], at: string 
     d.text.replace(/\n$/, ''),
     ...section('-- ' + t('docs.references'), d.references.map(named)),
     ...section('-- ' + t('docs.referencedBy'), d.referencedBy.map(named)),
-    ...section('-- ' + t('docs.files'), (d.files ?? []).map(fileLine)),
   ].join('\n'));
   return { json: { ...(at ? { commit: at } : {}), documents: shown }, text: blocks.join('\n\n') + '\n' };
 }
@@ -88,26 +82,25 @@ export async function showDocuments(project: Project, ids: string[], at: string 
 // Per kind: how its path is written, and the body `new` starts it with.
 const pathExample: Record<NewKind, () => string> = {
   feature: () => t('docs.pathExample.feature'), requirement: () => t('docs.pathExample.requirement'),
-  design: () => t('docs.pathExample.design'), instruction: () => t('docs.pathExample.instruction'),
+  design: () => t('docs.pathExample.design'),
 };
 const skeleton: Record<NewKind, () => string> = {
   feature: () => t('docs.skeleton.feature'), requirement: () => t('docs.skeleton.requirement'),
-  design: () => t('docs.skeleton.design'), instruction: () => t('docs.skeleton.instruction'),
+  design: () => t('docs.skeleton.design'),
 };
 
-/** Where a new document goes: a feature folder, a requirement or design slug in one, or an instruction folder. */
+/** Where a new document goes: a feature folder, or a requirement or design slug in one. */
 function newPath(kind: NewKind, path: string): string {
   const target = kind === 'feature' ? `${SPEC_ROOT}/${path}/index.md`
-    : kind === 'instruction' ? `${INSTRUCTIONS_ROOT}/${path}/${INSTRUCTION_FILE}`
     : `${SPEC_ROOT}/${path.split('/')[0]}/${kind === 'requirement' ? 'requirements' : 'design'}/${path.split('/').slice(1).join('/')}.md`;
-  const shape = kind === 'feature' || kind === 'instruction' ? /^[^/]+$/ : /^[^/]+\/[^/]+$/;
+  const shape = kind === 'feature' ? /^[^/]+$/ : /^[^/]+\/[^/]+$/;
   let where; try { where = shape.test(path) ? classifyDocPath(target) : undefined; } catch { where = undefined; }
   if (where?.type !== 'doc' || where.kind !== kind) throw new CommandError('INVALID_PATH', t('docs.invalidPath', { kind, path, example: pathExample[kind]() }));
   return target;
 }
 
 /**
- * `specs new` and `instructions new`: issues the ID, fills the frontmatter and writes a skeleton body with
+ * `specs new`: issues the ID, fills the frontmatter and writes a skeleton body with
  * `draft: true`, which the check refuses until the author has written the document and removed the line.
  */
 export async function createDocument(project: Project, kind: NewKind, path: string, options: { title: string; description: string; style?: RequirementStyle }): Promise<CommandResult> {
@@ -123,7 +116,7 @@ export async function createDocument(project: Project, kind: NewKind, path: stri
   const target = newPath(kind, path);
   const { documents } = await project.cache.documents.list();
   const taken = new Set(documents.map(d => d.id));
-  let id: string; do id = generateId(({ feature: 'S', requirement: 'R', design: 'D', instruction: 'I' } as const)[kind]); while (taken.has(id));
+  let id: string; do id = generateId(({ feature: 'S', requirement: 'R', design: 'D' } as const)[kind]); while (taken.has(id));
   const folder = target.slice(0, target.lastIndexOf('/') + 1);
   const siblings = documents.filter(d => (d.kind === 'requirement' || d.kind === 'design') && d.path.startsWith(folder) && !d.path.slice(folder.length).includes('/'));
   const order = Math.min(999999, Math.max(0, ...siblings.map(d => (d as { order: number }).order)) + 10);
@@ -131,7 +124,6 @@ export async function createDocument(project: Project, kind: NewKind, path: stri
   const base = { id, path: target, title: options.title.trim(), description: options.description.trim(), body, draft: true as const };
   const feature = target.split('/')[2]!;
   const doc: Doc = kind === 'feature' ? { kind, feature, ...base }
-    : kind === 'instruction' ? { kind, name: path, ...base }
     : kind === 'requirement' ? { kind, feature, order, ...styleKey, ...base } : { kind, feature, order, requirements: [], sources: [], ...base };
   const rendered = renderDocumentFile(doc);
   // The same parser as every later read decides whether the title and description are acceptable.

@@ -8,7 +8,7 @@ import { isRecordPath, RECORDS_ROOT } from './record-file.js';
 //   .gitifact/spec/<feature>/requirements/<slug>.md   one requirement (R-)
 //   .gitifact/spec/<feature>/design/<slug>.md         one design axis (D-); design/overview.md is required once a design exists
 //   .gitifact/wiki/**/*.md                            wiki pages (W-), read from commits before 0.8.0; the check refuses them
-//   .gitifact/instructions/<name>/index.md            one instruction (I-); other files in the folder belong to it
+//   .gitifact/instructions/<name>/index.md            instructions (I-), read from commits before 0.9.0; the check refuses them
 //   .gitifact/records/<yyyymmdd>/<DR-ID>.md            one record (formats/record-file.ts)
 //   .gitifact/history.jsonl                           reasons before records: read from past commits, refused in a tree being checked
 
@@ -24,10 +24,17 @@ const name = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const rootUpperName = /^[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)*\.md$/;
 
 /**
- * A wiki page in a tree being checked. Instructions replaced the wiki in 0.8.0: past commits still read their pages
- * for the history, but a page left in the working tree is a problem until it is moved to an instruction.
+ * A wiki page in a tree being checked. The wiki went in 0.8.0: past commits still read their pages for the history,
+ * but a page left in the working tree is a problem until it is moved out.
  */
 export const isWikiPage = (path: string) => path.startsWith(WIKI_ROOT + '/') && path.endsWith('.md');
+/**
+ * A file of a project instruction in a tree being checked. Gitifact stopped keeping instructions in 0.9.0: past commits
+ * still read them for the history, but one left in the working tree is a problem until it moves to the agent's skills.
+ */
+export const isInstructionPath = (path: string) => path.startsWith(INSTRUCTIONS_ROOT + '/');
+/** The instruction folder a path is in, as `.gitifact/instructions/<name>`. */
+export const instructionFolderOf = (path: string) => /^\.gitifact\/instructions\/[^/]+/.exec(path)?.[0];
 
 export type DocPath =
   | { type: 'doc'; kind: 'feature'; feature: string }
@@ -167,22 +174,6 @@ export function parseDocumentFile(path: string, source: string): Doc {
     throw new DocumentError('FRONTMATTER_VALUE', path, t('doc.FRONTMATTER_VALUE', { path, value: 'requirements' }));
   }
   return { kind: 'design', feature: where.feature, order: order(), requirements: refs?.type === 'list' ? refs.items : [], sources: sources(fields, path), ...common };
-}
-
-/** Whether a file of an instruction folder is a reference: Markdown, which names itself in its frontmatter. */
-export const isInstructionReference = (path: string) => path.endsWith('.md');
-
-/**
- * The title and description of a reference file (a Markdown file of an instruction folder other than its index.md).
- * Only these two keys, both required: the folder says which instruction it belongs to and the path orders it. The body
- * is the author's and is not checked. Throws DocumentError for the first problem.
- */
-export function parseInstructionFile(path: string, source: string): { title: string; description: string } {
-  if (source.includes('\0') || /\r(?!\n)/.test(source) || source.charCodeAt(0) === 0xfeff) throw new DocumentError('INVALID_CHARACTERS', path, t('doc.INVALID_CHARACTERS', { path }));
-  const { fields } = parseFrontmatterBlock(source.replace(/\r\n/g, '\n'), path);
-  for (const key of fields.keys()) if (key !== 'title' && key !== 'description') throw new DocumentError('FRONTMATTER_UNKNOWN_KEY', path, t('doc.FRONTMATTER_UNKNOWN_KEY', { path, key }));
-  for (const key of ['title', 'description']) if (!fields.has(key)) throw new DocumentError('FRONTMATTER_MISSING_KEY', path, t('doc.FRONTMATTER_MISSING_KEY', { path, key }));
-  return { title: text(fields, 'title', path, 200), description: text(fields, 'description', path, 300) };
 }
 
 /** Canonical text of a document: frontmatter in a fixed key order (a draft mark last), a blank line, the body and a final newline. */

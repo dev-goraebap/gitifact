@@ -9,7 +9,7 @@ A record keeps why a document looks the way it does. A document body holds only 
 
 | Case | Record |
 | :--- | :--- |
-| Changing or removing what an existing requirement, design or instruction says | Write one. The old text is gone, so a record is the only place for the context |
+| Changing or removing what an existing requirement or design says | Write one. The old text is gone, so a record is the only place for the context |
 | Choosing one of several options while creating or changing something | Write one. Alternatives considered do not go into the document body |
 | Simply adding a new requirement | None. The user story is the reason |
 | A document changed as a consequence of another decision | None of its own. Add the document to that decision's `docs` |
@@ -64,7 +64,7 @@ The body holds only these `##` sections. Headings may be in English (`## Context
 
 ## Length
 
-Write two to five sentences each for the context and the decision. The context says what the problem was (what was seen and any numbers measured), who asked for what, and the constraints to keep. The decision says what was decided, how far it applies and its exceptions. Do not pad a section with what nothing supports. A section over 500 characters is a `check` problem (`RECORD_SECTION_TOO_LONG`). List alternatives one per line with why they were not chosen in brackets. Leave out the history, the measuring and the old ways. API fields, implementation steps and test notes stay in the design or the commit, not the record. If a longer explanation is needed, put it in the design or instruction body and keep only the gist in the record. Follow `gitifact guide show writing` for the prose.
+Write two to five sentences each for the context and the decision. The context says what the problem was (what was seen and any numbers measured), who asked for what, and the constraints to keep. The decision says what was decided, how far it applies and its exceptions. Do not pad a section with what nothing supports. A section over 500 characters is a `check` problem (`RECORD_SECTION_TOO_LONG`). List alternatives one per line with why they were not chosen in brackets. Leave out the history, the measuring and the old ways. API fields, implementation steps and test notes stay in the design or the commit, not the record. If a longer explanation is needed, put it in the design body and keep only the gist in the record. Follow `gitifact guide show writing` for the prose.
 
 ## Committing
 

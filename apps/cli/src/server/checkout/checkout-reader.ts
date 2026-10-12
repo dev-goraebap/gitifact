@@ -3,8 +3,6 @@ import type { DesignSource } from '@gitifact/contracts';
 import { createGitRunner } from '../../adapters/git/run-git.js';
 import { storeReader } from '../../adapters/git/store-reader.js';
 import { readConfigFile } from '../../adapters/filesystem/config-file.js';
-import { readInstructionFiles } from '../../adapters/filesystem/instruction-folder.js';
-import { readAgentsFile } from '../../adapters/filesystem/agents-file.js';
 import type { Cache, FolderAuthors } from '../../adapters/cache/index.js';
 import { documentStates, type DocumentStates } from '../../queries/document-states.js';
 import type { CheckoutBase } from '../../queries/checkout.js';
@@ -24,8 +22,8 @@ export async function settled<T extends readonly unknown[]>(reads: { [K in keyof
 const folderOf = (path: string) => path.split('/').slice(0, 3).join('/');
 
 /**
- * The documents in the shape the screens read: features with their requirements and designs in order, and the
- * instructions, each with where it stands against the last commit. Deleted documents are among them until committed.
+ * The documents in the shape the screens read: features with their requirements and designs in order, each with
+ * where it stands against the last commit. Deleted documents are among them until committed.
  */
 function checkoutDocuments(states: DocumentStates, authors: Map<string, FolderAuthors>) {
   const documents = states.documents;
@@ -46,14 +44,11 @@ function checkoutDocuments(states: DocumentStates, authors: Map<string, FolderAu
       // Who committed to the feature folder, most first, and when it was last touched; nobody until first committed.
       contributors: entry?.people ?? [], updatedAt: entry?.latest ?? null };
   });
-  const instructions = arranged.instructions.map(k => ({ id: k.id, name: k.name, path: k.path, title: k.title, description: k.description, body: k.body, ...standing(k.id),
-    updatedAt: authors.get(folderOf(k.path))?.latest ?? null }));
-  return { features, instructions, orphans: arranged.orphans };
+  return { features, orphans: arranged.orphans };
 }
 
 /**
- * The working tree as the browser's queries read it (`queries/checkout.ts`): the features and instructions with where
- * each stands, who wrote them, whether anything is uncommitted, and the stamp it was read at. The Git and file reads
+ * The working tree as the browser's queries read it (`queries/checkout.ts`): the features with where each stands, who wrote them, whether anything is uncommitted, and the stamp it was read at. The Git and file reads
  * are here; what a screen is given is worked out in the queries.
  */
 export function createCheckoutReader(root: string, cache: Cache, inherited = process.env) {
@@ -86,11 +81,11 @@ export function createCheckoutReader(root: string, cache: Cache, inherited = pro
       head ? cache.log.contributors(head) : Promise.resolve([]),
     ] as const);
     const states = await documentStates({ head: async () => head, reader }, current.documents);
-    const { features, instructions, orphans } = checkoutDocuments(states, authors);
+    const { features, orphans } = checkoutDocuments(states, authors);
     const problems = [...current.problems, ...orphans.map(feature => docProblem('FEATURE_INDEX_REQUIRED', `.gitifact/spec/${feature}/index.md`, { feature }))];
     if (await readHead() !== head) throw new StoreError(t('specReader.projectChanged'));
-    return { head, stamp, observedAt: new Date().toISOString(), working: head ? !!dirty.trim() : features.length > 0 || instructions.length > 0,
-      features, instructions, problems, people, folders: authors };
+    return { head, stamp, observedAt: new Date().toISOString(), working: head ? !!dirty.trim() : features.length > 0,
+      features, problems, people, folders: authors };
   }
 
   // A screen asks for its frame and a part of it one after the other, and every part asked the working tree again (about
@@ -111,18 +106,5 @@ export function createCheckoutReader(root: string, cache: Cache, inherited = pro
     if (!value) { value = current(language).finally(() => pending.delete(language)); pending.set(language, value); }
     return value;
   };
-  return {
-    base,
-    /** Every instruction by name with the other files of its folder, and AGENTS.md: few enough to read whole. */
-    async instructions() {
-      const checkout = await base();
-      const instructions = await Promise.all([...checkout.instructions].sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0).map(async instruction => {
-        // A deleted instruction's folder is gone; it lists no files until the commit takes it away.
-        const { files, limited } = instruction.state === 'deleted' ? { files: [], limited: false } : await readInstructionFiles(root, instruction.path);
-        return { ...instruction, files, filesLimited: limited };
-      }));
-      const agentsText = await readAgentsFile(root);
-      return { instructions, agents: agentsText === null ? null : { path: 'AGENTS.md', body: agentsText, updatedAt: checkout.folders.get('AGENTS.md')?.latest ?? null } };
-    },
-  };
+  return { base };
 }

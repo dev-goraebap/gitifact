@@ -1,5 +1,4 @@
 import { docWarning, type Doc, type DocWarning, type RequirementStyle } from '../domain/document.js';
-import { INSTRUCTIONS_ROOT } from '../formats/document-file.js';
 import { ASSETS_DIR, ASSET_SIZE_LIMIT, ASSETS_TOTAL_LIMIT, RECOMMENDED_ASSET_EXTENSIONS, assetExtension, extractLinks, resolveLink,
   type DocumentLink } from '../formats/links.js';
 
@@ -18,8 +17,7 @@ export function documentBodyLinks(documents: readonly Doc[]): DocumentLink[] {
 /**
  * Advisory findings over the working tree: relative links whose target is not a document, an asset or an existing
  * repository file, assets over the recommended size or outside the recommended extensions, assets no document
- * links to, and a design overview grown to seven sections or more. `existing` holds the link targets outside `.gitifact`, and the files of instruction folders, that the caller
- * found as regular files.
+ * links to, and a design overview grown to seven sections or more. `existing` holds the link targets outside `.gitifact` that the caller found as regular files.
  */
 export function documentWarnings(documents: readonly Doc[], assets: readonly AssetFile[], existing: ReadonlySet<string>): DocWarning[] {
   const warnings: DocWarning[] = [];
@@ -28,7 +26,7 @@ export function documentWarnings(documents: readonly Doc[], assets: readonly Ass
   for (const { from, link, target } of documentBodyLinks(documents)) {
     if (records.has(target)) continue;
     if (assetPaths.has(target)) { referenced.add(target); continue; }
-    if ((!target.startsWith('.gitifact/') || target.startsWith(INSTRUCTIONS_ROOT + '/')) && existing.has(target)) continue;
+    if (!target.startsWith('.gitifact/') && existing.has(target)) continue;
     warnings.push(docWarning('MISSING_LINK_TARGET', from, { link, target }));
   }
   let total = 0;

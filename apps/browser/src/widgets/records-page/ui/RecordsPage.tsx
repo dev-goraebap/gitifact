@@ -1,6 +1,6 @@
 import type { ComponentType, ReactNode } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import type { BrowserSessionV3, BrowserCheckoutV1 } from '@gitifact/contracts';
+import type { BrowserSessionV3, BrowserCheckoutV2 } from '@gitifact/contracts';
 import { VStack } from '@astryxdesign/core/VStack';
 import { HStack } from '@astryxdesign/core/HStack';
 import { Heading } from '@astryxdesign/core/Heading';
@@ -27,14 +27,14 @@ export interface RecordsPageProps {
   /** Where the first crumb leads. */
   root: string;
   /** Crumbs after the screen's own once the checkout is read: the feature, the person or the page being shown. */
-  trail?: (checkout: BrowserCheckoutV1) => Crumb[];
+  trail?: (checkout: BrowserCheckoutV2) => Crumb[];
   /** A list shows its name as a heading; detail pages and the overview carry their own. */
   hasTitle: boolean;
   /** A screen whose content is compared side by side (the commit page) gets a wider column than reading prose needs. */
   isWide?: boolean;
   /** The filter row under the heading, which stays in view while the list scrolls. */
-  filters?: (checkout: BrowserCheckoutV1, session: BrowserSessionV3) => ReactNode;
-  children: (context: { checkout: BrowserCheckoutV1; session: BrowserSessionV3 }) => ReactNode;
+  filters?: (checkout: BrowserCheckoutV2, session: BrowserSessionV3) => ReactNode;
+  children: (context: { checkout: BrowserCheckoutV2; session: BrowserSessionV3 }) => ReactNode;
 }
 
 /**

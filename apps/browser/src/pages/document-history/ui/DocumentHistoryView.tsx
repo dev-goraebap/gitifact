@@ -1,6 +1,6 @@
 import { useDeferredValue } from 'react';
 import { useInfiniteQuery } from '@tanstack/react-query';
-import type { BrowserCheckoutV1, BrowserSessionV3 } from '@gitifact/contracts';
+import type { BrowserCheckoutV2, BrowserSessionV3 } from '@gitifact/contracts';
 import { VStack } from '@astryxdesign/core/VStack';
 import { HStack } from '@astryxdesign/core/HStack';
 import { Heading } from '@astryxdesign/core/Heading';
@@ -21,7 +21,7 @@ import { t, useLanguage } from '../../../shared/i18n';
  * The document named, where it is now, and how its history adds up; then each commit that changed it, newest first,
  * twenty at a time, the server picking them.
  */
-export function DocumentHistoryView({ docId, session, checkout, head }: { docId: string; session: BrowserSessionV3; checkout: BrowserCheckoutV1; head: string }) {
+export function DocumentHistoryView({ docId, session, checkout, head }: { docId: string; session: BrowserSessionV3; checkout: BrowserCheckoutV2; head: string }) {
   useLanguage();
   const query = useInfiniteQuery(documentHistoryOptions(session, head, docId));
   const pages = useDeferredValue(query.data)?.pages;

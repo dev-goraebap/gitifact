@@ -30,7 +30,6 @@ test('the product page leads with what changed and why', async ({ page }) => {
   await expect(article.getByRole('heading', { level: 1 })).toHaveText('project');
   const summary = article.getByLabel('현재 명세 요약');
   await expect(summary).toContainText('기능 명세');
-  await expect(summary).toContainText('프로젝트 지침');
   // The two loaded-range bars keep their legends above the reasons.
   await expect(article.getByLabel('변경 종류 범례').getByRole('listitem').first()).toHaveText('추가1 · 100%');
   await expect(article.getByLabel('참여자별 커밋 범례').getByRole('listitem').first()).toHaveText('Fixture3 · 75%');
@@ -60,7 +59,7 @@ test('uncommitted spec changes mark the Git menu and are explained on the Git pa
   const nav = page.getByRole('navigation', { name: '사이드 탐색' });
   await expect(nav.getByLabel('미커밋 명세 변경 있음')).toBeVisible();
   await nav.getByRole('link', { name: /^Git 상태/ }).click();
-  await expect(page.getByText('대시보드·기능별 요구사항·프로젝트 지침 화면은 작업 중인 내용이고', { exact: false })).toBeVisible();
+  await expect(page.getByText('대시보드·기능별 요구사항 화면은 작업 중인 내용이고', { exact: false })).toBeVisible();
   await page.getByRole('link', { name: '요구사항 보기 →' }).click();
   await expect(page).toHaveURL(/\/features$/);
 });
@@ -70,7 +69,7 @@ test('a direct visit to the Git page reads uncommitted store paths from the repo
   const data = { ...status, changes: [...status.changes, { kind: 'tracked', path: '.gitifact/spec/search/requirements.md', xy: '.M', submodule: null }], summary: { ...status.summary, unstaged: 2 } };
   await page.route('**/api/v1/status', r => r.fulfill({ json: data }));
   await page.goto('/git');
-  await expect(page.getByText('대시보드·기능별 요구사항·프로젝트 지침 화면은 작업 중인 내용이고', { exact: false })).toBeVisible();
+  await expect(page.getByText('대시보드·기능별 요구사항 화면은 작업 중인 내용이고', { exact: false })).toBeVisible();
   await expect(page.getByRole('navigation', { name: '사이드 탐색' }).getByLabel('미커밋 명세 변경 있음')).toBeVisible();
 });
 

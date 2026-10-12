@@ -43,12 +43,12 @@ test('CLI help, documentation and errors follow language without changing contra
   assert.match(success(f, ['--help']), /Output language/);
   assert.match(success(f, ['--lang', 'ko', '--help']), /출력 언어/);
   for (const lang of ['ko', 'en']) {
-    for (const topic of ['workflow', 'spec', 'design', 'instructions', 'records', 'writing', 'commit']) {
+    for (const topic of ['workflow', 'spec', 'design', 'records', 'writing', 'commit']) {
       assert.equal(success(f, ['--lang', lang, 'guide', 'show', topic]), readFileSync(join(root, 'apps/cli/src/shared/i18n', lang, 'docs', topic + '.md'), 'utf8'));
     }
   }
   assert.match(success(f, ['guide', 'show', 'spec', '--lang=ko']), /title: 요구사항 형식/);
-  assert.match(success(f, ['--lang=en', 'guide', 'show', 'instructions'], 'ko'), /title: Project instruction format/);
+  assert.match(success(f, ['--lang=en', 'guide', 'show', 'records'], 'ko'), /title: Record format/);
   assert.match(success(f, ['guide', 'show', 'spec'], '', { LC_ALL: 'ja_JP.UTF-8' }), /title: Requirement format/);
   assert.match(success(f, ['--lang', 'ko', 'guide', 'list']), /^spec +요구사항 형식 — /m);
   for (const args of [['--lang', 'ja', 'guide', 'list'], ['--lang'], ['--lang=']]) assert.notEqual(run(f, args).status, 0);
@@ -82,7 +82,7 @@ test('updates preserve Korean blocks and records; explicit language changes only
   assert.equal(language(), 'en');
   assert.ok(readFileSync(agents, 'utf8').endsWith('User instructions outside the block.\n'));
   assert.deepEqual(documents(), records);
-  assert.match(success(f, ['--lang', 'en', 'guide', 'show', 'instructions']), /title: Project instruction format/);
+  assert.match(success(f, ['--lang', 'en', 'guide', 'show', 'records']), /title: Record format/);
 });
 test('English setup ships complete assets and preserves user text', t => {
   const f = fixture(t);

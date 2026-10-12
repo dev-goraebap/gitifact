@@ -23,15 +23,14 @@ test('the browser reads the checkout and history without touching the project, a
   d.feature('posts', S, { title: 'Posts' });
   d.requirement('posts', 'save', R, { title: 'Save', order: 20, body: 'First' });
   d.requirement('posts', 'list', R2, { title: 'List', order: 10 });
-  d.design('posts', 'overview', D, { title: 'Overview', requirements: [R], sources: [{ id: I, note: 'rules' }, { title: 'Spec', url: 'https://example.test/' }] });
+  d.design('posts', 'overview', D, { title: 'Overview', requirements: [R], sources: [{ id: R2, note: 'rules' }, { title: 'Spec', url: 'https://example.test/' }] });
   d.design('posts', 'api', D2, { title: 'API', order: 20 });
-  d.instruction('guide', I, { title: 'Guide' });
   f.commit('Create');
   d.requirement('posts', 'save', R, { title: 'Save', order: 20, body: 'Second' }); f.commit('Modify');
   d.requirement('posts', 'save', R, { title: 'Save', order: 20, body: 'Draft' });
   const original = project(f); const read = openRecords(f.repo, f.env);
   const result = await read();
-  assert.equal(result.total, 7); assert.deepEqual(result.events[0].types, ['modified']); assert.equal(result.events[0].id, R);
+  assert.equal(result.total, 6); assert.deepEqual(result.events[0].types, ['modified']); assert.equal(result.events[0].id, R);
   // The list names the change; its text on both sides is read by key.
   assert.equal('body' in result.events[0].after, false); assert.equal(result.events[0].after.specId, S);
   const change = await read.change(result.events[0].key);
@@ -41,9 +40,9 @@ test('the browser reads the checkout and history without touching the project, a
   const [feature] = result.features;
   assert.deepEqual(feature.requirements.map(r => [r.id, r.order, r.body]), [[R2, 10, 'List 본문'], [R, 20, 'Draft']]);
   assert.deepEqual(feature.designs.map(x => x.id), [D, D2]);
-  assert.deepEqual(feature.designs[0].sources, [{ id: I, title: 'Guide', path: '.gitifact/instructions/guide/index.md', note: 'rules' }, { title: 'Spec', url: 'https://example.test/' }]);
+  assert.deepEqual(feature.designs[0].sources, [{ id: R2, title: 'List', path: '.gitifact/spec/posts/requirements/list.md', note: 'rules' }, { title: 'Spec', url: 'https://example.test/' }]);
   assert.deepEqual([feature.id, feature.body, result.working, result.contributors[0].commits], [S, 'Posts 본문', true, 2]);
-  // The checkout carries features and instructions; the wiki is gone.
+  // The checkout carries features; the wiki and instructions are gone.
   assert.equal('documents' in result, false);
   // The project is as it was; the cache is in .gitifact/cache with a .gitignore of `*`, so `git status` shows only the edit.
   assert.deepEqual(project(f), original); assert.ok(existsSync(cacheFile(f)));
@@ -59,7 +58,7 @@ test('the browser reads the checkout and history without touching the project, a
 test('the checkout says where each document stands, keeps a deleted one until the commit, and its stamp follows every edit', async t => {
   const { f, d } = await adopted(t);
   d.feature('posts', S, { title: 'Posts' }); d.requirement('posts', 'save', R, { title: 'Save', body: 'First' }); d.requirement('posts', 'list', R2, { title: 'List' });
-  d.instruction('guide', I, { title: 'Guide' }); f.commit('Create');
+  f.commit('Create');
   const server = await startBrowserServer({ cwd: f.repo, env: f.env, assetsDirectory: fileURLToPath(new URL('../../browser/dist/', import.meta.url)) }); t.after(() => server.close());
   const get = async path => (await fetch(server.url + path, { headers: { 'X-Gitifact-Session': server.session.sessionId } })).json();
   const clean = await get('/api/v1/feature?id=' + S);
@@ -104,7 +103,8 @@ test('the server refuses bad queries, missing sessions and other methods on ever
   assert.equal(await status('/api/v1/features?after=S-zzzzzzzzzz'), 404);
   assert.equal(await status('/api/v1/feature'), 400);
   assert.equal(await status('/api/v1/feature?id=S-zzzzzzzzzz'), 404);
-  assert.equal(await status('/api/v1/instructions'), 200);
+  assert.equal(await status('/api/v1/instructions'), 404);
+  assert.equal(await status('/api/v1/instructions/file?id=I-aaaaaaaaaa&path=index.md'), 404);
   assert.equal(await status('/api/v1/contributors?after=nobody@example.invalid'), 404);
   assert.equal(await status('/api/v1/contributor'), 400);
   assert.equal(await status('/api/v1/contributor?email=nobody@example.invalid'), 404);
@@ -383,10 +383,10 @@ test('reading only changed files reports the same changes, texts and reasons as 
   assert.deepEqual(listed.find(e => e.id === W && e.types.includes('moved')).types, ['moved', 'modified']);
 });
 
-test('authors per feature and the latest commit per instruction match a log per path', async t => {
+test('authors per feature match a log per path', async t => {
   const { f, d } = await adopted(t);
   const as = (name, email) => { f.git(['config', 'user.name', name]); f.git(['config', 'user.email', email]); };
-  as('Ann', 'ann@example.invalid'); d.feature('posts', S); d.requirement('posts', 'save', R, { body: '1' }); d.instruction('cli-rules', 'I-aaaaaaaaaa'); f.commit('posts 1');
+  as('Ann', 'ann@example.invalid'); d.feature('posts', S); d.requirement('posts', 'save', R, { body: '1' }); f.commit('posts 1');
   as('Bob', 'bob@example.invalid'); d.feature('tags', 'S-bbbbbbbbbb'); d.requirement('posts', 'save', R, { body: '2' }); f.commit('both');
   f.write('code.js', 'x'); f.commit('code');
   const result = await openRecords(f.repo, f.env)();
@@ -396,8 +396,6 @@ test('authors per feature and the latest commit per instruction match a log per 
     assert.equal(feature.updatedAt, lines[0].split('\0')[2], folder);
     assert.equal(feature.contributors.reduce((n, p) => n + p.commits, 0), lines.length, folder);
   }
-  assert.equal(result.instructions.length, 1);
-  for (const doc of result.instructions) assert.equal(doc.updatedAt, f.git(['log', '-1', '--format=%aI', 'HEAD', '--', doc.path.replace(/\/index\.md$/, '')]).stdout.trim() || null, doc.path);
 });
 
 test('a commit answers with every document it changed, and with its author when it changed none', async t => {
@@ -483,44 +481,31 @@ test('a commit lists the source files it changed beside its documents, and one f
   assert.deepEqual((await get('/api/v1/commit/files?after=src/f19.ts&commit=' + many)).body.files.map(x => x.path), ['src/f20.ts', 'src/f21.ts', 'src/f22.ts', 'src/f23.ts', 'src/f24.ts']);
 });
 
-test('instructions and AGENTS.md come in the checkout, instructions in history, commits and search, and one file reads on its own', async t => {
+test('instructions of earlier commits stay in history and commits; one left in the tree is refused, not served', async t => {
   const { f, d } = await adopted(t);
   d.feature('posts', S, { title: 'Posts' }); f.commit('Add');
   d.instruction('cli-rules', 'I-aaaaaaaaaa', { title: 'CLI rules', body: 'Rules about layers' });
   d.put('.gitifact/instructions/cli-rules/references/decisions.md', '| decision | reason |\n');
-  d.put('.gitifact/instructions/cli-rules/assets/logo.png', '\u0000PNG');
-  // A reference file names itself in its frontmatter; one without it, or with a heading only, is named by its path.
-  const layers = '---\ntitle: Layer rules\ndescription: Which layer may call which. Read when adding a module.\n---\n\n# Not the title\n';
-  d.put('.gitifact/instructions/cli-rules/references/layers.md', layers);
-  f.write('AGENTS.md', '# Agents\n\nRead the CLI rules first.\n');
   f.commit('Add instruction');
-  const head = f.git(['rev-parse', 'HEAD']).stdout.trim();
+  const added = f.git(['rev-parse', 'HEAD']).stdout.trim();
   const server = await startBrowserServer({ cwd: f.repo, env: f.env, assetsDirectory: fileURLToPath(new URL('../../browser/dist/', import.meta.url)) }); t.after(() => server.close());
   const get = async path => { const response = await fetch(server.url + path, { headers: { 'X-Gitifact-Session': server.session.sessionId } }); return { status: response.status, body: await response.json() }; };
-  const specs = (await get('/api/v1/instructions')).body;
-  assert.deepEqual([specs.contract, specs.version, specs.instructions[0].state], ['browser-instructions', 1, 'committed']);
-  assert.deepEqual(specs.instructions.map(k => [k.id, k.name, k.title, k.files, k.filesLimited, !!k.updatedAt]),
-    [['I-aaaaaaaaaa', 'cli-rules', 'CLI rules', [{ path: 'assets/logo.png', size: 4 }, { path: 'references/decisions.md', size: 22 },
-      { path: 'references/layers.md', size: layers.length, title: 'Layer rules', description: 'Which layer may call which. Read when adding a module.' }], false, true]]);
-  assert.deepEqual([specs.agents.path, specs.agents.body, !!specs.agents.updatedAt], ['AGENTS.md', '# Agents\n\nRead the CLI rules first.\n', true]);
+  // Left in the tree, the folder is named once and nothing of it is a document of the checkout or the search.
+  const frame = (await get('/api/v1/checkout')).body;
+  assert.deepEqual([frame.version, frame.problems.map(p => [p.code, p.path]), 'instructions' in frame.index], [2, [['INSTRUCTION_MOVED', '.gitifact/instructions/cli-rules']], false]);
+  assert.equal((await get('/api/v1/instructions')).status, 404);
+  const found = (await get('/api/v1/search?q=layers&head=' + added)).body;
+  assert.deepEqual([found.version, found.groups.map(g => g.group)], [4, []]);
+  // Left alone it is no uncommitted change; moved out, it is deleted with the next commit.
+  assert.deepEqual((await get('/api/v1/working')).body.changes, []);
+  f.git(['rm', '-r', '-q', '.gitifact/instructions']); f.commit('Move instructions to skills');
+  const head = f.git(['rev-parse', 'HEAD']).stdout.trim();
   const history = await get('/api/v1/history?head=' + head + '&document=instruction');
-  assert.deepEqual([history.status, history.body.version, history.body.events.map(e => [e.id, e.kind])], [200, 7, [['I-aaaaaaaaaa', 'instruction']]]);
-  const commit = await get('/api/v1/commit?commit=' + head);
-  assert.deepEqual([commit.body.version, commit.body.changes.map(e => e.kind)], [4, ['instruction']]);
-  assert.equal((await get('/api/v1/commit/change?commit=' + head + '&id=I-aaaaaaaaaa')).body.after.body, 'Rules about layers');
-  const search = await get('/api/v1/search?q=layers&head=' + head);
-  assert.deepEqual(search.body.groups.find(g => g.group === 'instruction').hits.map(h => h.id), ['I-aaaaaaaaaa']);
-  // A file of the folder is read on its own; a binary file comes without text, and nothing outside the folder is served.
-  const file = (path, id = 'I-aaaaaaaaaa') => get('/api/v1/instructions/file?' + new URLSearchParams({ id, path }));
-  const decisions = await file('references/decisions.md');
-  assert.deepEqual([decisions.status, decisions.body.text, decisions.body.binary], [200, '| decision | reason |\n', false]);
-  assert.deepEqual([(await file('assets/logo.png')).body.text, (await file('assets/logo.png')).body.binary], [null, true]);
-  for (const path of ['../../config.json', 'references/../index.md', 'missing.md']) assert.equal((await file(path)).status, 404, path);
-  assert.equal((await file('index.md', 'I-zzzzzzzzzz')).status, 404);
-  assert.equal((await file('index.md', 'nope')).status, 400);
-  // Without AGENTS.md the checkout says so rather than failing.
-  f.git(['rm', '-q', 'AGENTS.md']); f.commit('Drop AGENTS.md');
-  assert.equal((await get('/api/v1/instructions')).body.agents, null);
+  assert.deepEqual([history.status, history.body.events.map(e => [e.id, e.kind, e.types])], [200, [['I-aaaaaaaaaa', 'instruction', ['deleted']], ['I-aaaaaaaaaa', 'instruction', ['created']]]]);
+  const commit = await get('/api/v1/commit?commit=' + added);
+  assert.deepEqual(commit.body.changes.map(e => e.kind), ['instruction']);
+  assert.equal((await get('/api/v1/commit/change?commit=' + added + '&id=I-aaaaaaaaaa')).body.after.body, 'Rules about layers');
+  assert.deepEqual((await get('/api/v1/checkout')).body.problems, []);
 });
 
 test('the feature list is filtered, ordered and paged by the server, a feature whole, and contributors likewise', async t => {

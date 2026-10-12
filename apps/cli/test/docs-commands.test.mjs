@@ -5,23 +5,22 @@ import { dirname, join } from 'node:path';
 import { renderDocumentFile, parseDocumentFile } from '@gitifact/core';
 import { projectFixture, fingerprint } from './git-fixture.mjs';
 
-const S = 'S-aaaaaaaaaa', R1 = 'R-bbbbbbbbbb', R2 = 'R-cccccccccc', D1 = 'D-dddddddddd', I = 'I-eeeeeeeeee';
+const S = 'S-aaaaaaaaaa', R1 = 'R-bbbbbbbbbb', R2 = 'R-cccccccccc', D1 = 'D-dddddddddd';
 const paths = { feature: '.gitifact/spec/payment/index.md', cancel: '.gitifact/spec/payment/requirements/cancel.md', list: '.gitifact/spec/payment/requirements/list.md',
-  overview: '.gitifact/spec/payment/design/overview.md', instruction: '.gitifact/instructions/payment-modules/index.md' };
+  overview: '.gitifact/spec/payment/design/overview.md' };
 const authorization = { basis: 'user-request', evidence: 'Fixture explicitly requests this test commit' };
 
 function put(f, doc) {
   const file = join(f.repo, doc.path); mkdirSync(dirname(file), { recursive: true });
   writeFileSync(file, renderDocumentFile(doc));
 }
-/** One feature with two requirements and an overview that names a requirement, an instruction and an outside page. */
+/** One feature with two requirements and an overview that names a requirement, draws on the other and an outside page. */
 function payment(f) {
   put(f, { kind: 'feature', path: paths.feature, id: S, feature: 'payment', title: '결제', description: '결제 승인과 취소', body: '결제 기능의 범위.' });
   put(f, { kind: 'requirement', path: paths.cancel, id: R1, feature: 'payment', order: 10, title: '결제 취소', description: '승인된 결제를 취소한다', body: '구매자로서 결제를 취소하고 싶다. 취소는 승인 후 7일 안에만 된다.' });
   put(f, { kind: 'requirement', path: paths.list, id: R2, feature: 'payment', order: 20, title: '결제 목록', description: '기간으로 결제를 찾는다', body: '관리자로서 결제 목록을 보고 싶다.' });
   put(f, { kind: 'design', path: paths.overview, id: D1, feature: 'payment', order: 10, title: '개요', description: '취소 처리 흐름', body: '취소는 승인 기록을 찾아 PG사에 요청한다.',
-    requirements: [R1], sources: [{ id: I }, { title: 'PG사 취소 API', url: 'https://example.test/cancel' }] });
-  put(f, { kind: 'instruction', path: paths.instruction, id: I, name: 'payment-modules', title: '결제 모듈', description: '결제 모듈의 계층', body: '## 계층\n\n본문.' });
+    requirements: [R1], sources: [{ id: R2 }, { title: 'PG사 취소 API', url: 'https://example.test/cancel' }] });
 }
 
 test('specs list shows frontmatter and referenced titles without bodies, narrowed by feature or type', t => {
@@ -35,7 +34,7 @@ test('specs list shows frontmatter and referenced titles without bodies, narrowe
     `    20 ${R2} 결제 목록 — 기간으로 결제를 찾는다`,
     '  설계',
     `    10 ${D1} 개요 — 취소 처리 흐름 [${R1} 결제 취소]`,
-    `       참고: ${I} 결제 모듈, PG사 취소 API`,
+    `       참고: ${R2} 결제 목록, PG사 취소 API`,
     '',
   ].join('\n'));
   assert.doesNotMatch(spec.stdout, /7일|결제 모듈의 계층/);
@@ -43,7 +42,7 @@ test('specs list shows frontmatter and referenced titles without bodies, narrowe
   assert.deepEqual([json.contract, json.version, json.ok, json.orphans, json.problems], ['specs', 1, true, [], []]);
   assert.deepEqual(json.documents.map(d => [d.kind, d.id]), [['feature', S], ['requirement', R1], ['requirement', R2], ['design', D1]]);
   assert.deepEqual(json.documents[3].requirements, [{ id: R1, title: '결제 취소' }]);
-  assert.deepEqual(json.documents[3].sources, [{ id: I, title: '결제 모듈' }, { title: 'PG사 취소 API', url: 'https://example.test/cancel' }]);
+  assert.deepEqual(json.documents[3].sources, [{ id: R2, title: '결제 목록' }, { title: 'PG사 취소 API', url: 'https://example.test/cancel' }]);
   assert.deepEqual(json.documents[1].designs, [{ id: D1, title: '개요' }]);
   assert.equal('updated' in json.documents[0], false);
   // A filtered-out feature row still heads its rows, so each row is read with its feature.
@@ -142,7 +141,7 @@ test('specs show prints the file as written with references both ways, and --ref
   const shown = f.run(['specs', 'show', D1, R1]);
   assert.equal(shown.status, 0, shown.stderr);
   const [design, requirement] = shown.stdout.split(/\n\n(?=== )/);
-  assert.equal(design, `== ${D1} ${paths.overview}\n${readFileSync(join(f.repo, paths.overview), 'utf8').trimEnd()}\n-- 참조\n  ${R1} 결제 취소\n  ${I} 결제 모듈\n  PG사 취소 API <https://example.test/cancel>`);
+  assert.equal(design, `== ${D1} ${paths.overview}\n${readFileSync(join(f.repo, paths.overview), 'utf8').trimEnd()}\n-- 참조\n  ${R1} 결제 취소\n  ${R2} 결제 목록\n  PG사 취소 API <https://example.test/cancel>`);
   assert.equal(requirement, `== ${R1} ${paths.cancel}\n${readFileSync(join(f.repo, paths.cancel), 'utf8').trimEnd()}\n-- 가리키는 문서\n  ${D1} 개요\n`);
   const edited = readFileSync(join(f.repo, paths.cancel), 'utf8').replace('7일', '14일');
   writeFileSync(join(f.repo, paths.cancel), edited);
@@ -153,10 +152,8 @@ test('specs show prints the file as written with references both ways, and --ref
   const missing = f.run(['specs', 'show', R1, 'R-zzzzzzzzzz', '--format', 'json']);
   assert.equal(missing.status, 1); assert.equal(JSON.parse(missing.stderr).error.code, 'UNKNOWN_DOCUMENT');
   assert.equal(f.run(['specs', 'show', R1, '--ref', 'no-such-ref']).status, 1);
-  // An instruction is read through its own resource, and the refusal says which.
-  const instruction = f.run(['specs', 'show', I]);
-  assert.equal(instruction.status, 1); assert.match(instruction.stderr, /^UNKNOWN_DOCUMENT: .*instructions show/);
-  assert.match(f.run(['instructions', 'show', R1]).stderr, /^UNKNOWN_DOCUMENT: .*specs show/);
+  // The instructions command is gone with what it kept.
+  assert.notEqual(f.run(['instructions', 'show', R1]).status, 0);
 });
 
 test('the changes commands warn when a requirement they carry leaves the guide\'s shape, and check warns of a large design overview', t => {
@@ -255,7 +252,7 @@ test('a project that writes use cases gets a use-case skeleton, and the changes 
   setStyle(undefined);
 });
 
-test('specs new and instructions new issue an ID and a draft skeleton that the check refuses until the draft line is gone', t => {
+test('specs new issues an ID and a draft skeleton that the check refuses until the draft line is gone', t => {
   const f = projectFixture(t);
   const feature = f.ok(['specs', 'new', 'feature', 'payment', '--title', '결제', '--description', '결제 승인과 취소']);
   assert.match(feature.id, /^S-[a-z2-7]{10}$/); assert.equal(feature.path, paths.feature);
@@ -264,34 +261,32 @@ test('specs new and instructions new issue an ID and a draft skeleton that the c
   assert.deepEqual([first.order, second.order], [10, 20]);
   const design = f.ok(['specs', 'new', 'design', 'payment/overview', '--title', '개요', '--description', '처리 흐름']);
   assert.match(design.id, /^D-/); assert.equal(design.order, 10);
-  const rules = f.run(['instructions', 'new', 'naming', '--title', '이름 규칙', '--description', '파일과 변수 이름']);
-  assert.equal(rules.status, 0, rules.stderr); assert.match(rules.stdout, /만들었습니다: \.gitifact\/instructions\/naming\/index\.md \(I-[a-z2-7]{10}\)/);
   const text = readFileSync(join(f.repo, paths.cancel), 'utf8');
   assert.match(text, new RegExp(`^---\\nid: ${first.id}\\ntitle: 결제 취소\\ndescription: 승인된 결제를 취소한다\\norder: 10\\ndraft: true\\n---\\n\\n\\(사용자\\)로서`));
   assert.equal(parseDocumentFile(paths.cancel, text).draft, true);
   assert.match(f.run(['specs', 'list']).stdout, new RegExp(`10 ${first.id} 결제 취소 \\(초안\\) — `));
 
   const check = f.run(['check']);
-  assert.equal(check.status, 1); assert.match(check.stdout, /^문제 5개\n/);
-  assert.equal((check.stdout.match(/DOC_DRAFT/g) ?? []).length, 5);
+  assert.equal(check.status, 1); assert.match(check.stdout, /^문제 4개\n/);
+  assert.equal((check.stdout.match(/DOC_DRAFT/g) ?? []).length, 4);
   const json = f.run(['check', '--format', 'json']);
   assert.equal(json.status, 1); assert.equal(JSON.parse(json.stdout).ok, false);
-  for (const path of [paths.feature, paths.cancel, paths.list, paths.overview, '.gitifact/instructions/naming/index.md']) {
+  for (const path of [paths.feature, paths.cancel, paths.list, paths.overview]) {
     const file = join(f.repo, path); writeFileSync(file, readFileSync(file, 'utf8').replace('draft: true\n', ''));
   }
   const clean = f.run(['check']);
-  assert.equal(clean.status, 0, clean.stdout); assert.equal(clean.stdout, '문제 없음 (문서 5개)\n');
+  assert.equal(clean.status, 0, clean.stdout); assert.equal(clean.stdout, '문제 없음 (문서 4개)\n');
 
   const before = fingerprint(join(f.repo, '.gitifact', 'spec'));
   for (const [kind, path, code] of [['requirement', 'payment', 'INVALID_PATH'], ['feature', 'Pay', 'INVALID_PATH'], ['design', 'payment/a/b', 'INVALID_PATH'],
-    ['instruction', 'rules/naming', 'INVALID_PATH'], ['requirement', 'payment/cancel', 'DOCUMENT_EXISTS']]) {
-    const failed = f.run([...kind === 'instruction' ? ['instructions', 'new'] : ['specs', 'new', kind], path, '--title', '제목', '--description', '설명', '--format', 'json']);
+    ['requirement', 'payment/cancel', 'DOCUMENT_EXISTS']]) {
+    const failed = f.run(['specs', 'new', kind, path, '--title', '제목', '--description', '설명', '--format', 'json']);
     assert.equal(failed.status, 1, kind + ' ' + path); assert.equal(JSON.parse(failed.stderr).error.code, code, kind + ' ' + path);
   }
   const multiline = f.run(['specs', 'new', 'requirement', 'payment/refund', '--title', '두\n줄', '--description', '설명']);
   assert.equal(multiline.status, 1); assert.match(multiline.stderr, /^INVALID_VALUE: .*title/);
-  // The wiki is gone as a kind to create; notes never were one.
-  for (const kind of ['wiki', 'note']) assert.notEqual(f.run(['specs', 'new', kind, 'payment/x', '--title', 'a', '--description', 'b']).status, 0, kind);
+  // The wiki and instructions are gone as kinds to create; notes never were one.
+  for (const kind of ['wiki', 'instruction', 'note']) assert.notEqual(f.run(['specs', 'new', kind, 'payment/x', '--title', 'a', '--description', 'b']).status, 0, kind);
   assert.deepEqual(fingerprint(join(f.repo, '.gitifact', 'spec')), before);
   assert.equal(existsSync(join(f.repo, '.gitifact/wiki')), false);
 });
@@ -299,21 +294,25 @@ test('specs new and instructions new issue an ID and a draft skeleton that the c
 test('check reports every problem across files, including references broken by a deletion', t => {
   const f = projectFixture(t); payment(f);
   assert.equal(f.run(['check']).status, 0);
-  rmSync(join(f.repo, dirname(paths.instruction)), { recursive: true });
+  rmSync(join(f.repo, paths.list));
   writeFileSync(join(f.repo, '.gitifact/spec/payment/requirements.md'), '0.7 file\n');
+  // An instruction left from 0.8 is refused the same way, once per folder.
+  put(f, { kind: 'instruction', path: '.gitifact/instructions/payment-modules/index.md', id: 'I-eeeeeeeeee', name: 'payment-modules', title: '결제 모듈', description: '결제 모듈의 계층', body: '본문.' });
+  writeFileSync(join(f.repo, '.gitifact/instructions/payment-modules/references.md'), '# 참고\n');
   // A page left from the wiki is refused and left out of every listing, even when it is a valid 0.8.0 page.
   const wiki = '.gitifact/wiki/modules/payment.md';
   put(f, { kind: 'wiki', path: wiki, id: 'W-wwwwwwwwww', title: '결제 모듈', description: '결제 모듈의 계층', body: '본문.' });
   const result = f.run(['check', '--format', 'json']);
   assert.equal(result.status, 1);
   assert.deepEqual(JSON.parse(result.stdout).problems.map(p => [p.code, p.path]).sort(), [
-    ['MISSING_REFERENCE', paths.overview], ['PATH_UNSUPPORTED', '.gitifact/spec/payment/requirements.md'], ['WIKI_REMOVED', wiki],
+    ['INSTRUCTION_MOVED', '.gitifact/instructions/payment-modules'], ['MISSING_REFERENCE', paths.overview], ['PATH_UNSUPPORTED', '.gitifact/spec/payment/requirements.md'], ['WIKI_REMOVED', wiki],
   ]);
   assert.match(f.run(['check']).stdout, /WIKI_REMOVED .*guide show migrate/);
+  assert.match(f.run(['check']).stdout, /INSTRUCTION_MOVED .*guide show migrate/);
   const listed = f.ok(['specs', 'list']);
-  assert.equal(listed.problems.filter(p => p.code === 'WIKI_REMOVED').length, 1);
+  assert.deepEqual(listed.problems.map(p => p.code).sort(), ['INSTRUCTION_MOVED', 'PATH_UNSUPPORTED', 'WIKI_REMOVED']);
   assert.equal(f.run(['specs', 'show', 'W-wwwwwwwwww']).status, 1);
-  assert.deepEqual(f.ok(['instructions', 'list', '--q', '계층']).instructions, []);
+  assert.equal(f.run(['specs', 'show', 'I-eeeeeeeeee']).status, 1);
 });
 
 test('check and changes list warn about broken links and assets without failing', t => {
@@ -350,7 +349,7 @@ test('records new writes a draft; records list --doc reads the records behind a 
   assert.deepEqual(JSON.parse(f.run(['check', '--format', 'json']).stdout).problems.map(p => p.code), ['DOC_DRAFT']);
   writeFileSync(file, draft.replace('draft: true\n', '').replace('## 맥락\n\n(내용)', '## 맥락\n\nPG사 정산 주기가 7일이다.')
     .replace('## 결정\n\n(내용)\n', '## 결정\n\n승인 후 7일 안에만 취소를 받는다.\n\n## 검토한 대안\n\n- 기간 없이 받기(정산 뒤 취소는 수작업)\n'));
-  const all = [made.path, paths.feature, paths.cancel, paths.list, paths.overview, paths.instruction];
+  const all = [made.path, paths.feature, paths.cancel, paths.list, paths.overview];
   assert.equal(commit({ paths: all, message: 'Add payment', authorization }, input).status, 0);
   writeFileSync(join(f.repo, paths.cancel), readFileSync(join(f.repo, paths.cancel), 'utf8').replace('7일', '14일'));
   const extend = f.ok(['records', 'new', '--title', '취소 기간 14일로 연장', '--docs', R1]);
@@ -402,6 +401,13 @@ test('records new writes a draft; records list --doc reads the records behind a 
   for (const args of [['--title', 'x', '--docs', 'X-aaaaaaaaaa'], ['--title', 'x'], ['--docs', R1], ['--title', '가'.repeat(81), '--docs', R1]]) {
     assert.notEqual(f.run(['records', 'new', ...args]).status, 0, args.join(' '));
   }
+  // Windows PowerShell hands an unquoted `--docs a,b` through npm's shim as the one value `a b`; a wrong ID is named.
+  const joined = f.ok(['records', 'new', '--title', 'PowerShell', '--docs', `${R1} ${R2}`]);
+  assert.match(readFileSync(join(f.repo, joined.path), 'utf8'), new RegExp(`docs:\\n  - ${R1}\\n  - ${R2}\\n`));
+  assert.equal(f.run(['records', 'list', '--fields', 'id docs', '--limit', '1']).stdout, `${joined.id}\t${R1},${R2}\n`);
+  const wrong = JSON.parse(f.run(['records', 'new', '--title', 'x', '--docs', `${R1},R-1`, '--format', 'json']).stderr).error;
+  assert.equal(wrong.code, 'INVALID_VALUE');
+  assert.match(wrong.message, /R-1/); assert.doesNotMatch(wrong.message, new RegExp(R1));
 });
 
 test('document commands refuse an uninitialized project and the 0.7 format with the migration guide', t => {

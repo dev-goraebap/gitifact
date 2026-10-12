@@ -7,7 +7,7 @@ const record = (id, docs, day = '20260924') => [`.gitifact/records/${day}/${id}.
 const S = 'S-aaaaaaaaaa', R1 = 'R-bbbbbbbbbb', R2 = 'R-cccccccccc', D1 = 'D-dddddddddd', D2 = 'D-eeeeeeeeee', W = 'W-ffffffffff', H = 'H-gggggggggg', DR = 'DR-gggggggggg', I = 'I-iiiiiiiiii';
 const feature = `---\nid: ${S}\ntitle: 결제\ndescription: 결제 승인·취소·환불 흐름\n---\n\n결제 기능의 범위.\n`;
 const requirement = (id = R1, order = 10, title = '결제 취소') => `---\nid: ${id}\ntitle: ${title}\ndescription: 승인된 결제를 전액 취소한다\norder: ${order}\n---\n\n구매자로서, 잘못 산 물건을 돌려받기 위해 결제를 취소하고 싶다.\n\n### 수용 조건\n\n1. 조건: 승인된 결제를 취소합니다.\n   기대 동작: 전액을 환불합니다.\n`;
-const overview = `---\nid: ${D1}\ntitle: 개요\ndescription: 승인·취소 처리 흐름\norder: 10\nrequirements:\n  - ${R1}\nsources:\n  - id: ${I}\n    note: 모듈 경계\n  - title: PG사 취소 API\n    url: https://example.test/cancel\n---\n\n취소는 승인 기록을 찾아 PG사에 요청한다.\n`;
+const overview = `---\nid: ${D1}\ntitle: 개요\ndescription: 승인·취소 처리 흐름\norder: 10\nrequirements:\n  - ${R1}\nsources:\n  - id: ${S}\n    note: 모듈 경계\n  - title: PG사 취소 API\n    url: https://example.test/cancel\n---\n\n취소는 승인 기록을 찾아 PG사에 요청한다.\n`;
 const wiki = `---\nid: ${W}\ntitle: 결제 모듈 아키텍처\ndescription: 결제 모듈의 계층과 의존 방향\n---\n\n## 계층\n\n본문.\n`;
 const instruction = `---\nid: ${I}\ntitle: 결제 모듈 아키텍처\ndescription: 결제 모듈의 계층과 의존 방향. 결제 코드를 바꿀 때 읽는다.\n---\n\n## 계층\n\n본문.\n`;
 const paths = {
@@ -24,7 +24,7 @@ test('each kind parses from its folder and renders back to the same bytes', () =
   assert.deepEqual([r.kind, r.feature, r.order, r.title], ['requirement', 'payment', 10, '결제 취소']);
   assert.ok(r.body.startsWith('구매자로서,') && r.body.endsWith('전액을 환불합니다.'));
   const d = parseDocumentFile(paths.overview, overview);
-  assert.deepEqual([d.kind, d.order, d.requirements, d.sources], ['design', 10, [R1], [{ id: I, note: '모듈 경계' }, { title: 'PG사 취소 API', url: 'https://example.test/cancel' }]]);
+  assert.deepEqual([d.kind, d.order, d.requirements, d.sources], ['design', 10, [R1], [{ id: S, note: '모듈 경계' }, { title: 'PG사 취소 API', url: 'https://example.test/cancel' }]]);
   const w = parseDocumentFile(paths.wiki, wiki);
   assert.deepEqual([w.kind, w.id, w.body], ['wiki', W, '## 계층\n\n본문.']);
   for (const [path, source] of [[paths.feature, feature], [paths.r1, requirement()], [paths.overview, overview], [paths.wiki, wiki]]) {
@@ -108,21 +108,22 @@ test('reason lines carry only id, docs and reason', () => {
 });
 
 test('the whole-set check reports every problem and keeps checking the readable files', () => {
-  const good = new Map([[paths.feature, feature], [paths.r1, requirement()], [paths.overview, overview], [paths.instruction, instruction],
+  const good = new Map([[paths.feature, feature], [paths.r1, requirement()], [paths.overview, overview],
     record(DR, [R1]), ['.gitifact/wiki/diagram.png', 'binary']]);
   const ok = checkDocuments(good);
   assert.deepEqual(ok.problems, []);
-  assert.deepEqual(ok.documents.map(d => d.id).sort(), [D1, I, R1, S].sort());
+  assert.deepEqual(ok.documents.map(d => d.id).sort(), [D1, R1, S].sort());
   assert.deepEqual(ok.records.map(r => [r.id, r.title, r.docs]), [[DR, '결제 취소 첫 정리', [R1]]]);
 
   const broken = new Map([
     // A second feature with a requirement and a design but neither index.md nor overview.md.
     ['.gitifact/spec/refund/requirements/request.md', requirement(R2, 10, '환불 요청')],
     ['.gitifact/spec/refund/design/api.md', overview.replace(D1, D2).replace(`  - ${R1}`, '  - R-zzzzzzzzzz')],
-    // The payment feature: a duplicate ID, a duplicate order, a broken file and a source pointing at a deleted instruction.
+    // The payment feature: a duplicate ID, a duplicate order, a broken file, and a source naming an instruction left in
+    // the tree, which is refused rather than read.
     // A page left from the wiki is refused, not read; reasons may still name its W-.
     [paths.wiki, wiki], [paths.feature, feature], [paths.r1, requirement()], [paths.r2, requirement(R1, 10, '환불')],
-    [paths.overview, overview], [paths.api, '# no frontmatter\n'],
+    [paths.overview, overview.replace(`id: ${S}`, `id: ${I}`)], [paths.instruction, instruction], [paths.api, '# no frontmatter\n'],
     // The reason file records replaced, and one record ID used in two years' folders.
     [paths.reasons, renderReasonLine({ id: H, docs: [W], reason: 'a' }) + '\n'], record(DR, [W], '20250101'), record(DR, [R1]),
   ]);
@@ -135,7 +136,7 @@ test('the whole-set check reports every problem and keeps checking the readable 
     ['DUPLICATE_RECORD_ID', `.gitifact/records/20260924/${DR}.md`],
     ['FEATURE_INDEX_REQUIRED', '.gitifact/spec/refund/index.md'],
     ['FRONTMATTER_REQUIRED', paths.api],
-    ['MISSING_REFERENCE', '.gitifact/spec/refund/design/api.md'],
+    ['INSTRUCTION_MOVED', '.gitifact/instructions/payment-architecture'],
     ['MISSING_REFERENCE', '.gitifact/spec/refund/design/api.md'],
     ['MISSING_REFERENCE', paths.overview],
     ['REASONS_FILE_REMOVED', paths.reasons],

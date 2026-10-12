@@ -55,7 +55,7 @@ test('unknown topics and removed forms fail on stderr without output', async t =
   assert.equal(failure.status, 1); assert.equal(failure.stdout, '');
   const dto = JSON.parse(failure.stderr);
   assert.deepEqual([dto.contract, dto.version, dto.ok, dto.error.code], ['guide', 1, false, 'UNKNOWN_TOPIC']);
-  assert.match(dto.error.message, /workflow, spec, design, instructions, records, writing, commit, migrate/);
+  assert.match(dto.error.message, /workflow, spec, design, records, writing, commit, migrate/);
   // Instructions replaced the wiki, and its guide with it.
   assert.match(run(cwd, 'show', 'wiki').stderr, /^UNKNOWN_TOPIC: /);
   const text = run(cwd, 'show', 'nope');
@@ -84,6 +84,6 @@ test('in-process guides read through the injected source', async () => {
   try { await runGuideShow('design', { format: 'text' }, { readGuide: async name => 'injected ' + name + '\n' }); }
   finally { process.stdout.write = original; }
   assert.deepEqual(chunks.filter(c => c.startsWith('injected')), ['injected design\n']);
-  assert.equal(await renderGuide('instructions', { readGuide: async name => name + '\n\n' }, 'ko'), 'instructions\n');
+  assert.equal(await renderGuide('records', { readGuide: async name => name + '\n\n' }, 'ko'), 'records\n');
   assert.equal(process.exitCode, undefined);
 });

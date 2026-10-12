@@ -28,14 +28,6 @@ For an existing project, you can start with the features you work on next. To do
 Document this project's requirements and designs.
 ```
 
-## Write project instructions
-
-Keep development rules and architecture decisions as project instructions, one per kind of task. Decide with your agent which instructions to keep and when each should be read.
-
-```text
-Write our project's development rules as project instructions.
-```
-
 ## View documents and history
 
 Tell your agent what you want to see. For example:
@@ -51,12 +43,11 @@ The browser viewer includes:
 | :--- | :--- |
 | Dashboard | Project size and recent activity |
 | Features | Current requirements and designs by feature |
-| Project instructions | AGENTS.md and per-task instructions such as development rules and architecture decisions |
 | Decision records | Committed decision records and the before/after content of the documents they explain |
 | Contributors | Contributions by Git author |
 | Git status | Changed files in the working directory |
 
-Requirements, designs, and instructions show the working copy. Decision records show committed history.
+Requirements and designs show the working copy. Decision records show committed history.
 
 ## Send feedback on Gitifact
 
@@ -133,18 +124,16 @@ The version is recorded in `package.json` and the lockfile. Tell agents to use t
 | `gitifact guide list` | List agent guide topics |
 | `gitifact guide show spec` | Requirement file format and writing rules |
 | `gitifact guide show design` | Feature design rules |
-| `gitifact guide show instructions` | Project instruction format and the AGENTS.md index |
 | `gitifact guide show records` | When to write a decision record and its format |
 | `gitifact guide show commit` | Commit changes with their records and related files |
 
 ### Read documents and commit
 
-Requirements, designs and instructions are Markdown files under `.gitifact/` that you edit directly. New documents are created through the CLI, which issues their IDs.
+Requirements and designs are Markdown files under `.gitifact/` that you edit directly. New documents are created through the CLI, which issues their IDs.
 
 | Command | Purpose |
 | :--- | :--- |
 | `gitifact specs list` | Features, requirements and designs (IDs, titles, descriptions, no bodies); filter with `--uncovered`, `--changed-since`, `--q` and more |
-| `gitifact instructions list` | AGENTS.md and the project instructions |
 | `gitifact specs show <ID>` | A document's source and the designs pointing to it; `--ref <commit>` for past text |
 | `gitifact records list --doc <ID>` | Decision records and commits for a document |
 | `gitifact specs new requirement <feature>/<name>` | Create a document with an issued ID and a skeleton |
