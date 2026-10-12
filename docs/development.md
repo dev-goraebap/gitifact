@@ -4,9 +4,11 @@
 
 0.8.6 뒤에 만든 프로젝트 스킬 관리(커밋 5개)는 `skills-0.9-experiment` 브랜치에 보관하고, `main`을 0.8.6(`e4186ca`)으로 되돌린 뒤 지침 기능을 걷어냈다(DR-r4q7qxngiw). `instructions` 명령·`guide show instructions`·브라우저 지침 화면과 API를 지우고, 작업 트리에 남은 지침은 `INSTRUCTION_MOVED`로 막는다. 옛 커밋의 지침은 이력에서 읽는다. browser-checkout을 v2, browser-search를 v4로, 캐시 형식을 13으로 올렸다. 보관 브랜치에서 PowerShell 목록 수정(`--docs`·`--fields`가 쉼표와 공백으로 나눔)을 다시 넣었다.
 
-이 저장소의 지침 5개는 `.agents/skills/<이름>/SKILL.md`로 옮겼다. `.claude/skills/`는 Git이 무시하고, `.claude/settings.json`의 세션 시작 훅이 `scripts/sync-claude-skills.mjs`로 `.agents/skills/`를 복사한다. 버전은 아직 올리지 않았고 패치노트는 배포 때 쓴다.
+이 저장소의 지침 5개는 `.agents/skills/<이름>/SKILL.md`로 옮겼다. `.claude/skills/`는 Git이 무시하고, `.claude/settings.json`의 세션 시작 훅이 `scripts/sync-claude-skills.mjs`로 `.agents/skills/`를 복사한다.
 
 같은 날 전역 설치 대신 프로젝트 실행기를 넣었다(DR-qzop3uw6lj). `init`·`update`가 `.gitifact/bin/cli.mjs`를 쓰고, 실행기는 config의 `cli` 버전을 사용자 캐시(`<캐시>/cli/<버전>/`)에 한 번 받아 실행한다. 레지스트리에서 받을 때 sha512 무결성을 확인하고, `GITIFACT_PACKAGE`로 로컬 패키지를 쓸 수 있다. 업데이트는 `npx --yes gitifact@<새 버전> update`다. 임시 저장소에서 `npx --package=<tgz> gitifact init` → 실행기로 `--version`·`check`까지 확인했다. 캐시의 옛 버전 정리는 아직 없다. Alter 시험용 패키지와 인계 문서는 `.tmp/preview-0.9.0/`에 두었다.
+
+같은 날 `init`이 `@AGENTS.md` 한 줄짜리 CLAUDE.md를 만들지 않게 했다(DR-othc5l4nip). Claude Code가 CLAUDE.md가 없으면 AGENTS.md를 읽기 때문이다. update-v6의 `agentDocs.missing`은 계약에 남기고 늘 빈 배열로 둔다. `changes commit`의 메시지 검사는 `Gitifact-<키>:` 트레일러 줄만 거부하게 좁혔다(DR-pt6laqthwe). `apps/cli/package.json`을 0.9.0으로 올리고 두 언어 패치노트에 0.9.0 항목을 썼다. config의 `cli`는 배포 때 `pnpm cli init`으로 올린다.
 
 ## 2026-09-28 유즈케이스 방식 요구사항(0.8.6 준비)
 

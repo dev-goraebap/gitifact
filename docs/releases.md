@@ -480,3 +480,9 @@ main을 02f2e86까지 푸시하고, 릴리스 커밋 02f2e86에 주석 태그 v0
 새 임시 폴더에 레지스트리의 0.8.6을 설치해 version을 확인했고, 설치된 CLI의 SHA-256이 검증 빌드와 같다. 사용자 프로젝트와 전역 설치는 바꾸지 않았다.
 
 게시한 커밋 0adfda6에 주석 태그 v0.8.6을 만들었다. 릴리스 커밋 c0f9058과는 테스트 mock 타입만 다르다. 이 게시 결과를 남기는 후속 문서 커밋으로 태그를 옮기지 않는다.
+
+## 0.9.0 배포 준비
+
+2026-10-12, 0.8.6 뒤의 변경을 0.9.0으로 준비했다. 프로젝트 지침 기능 제거(`590b992`·`5f020f6`, DR-r4q7qxngiw: `instructions` 명령·가이드·브라우저 화면과 API 제거, 남은 지침은 `INSTRUCTION_MOVED`와 `guide show migrate` 8절), 프로젝트 실행기 `.gitifact/bin/cli.mjs`(`2c29bdf`, DR-qzop3uw6lj), `init`의 CLAUDE.md 생성 중단(DR-othc5l4nip), 커밋 메시지 트레일러 검사 축소(DR-pt6laqthwe), `--docs`·`--fields`의 공백 구분이다. browser-checkout을 v2, browser-search를 v4로, 캐시 형식을 13으로 올렸다. `apps/cli/package.json`을 0.9.0으로 올리고 두 언어 패치노트를 썼다. config의 `cli`는 아직 0.8.6이며 배포 때 `pnpm cli init`으로 올린다.
+
+작업 트리(커밋 전)에서 `pnpm check`가 통과했다(계약 10, core 43, 소개 2, 브라우저 106, CLI 174, 패키지 오프라인 설치·실행). `pnpm cli check`는 문제 없음(문서 86개, `DESIGN_OVERVIEW_LARGE` 경고 2개)이다. 릴리스 커밋, 별도 worktree 검사, 모의 게시는 아직 하지 않았다.

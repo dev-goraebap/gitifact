@@ -1,3 +1,17 @@
+## 0.9.0 - 2026-10-12
+### Added
+- A project launcher, `.gitifact/bin/cli.mjs`. `init` and `update` write it, and agents run `node .gitifact/bin/cli.mjs <command>` without a global install. On first run the launcher fetches the `cli` version in `.gitifact/config.json` once into the user cache (sha512 integrity checked) and runs that version, so projects on different versions do not affect each other. A global install is optional.
+### Changed
+- Updating is one `npx --yes gitifact@<version> update`. It moves the config's `cli`, the agent block and the launcher to the new version together. Version notices, the agent block and the guides point to it.
+- `init` no longer creates a one-line `@AGENTS.md` CLAUDE.md for a project whose block lives only in AGENTS.md. Claude Code reads AGENTS.md when there is no CLAUDE.md. An existing CLAUDE.md or `.claude/CLAUDE.md` still gets the block. `update` no longer reports that file as missing, and `agentDocs.missing` in the update result (v6) is always empty.
+- The history cache is rebuilt once; the first history read after updating takes a little longer.
+- Upgrading from 0.8.x: run `npx --yes gitifact@0.9.0 update`, move any `.gitifact/instructions/` as section 8 of `guide show migrate` describes, then commit the new launcher `.gitifact/bin/cli.mjs` together with the config and block changes.
+### Removed
+- Project instructions (`.gitifact/instructions/`) are no longer kept. The `instructions` command, `guide show instructions`, and the browser's instructions page and API are gone; Gitifact handles requirements, designs and records only. `check` stops on a leftover instruction folder with `INSTRUCTION_MOVED`, and section 8 of `guide show migrate` moves it to the skills folder of the agent you use (`.claude/skills/`, `.agents/skills/` and so on). Instructions in commits before 0.9.0 still read in the history.
+### Fixed
+- `records new --docs` and the `--fields` option split values on commas and spaces. A list now reads correctly when Windows PowerShell passes an unquoted `a,b` through npm's shim as `a b`.
+- The message check of `changes commit` refuses only trailer lines of the form `Gitifact-<key>:`. A body line such as `gitifact-playbook skill ...` without a colon passes.
+
 ## 0.8.6 - 2026-09-28
 ### Added
 - Requirements can be written as use cases (optional). Put `style: usecase` in the frontmatter, write a basic flow and alternative flows (A1…) in the body, and give each acceptance criterion a `Path:` line naming the path it checks. A project that does not use it works as before ("Use-case style" in `guide show spec`).

@@ -1,3 +1,17 @@
+## 0.9.0 - 2026-10-12
+### Added
+- 프로젝트 실행기 `.gitifact/bin/cli.mjs`가 생겼습니다. `init`·`update`가 이 파일을 쓰고, 에이전트는 전역 설치 없이 `node .gitifact/bin/cli.mjs <명령>`으로 실행합니다. 실행기는 `.gitifact/config.json`의 `cli` 버전을 처음 실행할 때 사용자 캐시에 한 번 받아(sha512 무결성 확인) 그 버전으로 실행하므로, 프로젝트마다 다른 버전을 써도 서로 영향이 없습니다. 전역 설치는 선택입니다.
+### Changed
+- 업데이트는 `npx --yes gitifact@<버전> update` 한 번입니다. config의 `cli`와 지침 블록, 실행기를 함께 새 버전으로 바꿉니다. 버전 안내·지침 블록·가이드가 이 방법을 안내합니다.
+- `init`이 블록이 AGENTS.md에만 있는 프로젝트에 `@AGENTS.md` 한 줄짜리 CLAUDE.md를 만들지 않습니다. Claude Code는 CLAUDE.md가 없으면 AGENTS.md를 읽습니다. 이미 있는 CLAUDE.md·`.claude/CLAUDE.md`에는 지금처럼 블록을 씁니다. `update`도 그 파일이 없다고 알리지 않고, update 결과(v6)의 `agentDocs.missing`은 늘 빈 배열입니다.
+- 이력 캐시를 한 번 다시 만듭니다. 업데이트 뒤 처음 이력을 열 때 시간이 조금 더 걸립니다.
+- 0.8.x에서 올릴 때: `npx --yes gitifact@0.9.0 update`를 실행하고, `.gitifact/instructions/`가 있으면 `guide show migrate` 8절대로 옮긴 뒤, 새 실행기 `.gitifact/bin/cli.mjs`를 config·블록 변경과 함께 커밋하세요.
+### Removed
+- 프로젝트 지침(`.gitifact/instructions/`)을 더 관리하지 않습니다. `instructions` 명령, `guide show instructions`, 브라우저의 지침 화면과 API가 없어졌고 Gitifact는 요구사항·설계·결정기록만 다룹니다. 남은 지침 폴더는 `check`가 `INSTRUCTION_MOVED`로 막으며, `guide show migrate` 8절의 순서로 쓰는 에이전트의 스킬 폴더(`.claude/skills/`·`.agents/skills/` 등)로 옮깁니다. 0.9.0 이전 커밋의 지침은 이력에서 계속 읽힙니다.
+### Fixed
+- `records new --docs`와 `--fields` 옵션이 쉼표와 공백 모두로 값을 나눕니다. Windows PowerShell이 따옴표 없는 `a,b`를 npm의 실행 파일을 거쳐 `a b`로 넘기던 경우에도 목록이 맞게 읽힙니다.
+- `changes commit`의 메시지 검사가 `Gitifact-<키>:` 형식의 트레일러 줄만 거부합니다. `gitifact-playbook 스킬을 ...`처럼 콜론 없이 시작하는 본문 줄은 통과합니다.
+
 ## 0.8.6 - 2026-09-28
 ### Added
 - 요구사항을 유즈케이스 방식으로 쓸 수 있습니다(선택). 프론트매터에 `style: usecase`를 두고 본문에 기본 흐름·대체 흐름(A1…)을 쓰며, 수용 조건마다 `경로:` 줄로 확인하는 경로를 적습니다. 쓰지 않는 프로젝트는 지금과 같습니다(`guide show spec`의 "유즈케이스 방식").
