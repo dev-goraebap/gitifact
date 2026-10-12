@@ -33,7 +33,10 @@
   const story = $('[data-story]');
   const steps = $$('.step', story);
   const slot = $('.stage__slot', story);
-  const bars = $$('.stage__progress span', story);
+  // 진행 막대는 단계 수만큼 만든다. 단계를 더하거나 빼도 HTML의 막대 수를 따로 맞출 필요가 없다.
+  const progress = $('.stage__progress', story);
+  progress.replaceChildren(...steps.map(() => document.createElement('span')));
+  const bars = $$('span', progress);
   const wide = matchMedia('(min-width: 901px)');
   let stageScenes = [];
   let stepObs;
@@ -67,13 +70,11 @@
   /* 관계 그래프 */
   const graph = $('[data-graph]');
   const info = {
-    agents: ['AGENTS.md', '모든 에이전트 세션의 진입점이 되는 지침 파일입니다. CLI가 관리하는 GITIFACT 실행 블록과 작업 유형별 프로젝트 지침의 경로 색인을 포함합니다.'],
-    ins: ['프로젝트 지침 · I-', '아키텍처 규칙, 코딩 컨벤션 등 여러 기능에 걸친 공통 지식입니다. 개별 기능 명세에 의존하지 않으며, 설계 문서에서 단방향으로 참조합니다.'],
-    feat: ['기능 명세 · S-', '기능 단위의 루트 디렉터리입니다. 하위의 요구사항과 설계를 포괄하며, 기능의 목적과 범위를 정의하는 index.md를 필수로 포함합니다.'],
-    req: ['요구사항 · R-', '제품의 동작과 제약을 정의하는 단일 명세 단위입니다. 사람이 쉽게 검토할 수 있는 수용 조건(“조건 / 기대 동작”)을 포함합니다.'],
-    des: ['설계 · D-', '기능 구현을 위한 기술적 맥락을 관심사별로 분리한 문서입니다. 대상 요구사항(requirements)과 참조한 프로젝트 지침(sources)을 명시합니다.'],
-    rec: ['결정기록 · DR-', '기존 문서의 변경·삭제 및 대안 선택의 맥락을 기록하는 불변 문서입니다. 대상 문서의 ID(docs)를 참조하여 문서의 변경 이력을 형성합니다.'],
-    commit: ['Git 커밋', '최종 명세, 코드, 테스트, 결정기록을 원자적으로 묶는 단위입니다. Gitifact 트레일러(Gitifact-Req, Gitifact-Record 등)를 통해 커밋과 문서를 영구히 연결합니다.'],
+    feat: ['기능 · S-', '기능 단위의 디렉터리입니다. 하위의 요구사항과 설계를 묶으며, 기능의 목적과 범위를 적는 index.md를 둡니다.'],
+    req: ['요구사항 · R-', '제품이 보장해야 할 동작과 제약을 적는 명세 단위입니다. 사람이 검토하기 쉬운 수용 조건(“조건 / 기대 동작”)을 담습니다.'],
+    des: ['설계 · D-', '기능 구현의 기술 구조를 관심사별로 나눈 문서입니다. 설명하는 요구사항을 requirements에 적고, 근거로 삼은 저장소 문서(ID)나 외부 자료(제목·URL)를 sources에 적을 수 있습니다.'],
+    rec: ['결정기록 · DR-', '기존 문서를 바꾸거나 지운 맥락, 고른 안과 검토한 대안을 담는 기록입니다. 대상 문서의 ID(docs)를 가리켜 문서마다 결정 흐름을 이룹니다. 커밋한 뒤에는 고치지 않습니다.'],
+    commit: ['Git 커밋', '문서, 결정기록, 코드, 테스트를 함께 담는 단위입니다. CLI가 Gitifact 트레일러(Gitifact-Req, Gitifact-Design, Gitifact-Record 등)를 붙여 커밋과 문서를 연결합니다.'],
   };
   const edges = $$('.edges path', graph).map((p) => ({ el: p, ends: p.dataset.e.split(' ') }));
   const nodes = $$('.nodes g', graph);
@@ -145,31 +146,33 @@
   const overview = [dPath.textContent, dTitle.textContent, dBody.textContent];
 
   const blockInfo = {
-    agent: ['진입점', '에이전트 CLI', 'AGENTS.md의 지침을 읽은 에이전트가 docs, records, changes 명령을 실행합니다. 표준 출력(stdout)에는 요청된 데이터만 반환하고 진행 상황 및 진단 로그는 stderr로 분리합니다.'],
-    browser: ['apps/browser', '웹 뷰어', '로컬 백엔드 서버가 제공하는 읽기 전용 React 웹 애플리케이션입니다. 제품 개요, 요구사항, 프로젝트 지침, 결정기록, 참여자 현황을 제공하며 원본의 무결성을 위해 편집·승인 기능은 두지 않습니다.'],
+    agent: ['진입점', '에이전트', 'init이 AGENTS.md 등에 쓴 GITIFACT 블록에는 언제 어떤 명령을 쓸지만 담깁니다. 에이전트는 형식이 필요할 때 내장 가이드(guide show)를 읽고, specs·records·check·changes 명령을 실행기로 부릅니다.'],
+    launcher: ['.gitifact/bin/cli.mjs', '실행기', 'init과 update가 저장소에 쓰는 파일입니다. .gitifact/config.json의 cli 버전을 npm 레지스트리에서 사용자 캐시에 한 번 받아 무결성을 확인한 뒤 실행합니다. 전역 설치 없이 프로젝트마다 지정된 버전을 씁니다.'],
+    browser: ['apps/browser', '웹 뷰어', 'gitifact browser가 여는 읽기 전용 React 웹 앱입니다. 로컬 Git 저장소의 파일과 이력을 읽어 기능별 명세, 결정기록의 흐름, 참여자 현황을 보여 주며 편집·승인 기능은 두지 않습니다.'],
     commands: ['apps/cli/src/commands', 'CLI 커맨드', '사용자 및 에이전트 입력을 파싱하여 Core 유스케이스를 호출합니다. 커맨드 라우팅과 함께 동시성 제어를 위한 커밋 잠금(Lock) 및 복구 처리를 담당합니다.'],
     server: ['apps/cli/src/server', '로컬 HTTP 서버', 'gitifact browser 실행 시 구동되는 로컬 API 서버입니다. 웹 애플리케이션 정적 파일 서빙과 REST API(/api/v1) 라우팅 및 요청 유효성 검증을 수행합니다.'],
     output: ['apps/cli/src/output', 'DTO 직렬화 및 출력', 'Core 엔진의 반환 데이터를 버전화된 DTO 규격으로 변환합니다. CLI 터미널 출력과 웹 뷰어 HTTP 응답이 동일한 DTO 계약을 공유합니다.'],
-    adapters: ['apps/cli/src/adapters', '인프라 어댑터', 'Core 도메인의 Port 인터페이스를 구현하는 계층입니다. Git 실행, 파일시스템 원자적 읽기·쓰기, SQLite 캐시(index.db), npm 레지스트리 버전 조회 등을 처리합니다.'],
-    i18n: ['apps/cli/src/shared/i18n', '다국어 문구 및 지침', '언어별(ko, en) 리소스를 분리 관리합니다. UI 메시지와 오류 문구는 JSON으로, 에이전트 지침과 패치노트는 Markdown으로 유지하며 컴파일 시점의 키 타입 검증을 보장합니다.'],
-    usecases: ['packages/core/src/use-cases', '유스케이스', '문서 조회, 무결성 검증, 변경 사항 비교 등 핵심 비즈니스 흐름을 관장합니다. docs check와 changes commit이 동일한 검증 로직을 재사용합니다.'],
+    adapters: ['apps/cli/src/adapters', '인프라 어댑터', 'Core 도메인의 Port 인터페이스를 구현하는 계층입니다. Git 실행, 파일시스템 원자적 읽기·쓰기, SQLite 캐시(index.db), npm 레지스트리 버전 조회, 피드백 이슈 전송 등을 처리합니다.'],
+    i18n: ['apps/cli/src/shared/i18n', '다국어 문구와 에이전트 가이드', '언어별(ko, en) 리소스를 나눠 둡니다. 메시지와 오류 문구는 JSON으로, 에이전트 가이드(guide show)와 패치노트는 Markdown으로 두며 컴파일 시점에 키 타입을 검사합니다.'],
+    usecases: ['packages/core/src/use-cases', '유스케이스', '문서 조회, 형식 검사, 변경 비교 등 핵심 흐름을 맡습니다. check와 changes commit이 같은 검사 로직을 씁니다.'],
     formats: ['packages/core/src/formats', '문서 형식 및 파서', '명세 문서, 결정기록, 패치노트 등의 파싱과 스키마 유효성을 검증합니다. 이전 버전 규약과의 하위 호환성을 보장하고 비표준 포맷 쓰기를 방지합니다.'],
     domain: ['packages/core/src/domain', '도메인 모델', '문서, 식별자(ID), 저장소 상태, 도메인 오류를 정의하는 순수 도메인 계층입니다. 외부 Git이나 파일시스템에 직접 의존하지 않습니다.'],
     ports: ['packages/core/src/ports', '포트 인터페이스', 'Core 도메인이 외부 환경에 요구하는 추상 인터페이스입니다. 저장소 읽기, 파일 입출력 등의 경계를 정의하여 인프라와의 결합도를 낮춥니다.'],
     contracts: ['packages/contracts', '통신 계약 및 스키마', '클라이언트-서버 간 외부 JSON 스키마, 런타임 유효성 검증, 표준 오류 코드를 정의합니다. 런타임 종속성 없이 브라우저와 Node.js 환경에서 공용으로 사용됩니다.'],
-    files: ['단일 진실 원천', '작업 디렉터리 파일', '.gitifact/ 하위의 명세(spec), 지침(instructions), 결정기록(records) 및 설정 파일입니다. 파일 하나가 온전한 단일 문서이며 구조적 메타데이터는 프론트매터에 기록합니다.'],
+    files: ['단일 진실 원천', '작업 디렉터리 파일', '.gitifact/ 아래의 명세(spec), 결정기록(records), 설정(config.json), 실행기(bin)와 AGENTS.md의 GITIFACT 블록입니다. 파일 하나가 문서 하나이며 구조 정보는 프론트매터에 적습니다.'],
     git: ['단일 진실 원천', 'Git 원본 이력', '커밋된 최종 문서, 결정기록, 트레일러 메타데이터, 작성자 및 시각 정보입니다. 모든 Git 명령은 신뢰할 수 있는 인자 배열 방식으로 안전하게 실행됩니다.'],
     cache: ['파생 데이터', '인덱스 캐시', '.gitifact/cache/index.db는 빠른 조회를 위한 파생 인덱스입니다. Git 형상관리에서 제외되며, 캐시 삭제 시 Git 원본으로부터 언제든 안전하게 자동 재생성됩니다.'],
   };
 
   const paths = {
     cli: {
-      title: ['에이전트가 커밋할 때', 'gitifact changes commit --file <입력>', '하나의 결정과 관련된 명세, 코드, 테스트, 결정기록을 원자적으로 커밋하는 흐름입니다.'],
+      title: ['에이전트가 커밋할 때', 'gitifact changes commit --file <입력>', '사용자가 커밋을 허락했거나 프로젝트 정책이 있을 때, 하나의 결정과 관련된 문서, 결정기록, 코드, 테스트를 한 커밋으로 남기는 흐름입니다.'],
       steps: [
-        ['agent', '에이전트가 changes list 명령으로 변경된 명세와 대기 중인 결정기록을 확인하고 커밋 입력을 작성합니다.'],
-        ['commands', 'CLI 커맨드가 입력 형식을 검증하고 동시성 제어를 위한 커밋 잠금(Lock)을 획득합니다.'],
-        ['adapters', '파일시스템 어댑터가 작업 디렉터리의 명세 문서와 대기 중인 결정기록을 로드합니다.', ['files']],
-        ['usecases', 'Core 유스케이스가 docs check와 동일한 무결성 검증을 실행합니다. 초안(draft)이 남아있거나 기존 기록의 변조가 감지되면 커밋을 중단합니다.', ['formats', 'domain']],
+        ['agent', '작업을 마친 에이전트가 커밋을 제안하고, 허락을 받으면 changes list로 바뀐 명세와 커밋 전 결정기록을 확인해 커밋 입력을 씁니다.'],
+        ['launcher', '실행기가 config의 cli 버전을 사용자 캐시에서 찾아(없으면 한 번 받아) CLI를 실행합니다.'],
+        ['commands', 'CLI 커맨드가 입력 형식을 검증하고 동시성 제어를 위한 커밋 잠금(Lock)을 얻습니다.'],
+        ['adapters', '파일시스템 어댑터가 작업 디렉터리의 명세 문서와 커밋할 결정기록을 읽습니다.', ['files']],
+        ['usecases', 'Core 유스케이스가 check와 같은 검사를 실행합니다. 초안 표시(draft)가 남아 있거나 커밋한 기록이 바뀌었으면 커밋하지 않습니다.', ['formats', 'domain']],
         ['git', '선택된 파일만을 원자적으로 커밋하며, Gitifact 트레일러(Gitifact-Req, Gitifact-Record 등)를 자동 주입합니다.'],
         ['output', '작업 결과를 버전 관리되는 DTO 규격으로 직렬화하여 표준 출력으로 반환합니다.', ['contracts']],
       ],

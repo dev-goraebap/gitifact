@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Gitifact — 코드와 함께 Git에 남기는 요구사항과 결정기록</title>
-<meta name="description" content="AI 에이전트와 나눈 대화에서 요구사항, 설계, 변경 이유를 도출해 코드와 함께 Git 저장소에 기록하는 도구" />
+<meta name="description" content="AI 에이전트와 대화하며 나온 요구사항, 설계, 변경 이유를 소스 코드와 같은 저장소에서, 같은 커밋으로 관리하는 오픈소스 CLI 도구" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" />
@@ -20,7 +20,7 @@
     <nav aria-label="페이지 구역">
       <ul class="nav__links">
         <li><a href="#flow">사용 흐름</a></li>
-        <li><a href="#model">세 가지 기록</a></li>
+        <li><a href="#model">문서와 기록</a></li>
         <li><a href="#decisions">결정기록</a></li>
         <li><a href="#architecture">아키텍처</a></li>
       </ul>
@@ -35,11 +35,11 @@
 <section class="hero" id="top">
   <div class="wrap hero__grid">
     <div class="hero__copy">
-      <p class="eyebrow">요구사항 · 설계 · 결정기록을 코드와 함께 Git에</p>
-      <h1>대화가 끝나도 제품의 맥락은 <em>Git 저장소에</em> 남습니다.</h1>
+      <p class="eyebrow">요구사항 · 설계 · 결정기록을 코드와 같은 커밋으로</p>
+      <h1>제품이 무슨 동작을 하는지, 코드가 왜 바뀌었는지 <em>Git에</em> 남깁니다.</h1>
       <p class="lede">
-        Gitifact는 AI 에이전트와 나눈 대화에서 요구사항과 설계, 변경 이유를 도출해
-        코드와 함께 단일 커밋으로 기록합니다. 별도의 문서화 절차를 익힐 필요 없이, 평소처럼 개발하는 흐름 속에서 맥락이 쌓입니다.
+        Gitifact는 AI 에이전트와 대화하며 나온 요구사항, 설계, 변경 이유를 소스 코드와 같은 저장소에서, 같은 커밋으로 관리하는 오픈소스 CLI 도구입니다.
+        평소처럼 에이전트와 대화하며 제품을 만드는 동안, 그 맥락이 코드와 함께 Git에 남도록 돕습니다.
       </p>
 
       <div class="start" id="start">
@@ -47,7 +47,8 @@
           <span>에이전트 시작 프롬프트</span>
           <button class="copy" type="button" data-copy="start-prompt">복사</button>
         </div>
-        <pre id="start-prompt">이 프로젝트에서 npx gitifact@latest init을 실행하세요.
+        <pre id="start-prompt">이 프로젝트에서 npx --yes gitifact init을 실행하세요.
+명령이 막히면 저에게 넘기지 말고 명령을 그대로 보여 주며 허용을 물어보세요.
 init이 AGENTS.md 등에 쓴 GITIFACT 블록을 읽고 이번 세션부터 따르세요.</pre>
       </div>
       <p class="hero__note">MIT License · Node.js 24 · 단일 Git 저장소(단일 프로젝트 및 모노레포) 환경 지원</p>
@@ -70,7 +71,7 @@ init이 AGENTS.md 등에 쓴 GITIFACT 블록을 읽고 이번 세션부터 따�
           <div class="fcard fcard--des"><span class="kind">D</span><div><b>병합 데이터 설계</b><code>spec/feedback-inbox/design/</code></div></div>
           <div class="fcard fcard--rec"><span class="kind">DR</span><div><b>계정 단위 병합 기준</b><code>records/20260924/</code></div></div>
         </div>
-        <div class="hv__commit"><span class="dot"></span><code>a3f9c21</code> 코드·테스트와 함께 단일 커밋</div>
+        <div class="hv__commit"><span class="dot"></span><code>a3f9c21</code> 코드·테스트와 같은 커밋</div>
       </div>
     </div>
   </div>
@@ -81,12 +82,13 @@ init이 AGENTS.md 등에 쓴 GITIFACT 블록을 읽고 이번 세션부터 따�
   <div class="wrap band__grid">
     <div>
       <p class="eyebrow">해결하려는 문제</p>
-      <h2 class="h2">코드는 Git에 남지만, <br />“왜 그렇게 만들었는가”는 대화창과 함께 사라집니다.</h2>
+      <h2 class="h2">에이전트에게 git log를 읽게 할 수는 있지만, <br />과거 변경 이력만으로는 답하기 어려운 질문이 있습니다.</h2>
     </div>
     <ul class="pains">
-      <li><b>세션 단절:</b> 대화창이 닫히면 에이전트는 작성자의 의도와 구현 배경을 코드만 보고 다시 추론해야 합니다.</li>
-      <li><b>Git diff의 한계:</b> 줄과 파일 단위로만 추적하므로, 문서 제목이 바뀌거나 위치가 이동하면 기존 맥락과의 연결이 끊어집니다.</li>
-      <li><b>문서화의 피로:</b> 별도의 문서 도구나 번거로운 관리 절차는 빠르고 유연하게 시도하는 개발 흐름을 가로막습니다.</li>
+      <li><b>지금 이 제품은 무슨 동작을 하나요?</b> 코드는 지금 하는 일을 보여 주지만, 어떤 동작이 지켜야 할 규칙이고 어떤 것이 우연히 그렇게 된 것인지는 알려 주지 않습니다.</li>
+      <li><b>이 결정은 왜 내렸고, 어떤 대안을 버렸나요?</b> 커밋 메시지에는 대개 무엇을 했는지만 적힙니다. 이전 대화를 모르는 새 세션의 에이전트는 이미 버린 안을 다시 제안하기도 합니다.</li>
+      <li><b>파일을 옮기거나 쪼개면 이력은요?</b> Git은 경로와 줄 단위로 변경을 추적하므로, 리팩터링으로 파일을 쪼개거나 옮기면 과거 맥락을 따라가기 어려워집니다.</li>
+      <li><b>기록을 빼먹지 않을까요?</b> 시행착오마다 문서를 고치면 개발 흐름이 끊기고, “문서를 꼭 갱신하자”는 다짐은 바쁜 개발 중에 쉽게 잊힙니다.</li>
     </ul>
   </div>
 </section>
@@ -96,7 +98,7 @@ init이 AGENTS.md 등에 쓴 GITIFACT 블록을 읽고 이번 세션부터 따�
   <div class="wrap">
     <header class="section__head">
       <p class="eyebrow">사용 흐름</p>
-      <h2 class="h2">사용자는 평소처럼 개발에 집중하고, <br />기록은 에이전트가 지침에 따라 남깁니다.</h2>
+      <h2 class="h2">사용자는 평소처럼 기능을 이야기하고, <br />기록은 에이전트가 GITIFACT 블록에 따라 남깁니다.</h2>
       <p class="sub">데모 프로젝트 <code>fieldnotes</code>에 “중복 요청 병합” 기능을 추가하는 실제 작업 흐름 예시입니다.</p>
     </header>
 
@@ -107,7 +109,7 @@ init이 AGENTS.md 등에 쓴 GITIFACT 블록을 읽고 이번 세션부터 따�
           <div class="step__text">
             <span class="step__no">01 · 요구사항 도출</span>
             <h3>자연스러운 대화로 동작을 설명합니다</h3>
-            <p>구현하고 싶은 기능을 평소처럼 설명합니다. 에이전트는 대화 내용 중 <b>제품 동작과 핵심 제약</b>만을 요구사항으로 선별하고, 불명확한 부분에 대해서만 구체적인 확인 질문을 건넵니다.</p>
+            <p>만들고 싶은 기능을 평소처럼 설명합니다. 에이전트는 대화에서 <b>제품 동작과 유지할 제약</b>만 요구사항으로 남기고, 불명확한 제품 동작만 질문한 뒤 나머지는 판단해 진행합니다.</p>
             <table class="triage">
               <tr><td>“게시물을 삭제할 수 있게”</td><td><span class="tag tag--req">요구사항</span></td></tr>
               <tr><td>“이 함수 이름을 바꿔줘”</td><td><span class="tag">일반 구현</span></td></tr>
@@ -136,8 +138,8 @@ init이 AGENTS.md 등에 쓴 GITIFACT 블록을 읽고 이번 세션부터 따�
           <div class="step__text">
             <span class="step__no">02 · 요구사항과 설계</span>
             <h3>기능 단위로 요구사항과 설계를 짝지어 작성합니다</h3>
-            <p>에이전트가 <code>docs new</code> 명령으로 고유 ID를 발급받아 초안을 작성합니다. <b>요구사항</b>에는 사람이 검토하기 쉬운 동작과 수용 조건을, <b>설계</b>에는 구현에 필요한 기술적 맥락과 참고 지침을 기록합니다.</p>
-            <p class="muted">초안 상태(<code>draft: true</code>)가 남아 있으면 무결성 검증을 통과하지 못해 커밋할 수 없습니다.</p>
+            <p>에이전트는 코드를 작성하기 전에 관련 요구사항과 설계를 확인하고, 새 기능이면 <code>specs new</code>로 고유 ID를 발급받아 초안을 씁니다. <b>요구사항</b>에는 사람이 검토하기 쉬운 동작과 수용 조건을, <b>설계</b>에는 구현에 필요한 기술 구조를 적습니다.</p>
+            <p class="muted">초안 표시(<code>draft: true</code>)가 남아 있으면 <code>check</code>가 알려 주고, 그 상태로는 커밋할 수 없습니다.</p>
           </div>
           <div class="scene" data-scene>
             <div class="win">
@@ -164,7 +166,7 @@ init이 AGENTS.md 등에 쓴 GITIFACT 블록을 읽고 이번 세션부터 따�
                   <p class="doc__p"><b>조건:</b> 동일 계정이 동일한 내용의 요청을 중복 등록한다.<br /><b>기대 동작:</b> 요청은 단일 항목으로 병합되고 각 메시지의 본문 맥락은 보존된다.</p>
                 </div>
               </div>
-              <div class="cmd"><span>$</span> gitifact docs new requirement feedback-inbox/merge-duplicates --title "중복 요청 병합" …</div>
+              <div class="cmd"><span>$</span> gitifact specs new requirement feedback-inbox/merge-duplicates --title "중복 요청 병합"</div>
             </div>
           </div>
         </li>
@@ -172,51 +174,24 @@ init이 AGENTS.md 등에 쓴 GITIFACT 블록을 읽고 이번 세션부터 따�
         <!-- STEP 3 -->
         <li class="step" data-step="2">
           <div class="step__text">
-            <span class="step__no">03 · 프로젝트 지침</span>
-            <h3>작업 유형에 필요한 지침만 선별하여 참조합니다</h3>
-            <p><code>AGENTS.md</code>에는 <b>작업별로 참조할 프로젝트 지침의 색인</b>만 간결하게 유지합니다. 에이전트는 현재 작업(예: 저장소 변경)에 필요한 아키텍처 지침을 골라 읽고, 설계 문서의 <code>sources</code>에 참조한 지침을 명시합니다.</p>
-            <p class="muted">참조는 '설계 → 지침' 단방향으로만 유지되므로, 개별 명세가 변경되더라도 공통 지침이 오염되거나 낡지 않습니다.</p>
+            <span class="step__no">03 · 커밋 제안</span>
+            <h3>시행착오는 넘기고, 작업을 마치면 에이전트가 커밋을 제안합니다</h3>
+            <p>화면을 보며 시도하고 되돌리는 동안에는 문서를 매번 개정하지 않습니다. 작업을 마쳤는데 커밋하지 않았거나 다음 작업으로 넘어가려 하면 에이전트가 <b>먼저 커밋을 제안</b>합니다. 기존 요구사항을 바꾸거나 여러 안 중 하나를 고른 곳에는 <b>결정기록</b>을 남겨 둡니다.</p>
+            <p>실제 커밋은 사용자가 허락하거나 프로젝트 정책이 있을 때만 합니다. 그 시점에 정리된 문서, 결정기록, 코드, 테스트를 한 커밋으로 묶습니다.</p>
+            <p class="muted">CLI가 커밋 메시지에 Gitifact 트레일러를 붙여 커밋과 문서를 연결합니다. 푸시는 별도로 요청받습니다.</p>
           </div>
           <div class="scene" data-scene>
             <div class="win">
-              <div class="win__bar"><i></i><i></i><i></i><span>AGENTS.md</span></div>
-              <div class="agents">
-                <p class="agents__h">## 작업별 지침</p>
-                <p class="agents__l is-hit">- API·저장소를 변경할 때: <code>.gitifact/instructions/architecture/index.md</code></p>
-                <p class="agents__l">- 사용자 안내 문구를 작성할 때: <code>.gitifact/instructions/handbook/index.md</code></p>
-                <p class="agents__l">- 제품 범위를 결정할 때: <code>.gitifact/instructions/product/index.md</code></p>
-              </div>
-              <div class="link-row">
-                <div class="mini mini--des"><span class="kind">D</span><div><b>병합 데이터 설계</b>
-<pre><span class="k">requirements:</span>
-  - <span class="id id--req">R-m4qx7hd2ke</span>
-<span class="k">sources:</span>
-  - id: <span class="id id--ins">I-k2w9pz4hbd</span>
-    note: 저장소 규칙</pre></div></div>
-                <div class="link-row__arrow" aria-hidden="true"><span>참조 지침</span>→</div>
-                <div class="mini mini--ins"><span class="kind">I</span><div><b>아키텍처</b><small>저장소 및 API 공통 설계 규칙</small><code>instructions/architecture/</code></div></div>
-              </div>
-            </div>
-          </div>
-        </li>
-
-        <!-- STEP 4 -->
-        <li class="step" data-step="3">
-          <div class="step__text">
-            <span class="step__no">04 · 커밋 시점 기록</span>
-            <h3>수많은 시행착오는 넘기고, 확정된 결정만 코드와 함께 커밋합니다</h3>
-            <p>화면을 확인하며 수없이 오가는 피드백 과정마다 문서를 일일이 개정하지 않습니다. <b>커밋하는 시점</b>에 최종 요구사항·설계와 핵심 변경 이유를 담은 <b>결정기록</b>을 코드·테스트와 함께 원자적으로 묶어 커밋합니다.</p>
-            <p class="muted">커밋 메시지에 <code>Gitifact-Record</code> 트레일러가 자동 주입되어 커밋과 문서를 영구히 연결합니다.</p>
-          </div>
-          <div class="scene" data-scene>
-            <div class="win">
-              <div class="win__bar"><i></i><i></i><i></i><span>커밋 직전</span></div>
+              <div class="win__bar"><i></i><i></i><i></i><span>agent session · 작업을 마친 뒤</span></div>
               <div class="iter">
-                <p class="iter__label">중간 시행착오 · 커밋하지 않음</p>
+                <p class="iter__label">중간 시행착오 · 문서를 매번 고치지 않음</p>
                 <span>“합친 건수는 뱃지로 보여줘”</span>
-                <span>“뱃지 색을 조금 연하게”</span>
                 <span>“툴팁으로 바꿔볼래?”</span>
                 <span>“아니, 다시 뱃지로”</span>
+              </div>
+              <div class="chat chat--tight">
+                <div class="msg msg--agent"><span class="msg__who">agent</span>작업을 마쳤고 아직 커밋하지 않았습니다. 지금 한 커밋으로 묶을까요?</div>
+                <div class="msg msg--user">네, 커밋해 주세요.</div>
               </div>
               <div class="commit">
                 <div class="commit__head"><code>a3f9c21</code> feat(inbox): merge duplicate requests per account</div>
@@ -234,13 +209,13 @@ Gitifact-Record: DR-5hq2mnc7ra</pre>
           </div>
         </li>
 
-        <!-- STEP 5 -->
-        <li class="step" data-step="4">
+        <!-- STEP 4 -->
+        <li class="step" data-step="3">
           <div class="step__text">
-            <span class="step__no">05 · 브라우저 뷰어</span>
-            <h3>제품의 현재 동작과 결정 이력을 언제든 탐색합니다</h3>
-            <p>“gitifact 브라우저를 열어주세요”라고 요청하면 CLI 내장 <b>읽기 전용 뷰어</b>가 열립니다. 기능별 최신 명세, 작업별 프로젝트 지침, 변경 이유가 담긴 결정기록, 참여자 현황을 직관적으로 살펴볼 수 있습니다.</p>
-            <p class="muted">뷰어에는 편집이나 별도 승인 절차가 없습니다. 모든 데이터의 단일 진실 원천은 Git 저장소의 파일입니다.</p>
+            <span class="step__no">04 · 브라우저 뷰어</span>
+            <h3>제품의 현재 동작과 결정 이력을 언제든 다시 봅니다</h3>
+            <p>“gitifact 브라우저를 열어주세요”라고 요청하면 CLI에 내장된 <b>읽기 전용 뷰어</b>가 열립니다. 로컬 Git 저장소의 파일과 이력을 읽어 기능별 명세, 결정기록의 흐름, 참여자 현황을 보여 줍니다.</p>
+            <p class="muted">뷰어에는 편집이나 승인 기능이 없습니다. 원본은 Git 저장소의 Markdown 파일과 커밋 이력입니다.</p>
           </div>
           <div class="scene" data-scene>
             <div class="win win--app">
@@ -248,7 +223,7 @@ Gitifact-Record: DR-5hq2mnc7ra</pre>
               <div class="app">
                 <aside class="app__side">
                   <b>GITIFACT</b>
-                  <span>개요</span><span>기능 요구사항</span><span>프로젝트 지침</span><span class="on">결정기록</span><span>참여자</span><span>Git 상태</span>
+                  <span>대시보드</span><span>기능별 요구사항</span><span class="on">결정기록</span><span>참여자</span><span>Git 상태</span>
                 </aside>
                 <div class="app__main">
                   <p class="app__title">결정기록</p>
@@ -272,7 +247,7 @@ Gitifact-Record: DR-5hq2mnc7ra</pre>
       </ol>
 
       <div class="story__stage" aria-hidden="true">
-        <div class="stage__progress"><span></span><span></span><span></span><span></span><span></span></div>
+        <div class="stage__progress"><span></span><span></span><span></span><span></span></div>
         <div class="stage__slot"></div>
       </div>
     </div>
@@ -283,31 +258,24 @@ Gitifact-Record: DR-5hq2mnc7ra</pre>
 <section class="section section--alt" id="model">
   <div class="wrap">
     <header class="section__head">
-      <p class="eyebrow">세 가지 기록 체계</p>
-      <h2 class="h2">무엇을 만드는지, 어떻게 일하는지, 왜 그렇게 결정했는지.</h2>
-      <p class="sub">모든 문서는 <code>.gitifact/</code> 디렉터리 아래의 순수 Markdown 파일입니다. 단일 파일이 곧 완전한 하나의 문서이며, 메타데이터는 프론트매터에, 상세 설명은 본문에 담깁니다.</p>
+      <p class="eyebrow">문서와 기록</p>
+      <h2 class="h2">무엇을 지켜야 하는지, 왜 지금 모양이 되었는지.</h2>
+      <p class="sub">모든 문서는 <code>.gitifact/</code> 디렉터리 아래의 일반 Markdown 파일입니다. 파일 하나가 문서 하나이며, 구조 정보는 프론트매터에, 설명은 본문에 담깁니다.</p>
     </header>
 
     <div class="kinds">
       <article class="kind-card kind-card--spec">
         <p class="kind-card__path">.gitifact/spec/&lt;기능&gt;/</p>
         <h3>요구사항과 설계</h3>
-        <p class="kind-card__q">무엇을 만드는가</p>
-        <p>기능(Feature) 단위로 요구사항과 설계를 쌍으로 관리합니다. <b>요구사항</b>은 사람이 직관적으로 검토할 수 있는 제품 동작과 수용 조건을 기술하고, <b>설계</b>는 관심사별로 분리하여 에이전트의 구현에 필요한 기술적 맥락을 명시합니다.</p>
+        <p class="kind-card__q">제품이 무엇을 지켜야 하는가</p>
+        <p>기능 단위로 요구사항과 설계를 함께 둡니다. <b>요구사항</b>은 제품이 보장해야 할 동작과 수용 조건을 사람이 검토하기 쉽게 적고, <b>설계</b>는 기술 구조가 필요한 기능에 구현 맥락을 관심사별로 적습니다. 에이전트는 코드를 고치기 전에 이 문서를 읽습니다.</p>
         <ul class="ids"><li><span class="id id--feat">S-</span>기능</li><li><span class="id id--req">R-</span>요구사항</li><li><span class="id id--des">D-</span>설계</li></ul>
-      </article>
-      <article class="kind-card kind-card--ins">
-        <p class="kind-card__path">.gitifact/instructions/&lt;이름&gt;/</p>
-        <h3>프로젝트 지침</h3>
-        <p class="kind-card__q">이 프로젝트에서 어떻게 일하는가</p>
-        <p>아키텍처 원칙, 공통 컨벤션, 문체 규약, 검증 절차 등 프로젝트 전반의 공통 지식을 작업 유형별로 나눕니다. 각 지침은 독립된 디렉터리로 관리되며, 팀과 프로젝트의 작업 방식에 맞추어 유연하게 구성할 수 있습니다.</p>
-        <ul class="ids"><li><span class="id id--ins">I-</span>지침</li><li><span class="id id--agents">AGENTS.md</span>색인</li></ul>
       </article>
       <article class="kind-card kind-card--rec">
         <p class="kind-card__path">.gitifact/records/&lt;yyyymmdd&gt;/</p>
         <h3>결정기록</h3>
         <p class="kind-card__q">왜 지금 모양이 되었는가</p>
-        <p>기존 명세를 수정·삭제하거나 여러 대안 중 하나를 채택할 때 남깁니다. 간결한 명사형 제목과 <b>맥락 · 결정 · 검토한 대안</b> 3개 섹션으로 구성되며, 커밋된 이후에는 수정되지 않는 불변 기록입니다.</p>
+        <p>기존 요구사항·설계를 바꾸거나 지울 때, 여러 대안 중 하나를 고를 때 남깁니다. 짧은 명사형 제목과 <b>맥락 · 결정 · 검토한 대안</b> 세 섹션으로 쓰며, 버린 안과 그 까닭까지 담습니다. 커밋한 기록은 고치지 않습니다.</p>
         <ul class="ids"><li><span class="id id--rec">DR-</span>결정기록</li></ul>
       </article>
     </div>
@@ -320,46 +288,39 @@ Gitifact-Record: DR-5hq2mnc7ra</pre>
       </div>
       <div class="graph__body">
         <div class="graph__canvas" tabindex="0" aria-label="관계 그래프, 좁은 화면에서는 가로로 스크롤">
-        <svg class="graph__svg" viewBox="0 0 860 380" role="img" aria-labelledby="graph-title graph-desc">
+        <svg class="graph__svg" viewBox="0 0 860 330" role="img" aria-labelledby="graph-title graph-desc">
           <title id="graph-title">문서 사이의 참조 관계</title>
-          <desc id="graph-desc">AGENTS.md가 지침을 색인하고, 기능 디렉터리가 요구사항과 설계를 포함하며, 설계는 요구사항과 지침을 참조하고, 결정기록은 대상 문서를 참조한다. Git 커밋은 결정기록과 문서를 함께 기록한다.</desc>
+          <desc id="graph-desc">기능 디렉터리가 요구사항과 설계를 포함하고, 설계는 요구사항을 참조하며, 결정기록은 대상 문서를 참조한다. Git 커밋은 트레일러로 결정기록과 문서를 연결한다.</desc>
           <defs>
             <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" /></marker>
           </defs>
           <g class="edges">
-            <path data-e="agents ins" d="M180 64 L 257 64" />
-            <path data-e="feat req" d="M180 242 C 222 242, 218 188, 257 188" />
-            <path data-e="feat des" d="M180 242 C 222 242, 218 318, 257 318" />
-            <path data-e="des req" d="M340 290 L 340 219" />
-            <path data-e="des ins" d="M420 330 C 515 330, 515 78, 423 78" />
-            <path data-e="rec req" d="M640 188 L 423 188" />
-            <path data-e="rec des" d="M640 208 C 560 208, 520 306, 423 306" />
-            <path data-e="rec ins" d="M690 160 C 670 80, 560 52, 423 52" />
-            <path data-e="commit rec" d="M735 300 L 735 227" />
+            <path data-e="feat req" d="M180 178 C 222 178, 218 108, 257 108" />
+            <path data-e="feat des" d="M180 178 C 222 178, 218 268, 257 268" />
+            <path data-e="des req" d="M340 240 L 340 139" />
+            <path data-e="rec req" d="M640 108 L 423 108" />
+            <path data-e="rec des" d="M640 128 C 560 128, 520 256, 423 256" />
+            <path data-e="commit rec" d="M735 250 L 735 147" />
           </g>
           <g class="labels">
-            <text x="200" y="56">색인</text>
-            <text x="190" y="206">포함</text>
-            <text x="190" y="296">포함</text>
-            <text x="348" y="262">requirements</text>
-            <text x="494" y="150" text-anchor="end">sources</text>
-            <text x="574" y="180">docs</text>
-            <text x="745" y="270">커밋에 포함</text>
+            <text x="190" y="128">포함</text>
+            <text x="190" y="246">포함</text>
+            <text x="348" y="196">requirements</text>
+            <text x="574" y="100">docs</text>
+            <text x="745" y="204">트레일러</text>
           </g>
           <g class="nodes">
-            <g data-n="agents" tabindex="0" role="button" aria-label="AGENTS.md"><rect x="30" y="40" width="150" height="48" rx="8" /><text x="105" y="69">AGENTS.md</text></g>
-            <g data-n="ins" tabindex="0" role="button" aria-label="지침 I-"><rect x="260" y="36" width="160" height="56" rx="8" /><text x="276" y="59" class="t-id">I-</text><text x="276" y="80">프로젝트 지침</text></g>
-            <g data-n="feat" tabindex="0" role="button" aria-label="기능 S-"><rect x="30" y="214" width="150" height="56" rx="8" /><text x="46" y="237" class="t-id">S-</text><text x="46" y="258">기능</text></g>
-            <g data-n="req" tabindex="0" role="button" aria-label="요구사항 R-"><rect x="260" y="160" width="160" height="56" rx="8" /><text x="276" y="183" class="t-id">R-</text><text x="276" y="204">요구사항</text></g>
-            <g data-n="des" tabindex="0" role="button" aria-label="설계 D-"><rect x="260" y="290" width="160" height="56" rx="8" /><text x="276" y="313" class="t-id">D-</text><text x="276" y="334">설계</text></g>
-            <g data-n="rec" tabindex="0" role="button" aria-label="결정기록 DR-"><rect x="640" y="160" width="190" height="64" rx="8" /><text x="656" y="186" class="t-id">DR-</text><text x="656" y="209">결정기록</text></g>
-            <g data-n="commit" tabindex="0" role="button" aria-label="Git 커밋"><rect x="640" y="300" width="190" height="56" rx="8" /><text x="656" y="323" class="t-id">Git</text><text x="656" y="344">커밋 (작성자 · 시각)</text></g>
+            <g data-n="feat" tabindex="0" role="button" aria-label="기능 S-"><rect x="30" y="150" width="150" height="56" rx="8" /><text x="46" y="173" class="t-id">S-</text><text x="46" y="194">기능</text></g>
+            <g data-n="req" tabindex="0" role="button" aria-label="요구사항 R-"><rect x="260" y="80" width="160" height="56" rx="8" /><text x="276" y="103" class="t-id">R-</text><text x="276" y="124">요구사항</text></g>
+            <g data-n="des" tabindex="0" role="button" aria-label="설계 D-"><rect x="260" y="240" width="160" height="56" rx="8" /><text x="276" y="263" class="t-id">D-</text><text x="276" y="284">설계</text></g>
+            <g data-n="rec" tabindex="0" role="button" aria-label="결정기록 DR-"><rect x="640" y="80" width="190" height="64" rx="8" /><text x="656" y="106" class="t-id">DR-</text><text x="656" y="129">결정기록</text></g>
+            <g data-n="commit" tabindex="0" role="button" aria-label="Git 커밋"><rect x="640" y="250" width="190" height="56" rx="8" /><text x="656" y="273" class="t-id">Git</text><text x="656" y="294">커밋 (작성자 · 시각)</text></g>
           </g>
         </svg>
         </div>
         <div class="graph__info" aria-live="polite">
           <p class="graph__info-title">참조 관계 규칙</p>
-          <p class="graph__info-body">화살표는 참조 방향을 나타냅니다. 프로젝트 지침은 개별 명세를 참조하지 않으며, 결정기록은 대상 문서를 가리키지만 문서는 결정기록의 존재에 종속되지 않습니다. 작성자와 작성 시점은 파일 본문이 아닌 Git 커밋 메타데이터로부터 파악합니다.</p>
+          <p class="graph__info-body">화살표는 참조 방향을 나타냅니다. 결정기록은 대상 문서를 가리키지만, 문서는 결정기록에 의존하지 않습니다. 작성자와 작성 시점은 파일 본문이 아니라 Git 커밋에서 읽습니다.</p>
         </div>
       </div>
     </div>
@@ -368,7 +329,7 @@ Gitifact-Record: DR-5hq2mnc7ra</pre>
     <div class="idtrack" data-idtrack>
       <div class="idtrack__text">
         <h3>제목이 바뀌거나 경로가 이동해도 동일한 문서로 추적됩니다</h3>
-        <p>일반 Git diff에서는 파일 삭제와 신규 생성으로 분리되는 변경도, CLI가 발급한 고유 ID가 유지되는 한 하나의 연속된 문서 이력으로 보존됩니다. 디렉터리 이동만으로 소속 기능이 자연스럽게 변경됩니다.</p>
+        <p>요구사항과 설계마다 고유 ID가 있고, 커밋할 때 Git 트레일러로 커밋과 문서를 연결합니다. 일반 Git diff에서 삭제와 신규 생성으로 갈라지는 변경도 ID로 같은 문서의 결정 흐름을 계속 조회합니다. 소속 기능은 디렉터리를 옮기면 바뀝니다.</p>
         <div class="seg" role="group" aria-label="변경 예시">
           <button type="button" class="is-on" data-id-state="0">최초 작성</button>
           <button type="button" data-id-state="1">제목 변경</button>
@@ -420,10 +381,10 @@ Gitifact-Record: DR-5hq2mnc7ra</pre>
       </div>
 
       <div class="dec__rules">
-        <div class="rule"><span class="rule__n">작성 시점</span><p>기존 요구사항의 변경·삭제, 여러 대안 중 선택이 발생할 때 작성합니다. 단순 오타 수정이나 신규 문서 추가 시에는 불필요합니다.</p></div>
-        <div class="rule"><span class="rule__n">일관된 형식</span><p>80자 이내의 명사형 제목과 섹션당 500자 이내의 분량을 권장합니다. 모든 기록은 동일한 3단 구조(맥락 · 결정 · 검토한 대안)를 유지합니다.</p></div>
-        <div class="rule"><span class="rule__n">불변성</span><p>한 번 커밋된 기록은 수정하거나 삭제하지 않습니다. 새로운 결정이 내려지면 새 기록을 추가하며, 기존 기록 변조 시 <code>RECORD_ALTERED</code>로 커밋이 거부됩니다.</p></div>
-        <div class="rule"><span class="rule__n">원자적 묶음</span><p>하나의 결정과 관련된 명세, 코드, 테스트, 결정기록을 단일 커밋으로 묶어 함께 보존합니다.</p></div>
+        <div class="rule"><span class="rule__n">작성 시점</span><p>기존 요구사항·설계를 바꾸거나 지울 때, 여러 대안 중 하나를 고를 때 결정한 순간에 씁니다. 새 요구사항을 그냥 추가하거나 오타를 고칠 때는 쓰지 않습니다.</p></div>
+        <div class="rule"><span class="rule__n">일관된 형식</span><p>80자 이내의 명사형 제목과 맥락 · 결정 · 검토한 대안 세 섹션으로 씁니다. 섹션 하나가 500자를 넘으면 <code>check</code>가 알립니다.</p></div>
+        <div class="rule"><span class="rule__n">불변성</span><p>커밋한 기록은 고치거나 지우지 않습니다. 결정이 바뀌면 새 기록을 쓰며, 커밋한 기록을 고치면 <code>RECORD_ALTERED</code>로 커밋이 거부됩니다.</p></div>
+        <div class="rule"><span class="rule__n">한 커밋</span><p>하나의 결정과 관련된 문서, 결정기록, 코드, 테스트를 한 커밋으로 묶습니다.</p></div>
       </div>
     </div>
 
@@ -431,7 +392,7 @@ Gitifact-Record: DR-5hq2mnc7ra</pre>
     <div class="history">
       <div class="history__head">
         <h3>단일 문서의 결정 이력 조회</h3>
-        <p><code>gitifact docs history R-m4qx7hd2ke</code> — 해당 문서가 왜 현재 형태로 변화해 왔는지 시간순으로 탐색합니다.</p>
+        <p><code>gitifact records list --doc R-m4qx7hd2ke</code> — 그 문서가 바뀐 커밋마다의 결정기록으로, 왜 지금 모양이 되었는지 따라갑니다.</p>
       </div>
       <ol class="hline">
         <li>
@@ -463,7 +424,7 @@ Gitifact-Record: DR-5hq2mnc7ra</pre>
     <header class="section__head">
       <p class="eyebrow">아키텍처</p>
       <h2 class="h2">두 개의 진입점, 하나의 일관된 규칙</h2>
-      <p class="sub">에이전트는 터미널 CLI로, 사용자는 웹 브라우저로 진입합니다. 두 진입점 모두 Core 도메인의 단일 규칙과 버전화된 계약을 공유하며 Git 저장소와 Markdown 파일을 다룹니다.</p>
+      <p class="sub">에이전트는 <code>AGENTS.md</code>의 GITIFACT 블록을 읽고 저장소에 있는 실행기로 CLI를 부르며, 사용자는 브라우저 뷰어로 결과를 봅니다. 두 진입점은 Core의 같은 규칙과 버전별 계약을 공유하고, Git 저장소의 Markdown 문서와 커밋 이력을 다룹니다.</p>
     </header>
 
     <div class="arch" data-arch>
@@ -477,7 +438,8 @@ Gitifact-Record: DR-5hq2mnc7ra</pre>
         <!-- 입구 -->
         <div class="lane lane--in">
           <p class="lane__title">진입점 <span aria-hidden="true">→</span></p>
-          <button type="button" class="blk" data-b="agent"><small>진입점</small><b>에이전트 CLI</b><code>gitifact &lt;cmd&gt;</code></button>
+          <button type="button" class="blk" data-b="agent"><small>진입점</small><b>에이전트</b><code>AGENTS.md · GITIFACT 블록</code></button>
+          <button type="button" class="blk" data-b="launcher"><small>실행기</small><b>프로젝트 기준 CLI</b><code>node .gitifact/bin/cli.mjs</code></button>
           <button type="button" class="blk" data-b="browser"><small>진입점 · apps/browser</small><b>웹 뷰어</b><code>React SPA · 읽기 전용</code></button>
         </div>
 
@@ -485,13 +447,13 @@ Gitifact-Record: DR-5hq2mnc7ra</pre>
         <div class="pkg pkg--cli">
           <p class="pkg__name">apps/cli</p>
           <div class="pkg__row">
-            <button type="button" class="blk" data-b="commands"><b>commands</b><code>docs · records · changes</code></button>
+            <button type="button" class="blk" data-b="commands"><b>commands</b><code>specs · records · check · changes</code></button>
             <button type="button" class="blk" data-b="server"><b>server</b><code>로컬 HTTP · /api/v1</code></button>
             <button type="button" class="blk" data-b="output"><b>output</b><code>DTO 직렬화</code></button>
           </div>
           <div class="pkg__row">
-            <button type="button" class="blk" data-b="adapters"><b>adapters</b><code>git · filesystem · cache · registry</code></button>
-            <button type="button" class="blk" data-b="i18n"><b>shared/i18n</b><code>다국어 문구 및 지침</code></button>
+            <button type="button" class="blk" data-b="adapters"><b>adapters</b><code>git · filesystem · cache · registry · github</code></button>
+            <button type="button" class="blk" data-b="i18n"><b>shared/i18n</b><code>다국어 문구 · 에이전트 가이드</code></button>
           </div>
         </div>
 
@@ -523,15 +485,16 @@ Gitifact-Record: DR-5hq2mnc7ra</pre>
 
       <div class="arch__detail" aria-live="polite">
         <p class="arch__detail-path" data-detail-path>전체 구조</p>
-        <p class="arch__detail-title" data-detail-title>진입점(CLI/서버) — 도메인 규칙(Core) — 인프라 경계(Adapters)</p>
-        <p class="arch__detail-body" data-detail-body>CLI 명령과 로컬 서버는 입력을 검증하고 Core 유스케이스를 호출합니다. Core는 Git·파일 시스템·시스템 시간에 직접 의존하지 않고 추상화된 Port 인터페이스를 통해 통신하며, 인프라 세부사항은 Adapter 계층에서 구현합니다. 블록을 선택하여 세부 역할을 확인하세요.</p>
+        <p class="arch__detail-title" data-detail-title>실행기 — 진입점(CLI/서버) — 도메인 규칙(Core) — 인프라 경계(Adapters)</p>
+        <p class="arch__detail-body" data-detail-body>에이전트는 저장소의 실행기로 프로젝트 기준 버전의 CLI를 실행합니다. CLI 명령과 로컬 서버는 입력을 검증하고 Core 유스케이스를 호출합니다. Core는 Git·파일 시스템·시스템 시간에 직접 의존하지 않고 Port 인터페이스로 통신하며, 인프라 세부사항은 Adapter 계층이 구현합니다. 블록을 선택하면 세부 역할을 볼 수 있습니다.</p>
         <ol class="arch__steps" data-detail-steps hidden></ol>
       </div>
     </div>
 
     <div class="principles">
-      <div class="pr"><b>단일 진실 원천: 파일과 Git</b><p>모든 데이터의 원본은 Git 이력과 Markdown 파일입니다. 캐시는 검색·조회를 돕는 파생물이며 삭제 시 언제든 안전하게 재생성됩니다.</p></div>
-      <div class="pr"><b>일관된 단일 검증 로직</b><p>문서 및 기록 형식 검증 규칙은 Core 한 곳에 정의되어, <code>docs check</code>와 <code>changes commit</code>이 동일한 검증 파이프라인을 공유합니다.</p></div>
+      <div class="pr"><b>원본은 파일과 Git</b><p>모든 데이터의 원본은 Git 이력과 Markdown 파일입니다. 캐시는 조회를 돕는 파생물이며 지워도 다시 만들어집니다.</p></div>
+      <div class="pr"><b>프로젝트마다 지정된 버전</b><p>실행기가 <code>.gitifact/config.json</code>의 <code>cli</code> 버전을 사용자 캐시에 한 번 받아 실행합니다. 전역 설치가 필요 없습니다.</p></div>
+      <div class="pr"><b>한 곳의 검증 규칙</b><p>문서와 기록의 형식 검사는 Core 한 곳에 있어, <code>check</code>와 <code>changes commit</code>이 같은 검사를 씁니다.</p></div>
       <div class="pr"><b>기계 가독형 오류 코드</b><p>모든 오류는 언어 설정과 무관하게 표준화된 <code>code</code>를 반환하므로, 에이전트가 문자열 파싱 없이 정확히 분기할 수 있습니다.</p></div>
       <div class="pr"><b>표시 언어와 저장 규약의 분리</b><p>안내 문구는 한국어와 영어를 지원하지만, 저장 규약, ID 체계, JSON 데이터 스키마는 언어 설정에 영향받지 않는 독립 표준을 유지합니다.</p></div>
     </div>
@@ -548,17 +511,18 @@ Gitifact-Record: DR-5hq2mnc7ra</pre>
     <div class="adopt__cols">
       <div><b>기존 프로젝트</b><p>과거 이력을 전부 정리할 필요 없이, 유지보수나 신규 기능이 추가되는 영역부터 점진적으로 정리합니다. 필요 시 에이전트에게 기존 코드를 분석하여 요구사항 초안을 도출하도록 요청할 수 있습니다.</p></div>
       <div><b>신규 프로젝트</b><p>아이디어를 나누는 첫 대화부터 자연스럽게 시작합니다. 제품을 구체화해 나가는 동안 요구사항과 구현 설계가 함께 정리됩니다.</p></div>
-      <div><b>적용 범위</b><p>단일 저장소(단일 프로젝트 또는 모노레포) 기반의 제품 개발을 전제로 합니다. 도구의 복잡성을 낮추고 본질에 집중하기 위해 다중 저장소 간 연계는 범위에서 제외합니다.</p></div>
+      <div><b>적용 범위</b><p>하나의 Git 저장소(단일 프로젝트 또는 모노레포) 안에서 제품 개발과 기록 관리가 완결되는 구조를 전제로 합니다. 여러 저장소 사이의 연계는 범위에 넣지 않습니다.</p></div>
     </div>
   </div>
 </section>
 
 <section class="cta">
   <div class="wrap cta__inner">
-    <h2>평소처럼 대화하며 개발하세요. <br />제품의 맥락은 Git 저장소에 온전히 남습니다.</h2>
+    <h2>평소처럼 대화하며 개발하세요. <br />제품의 맥락은 코드와 함께 Git에 남습니다.</h2>
     <div class="start start--cta">
       <div class="start__head"><span>에이전트 시작 프롬프트</span><button class="copy" type="button" data-copy="start-prompt-2">복사</button></div>
-      <pre id="start-prompt-2">이 프로젝트에서 npx gitifact@latest init을 실행하세요.
+      <pre id="start-prompt-2">이 프로젝트에서 npx --yes gitifact init을 실행하세요.
+명령이 막히면 저에게 넘기지 말고 명령을 그대로 보여 주며 허용을 물어보세요.
 init이 AGENTS.md 등에 쓴 GITIFACT 블록을 읽고 이번 세션부터 따르세요.</pre>
     </div>
     <p class="cta__links"><a href="https://github.com/dev-goraebap/gitifact">GitHub</a><a href="https://www.npmjs.com/package/gitifact">npm</a><a href="https://github.com/dev-goraebap/gitifact/tree/main/.gitifact/spec">Gitifact 자체 명세</a></p>
