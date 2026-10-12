@@ -7,8 +7,8 @@
 Give this prompt to the agent you use in your project:
 
 ```text
-Install Gitifact with npm install -g gitifact and run gitifact init in this project.
-If the install is blocked, don't hand it to me: show me the exact command and ask for my approval.
+Run npx --yes gitifact init in this project.
+If the command is blocked, don't hand it to me: show me the exact command and ask for my approval.
 Read the GITIFACT block that init adds to AGENTS.md or the relevant agent instructions file, and follow it from this session onward.
 ```
 
@@ -67,13 +67,13 @@ The CLI follows your environment's language and uses English for unsupported lan
 
 ## Update
 
-When a newer version is out, or a teammate moves the project to one, gitifact commands print a one-line notice before their output. Your agent then shows the install command and asks whether to update now or later, and once you allow it, runs the install and `gitifact update` itself. You can also ask at any time:
+When a newer version is out, or a teammate moves the project to one, gitifact commands print a one-line notice before their output. Your agent then shows the update command and asks whether to update now or later, and once you allow it, runs it itself. You can also ask at any time:
 
 ```text
 Update Gitifact.
 ```
 
-To update, install with `npm install -g gitifact@<new-version>` and run `gitifact update`. `update` moves the GITIFACT block in your agent instruction files and the project's version (`cli`) in `.gitifact/config.json` to the new version. Commit both, and teammates see the notice on their next command. To update later, `gitifact update --later` quiets that version's notice for 24 hours. If you use a project dependency, update it that way and run `update` with the updated installation. Restart the browser server with the new version.
+To update, run `npx --yes gitifact@<new-version> update` once. `update` moves the GITIFACT block in your agent instruction files, the project's version (`cli`) in `.gitifact/config.json` and the launcher `.gitifact/bin/cli.mjs` to the new version. Commit them, and teammates' launchers fetch the new version on their next run. To update later, `gitifact update --later` quiets that version's notice for 24 hours. Restart the browser server with the new version.
 
 > [!IMPORTANT]
 > From 0.8.3, `.gitifact/config.json` records `cli` and `language`. CLI 0.8.2 and earlier cannot read it and stop with `INVALID_CONFIG`, so move everyone to 0.8.3 or later before updating.
@@ -82,36 +82,25 @@ Projects recorded with 0.7 (storage schemaVersion 2) need a one-time move, becau
 
 ## Run commands yourself
 
-Gitifact requires Node.js 24.x and Git. Install it globally and run commands inside the target Git repository.
+Gitifact requires Node.js 24.x and Git. Run commands inside the target Git repository.
 
 ```sh
-npm install -g gitifact
-gitifact init
-gitifact browser
+npx --yes gitifact init
+node .gitifact/bin/cli.mjs browser
 ```
 
 Open the local URL printed by `browser`. Press Ctrl+C in the terminal to stop the server.
 
-Agents use the global `gitifact`. If it is missing, they ask whether to run `npm install -g gitifact@<version>` with the `cli` version in `.gitifact/config.json`, and install it themselves once you allow it. If the agent tool blocks the install, the agent points you to that tool's approval (a prompt or a permission setting).
+The launcher `init` writes, `.gitifact/bin/cli.mjs`, fetches the `cli` version in `.gitifact/config.json` into this computer's user cache on its first run and runs that version from then on. Nothing is installed globally, and projects on different versions do not affect each other. Commit the launcher, and teammates who clone the repository use it as it is. Agents run commands through the launcher too. If the agent tool blocks a command, the agent points you to that tool's approval (a prompt or a permission setting).
 
-If Windows PowerShell says `npm.ps1` cannot be loaded, running scripts is disabled. Use `npm.cmd install -g gitifact` and `gitifact.cmd` instead.
+If Windows PowerShell says `npx.ps1` cannot be loaded, running scripts is disabled. Use `npx.cmd` instead.
 
 > [!NOTE]
-> You can also run `npx gitifact@<version> <command>` without installing. Each call then takes about 1.7 seconds longer, and agents call the CLI often, so a global installation is recommended.
-
-### Install in a project
-
-In a Node.js project, you can add Gitifact as a development dependency so the team shares a version. Use the project's existing package manager. For npm:
-
-```sh
-npm install --save-dev --save-exact gitifact@latest
-npx gitifact init
-npx gitifact browser
-```
-
-The version is recorded in `package.json` and the lockfile. Tell agents to use the project installation in AGENTS.md, outside the GITIFACT block.
+> To type a short `gitifact` in the terminal, you can still install it globally with `npm install -g gitifact`. When the global installation and the project's version differ, commands print a notice first.
 
 ### Common commands
+
+`gitifact` in the tables below is the launcher `node .gitifact/bin/cli.mjs` (or a global installation).
 
 | Command | Purpose |
 | :--- | :--- |

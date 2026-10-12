@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { initRepository } from '../adapters/git/init-repository.js';
 import { publishConfig, readConfigFile } from '../adapters/filesystem/config-file.js';
 import { LINE_ENDINGS_PATH, writeLineEndings } from '../adapters/filesystem/document-file.js';
+import { refreshLauncher } from '../adapters/filesystem/launcher-file.js';
 import { applyAgentDocs, planAgentDocs, skippedAgentDocs, type AgentDocsOptions } from './agent-docs.js';
 import { projectSettings, settleConfig } from './project-settings.js';
 import { disabledUpdate, isNewerRelease, npmGlobalInstall, npxUpdate } from '../shared/update-check.js';
@@ -43,6 +44,8 @@ export async function initializeSpecProject(cwd: string, dryRun = false, env = p
       current = next;
     }
     await applyAgentDocs(root, docsPlan, unchanged);
+    // A project kept on a newer release keeps that release's launcher too.
+    if (agentDocs && !(config.cli && isNewerRelease(config.cli, agentDocs.version))) await refreshLauncher(root);
     return result(settled.config, 'already-initialized', await writeLineEndings(root));
   };
   const base: SpecProjectConfig = { schemaVersion: SCHEMA_VERSION, baseline: first.state.head.commit
@@ -55,6 +58,7 @@ export async function initializeSpecProject(cwd: string, dryRun = false, env = p
     };
     await published();
     await applyAgentDocs(root, docsPlan, published);
+    if (agentDocs) await refreshLauncher(root);
     return result(config, outcome, await writeLineEndings(root));
   };
   const old = await readConfigFile(root);

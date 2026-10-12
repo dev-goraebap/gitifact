@@ -3,7 +3,7 @@ import { homedir } from 'node:os';
 import { updateLaterV1 } from '@gitifact/contracts';
 import { fetchLatestVersion } from '../adapters/registry/latest-version.js';
 import { changeUpdateCache, readUpdateCache, recordUpdateCheck, type UpdateCache } from '../adapters/filesystem/user-cache.js';
-import { type FetchLatestVersion, isNewerRelease, npmGlobalInstall, resolveUpdate, updateCheckDisabled } from '../shared/update-check.js';
+import { type FetchLatestVersion, isNewerRelease, npxUpdate, resolveUpdate, updateCheckDisabled } from '../shared/update-check.js';
 import { findProjectConfig } from '../shared/project-config.js';
 import { projectSettings } from './project-settings.js';
 import { t } from '../shared/i18n/index.js';
@@ -33,8 +33,8 @@ export function chooseNotice(running: string, project: string | undefined, cache
   return null;
 }
 export function noticeText(notice: VersionNotice, running: string) {
-  if (notice.kind === 'project-newer') return t('notice.projectNewer', { project: notice.project, version: running, command: npmGlobalInstall(notice.project) });
-  if (notice.kind === 'release') return t('notice.release', { latest: notice.latest, version: running, command: npmGlobalInstall(notice.latest) });
+  if (notice.kind === 'project-newer') return t('notice.projectNewer', { project: notice.project, version: running });
+  if (notice.kind === 'release') return t('notice.release', { latest: notice.latest, version: running, command: npxUpdate(notice.latest) });
   return t('notice.projectOlder', { project: notice.project, version: running });
 }
 

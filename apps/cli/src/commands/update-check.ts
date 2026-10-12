@@ -23,6 +23,6 @@ export async function runUpdateCheck(format: 'json' | 'text', version: string) {
       : state.status === 'up-to-date' ? t('update.text.upToDate')
       : state.status === 'disabled' ? t('update.text.disabled') : t('update.text.unavailable')];
   // The JSON keeps its v1 npx command; people are shown the global install, the one way this release recommends.
-  if (state.status === 'available') lines.push(t('update.text.install', { command: npmGlobalInstall(state.latestVersion!) }), t('update.text.afterInstall'));
+  if (state.status === 'available') lines.push(t('update.text.install', { command: npxUpdate(state.latestVersion!) }), t('update.text.afterInstall'));
   process.stdout.write(lines.join('\n') + '\n');
 }

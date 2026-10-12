@@ -16,7 +16,7 @@ requirements:
 | 파일 | 맡는 것 |
 | :--- | :--- |
 | `apps/cli/src/adapters/registry/latest-version.ts` | `https://registry.npmjs.org/gitifact`의 축약 매니페스트(`Accept: application/vnd.npm.install-v1+json`, 리디렉션 거부)에서 `dist-tags.latest`를 읽는다 |
-| `apps/cli/src/shared/update-check.ts` | `isNewerRelease`, `resolveUpdate`(제한 시간 3초, 거부하지 않고 항상 상태를 반환), `updateCheckDisabled`, 전역 설치 명령(`npm install -g gitifact@<버전>`)과 `update-check` v1이 쓰는 npx 명령 문자열 |
+| `apps/cli/src/shared/update-check.ts` | `isNewerRelease`, `resolveUpdate`(제한 시간 3초, 거부하지 않고 항상 상태를 반환), `updateCheckDisabled`, 업데이트 명령(`npx --yes gitifact@<버전> update`, `npxUpdate`)과 계약의 `install.npmGlobal`에 담는 전역 설치 명령 문자열 |
 | `apps/cli/src/adapters/filesystem/user-cache.ts` | 사용자 캐시 `update.json`의 위치·읽기·원자적 쓰기, 끝난 확인의 기록(`recordUpdateCheck`) |
 | `apps/cli/src/commands/version-notice.ts` | 명령 앞의 안내(`noticeVersion`), 뒤에서 도는 확인(`__refresh-update`), `update --later` |
 | `apps/cli/src/commands/project-settings.ts` | 설정의 `cli`·`language`를 읽고, init·update가 쓸 값을 정한다(`settleConfig`) |
@@ -47,10 +47,10 @@ requirements:
 
 | 계약 | 현재 버전 | 담는 것 |
 | :--- | :--- | :--- |
-| `update-check` | v1 | `update --check`의 읽기 전용 결과: `cliVersion`, `update`, `available`일 때만 `command`(npx 명령). 텍스트 출력은 전역 설치를 안내한다 |
+| `update-check` | v1 | `update --check`의 읽기 전용 결과: `cliVersion`, `update`, `available`일 때만 `command`(npx 명령). 텍스트 출력은 업데이트 명령을 안내한다 |
 | `update` | v6 | 확인 결과, `install`(`npmGlobal`), `agentDocs`, `project`, `commit`, `migrationRequired`. v6에서 `project`를 더하고 `install.npx`를 뺐다 |
 | `update-later` | v1 | `update --later`의 결과: `cliVersion`, 조용히 둔 버전과 끝 시각(`later`), 미룰 버전이 없으면 null |
-| `project-init` | v8 | `init` 결과와 같은 확인 결과·`install`(`npx`·`npmGlobal`). 텍스트 출력은 전역 설치를 안내한다 |
+| `project-init` | v8 | `init` 결과와 같은 확인 결과·`install`(`npx`·`npmGlobal`). 텍스트 출력은 `install.npx`의 업데이트 명령을 안내한다 |
 | `browser-session` | v3 | 세션 식별자와 `cliVersion`. v3에서 `update` 필드를 뺐다 |
 | `changelog` | v1 | 패치노트 응답 |
 
@@ -79,8 +79,8 @@ sequenceDiagram
 
 | 안내 | 조건 | 알리는 것 |
 | :--- | :--- | :--- |
-| 프로젝트가 앞섬 | 설정의 `cli`가 실행 중인 버전보다 새 버전 | 두 버전과 `npm install -g gitifact@<cli>` |
-| 새 버전 | 캐시의 `latest`가 실행 중인 버전보다 새 버전이고 `later`로 미루지 않음 | 두 버전, 전역 설치 뒤 `gitifact update`, `gitifact update --later` |
+| 프로젝트가 앞섬 | 설정의 `cli`가 실행 중인 버전보다 새 버전 | 두 버전과 프로젝트의 실행기 `node .gitifact/bin/cli.mjs`로 실행하라는 것 |
+| 새 버전 | 캐시의 `latest`가 실행 중인 버전보다 새 버전이고 `later`로 미루지 않음 | 두 버전, `npx --yes gitifact@<latest> update`, `gitifact update --later` |
 | 프로젝트가 뒤짐 | 실행 중인 버전이 설정의 `cli`보다 새 버전 | `gitifact update`로 기준을 올릴 수 있음 |
 
 한 번에 하나만, 위 표의 순서로 고른다. `init`과 `update`는 레지스트리를 직접 확인해 결과에 담으므로 새 버전 안내와 뒤의 확인을 하지 않는다. 둘 다 기준 버전을 이 CLI로 올리므로 프로젝트가 뒤짐 안내도 하지 않는다. `GITIFACT_NO_UPDATE_CHECK`가 켜져 있으면 캐시를 읽지 않고 뒤의 확인도 걸지 않는다. 프로젝트 비교는 로컬 파일만 읽으므로 계속한다. 설정은 `findProjectConfig`로 위 폴더까지 찾고, 읽지 못하거나 `cli`가 형식에 맞지 않으면 없는 것으로 본다.
@@ -89,7 +89,7 @@ sequenceDiagram
 
 ## 사용자 캐시
 
-캐시는 사용자의 것이며 프로젝트에 두지 않는다. 위치는 `GITIFACT_CACHE_DIR`, Windows는 `%LOCALAPPDATA%\gitifact`, macOS는 `~/Library/Caches/gitifact`, 그 밖은 `$XDG_CACHE_HOME/gitifact` 또는 `~/.cache/gitifact` 아래의 `update.json`이다.
+캐시는 사용자의 것이며 프로젝트에 두지 않는다. 위치는 `GITIFACT_CACHE_DIR`, Windows는 `%LOCALAPPDATA%\gitifact`, macOS는 `~/Library/Caches/gitifact`, 그 밖은 `$XDG_CACHE_HOME/gitifact` 또는 `~/.cache/gitifact` 아래의 `update.json`이다. 같은 폴더의 `cli/<버전>/`에는 프로젝트 실행기가 받은 버전이 있다(D-qocsgecvk2).
 
 | 필드 | 뜻 |
 | :--- | :--- |
@@ -104,14 +104,14 @@ sequenceDiagram
 
 ## update 명령
 
-`gitifact update`는 레지스트리 확인, 지침 블록 갱신, 설정 갱신을 함께 하고 `update` 계약으로 출력한다(`--format text` 지원). 새 버전이 있으면 `install.npmGlobal`에 전역 설치 명령을 담고, 텍스트 출력은 설치 뒤 `update`를 다시 실행하라고 안내한다. 안내한 명령을 CLI가 실행하지 않으며, 확인이 꺼졌거나 실패하면 `install`은 null이다.
+`gitifact update`는 레지스트리 확인, 지침 블록 갱신, 설정 갱신을 함께 하고 `update` 계약으로 출력한다(`--format text` 지원). 새 버전이 있으면 `install.npmGlobal`에 전역 설치 명령을 담고, 텍스트 출력은 `npx --yes gitifact@<새 버전> update`가 프로젝트 기준과 블록, 실행기를 새 버전으로 바꾼다고 안내한다. 안내한 명령을 CLI가 실행하지 않으며, 확인이 꺼졌거나 실패하면 `install`은 null이다. 설정의 `cli`가 실행 중인 버전보다 새 버전이면 텍스트 출력은 프로젝트의 실행기로 실행하라고 알린다.
 
-블록 갱신은 `planAgentDocs`의 `onlyExisting`으로 이미 블록이 있는 파일만 대상으로 하며 파일을 만들지 않는다. 블록 언어는 설정의 `language`로 정한다(D-qocsgecvk2). 블록을 쓴 뒤 `settleConfig`로 설정의 `cli`를 실행 중인 버전으로 올리고 `language`를 블록 언어로 맞춘다. 설정은 `formatManagedConfig`로 쓰므로 이 CLI가 모르는 필드는 그대로 남는다. 쓰기 전마다 HEAD·index·설정이 그대로인지 다시 확인한다. `init`은 도입, `update`는 유지를 맡는다.
+블록 갱신은 `planAgentDocs`의 `onlyExisting`으로 이미 블록이 있는 파일만 대상으로 하며 파일을 만들지 않는다. 블록 언어는 설정의 `language`로 정한다(D-qocsgecvk2). 블록을 쓴 뒤 `settleConfig`로 설정의 `cli`를 실행 중인 버전으로 올리고 `language`를 블록 언어로 맞추며, 프로젝트 실행기를 이 CLI의 것으로 쓴다(`refreshLauncher`, D-qocsgecvk2). 설정은 `formatManagedConfig`로 쓰므로 이 CLI가 모르는 필드는 그대로 남는다. 쓰기 전마다 HEAD·index·설정이 그대로인지 다시 확인한다. `init`은 도입, `update`는 유지를 맡는다.
 
 | `agentDocs.state` | 조건 |
 | :--- | :--- |
 | `not-initialized` | Git 저장소가 아니거나 설정이 없다. 버전 확인만 한다 |
-| `kept` | 설정의 `cli`가 실행 중인 버전보다 새 버전이다. 블록과 설정을 바꾸지 않는다 |
+| `kept` | 설정의 `cli`가 실행 중인 버전보다 새 버전이다. 블록과 설정, 실행기를 바꾸지 않는다 |
 | `no-block` | 블록이 있는 파일이 없다 |
 | `current` | 모든 블록이 이미 이 버전의 문구다 |
 | `refreshed` | 블록을 바꿨다 |
@@ -127,7 +127,7 @@ sequenceDiagram
 
 ## 업데이트 커밋
 
-`--commit`은 블록과 설정을 갱신한 뒤에 실행한다. 대상은 블록을 가진 지침 파일(`planAgentDocs`의 paths)과 `.gitifact/config.json`이다. wrapper에서 블록을 걷어낸 변경은 블록 안의 변경이 아니므로 넣지 않는다. 앞서 옵션 없이 갱신만 해 둔 파일도 같은 판정으로 커밋된다.
+`--commit`은 블록과 설정을 갱신한 뒤에 실행한다. 대상은 블록을 가진 지침 파일(`planAgentDocs`의 paths)과 `.gitifact/config.json`, 실행기 `.gitifact/bin/cli.mjs`다. 실행기는 Gitifact의 파일이라 아래 판정을 거치지 않고, HEAD와 내용이 다르면(CRLF는 LF로 맞춰 비교) 대상에 넣으며, HEAD에 없으면 `git add --intent-to-add`로 알린 뒤 커밋한다. wrapper에서 블록을 걷어낸 변경은 블록 안의 변경이 아니므로 넣지 않는다. 앞서 옵션 없이 갱신만 해 둔 파일도 같은 판정으로 커밋된다.
 
 ```mermaid
 flowchart TD

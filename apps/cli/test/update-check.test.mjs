@@ -48,7 +48,7 @@ test('check-only preserves old blocks, staged edits, files and HEAD in both lang
     assert.equal(result.status, 0, result.stderr);
     assert.equal(result.stderr, '');
     if (format === 'json') assert.equal(updateCheckV1.parse(JSON.parse(result.stdout)).update.status, 'available');
-    else assert.match(result.stdout, /npm install -g gitifact@9\.9\.9\n.*gitifact update/);
+    else assert.match(result.stdout, /npx --yes gitifact@9\.9\.9 update\n.*cli\.mjs/);
     assert.deepEqual(files(), before);
   }
   assert.equal(JSON.parse(readFileSync(join(f.root, 'cache/update.json'), 'utf8')).latest, '9.9.9');

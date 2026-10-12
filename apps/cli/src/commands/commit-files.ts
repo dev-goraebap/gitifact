@@ -3,6 +3,7 @@ import { lstat, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { classifyDocPath, isAssetPath } from '@gitifact/core';
 import { LINE_ENDINGS_PATH } from '../adapters/filesystem/document-file.js';
+import { LAUNCHER_PATH } from '../adapters/filesystem/launcher-file.js';
 import { CommandError } from './output.js';
 import { t } from '../shared/i18n/index.js';
 
@@ -49,8 +50,8 @@ export function policyPaths(files: string[]) {
   for (const file of files) { const parts = file.split('/'); for (let i = 1; i < parts.length; i++) for (const name of ['AGENTS.md', 'CLAUDE.md', '.gitignore', '.gitattributes']) all.add(parts.slice(0, i).join('/') + '/' + name); }
   return [...all].sort();
 }
-/** The store's own files besides documents: the configuration and the line-ending attributes init writes. */
-const storeFiles = new Set(['.gitifact/config.json', LINE_ENDINGS_PATH]);
+/** The store's own files besides documents: the configuration, and the line-ending attributes and the launcher init writes. */
+const storeFiles = new Set(['.gitifact/config.json', LINE_ENDINGS_PATH, LAUNCHER_PATH]);
 /** Inside `.gitifact` only documents, instruction files, the reason file, the store's own files and assets are committed; the cache never is. */
 export function checkStoreSelection(selected: string[]) {
   for (const p of selected.filter(p => p.startsWith('.gitifact/') && !record(p) && !storeFiles.has(p))) {

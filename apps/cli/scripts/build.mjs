@@ -24,6 +24,11 @@ if (relative(packageRoot, legacyDocsDestination) !== join('dist', 'docs')) throw
 await rm(legacyDocsDestination, { recursive: true, force: true });
 // Only the long-form Markdown ships as a file; messages.json is bundled into main.js by esbuild.
 await cp(i18nSource, i18nDestination, { recursive: true, filter: source => !source.endsWith('.ts') && !source.endsWith('.json') });
+// The launcher init and update write into projects as .gitifact/bin/cli.mjs ships as a file beside main.js.
+const launcherDestination = fileURLToPath(new URL('../dist/launcher/', import.meta.url));
+if (relative(packageRoot, launcherDestination) !== join('dist', 'launcher')) throw new Error('Unexpected launcher destination');
+await rm(launcherDestination, { recursive: true, force: true });
+await cp(fileURLToPath(new URL('../src/shared/launcher/', import.meta.url)), launcherDestination, { recursive: true });
 await writeNotices();
 const options = {
   absWorkingDir: packageRoot,

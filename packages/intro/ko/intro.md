@@ -13,8 +13,8 @@ Gitifact는 AI 에이전트와의 대화에서 나온 요구사항과 설계, �
 아래 프롬프트를 프로젝트에서 사용하는 에이전트에게 전달하세요.
 
 ```text
-npm install -g gitifact로 Gitifact를 설치하고 이 프로젝트에서 gitifact init을 실행하세요.
-설치가 막히면 저에게 넘기지 말고 명령을 그대로 보여 주며 허용을 물어보세요.
+이 프로젝트에서 npx --yes gitifact init을 실행하세요.
+명령이 막히면 저에게 넘기지 말고 명령을 그대로 보여 주며 허용을 물어보세요.
 init이 AGENTS.md 등에 쓴 GITIFACT 블록을 읽고 이번 세션부터 따르세요.
 ```
 

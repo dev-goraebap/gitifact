@@ -9,10 +9,11 @@ import { publishConfig, readConfigFile } from '../adapters/filesystem/config-fil
 import { managedRead } from '../adapters/filesystem/managed-file.js';
 import { fetchLatestVersion } from '../adapters/registry/latest-version.js';
 import { recordUpdateCheck } from '../adapters/filesystem/user-cache.js';
-import { type FetchLatestVersion, disabledUpdate, isNewerRelease, npmGlobalInstall, resolveUpdate, updateCheckDisabled } from '../shared/update-check.js';
+import { type FetchLatestVersion, disabledUpdate, isNewerRelease, npmGlobalInstall, npxUpdate, resolveUpdate, updateCheckDisabled } from '../shared/update-check.js';
 import { applyAgentDocs, planAgentDocs } from './agent-docs.js';
 import { AGENT_START, findBlock, type AgentBlockControls } from './agent-block.js';
 import { settleConfig } from './project-settings.js';
+import { LAUNCHER_PATH, refreshLauncher } from '../adapters/filesystem/launcher-file.js';
 import { t } from '../shared/i18n/index.js';
 
 export interface UpdateControls extends AgentBlockControls { fetchLatest?: FetchLatestVersion; timeoutMs?: number; commit?: boolean; now?: () => number }
@@ -60,6 +61,7 @@ async function refreshProject(cwd: string, version: string, env: NodeJS.ProcessE
     await publishConfig(root, next, unchanged, undefined, true);
     current = next;
   }
+  await refreshLauncher(root);
   return { docs: { ...docs, root }, project: { state: settled.changed ? 'written' : 'current', cli: settled.config.cli ?? null } };
 }
 
@@ -103,10 +105,17 @@ async function commitUpdate(docs: AgentDocsState, version: string, env: NodeJS.P
     if (before === null || !isDeepStrictEqual(before, withoutSettings(workingConfig))) return commitState('skipped', { paths: [CONFIG_PATH], reason: 'other-changes' });
     changed.push(CONFIG_PATH);
   }
+  // The launcher is Gitifact's own file, so a new or rewritten one goes with the update.
+  const workingLauncher = await readFile(join(docs.root, ...LAUNCHER_PATH.split('/')), 'utf8').catch(() => null);
+  const committedLauncher = head ? await git.committed(head, LAUNCHER_PATH) : null;
+  if (workingLauncher !== null && committedLauncher?.replace(/\r\n/g, '\n') !== workingLauncher.replace(/\r\n/g, '\n')) changed.push(LAUNCHER_PATH);
   if (changed.length === 0) return commitState('nothing');
   const message = updateCommitMessage(version);
   let failure: unknown;
-  try { await git.commitOnly(changed, message); } catch (error) { failure = error; }
+  try {
+    if (workingLauncher !== null && committedLauncher === null) await git.intendToAdd([LAUNCHER_PATH]);
+    await git.commitOnly(changed, message);
+  } catch (error) { failure = error; }
   const after = await git.head();
   // A rejected commit (hook, identity, signing) leaves HEAD where it was and the refreshed files in place.
   if (!after || after === head) return commitState('skipped', { paths: changed, reason: 'commit-failed', detail: failure instanceof Error ? failure.message : null });
@@ -139,14 +148,14 @@ export async function runUpdate(options: { format?: 'json' | 'text'; commit?: bo
     lines.push(dto.update.status === 'available' ? t('update.text.available', { version: dto.update.latestVersion })
       : dto.update.status === 'up-to-date' ? t('update.text.upToDate')
       : dto.update.status === 'disabled' ? t('update.text.disabled') : t('update.text.unavailable'));
-    if (dto.install) lines.push(t('update.text.install', { command: dto.install.npmGlobal }), t('update.text.afterInstall'));
+    if (dto.install) lines.push(t('update.text.install', { command: npxUpdate(dto.update.latestVersion!) }), t('update.text.afterInstall'));
     lines.push(dto.agentDocs.state === 'refreshed' ? t('update.text.blockRefreshed', { paths: dto.agentDocs.paths.join(', ') })
       : dto.agentDocs.state === 'current' ? t('update.text.blockCurrent', { paths: dto.agentDocs.paths.join(', ') })
       : dto.agentDocs.state === 'kept' ? t('update.text.blockKept', { paths: dto.agentDocs.paths.join(', ') || '-' })
       : dto.agentDocs.state === 'no-block' ? t('update.text.noBlock') : t('update.text.notInitialized'));
     if (dto.agentDocs.missing.length) lines.push(t('update.text.missing', { paths: dto.agentDocs.missing.join(', ') }));
     if (dto.project.state === 'written') lines.push(t('update.text.projectWritten', { path: CONFIG_PATH, version: dto.project.cli ?? dto.cliVersion }));
-    if (dto.project.cli && isNewerRelease(dto.project.cli, dto.cliVersion)) lines.push(t('update.text.projectAhead', { project: dto.project.cli, version: dto.cliVersion, command: npmGlobalInstall(dto.project.cli) }));
+    if (dto.project.cli && isNewerRelease(dto.project.cli, dto.cliVersion)) lines.push(t('update.text.projectAhead', { project: dto.project.cli, version: dto.cliVersion }));
     if (dto.migrationRequired) lines.push(t('update.text.migrationRequired', { version: dto.cliVersion }));
     const { commit } = dto;
     if (commit.state === 'committed') lines.push(t('update.text.committed', { commit: commit.commit!.slice(0, 12), paths: commit.paths.join(', ') }));

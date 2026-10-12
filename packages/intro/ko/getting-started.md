@@ -5,8 +5,8 @@
 프로젝트에서 사용하는 에이전트에게 아래 내용을 전달하세요.
 
 ```text
-npm install -g gitifact로 Gitifact를 설치하고 이 프로젝트에서 gitifact init을 실행하세요.
-설치가 막히면 저에게 넘기지 말고 명령을 그대로 보여 주며 허용을 물어보세요.
+이 프로젝트에서 npx --yes gitifact init을 실행하세요.
+명령이 막히면 저에게 넘기지 말고 명령을 그대로 보여 주며 허용을 물어보세요.
 init이 AGENTS.md 등에 쓴 GITIFACT 블록을 읽고 이번 세션부터 따르세요.
 ```
 
@@ -65,13 +65,13 @@ CLI는 실행 환경의 언어를 따르고, 지원하지 않는 언어이면 �
 
 ## 업데이트
 
-새 버전이 나오거나 팀원이 프로젝트를 새 버전으로 올리면 gitifact 명령의 출력 앞에 안내가 한 줄 나옵니다. 에이전트는 이 안내를 보면 설치 명령을 보여 주며 지금 업데이트할지 나중에 할지 묻고, 허용하면 설치와 `gitifact update`를 직접 실행합니다. 원할 때 직접 요청해도 됩니다.
+새 버전이 나오거나 팀원이 프로젝트를 새 버전으로 올리면 gitifact 명령의 출력 앞에 안내가 한 줄 나옵니다. 에이전트는 이 안내를 보면 업데이트 명령을 보여 주며 지금 업데이트할지 나중에 할지 묻고, 허용하면 직접 실행합니다. 원할 때 직접 요청해도 됩니다.
 
 ```text
 Gitifact를 업데이트해주세요.
 ```
 
-업데이트는 `npm install -g gitifact@<새 버전>`으로 설치한 뒤 `gitifact update`를 실행합니다. `update`는 에이전트 지침의 GITIFACT 블록과 `.gitifact/config.json`의 프로젝트 기준 버전(`cli`)을 새 버전으로 바꿉니다. 이 두 파일을 커밋하면 팀원도 다음 명령에서 안내를 받습니다. 나중에 하려면 `gitifact update --later`로 그 버전의 안내를 24시간 쉴 수 있습니다. 프로젝트 의존성으로 관리한다면 같은 방식으로 버전을 올린 뒤 해당 설치본으로 `update`를 실행하세요. 브라우저 서버도 새 버전으로 다시 열면 됩니다.
+업데이트는 `npx --yes gitifact@<새 버전> update` 한 번입니다. `update`는 에이전트 지침의 GITIFACT 블록, `.gitifact/config.json`의 프로젝트 기준 버전(`cli`), 실행기 `.gitifact/bin/cli.mjs`를 새 버전으로 바꿉니다. 이 파일들을 커밋하면 팀원의 실행기도 다음 실행에서 새 버전을 받습니다. 나중에 하려면 `gitifact update --later`로 그 버전의 안내를 24시간 쉴 수 있습니다. 브라우저 서버도 새 버전으로 다시 열면 됩니다.
 
 > [!IMPORTANT]
 > 0.8.3부터 `.gitifact/config.json`에 `cli`와 `language`를 적습니다. 0.8.2 이하 CLI는 이 설정을 읽지 못하고 `INVALID_CONFIG`로 멈추므로, 팀원 모두 0.8.3 이상으로 올린 뒤 업데이트하세요.
@@ -80,36 +80,25 @@ Gitifact를 업데이트해주세요.
 
 ## 직접 명령 실행하기
 
-Node.js 24.x와 Git이 설치된 환경에서 전역으로 설치하고, 대상 Git 저장소 안에서 실행하세요.
+Node.js 24.x와 Git이 설치된 환경에서, 대상 Git 저장소 안에서 실행하세요.
 
 ```sh
-npm install -g gitifact
-gitifact init
-gitifact browser
+npx --yes gitifact init
+node .gitifact/bin/cli.mjs browser
 ```
 
 `browser`가 출력한 로컬 주소를 열면 됩니다. 서버는 터미널에서 Ctrl+C로 종료합니다.
 
-에이전트는 전역 `gitifact`를 씁니다. 명령이 없으면 `.gitifact/config.json`의 `cli` 버전으로 `npm install -g gitifact@<버전>`을 실행해도 되는지 묻고, 허용하면 직접 설치합니다. 에이전트 도구가 설치를 막으면 그 도구의 승인 방식(승인 창이나 권한 설정)을 안내합니다.
+`init`이 만드는 실행기 `.gitifact/bin/cli.mjs`는 처음 실행할 때 `.gitifact/config.json`의 `cli` 버전을 이 컴퓨터의 사용자 캐시에 한 번 받고, 그다음부터 그 버전으로 실행합니다. 전역 설치가 필요 없고, 프로젝트마다 다른 버전을 써도 서로 영향이 없습니다. 실행기를 커밋하면 저장소를 받은 팀원도 그대로 씁니다. 에이전트도 이 실행기로 명령을 실행합니다. 에이전트 도구가 명령을 막으면 그 도구의 승인 방식(승인 창이나 권한 설정)을 안내합니다.
 
-Windows PowerShell에서 `npm.ps1`을 로드할 수 없다는 오류가 나면 스크립트 실행이 막힌 것입니다. `npm.cmd install -g gitifact`와 `gitifact.cmd`로 실행하세요.
+Windows PowerShell에서 `npx.ps1`을 로드할 수 없다는 오류가 나면 스크립트 실행이 막힌 것입니다. `npx.cmd`로 실행하세요.
 
 > [!NOTE]
-> 설치하지 않고 `npx gitifact@<버전> <명령>`으로도 실행할 수 있습니다. 다만 호출마다 약 1.7초가 더 걸리고 에이전트는 명령을 자주 부르므로 전역 설치를 권장합니다.
-
-### 프로젝트에 설치하기
-
-Node.js 프로젝트에서 팀이 같은 버전을 관리하려면 개발 의존성으로 추가할 수 있습니다. 기존 프로젝트의 패키지 관리자를 사용하세요. npm을 쓴다면:
-
-```sh
-npm install --save-dev --save-exact gitifact@latest
-npx gitifact init
-npx gitifact browser
-```
-
-`package.json`과 잠금 파일에 버전이 기록됩니다. 이후에는 프로젝트 설치본을 사용하도록 에이전트 지침에 적어두세요.
+> 터미널에서 짧게 `gitifact`로 치고 싶다면 `npm install -g gitifact`로 전역 설치해도 됩니다. 전역 설치본과 프로젝트 기준 버전이 다르면 명령 앞에 안내가 나옵니다.
 
 ### 자주 쓰는 명령
+
+아래 표의 `gitifact`는 실행기 `node .gitifact/bin/cli.mjs`(또는 전역 설치본)입니다.
 
 | 명령 | 용도 |
 | :--- | :--- |

@@ -19,7 +19,7 @@ const render = version => renderAgentBlock({ readBlock: blockFor(version) });
 const latest = version => async () => version;
 const configOf = f => JSON.parse(readFileSync(join(f.repo, '.gitifact/config.json'), 'utf8'));
 
-test('init and update text guide both languages to the global install', t => {
+test('init and update text guide both languages to the one-time npx update', t => {
   const f = fixture(t);
   const entry = fileURLToPath(new URL('../dist/main.js', import.meta.url));
   const preload = 'data:text/javascript,' + encodeURIComponent('globalThis.fetch = async () => new Response(JSON.stringify({"dist-tags":{"latest":"9.9.9"}}));');
@@ -28,9 +28,8 @@ test('init and update text guide both languages to the global install', t => {
       cwd: f.repo, env: { ...f.env, GITIFACT_NO_UPDATE_CHECK: '0' }, encoding: 'utf8', timeout: 35000,
     });
     assert.equal(result.status, 0, result.stderr);
-    assert.match(result.stdout, /npm install -g gitifact@9\.9\.9/);
-    assert.match(result.stdout, /gitifact update/);
-    assert.doesNotMatch(result.stdout, /npx|\{command\}/);
+    assert.match(result.stdout, /npx --yes gitifact@9\.9\.9 update/);
+    assert.doesNotMatch(result.stdout, /npm install -g|\{command\}/);
     // init and update report the release they checked themselves; no second notice repeats it.
     assert.doesNotMatch(result.stderr, /9\.9\.9/);
   }
@@ -155,7 +154,7 @@ test('built update command prints the contract and a text form without contactin
   writeFileSync(configPath, JSON.stringify({ ...current, cli: '99.0.0' }, null, 2) + '\n');
   const ahead = cli('update', '--format', 'text').stdout;
   assert.match(ahead, /새 버전 기준이라 지침 블록을 그대로 두었습니다: AGENTS\.md/);
-  assert.match(ahead, /npm install -g gitifact@99\.0\.0/);
+  assert.match(ahead, /node \.gitifact\/bin\/cli\.mjs/);
   // A 0.7 project still gets the new block, and the result says the documents have to be migrated first.
   writeFileSync(configPath, JSON.stringify({ ...current, schemaVersion: 2 }, null, 2) + '\n');
   assert.equal(updateV6.parse(JSON.parse(cli('update').stdout)).migrationRequired, true);

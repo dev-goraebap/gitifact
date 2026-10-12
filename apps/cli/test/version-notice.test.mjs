@@ -41,9 +41,9 @@ test('one notice at most: a project ahead of the CLI, then a newer release, then
   assert.deepEqual(noticeScope('specs'), { release: true, projectOlder: true });
   assert.equal(chooseNotice('0.8.3', '0.8.2', fresh, now, noticeScope('update')), null);
   assert.deepEqual(chooseNotice('0.8.3', '0.8.5', fresh, now, noticeScope('update')), { kind: 'project-newer', project: '0.8.5' });
-  // Each notice names the global install; nothing tells people to use npx.
-  assert.match(noticeText({ kind: 'release', latest: '0.8.4' }, '0.8.3'), /^새 버전 0\.8\.4가 있습니다\(지금 0\.8\.3\)\. 업데이트: npm install -g gitifact@0\.8\.4 후 gitifact update · 나중에: gitifact update --later$/);
-  assert.match(noticeText({ kind: 'project-newer', project: '0.8.4' }, '0.8.3'), /gitifact 0\.8\.4 기준입니다\(실행 중 0\.8\.3\)\. npm install -g gitifact@0\.8\.4로/);
+  // A newer release is taken with one npx update; a project ahead of this CLI points at the project's launcher.
+  assert.match(noticeText({ kind: 'release', latest: '0.8.4' }, '0.8.3'), /^새 버전 0\.8\.4가 있습니다\(지금 0\.8\.3\)\. 업데이트: npx --yes gitifact@0\.8\.4 update · 나중에: gitifact update --later$/);
+  assert.match(noticeText({ kind: 'project-newer', project: '0.8.4' }, '0.8.3'), /gitifact 0\.8\.4 기준입니다\(실행 중 0\.8\.3\)\. 프로젝트의 실행기 node \.gitifact\/bin\/cli\.mjs로/);
   assert.match(noticeText({ kind: 'project-older', project: '0.8.2' }, '0.8.3'), /gitifact update로 프로젝트 기준을/);
 });
 

@@ -24,7 +24,7 @@ export async function runInit(options: InitOptions, version: string) {
       : dto.agentDocs.paths.join(', ') + (dto.agentDocs.mode === 'remove' ? ' (' + t('init.text.blockRemoved') + ')' : dto.outcome === 'planned' ? ' (' + t('init.text.blockPlanned') + ')' : ' (' + t('init.text.blockUpdated') + ')');
     // A project that already had documents may see them as changed once LF applies; one renormalize settles that.
     const lineEndings = dto.lineEndings.created ? t('init.text.lineEndings', { path: dto.lineEndings.path }) + '\n' : '';
-    const newer = dto.install ? t('init.text.updateAvailable', { version: dto.update.latestVersion, command: dto.install.npmGlobal }) + '\n' : '';
+    const newer = dto.install ? t('init.text.updateAvailable', { version: dto.update.latestVersion, command: dto.install.npx }) + '\n' : '';
     process.stdout.write(options.format === 'text'
       ? `${dto.outcome}: ${dto.rootPath}/.gitifact/config.json\n${t('init.text.storage')}: schemaVersion ${dto.schemaVersion}\n${t('init.text.agentDocs')}: ${docs}\n${lineEndings}${newer}`
       : JSON.stringify(dto) + '\n');

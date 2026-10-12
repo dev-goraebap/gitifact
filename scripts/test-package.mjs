@@ -33,7 +33,7 @@ try {
   assert.equal(name, 'gitifact');
   const installedRoot = join(temporaryRoot, 'node_modules', 'gitifact');
   assert.match(await readFile(join(installedRoot, 'LICENSE'), 'utf8'), /MIT License/);
-  assert.match(await readFile(join(installedRoot, 'README.md'), 'utf8'), /npm install -g gitifact\ngitifact init/);
+  assert.match(await readFile(join(installedRoot, 'README.md'), 'utf8'), /npx --yes gitifact init\nnode \.gitifact\/bin\/cli\.mjs browser/);
   assert.match(await readFile(join(installedRoot, 'dist/THIRD_PARTY_NOTICES.txt'), 'utf8'), /Meta Platforms/);
   assert.deepEqual(dependencies, {}, 'The initial bundled CLI must be self-contained.');
   // Publishing a version without its release notes is the mistake this guards against.
@@ -56,6 +56,11 @@ try {
   const packageBefore = await readFile(join(temporaryRoot, 'package.json'));
   const lockBefore = await readFile(join(temporaryRoot, 'pnpm-lock.yaml'));
   const initialized = JSON.parse(npx('init'));
+  // init leaves the launcher agents run Gitifact through; from the packed file it runs this very release.
+  assert.equal(await readFile(join(temporaryRoot, '.gitifact/bin/cli.mjs'), 'utf8'), await readFile(join(workspace, 'apps/cli/src/shared/launcher/cli.mjs'), 'utf8'));
+  const launched = execFileSync(process.execPath, [join(temporaryRoot, '.gitifact/bin/cli.mjs'), '--version'], { cwd: temporaryRoot, encoding: 'utf8', timeout: 60_000,
+    env: { ...noRegistry, GITIFACT_PACKAGE: join(temporaryRoot, archives[0]), GITIFACT_CACHE_DIR: join(temporaryRoot, 'user-cache') } });
+  assert.equal(launched.trim(), version);
   assert.deepEqual(await readFile(join(temporaryRoot, 'package.json')), packageBefore);
   assert.deepEqual(await readFile(join(temporaryRoot, 'pnpm-lock.yaml')), lockBefore);
   assert.deepEqual(JSON.parse(npx('check', '--format', 'json')).problems, []);
@@ -118,7 +123,7 @@ try {
   const config = JSON.parse(await readFile(configPath, 'utf8'));
   assert.deepEqual([config.cli, config.language], [version, 'ko'], 'init must set the project to the installed version.');
   assert.ok(!/gitifact v\d|schemaVersion/.test(agents), 'The block must not name a version.');
-  assert.ok(agents.includes('npm i -g gitifact@<버전>') && !agents.includes('npx'), 'The block must point at a global install of the configured version.');
+  assert.ok(agents.includes('node .gitifact/bin/cli.mjs <명령>') && !agents.includes('npm i -g'), 'The block must point at the project launcher, not a global install.');
   assert.ok(agents.includes('gitifact guide show <topic>') && agents.includes('guide show spec'), 'Block must point at the bundled guides.');
   assert.match(agents, /<!-- GITIFACT:END -->\n$/);
   await writeFile(agentsPath, agents + '\n## Project rules\n\nKeep me.\n');

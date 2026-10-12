@@ -6,6 +6,8 @@
 
 이 저장소의 지침 5개는 `.agents/skills/<이름>/SKILL.md`로 옮겼다. `.claude/skills/`는 Git이 무시하고, `.claude/settings.json`의 세션 시작 훅이 `scripts/sync-claude-skills.mjs`로 `.agents/skills/`를 복사한다. 버전은 아직 올리지 않았고 패치노트는 배포 때 쓴다.
 
+같은 날 전역 설치 대신 프로젝트 실행기를 넣었다(DR-qzop3uw6lj). `init`·`update`가 `.gitifact/bin/cli.mjs`를 쓰고, 실행기는 config의 `cli` 버전을 사용자 캐시(`<캐시>/cli/<버전>/`)에 한 번 받아 실행한다. 레지스트리에서 받을 때 sha512 무결성을 확인하고, `GITIFACT_PACKAGE`로 로컬 패키지를 쓸 수 있다. 업데이트는 `npx --yes gitifact@<새 버전> update`다. 임시 저장소에서 `npx --package=<tgz> gitifact init` → 실행기로 `--version`·`check`까지 확인했다. 캐시의 옛 버전 정리는 아직 없다. Alter 시험용 패키지와 인계 문서는 `.tmp/preview-0.9.0/`에 두었다.
+
 ## 2026-09-28 유즈케이스 방식 요구사항(0.8.6 준비)
 
 0.8.5 뒤의 변경을 0.8.6으로 묶었다. 요구사항 목록 항목의 줄 나눠 보이기(`b5362ce`, DR-6loue3zli5)와 선택하는 유즈케이스 방식 요구사항(`c2dc8ef`, DR-qgjduifysd·DR-4kzcepxucn)이다. 그 전에 이 저장소의 11개 기능 요구사항을 기능마다 사용자 확인을 받아 유즈케이스로 바꿨다(`9c8985d`~`94676e5`, 문서만). browser-feature·commit-change·working-change 계약을 v2로, 캐시 형식을 12로 올렸다. `style` 키가 있는 요구사항은 0.8.5 이하가 `FRONTMATTER_UNKNOWN_KEY`로 막으므로 패치노트에 적었다.

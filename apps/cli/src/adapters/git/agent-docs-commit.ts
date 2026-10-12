@@ -15,6 +15,8 @@ export function agentDocsGit(root: string, inherited: NodeJS.ProcessEnv = proces
     },
     // `--only` commits the working content of these paths and leaves every other staged entry staged. Hooks and signing stay on.
     async commitOnly(paths: string[], message: string) { await git(['commit', '--only', '-m', message, '--', ...paths]); },
+    // A file Git does not know yet (the launcher on its first update) is marked so `--only` can take it.
+    async intendToAdd(paths: string[]) { await git(['add', '--intent-to-add', '--', ...paths]); },
     async changedPaths(commit: string) {
       return (await git(['diff-tree', '--no-commit-id', '--name-only', '--no-renames', '-r', '-z', '--root', commit])).toString('utf8').split('\0').filter(Boolean).sort();
     },
