@@ -23,7 +23,7 @@ style: usecase
 
 1. 에이전트가 `gitifact init`을 실행한다.
 2. 시스템은 AGENTS.md·CLAUDE.md·.cursorrules 같은 지침 파일이 있으면 그 파일에, 없으면 새 AGENTS.md에 블록을 쓴다. 다른 지침 파일을 가져오기만 하는 파일에는 쓰지 않는다.
-3. 블록을 AGENTS.md에 썼는데 Claude용 지침 파일이 없으면, 시스템은 AGENTS.md를 가져오는 루트 CLAUDE.md를 함께 만든다.
+3. 시스템은 CLAUDE.md를 새로 만들지 않는다. Claude Code는 CLAUDE.md가 없으면 AGENTS.md를 읽는다.
 4. 시스템은 프로젝트 설정에 실행 중인 CLI 버전과 블록 언어를 적는다.
 5. 에이전트는 그 블록을 현재 세션에서 읽고 따른다.
 6. 이후 세션의 에이전트는 도구가 자동으로 읽는 지침 파일에서 블록을 읽고, 프로젝트 실행기로 같은 방식으로 기록한다.
@@ -36,9 +36,9 @@ style: usecase
   1. 시스템은 아무 파일도 쓰지 않고 거부한다.
 - **A3. 블록을 제거함** (1단계에서, `--remove-agents`)
   1. 시스템은 마커 사이를 지우고 사용자 내용은 남긴다.
-  2. 그래서 AGENTS.md가 지워지면, `init`이 만든 그대로인 CLAUDE.md도 함께 지운다. 사용자가 내용을 더한 CLAUDE.md는 남긴다.
-- **A4. Claude용 지침 파일이 이미 있음** (3단계에서)
-  1. CLAUDE.md나 .claude/CLAUDE.md가 있으면 새로 만들지 않고 기존 파일을 보존한다.
+  2. 그래서 AGENTS.md가 지워지면, 0.9.0 이전 `init`이 만든 그대로인 CLAUDE.md(`@AGENTS.md` 한 줄)도 함께 지운다. 사용자가 내용을 더한 CLAUDE.md는 남긴다.
+- **A4. Claude용 지침 파일이 이미 있음** (2단계에서)
+  1. CLAUDE.md나 .claude/CLAUDE.md가 있으면 Claude Code가 AGENTS.md 대신 그 파일을 읽으므로, 시스템은 그 파일에도 블록을 쓴다.
 - **A5. 프로젝트에 실행기 파일이 없음** (6단계에서)
   1. 에이전트는 설정에 적힌 버전의 업데이트 명령(`npx --yes gitifact@<버전> update`)을 그대로 보여 주며 실행해도 되는지 묻는다.
   2. 사용자가 "네"처럼 짧게 허용해도 에이전트가 직접 실행해 실행기를 만든다.
@@ -60,8 +60,8 @@ style: usecase
    조건: 사용자가 도입 프롬프트를 전달하고 에이전트가 `gitifact init`을 실행합니다.
    기대 동작: 기존 지침 파일이 있으면 그 파일에, 없으면 새 AGENTS.md에 블록을 쓰고, 가져오기만 하는 파일에는 쓰지 않습니다. 에이전트는 그 블록을 현재 세션에서도 읽습니다.
 2. 경로: 기본 흐름
-   조건: AGENTS.md로 도입한 프로젝트에 Claude Code를 쓰는 팀원이 참여합니다.
-   기대 동작: `init`이 함께 만든 CLAUDE.md를 통해 Claude Code도 AGENTS.md의 블록과 블록 밖 내용을 읽습니다.
+   조건: CLAUDE.md가 없는 프로젝트에서 `gitifact init`을 실행합니다.
+   기대 동작: AGENTS.md에만 블록을 쓰고 CLAUDE.md는 만들지 않습니다.
 3. 경로: 기본 흐름, A1
    조건: CLI를 업데이트한 뒤 `init`을 다시 실행합니다.
    기대 동작: 마커 사이만 바뀌고 사용자가 쓴 내용은 그대로입니다.
@@ -70,10 +70,10 @@ style: usecase
    기대 동작: 아무 파일도 쓰지 않고 거부합니다.
 5. 경로: A3
    조건: `--remove-agents`로 블록을 제거해 AGENTS.md가 삭제됩니다.
-   기대 동작: `init`이 만든 그대로인 CLAUDE.md도 함께 삭제하고, 사용자가 내용을 더한 CLAUDE.md나 AGENTS.md가 남으면 CLAUDE.md를 그대로 둡니다.
+   기대 동작: 0.9.0 이전 `init`이 만든 그대로인 CLAUDE.md도 함께 삭제하고, 사용자가 내용을 더한 CLAUDE.md나 AGENTS.md가 남으면 CLAUDE.md를 그대로 둡니다.
 6. 경로: 기본 흐름, A4
    조건: CLAUDE.md나 .claude/CLAUDE.md가 이미 있습니다.
-   기대 동작: 새로 만들지 않고 기존 파일을 보존합니다.
+   기대 동작: AGENTS.md와 함께 그 파일에도 블록을 쓰고, 마커 바깥 내용은 보존합니다.
 7. 경로: 기본 흐름, A5
    조건: 블록이 있는 프로젝트에 `.gitifact/bin/cli.mjs`가 없습니다.
    기대 동작: 에이전트가 정확한 업데이트 명령을 보여 주며 묻고, 짧은 허용에도 직접 실행합니다. 도구가 막으면 그 도구의 승인을 요청하고, ID 발급·검사·커밋을 대신하거나 완료로 보고하지 않습니다.

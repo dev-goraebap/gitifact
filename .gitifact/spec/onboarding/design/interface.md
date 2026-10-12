@@ -18,9 +18,6 @@ flowchart TD
   O -- 프리셋 --> P[탐색 순서의 첫 파일]
   O -- remove --> R[블록 제거]
   O -- skip --> N[건드리지 않음]
-  D --> W{AGENTS.md 포함}
-  P --> W
-  W -- 예 --> C[CLAUDE.md wrapper]
 ```
 
 | 옵션 | 처리 |
@@ -39,9 +36,9 @@ flowchart TD
 
 보일러플레이트 헤더는 `# <파일 이름>`과 `Project-specific guidance for AI coding agents.` 두 줄이다. 다른 후보만 가져오는 파일에 이전 실행이 펼친 블록이 있으면 설치 때 걷어낸다.
 
-## CLAUDE.md wrapper
+## CLAUDE.md
 
-쓰는 대상에 AGENTS.md가 들어가고 CLAUDE.md와 .claude/CLAUDE.md가 모두 없으면 루트 CLAUDE.md를 `@AGENTS.md` 한 줄로 만든다. 줄바꿈은 AGENTS.md를 따르고, 결과의 `agentDocs.paths`에 CLAUDE.md도 담는다. 이 파일은 wrapper라 이후 init·update가 블록을 넣지 않는다. `claude` 프리셋은 AGENTS.md를 쓰지 않으므로 wrapper도 만들지 않는다.
+CLAUDE.md는 새로 만들지 않는다. Claude Code는 CLAUDE.md가 없으면 AGENTS.md를 읽고, 이미 있는 CLAUDE.md·.claude/CLAUDE.md는 후보 파일이라 블록을 함께 받는다. 0.9.0 이전 init은 CLAUDE.md가 없으면 `@AGENTS.md` 한 줄짜리 wrapper를 만들었다. 그 파일은 다른 후보만 가져오는 파일이라 이후 init·update가 블록을 넣지 않는다.
 
 `--remove-agents`는 AGENTS.md를 삭제할 때 CLAUDE.md의 내용이 앞뒤 공백을 빼고 정확히 `@AGENTS.md`면 함께 삭제한다. AGENTS.md에 사용자 내용이 남거나 사용자가 CLAUDE.md를 고쳤으면 남긴다.
 

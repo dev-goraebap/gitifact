@@ -26,7 +26,8 @@ export const updateV6 = z.discriminatedUnion('ok', [
     // refreshed: blocks whose text differed were rewritten. current: every block already matched. kept: the project is on a
     // release newer than this CLI, so its blocks were left as they are.
     // not-initialized: no .gitifact config here, so only the version check ran. no-block: no file carries a block.
-    // missing: files `gitifact init` would add and update does not create, e.g. CLAUDE.md when only AGENTS.md has the block.
+    // missing: files `gitifact init` would add and update does not create. Always empty since 0.9.0, when init stopped adding
+    // a CLAUDE.md that imports AGENTS.md.
     agentDocs: z.strictObject({ state: z.enum(['refreshed', 'current', 'kept', 'not-initialized', 'no-block']), paths: z.array(z.string()), missing: z.array(z.string()) }),
     // written: .gitifact/config.json now names this release as `cli` and the block language. current: it already did.
     // cli is the project's release afterwards; one newer than cliVersion was kept, since an older CLI does not lower it.

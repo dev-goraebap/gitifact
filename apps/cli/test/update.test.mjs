@@ -139,15 +139,8 @@ test('built update command prints the contract and a text form without contactin
   assert.match(text.stdout, new RegExp('^현재 버전: ' + version.replaceAll('.', '\\.') + '\n'));
   assert.match(text.stdout, /AGENTS\.md/);
   assert.notEqual(cli('update', 'extra').status, 0);
-  // Without the CLAUDE.md init added, update names it and points back to init instead of creating it.
-  assert.equal(readFileSync(join(f.repo, 'CLAUDE.md'), 'utf8'), '@AGENTS.md\n');
-  rmSync(join(f.repo, 'CLAUDE.md'));
-  assert.deepEqual(updateV6.parse(JSON.parse(cli('update').stdout)).agentDocs, { state: 'current', paths: ['AGENTS.md'], missing: ['CLAUDE.md'] });
-  assert.match(cli('update', '--format', 'text').stdout, /CLAUDE\.md 파일이 없어 .*gitifact init을 다시 실행하면/);
+  // Claude Code reads AGENTS.md when no CLAUDE.md exists, so neither init nor update adds one.
   assert.equal(existsSync(join(f.repo, 'CLAUDE.md')), false);
-  assert.equal(cli('init').status, 0);
-  assert.equal(readFileSync(join(f.repo, 'CLAUDE.md'), 'utf8'), '@AGENTS.md\n');
-  assert.deepEqual(updateV6.parse(JSON.parse(cli('update').stdout)).agentDocs.missing, []);
   // A project set to a newer release keeps its blocks, and the text says how to catch up.
   const configPath = join(f.repo, '.gitifact/config.json');
   const current = JSON.parse(readFileSync(configPath, 'utf8'));

@@ -93,9 +93,9 @@ init은 `update`·`update --check`와 같은 레지스트리 확인(`resolveUpda
 | :--- | :--- | :--- |
 | 초기화 | `apps/cli/test/init.test.mjs` | 독립 저장소에서 첫 커밋 전후, SHA-1·SHA-256, 반복·동시 실행, 중단, linked worktree, clone·submodule, 기존 staging 보존, `.gitifact/.gitattributes`의 생성과 기존 파일 보존 |
 | 줄바꿈 | `apps/cli/test/changes-commit.test.mjs` | `core.autocrlf=true` checkout에서 `.gitifact` 문서는 LF, 밖의 코드는 프로젝트 설정대로. 규칙 파일이 없는 옛 프로젝트의 CRLF checkout도 커밋된다 |
-| 블록 | `apps/cli/test/agent-docs.test.mjs` | 블록의 생성·갱신·제거, wrapper 건너뛰기, CLAUDE.md wrapper의 생성·보존·제거 조건, 프리셋별 대상, 잘못된 마커 거부, CRLF 유지 |
+| 블록 | `apps/cli/test/agent-docs.test.mjs` | 블록의 생성·갱신·제거, wrapper 건너뛰기, CLAUDE.md를 만들지 않음, 옛 wrapper의 보존·제거 조건, 프리셋별 대상, 잘못된 마커 거부, CRLF 유지 |
 | 블록 문안 | 같은 파일 | 요청 분류 예시가 workflow 원문에 있는지, 블록이 제목으로 시작해 `---`로 끝나고 일반 줄이 이어 붙지 않는지, 블록에 버전이 없고 실행기로 실행하라고 안내하는지 |
-| 패키지 | `scripts/test-package.mjs` | 설치된 CLI의 init이 설정에 `cli`·`language`를 쓰고 AGENTS.md에 버전 없는 블록을 쓰고 `@AGENTS.md`만 담은 CLAUDE.md를 만들며, 제거 때 사용자 문단을 보존하고, `guide show` 출력이 자산 원본과 같은지 |
+| 패키지 | `scripts/test-package.mjs` | 설치된 CLI의 init이 설정에 `cli`·`language`를 쓰고 AGENTS.md에 버전 없는 블록을 쓰고 CLAUDE.md는 만들지 않으며, 제거 때 사용자 문단을 보존하고, `guide show` 출력이 자산 원본과 같은지 |
 
 ## 미결
 

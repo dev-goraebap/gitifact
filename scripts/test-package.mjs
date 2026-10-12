@@ -115,8 +115,8 @@ try {
   assert.equal(existsSync(join(temporaryRoot, '.gitifact', 'wiki')), false, 'init must not write a wiki.');
   const agentsPath = join(temporaryRoot, 'AGENTS.md');
   const agents = await readFile(agentsPath, 'utf8');
-  assert.deepEqual(initialized.agentDocs, { mode: 'install', paths: ['AGENTS.md', 'CLAUDE.md'] });
-  assert.equal(await readFile(join(temporaryRoot, 'CLAUDE.md'), 'utf8'), '@AGENTS.md\n', 'init must add a CLAUDE.md that imports AGENTS.md.');
+  assert.deepEqual(initialized.agentDocs, { mode: 'install', paths: ['AGENTS.md'] });
+  assert.equal(existsSync(join(temporaryRoot, 'CLAUDE.md')), false, 'init must not add a CLAUDE.md; Claude Code reads AGENTS.md.');
   assert.match(agents, /^# AGENTS\.md\n\nProject-specific guidance for AI coding agents\.\n\n<!-- GITIFACT:START -->\n/);
   // The project's release and block language live in the config; the block names neither.
   const configPath = join(temporaryRoot, '.gitifact', 'config.json');

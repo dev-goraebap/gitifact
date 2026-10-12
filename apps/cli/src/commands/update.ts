@@ -17,7 +17,7 @@ import { LAUNCHER_PATH, refreshLauncher } from '../adapters/filesystem/launcher-
 import { t } from '../shared/i18n/index.js';
 
 export interface UpdateControls extends AgentBlockControls { fetchLatest?: FetchLatestVersion; timeoutMs?: number; commit?: boolean; now?: () => number }
-type AgentDocsState = { state: 'refreshed' | 'current' | 'kept' | 'not-initialized' | 'no-block'; paths: string[]; missing: string[]; root?: string; candidates?: string[] };
+type AgentDocsState = { state: 'refreshed' | 'current' | 'kept' | 'not-initialized' | 'no-block'; paths: string[]; root?: string; candidates?: string[] };
 type ProjectState = { state: 'written' | 'current' | 'not-initialized'; cli: string | null };
 type Commit = Extract<UpdateV6, { ok: true }>['commit'];
 
@@ -26,7 +26,7 @@ const CONFIG_PATH = '.gitifact/config.json';
 export const updateCommitMessage = (version: string) => 'chore(gitifact): update project to gitifact v' + version;
 const commitState = (state: Commit['state'], extra: Partial<Commit> = {}): Commit =>
   ({ state, commit: null, paths: [], message: null, reason: null, detail: null, ...extra });
-const notInitialized = { docs: { state: 'not-initialized', paths: [], missing: [] } as AgentDocsState, project: { state: 'not-initialized', cli: null } as ProjectState };
+const notInitialized = { docs: { state: 'not-initialized', paths: [] } as AgentDocsState, project: { state: 'not-initialized', cli: null } as ProjectState };
 
 // Rewrites only blocks that already exist, reports files init would add, and settles the config on this release and the
 // block language. Outside an initialized project the command still reports versions.
@@ -44,16 +44,15 @@ async function refreshProject(cwd: string, version: string, env: NodeJS.ProcessE
   // A 0.7 project keeps its config as it is; the result points at the migration instead.
   const parsed = needsMigration(config) ? undefined : parseManagedConfig(config);
   const plan = await planAgentDocs(root, { version, onlyExisting: true, language: parsed?.language, ...controls });
-  const { missing } = plan;
   // A project already on a newer release keeps its blocks and config: this CLI's text is the older one.
-  if (parsed?.cli && isNewerRelease(parsed.cli, version)) return { docs: { state: 'kept', paths: plan.paths, missing, root }, project: { state: 'current', cli: parsed.cli } };
+  if (parsed?.cli && isNewerRelease(parsed.cli, version)) return { docs: { state: 'kept', paths: plan.paths, root }, project: { state: 'current', cli: parsed.cli } };
   let current = config;
   const unchanged = async () => {
     if ((await repo.inspect()).stamp !== first.stamp || await readConfigFile(root) !== current) throw new InitError('INPUT_CHANGED', t('init.inputChanged'));
   };
-  const docs: AgentDocsState = plan.paths.length === 0 ? { state: 'no-block', paths: [], missing, root }
-    : plan.writes.length === 0 ? { state: 'current', paths: plan.paths, missing, root, candidates: plan.paths }
-    : { state: 'refreshed', paths: await applyAgentDocs(root, plan, unchanged), missing, root, candidates: plan.paths };
+  const docs: AgentDocsState = plan.paths.length === 0 ? { state: 'no-block', paths: [], root }
+    : plan.writes.length === 0 ? { state: 'current', paths: plan.paths, root, candidates: plan.paths }
+    : { state: 'refreshed', paths: await applyAgentDocs(root, plan, unchanged), root, candidates: plan.paths };
   if (!parsed) return { docs, project: { state: 'current', cli: null } };
   const settled = settleConfig(parsed, version, plan.language);
   if (settled.changed) {
@@ -136,7 +135,8 @@ export async function updateCommand(cwd: string, version: string, env: NodeJS.Pr
   const config = await readConfigFile(docs.root ?? cwd).catch(() => undefined);
   return updateV6.parse({ contract: 'update', version: 6, ok: true, cliVersion: version, update,
     install: update.status === 'available' ? { npmGlobal: npmGlobalInstall(update.latestVersion!) } : null,
-    agentDocs: { state: docs.state, paths: docs.paths, missing: docs.missing }, project, commit,
+    // missing stays in the v6 result but is always empty since 0.9.0: init no longer adds a CLAUDE.md.
+    agentDocs: { state: docs.state, paths: docs.paths, missing: [] }, project, commit,
     migrationRequired: config !== undefined && needsMigration(config) });
 }
 export async function runUpdate(options: { format?: 'json' | 'text'; commit?: boolean }, version: string) {
@@ -153,7 +153,6 @@ export async function runUpdate(options: { format?: 'json' | 'text'; commit?: bo
       : dto.agentDocs.state === 'current' ? t('update.text.blockCurrent', { paths: dto.agentDocs.paths.join(', ') })
       : dto.agentDocs.state === 'kept' ? t('update.text.blockKept', { paths: dto.agentDocs.paths.join(', ') || '-' })
       : dto.agentDocs.state === 'no-block' ? t('update.text.noBlock') : t('update.text.notInitialized'));
-    if (dto.agentDocs.missing.length) lines.push(t('update.text.missing', { paths: dto.agentDocs.missing.join(', ') }));
     if (dto.project.state === 'written') lines.push(t('update.text.projectWritten', { path: CONFIG_PATH, version: dto.project.cli ?? dto.cliVersion }));
     if (dto.project.cli && isNewerRelease(dto.project.cli, dto.cliVersion)) lines.push(t('update.text.projectAhead', { project: dto.project.cli, version: dto.cliVersion }));
     if (dto.migrationRequired) lines.push(t('update.text.migrationRequired', { version: dto.cliVersion }));

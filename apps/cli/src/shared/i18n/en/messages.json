@@ -134,7 +134,6 @@
   "update.text.blockCurrent": "Instruction blocks are already current: {paths}",
   "update.text.noBlock": "No instruction files contain a GITIFACT block. Run gitifact init to install one.",
   "update.text.notInitialized": "Only the version was checked because this project is not initialized.",
-  "update.text.missing": "{paths} is missing, so Claude Code cannot load the AGENTS.md instructions. Rerun gitifact init to create the import file.",
   "update.text.migrationRequired": "This project's documents still use the 0.7 storage convention (schemaVersion 2). The blocks describe the new commands, but the specs, records, check and changes commands refuse to run until the documents are moved. Follow npx --yes gitifact@{version} guide show migrate to move them.",
   "update.text.committed": "Instruction blocks committed: {commit} ({paths})",
   "update.text.commitNothing": "No instruction block changes to commit.",

@@ -16,7 +16,7 @@ test('spec init dry-run, repeat and agent docs block preserve existing work and 
   const f = fixture(t); f.write('work', 'user work'); f.git(['add', 'work']);
   const before = fingerprint(f.repo);
   const planned = call(f, ['init', '--dry-run']);
-  assert.deepEqual([planned.outcome, planned.agentDocs], ['planned', { mode: 'install', paths: ['AGENTS.md', 'CLAUDE.md'] }]); assert.deepEqual(fingerprint(f.repo), before);
+  assert.deepEqual([planned.outcome, planned.agentDocs], ['planned', { mode: 'install', paths: ['AGENTS.md'] }]); assert.deepEqual(fingerprint(f.repo), before);
   assert.equal(call(f, ['init']).schemaVersion, 3);
   const config = readFileSync(join(f.repo, '.gitifact/config.json'), 'utf8');
   assert.equal(JSON.parse(config).mode, undefined);
@@ -28,7 +28,9 @@ test('spec init dry-run, repeat and agent docs block preserve existing work and 
   assert.equal(call(f, ['init']).outcome, 'already-initialized'); assert.equal(readFileSync(join(f.repo, '.gitifact/config.json'), 'utf8'), config);
   assert.equal(readFileSync(join(f.repo, 'AGENTS.md'), 'utf8'), agents);
   assert.equal(f.git(['diff', '--cached', '--name-only']).stdout.trim(), 'work');
-  assert.equal(readFileSync(join(f.repo, 'CLAUDE.md'), 'utf8'), '@AGENTS.md\n');
+  assert.equal(existsSync(join(f.repo, 'CLAUDE.md')), false);
+  // A project from before 0.9.0 has the CLAUDE.md init wrote then; removal takes it with AGENTS.md.
+  f.write('CLAUDE.md', '@AGENTS.md\n');
   assert.deepEqual(call(f, ['init', '--remove-agents']).agentDocs, { mode: 'remove', paths: ['AGENTS.md', 'CLAUDE.md'] });
   assert.equal(existsSync(join(f.repo, 'CLAUDE.md')), false);
   assert.equal(existsSync(join(f.repo, 'AGENTS.md')), false);

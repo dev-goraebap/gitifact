@@ -118,7 +118,7 @@ sequenceDiagram
 
 `project.state`는 설정을 썼으면 `written`, 이미 같으면 `current`, 설정이 없으면 `not-initialized`이고 `project.cli`는 실행 뒤의 기준 버전이다. 사전 릴리스 빌드처럼 버전이 x.y.z가 아니면 `cli`를 바꾸지 않는다.
 
-블록이 AGENTS.md에 있고 CLAUDE.md와 .claude/CLAUDE.md가 없으면 `agentDocs.missing`에 CLAUDE.md를 담고, 텍스트 출력은 `init` 재실행을 안내한다. 이미 도입한 프로젝트가 CLAUDE.md wrapper를 얻는 경로는 `init` 재실행 하나다.
+`agentDocs.missing`은 update-v6 계약에 남아 있지만 0.9.0부터 늘 비어 있다. init이 CLAUDE.md를 만들지 않게 되면서 update가 빠졌다고 알릴 파일이 없어졌다.
 
 설정이 0.7 저장 규약(schemaVersion 2)이면 블록은 그대로 갱신하고 설정은 바꾸지 않으며 `migrationRequired: true`를 담는다(core `needsMigration`). 텍스트 출력은 `guide show migrate`로 전환하라고 안내한다.
 
