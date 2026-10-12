@@ -35,7 +35,7 @@ test('guides and release notes follow the display language', async ({ page }) =>
   await page.goto('/getting-started');
   await expect(page.getByRole('heading', { name: 'Install and set up' })).toBeVisible();
   await page.getByRole('link', { name: 'About', exact: true }).click();
-  await expect(page.getByText('Why I built it', { exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: "Can't I just search git log?" })).toBeVisible();
   await page.getByRole('link', { name: 'Release notes', exact: true }).first().click();
   await expect(page.getByText('English release note', { exact: true })).toBeVisible();
   await page.getByRole('link', { name: 'Settings', exact: true }).click();

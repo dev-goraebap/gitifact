@@ -4,13 +4,36 @@
 
 [한국어](https://github.com/dev-goraebap/gitifact/blob/main/README.ko.md)
 
-Gitifact keeps the requirements, designs, and reasons for changes that emerge from conversations with AI agents alongside code in a Git repository. It quietly helps maintain those records as you develop, without asking you to adopt a separate documentation process.
+Gitifact is an open-source CLI that keeps the requirements, designs, and reasons for changes that come out of conversations with AI agents in the same repository as your source code, in the same commits.
 
-Agents can use requirements, designs, and past decisions as context for their work. Users can explore those documents and their history in the browser viewer built into the CLI. How work is done in the project, such as development rules, is not kept by Gitifact; leave it in AGENTS.md or your agent's skills as you already do.
+As you keep building with your agent the way you already do, it helps the context of "what this product does right now" and "why this code changed" stay in Git alongside the code.
 
-## Quick start
+## Can't I just search git log?
 
-Give this prompt to the agent you use in your project:
+You can have your agent read git log and diffs. But as you keep building a product with an agent, some questions are hard to answer from the change history alone.
+
+- **What exactly does this product do right now?**
+  Code shows what it does now, but not which behavior is a rule to keep and which just happened to turn out that way. Looking for that intent in git log rarely works, because commit messages seldom record the reason.
+  Gitifact keeps the behavior the product must guarantee as requirements, so the agent reads what it has to keep before changing the code. Features that need technical structure also get design documents, so the agent can check the implementation context.
+
+- **Why was this decided, and what was ruled out?**
+  Commit messages usually record only what was done. "We tried B instead of A and dropped it because of this problem" rarely makes it into a commit message. A new agent session that doesn't know the earlier conversation may propose an option that was already considered and dropped.
+  A Gitifact decision record keeps the context that called for the decision and what was chosen, along with the alternatives that were considered and why they were dropped. The agent checks the related decisions before changing the code, which cuts down on proposing options that were already ruled out.
+
+- **What happens to the history when files move or split?**
+  Git tracks changes by file path and line. When a refactor splits code into several files or moves a folder, the per-file diff breaks and the earlier context becomes hard to follow.
+  Gitifact gives each requirement and design a unique ID and links documents and decisions with Git trailers at commit time. Even when a file is renamed or moved to another folder, the decisions a document went through stay queryable by its ID.
+
+- **Do I have to update the documents for every trial and error?**
+  Revising documents at every step of a conversation where you try things quickly and roll them back breaks the flow of development. During the conversation, the agent refines a draft of the requirements while it changes the code.
+  When the work is done and not yet committed, the agent offers to commit. It also offers to commit before moving on to the next task, so the decisions and changes of two tasks don't get mixed. It commits only when you allow it or the project has a policy for it (pushing is a separate request), and at that point it puts the settled documents, decision records, code, and tests into one commit.
+
+- **If it's just a rule, won't records get skipped eventually?**
+  A resolution to "always update the docs" is easy to forget in the middle of busy development. Gitifact checks the documents with its CLI. If an existing document changed without a decision record explaining it, a draft is left, or a reference is broken, it says so before the commit, which helps keep records from going missing.
+
+## Getting started
+
+In a project you're starting or one already underway, give this prompt to the agent you use:
 
 ```text
 Run npx --yes gitifact init in this project.
@@ -18,58 +41,46 @@ If the command is blocked, don't hand it to me: show me the exact command and as
 Read the GITIFACT block that init adds to AGENTS.md or the relevant agent instructions file, and follow it from this session onward.
 ```
 
-Once setup is complete, keep working as usual: describe the feature you want to build or the behavior you want to change. Ask “Open the Gitifact browser” to see the documents and change history.
+From then on, describe the feature you want to build or the behavior you want to change, as usual.
+
+- Before writing code, the agent checks the related requirements and designs, and writes a draft first when needed.
+- It asks only about unclear product behavior and decides the rest itself.
+- When it changes an existing requirement or picks one of several options, it writes a decision record.
+- When the work is done without a commit, or before moving on to the next task, the agent offers to commit. Once you approve (or under the project's policy), it puts the documents, decision records, code, and tests into one commit. (Pushing is a separate request.)
+- To see the recorded documents and decision history, ask "Open the Gitifact browser."
 
 When a newer version is out, gitifact commands say so and your agent asks whether to update. To run commands yourself, see the [CLI guide](https://github.com/dev-goraebap/gitifact/blob/main/apps/cli/README.md).
 
-## Why I built it
+## How it fits together
 
-While developing with agents, I found it helpful to keep track of what I wanted to build and why I made particular changes.
+The source of the records is the Markdown documents and commit history in your Git repository.
 
-At work, most of my projects involved maintaining a substantial set of project documents. In personal projects, I used only what an agent needed to develop the product, such as a short PRD or a design document. The gap between those two settings left me thinking about how to manage requirements and documentation. Even where the basic document formats were similar, teams and individuals wrote and maintained them differently.
+```mermaid
+flowchart LR
+  A["AGENTS.md<br/>instruction block"] -->|which command, when| G["Agent"]
+  G -->|through the launcher| C["Gitifact CLI"]
+  C -->|write · check| D["Markdown documents<br/>requirements · designs · decision records"]
+  C -->|commit| K["Git commit<br/>documents · records · code"]
+  K --> B["Browser viewer<br/>read-only"]
+```
 
-I was unsure whether those established documentation practices would fit development with agents. I also did not feel ready to define a new approach and present it as the answer. Gitifact therefore draws on well-known spec-driven development tools, organizing requirements and designs together by feature.
-
-I wanted Gitifact to **stay in the background**: to help keep records within the flow of a project, without putting a methodology or process first.
-
-If you want to manage requirements closely, you can refine them through conversations with your agent. If you would rather focus on building the product, that should work too. The aim is to have the requirements ready when you eventually ask, “What does this product actually do now?”
-
-## Tracking requirements in Git
-
-Git tracks changes to files and lines. Requirements describe product behavior and rules, so their identity does not always follow file boundaries.
-
-When a document is reorganized, a heading changes, or a section moves to another file, a diff can show it as a deletion and an addition. An agent then has to infer where the requirement went from the conversation and the diff. I wanted code to preserve that continuity instead of relying on the agent to reconstruct it each time.
-
-Gitifact pairs **requirements** with **designs** for each feature. Each requirement is its own file, and a design is split into files by concern. Every document carries an ID issued by the CLI, so it is tracked as the same document when its title changes or its file moves to another feature.
-
-- **Requirements (`requirements/`)** describe the behavior and rules the product should provide, in a form people can read and review.
-- **Designs (`design/`)** give agents the technical context needed to implement a feature. They cover details and processing flows that do not belong in a project-wide architecture decision record, along with the other designs and external documents that informed it.
+- **AGENTS.md (instruction block):** `init` writes a block into your agent instruction file. It says only which command to use when; the agent reads the detailed formats from the built-in guides (`gitifact guide show`) when it needs them.
+- **Launcher and CLI:** A launcher file in the repository fetches the CLI version the project is set to into your user cache and runs it. Each project uses its own version without a global installation.
+- **Documents:**
+  - **Requirements and designs:** The behavior and acceptance criteria the product must keep, and its technical structure, kept as Markdown documents.
+  - **Decision records:** Records of why a document changed: the context, the decision, and the alternatives considered.
+- **Commits and trailers:** The CLI puts the changed documents, decision records, and code into one commit and links the commit to the documents with Git trailers.
+- **Built-in browser viewer:** A local web app opened with `gitifact browser`. It reads the files and history of your local Git repository and shows the specifications by feature, the flow of decision records, and contributors, read-only.
 
 ![Feature requirements grouped by feature in the Fieldnotes demo project](https://raw.githubusercontent.com/dev-goraebap/gitifact/main/packages/intro/assets/screenshots/feature-requirements.jpg)
 
-## Recording changes at commit time
-
-Not every small request in a conversation needs a requirements revision.
-
-I often develop by looking at a screen, asking for a change, trying it, and adjusting it again. Recording every intermediate attempt as a requirements change made it harder to see which behavior I ultimately wanted.
-
-With Gitifact, the agent prepares a requirements draft and refines it as the conversation develops. **At commit time, it records the final requirements changes and their decision records together with the code.**
-
-You do not need to write a separate explanation or remember recording commands. When an existing requirement changes or one of several options is chosen, the agent turns the conversation into a decision record: a title and a few short sections (context and decision, plus alternatives considered when there were any). Records gather by document, so you can later read in order why a document looks the way it does. When the intended behavior is unclear, it asks for clarification.
-
 ![Requirement and design changes under the decision records that explain them](https://raw.githubusercontent.com/dev-goraebap/gitifact/main/packages/intro/assets/screenshots/activity.jpg)
 
-## Adopt it gradually
+## Principles and scope
 
-In an existing project, you can start recording from the point of adoption. Document the areas you maintain or extend as you work on them; there is no need to reconstruct the project's entire history first.
-
-You can also ask your agent to review the existing code and documents and prepare an initial set of requirements and designs. Refine that draft as actual changes reveal what needs more detail.
-
-For a new project, start with a conversation about the idea. As you describe the product, the agent can organize requirements and designs and ask about unclear behavior.
-
-## Scope
-
-Gitifact is designed for a product developed **within one Git repository**, whether a single project or a monorepo. Managing relationships across repositories would add complexity to both the tool and its use, so that is outside its scope.
+- **Markdown and Git history are the source:** Every record is a plain Markdown file and a standard Git commit. If you stop using Gitifact, the requirements and decision records you wrote stay in your repository's Git history as they are.
+- **Adopt it gradually:** There's no need to go back and document past history; start recording from the features you add or change next.
+- **One Git repository:** Gitifact assumes product development and its records live within one Git repository (a single project or a monorepo).
 
 ## Project status
 
