@@ -483,6 +483,14 @@ main을 02f2e86까지 푸시하고, 릴리스 커밋 02f2e86에 주석 태그 v0
 
 ## 0.9.0 배포 준비
 
-2026-10-12, 0.8.6 뒤의 변경을 0.9.0으로 준비했다. 프로젝트 지침 기능 제거(`590b992`·`5f020f6`, DR-r4q7qxngiw: `instructions` 명령·가이드·브라우저 화면과 API 제거, 남은 지침은 `INSTRUCTION_MOVED`와 `guide show migrate` 8절), 프로젝트 실행기 `.gitifact/bin/cli.mjs`(`2c29bdf`, DR-qzop3uw6lj), `init`의 CLAUDE.md 생성 중단(DR-othc5l4nip), 커밋 메시지 트레일러 검사 축소(DR-pt6laqthwe), `--docs`·`--fields`의 공백 구분이다. browser-checkout을 v2, browser-search를 v4로, 캐시 형식을 13으로 올렸다. `apps/cli/package.json`을 0.9.0으로 올리고 두 언어 패치노트를 썼다. config의 `cli`는 아직 0.8.6이며 배포 때 `pnpm cli init`으로 올린다.
+2026-10-12, 0.8.6 뒤의 변경을 0.9.0으로 준비했다. 프로젝트 지침 기능 제거(`590b992`·`5f020f6`, DR-r4q7qxngiw: `instructions` 명령·가이드·브라우저 화면과 API 제거, 남은 지침은 `INSTRUCTION_MOVED`와 `guide show migrate` 8절), 프로젝트 실행기 `.gitifact/bin/cli.mjs`(`2c29bdf`, DR-qzop3uw6lj), `init`의 CLAUDE.md 생성 중단(DR-othc5l4nip), 커밋 메시지 트레일러 검사 축소(DR-pt6laqthwe), `--docs`·`--fields`의 공백 구분이다. browser-checkout을 v2, browser-search를 v4로, 캐시 형식을 13으로 올렸다. `apps/cli/package.json`을 0.9.0으로 올리고 두 언어 패치노트를 썼다. 이 저장소는 `pnpm cli init`으로 config의 `cli`를 0.9.0에 맞췄다(`e5b7de8`). 랜딩페이지도 새 소개에 맞췄다(`839802b`).
 
-작업 트리(커밋 전)에서 `pnpm check`가 통과했다(계약 10, core 43, 소개 2, 브라우저 106, CLI 174, 패키지 오프라인 설치·실행). `pnpm cli check`는 문제 없음(문서 86개, `DESIGN_OVERVIEW_LARGE` 경고 2개)이다. 릴리스 커밋, 별도 worktree 검사, 모의 게시는 아직 하지 않았다.
+작업 트리(커밋 전)에서 `pnpm check`가 통과했다(계약 10, core 43, 소개 2, 브라우저 106, CLI 174, 패키지 오프라인 설치·실행). `pnpm cli check`는 문제 없음(문서 86개, `DESIGN_OVERVIEW_LARGE` 경고 2개)이다. `main`을 839802b로 앞당긴 뒤 그 커밋의 worktree(`C:	mp\gitifact-090`)에서 `pnpm check`가 한 번에 통과했다(계약 10, core 43, 소개 2, CLI 174, 브라우저 106, 패키지 오프라인 설치·실행). 모의 게시는 204개 파일, 압축 4.3MB, integrity sha512-HBAZbDZoc3ln79PGz6iyVGtdq4/jwHYswYhM9kI4YR7KVjAv380glOmkpE5+4bLrnqAPSzaEGwIpDUZf/0ntnA==, shasum 2b7444a509cb2479b0d2b8f6c019491eac1bcf89이다. CLI 번들 SHA-256은 babcb8b9d3b794fdacb52a129dc048ea515c35b9b15b58f470157a2adebdde70이다.
+
+## 0.9.0 게시 결과
+
+2026-10-12, 사용자가 839802b의 worktree에서 `pnpm publish --access public --tag latest --no-git-checks`로 게시했다. latest가 0.9.0이고, integrity·shasum·파일 수(204)가 모의 게시와 같다. 0.8.x와 달리 package.json도 다르지 않았다.
+
+새 임시 폴더에 레지스트리의 0.9.0을 설치해 version을 확인했고, 설치된 CLI의 SHA-256이 검증 빌드와 같다. 새 임시 저장소에서 `npx --yes gitifact@0.9.0 init`이 실행기를 쓰고 CLAUDE.md를 만들지 않았으며, 빈 캐시 폴더(`GITIFACT_CACHE_DIR`)로 실행기가 레지스트리에서 0.9.0을 받아 `--version`과 `check`를 실행했다. 사용자 프로젝트와 전역 설치는 바꾸지 않았다.
+
+게시한 커밋 839802b에 주석 태그 v0.9.0을 만들었다. 이 게시 결과를 남기는 후속 문서 커밋으로 태그를 옮기지 않는다.
