@@ -1,3 +1,9 @@
+## 0.9.1 - 2026-10-20
+### Changed
+- The screenshots on the browser's About page show the 0.9.0 browser.
+### Fixed
+- `changes commit` no longer counts code and test paths toward its 128-path limit. A commit takes up to 5,000 paths, of which up to 128 may be under `.gitifact/` (documents, records and assets; 5,000 with `migration: true`), so a decision whose implementation touches many files fits in one commit. Past the limit, the refusal names the `.gitifact/` path count and the limit.
+
 ## 0.9.0 - 2026-10-12
 ### Added
 - A project launcher, `.gitifact/bin/cli.mjs`. `init` and `update` write it, and agents run `node .gitifact/bin/cli.mjs <command>` without a global install. On first run the launcher fetches the `cli` version in `.gitifact/config.json` once into the user cache (sha512 integrity checked) and runs that version, so projects on different versions do not affect each other. A global install is optional.
