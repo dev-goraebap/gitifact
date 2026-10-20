@@ -498,3 +498,11 @@ main을 02f2e86까지 푸시하고, 릴리스 커밋 02f2e86에 주석 태그 v0
 ## 0.9.1 배포 준비
 
 2026-10-20, 0.9.0 뒤의 변경을 0.9.1로 준비했다. `changes commit`의 경로 한도를 `.gitifact/` 경로에만 적용한다(DR-if4izudwci). 0.9.0 사용자들이 코드 파일이 128개를 넘는 결정을 여러 커밋으로 나눠야 했던 문제다. 브라우저 소개 화면의 스크린샷도 0.9.0 화면으로 바뀐다(e66d6d5). 계약과 캐시 형식은 바꾸지 않았다. `apps/cli/package.json`을 0.9.1로 올리고 두 언어 패치노트를 썼으며, 이 저장소는 `pnpm cli init`으로 config의 `cli`를 0.9.1에 맞췄다.
+
+릴리스 커밋 feeac12의 worktree(`C:\tmp\gitifact-091`)에서 CLI 175, 계약 10, core 43, 소개 2와 패키지 오프라인 설치·실행이 통과했다. 이 컴퓨터의 Playwright 브라우저(chromium 1243)가 지워져 있어 브라우저 테스트는 실행하지 못했고, 사용자가 이번 배포에서 브라우저 테스트를 생략하기로 했다. 모의 게시는 204개 파일, 압축 4.3MB, shasum d5fc1fd0844b816e84feb5a95cc1644f7829b41f이다. CLI 번들 SHA-256은 16e19316b4ad1d0be6d39b84746c463959df581b78ce3f6db743ded641d366fb이다.
+
+## 0.9.1 게시 결과
+
+2026-10-20, 사용자가 feeac12의 worktree에서 `pnpm publish --access public --tag latest --no-git-checks`로 게시했다. 레지스트리에 반영되기까지 약 4분이 걸렸다. latest가 0.9.1이고 파일 수는 204개다. integrity는 sha512-5f/yBo2o5Gxad6zSsumXbLnV9H5EFQt6c/qbI9GDshgYAVoNMyGItYGg2c38hBH6l69BdrIgMYlxonR4yrO32Q==, shasum e338cf84605037a1b1b0900d2263d40f7cfce978로 모의 실행과 다르다. 새 임시 폴더에 레지스트리의 0.9.1을 설치해 version을 확인했고, 설치된 CLI의 SHA-256이 검증 빌드와 같다.
+
+게시한 커밋 feeac12에 주석 태그 v0.9.1을 만들었다.
