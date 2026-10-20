@@ -325,6 +325,24 @@ test('a migration commit takes a whole project past the 128-path limit of other 
   assert.equal(f.commit(request({ paths: Array.from({ length: 5001 }, (_, i) => `f${i}.js`), migration: true })).status, 1);
 });
 
+test('code paths do not count toward the 128 paths a commit takes under .gitifact', t => {
+  const f = setup(t);
+  // One decision whose implementation touches many files is one commit.
+  const code = Array.from({ length: 300 }, (_, i) => `src/part ${String(i).padStart(3, '0')}.js`);
+  mkdirSync(join(f.repo, 'src'), { recursive: true });
+  for (const p of code) writeFileSync(join(f.repo, p), 'export {}\n');
+  const result = f.done(f.commit(request({ paths: [...docPaths, ...codePaths, ...code] })));
+  assert.equal(result.paths.length, docPaths.length + codePaths.length + 300);
+  assert.ok(!result.trailers.some(line => line.startsWith('Gitifact-Migration')));
+  // The refusal names the count and the limit, and says code is not counted.
+  const many = Array.from({ length: 129 }, (_, i) => `.gitifact/assets/a${i}.png`);
+  mkdirSync(join(f.repo, '.gitifact/assets'), { recursive: true });
+  for (const p of many) writeFileSync(join(f.repo, p), 'png');
+  const refused = f.commit(request({ paths: many }));
+  assert.equal(refused.status, 1);
+  assert.match(JSON.parse(refused.stderr).error.message, /129.*128/);
+});
+
 
 test('the attributes file init writes keeps documents LF in a CRLF checkout, so Git and the files read the same', t => {
   const f = setup(t);

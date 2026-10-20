@@ -103,7 +103,7 @@ Write JSON to the input path that `gitifact changes list` reports and run `gitif
 }
 ```
 
-- A migration commit takes up to 5,000 paths (128 for other commits). Beyond 5,000, split it into several commits and give every one `migration: true` so all of them stay out of the history.
+- A migration commit takes up to 5,000 paths under `.gitifact/` (128 for other commits). Beyond 5,000, split it into several commits and give every one `migration: true` so all of them stay out of the history.
 - `migration: true` adds the `Gitifact-Migration: 0.8.0` trailer. That commit becomes the history boundary: activity before it stays visible in the viewer, and the commit itself does not appear as activity.
 - Add no records; the 0.7 reasons are read from the 0.7 commits.
 - The deleted old files must be in `paths`; without them the CLI refuses the commit.
@@ -132,6 +132,6 @@ From 0.9.0 Gitifact does not keep how work is done in the project (instructions)
 3. Change the frontmatter to that agent's skill format. In the Agent Skills format, keep `name: <folder name>` and `description`, and remove `id` and `title`. Fix links in the body that break at the new location.
 4. The instruction index outside the block of AGENTS.md: delete it when the instructions became skills, since agents see the skill descriptions themselves; point it at the new place when they were merged into AGENTS.md.
 5. Remove the `- id: I-…` items from design `sources`. A moved instruction is not a Gitifact document, so an ID cannot name it (`MISSING_REFERENCE`). To keep the reference, write the skill's path in the design body.
-6. Make sure `gitifact check` reports no problems. Write one record of the move, with the I- of the removed instructions and the designs whose `sources` changed in `docs` (`gitifact guide show records`). Commit the deleted instruction files, the new skill files, the changed designs and AGENTS.md and the record together (`gitifact guide show commit`). A commit takes up to 128 paths; split it beyond that.
+6. Make sure `gitifact check` reports no problems. Write one record of the move, with the I- of the removed instructions and the designs whose `sources` changed in `docs` (`gitifact guide show records`). Commit the deleted instruction files, the new skill files, the changed designs and AGENTS.md and the record together (`gitifact guide show commit`). A commit takes up to 128 paths under `.gitifact/`; split it beyond that (skill files and other paths outside `.gitifact/` do not count).
 
 The old instructions (I-) stay in the commits before 0.9.0 and are read in the history (`records list --doc`, the browser). Read a commit's text with `gitifact specs show <I-ID> --ref <commit>`.

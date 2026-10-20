@@ -103,7 +103,7 @@ description: schemaVersion 2 프로젝트를 0.8.0 문서 형식으로 옮기는
 }
 ```
 
-- 전환 커밋은 경로를 5,000개까지 받는다(일반 커밋은 128개). 5,000개를 넘으면 여러 커밋으로 나누고, 모든 커밋에 `migration: true`를 넣어 이력에서 숨긴다.
+- 전환 커밋은 `.gitifact/` 아래 경로를 5,000개까지 받는다(일반 커밋은 128개). 5,000개를 넘으면 여러 커밋으로 나누고, 모든 커밋에 `migration: true`를 넣어 이력에서 숨긴다.
 - `migration: true`가 있어야 `Gitifact-Migration: 0.8.0` 트레일러가 붙는다. 이 커밋이 이력의 경계가 되어, 그 이전 활동은 뷰어에서 그대로 보이고 이 커밋은 활동에 나오지 않는다.
 - 결정기록은 넣지 않는다. 0.7 이유는 0.7 커밋에서 읽힌다.
 - 지운 옛 파일도 `paths`에 넣어야 한다. 빠지면 CLI가 거부한다.
@@ -132,6 +132,6 @@ description: schemaVersion 2 프로젝트를 0.8.0 문서 형식으로 옮기는
 3. 프론트매터를 그 에이전트의 스킬 형식으로 바꾼다. Agent Skills 형식이면 `name: <폴더 이름>`과 `description`을 남기고 `id`·`title`은 지운다. 본문 안 링크가 새 위치에서 깨지면 고친다.
 4. AGENTS.md의 블록 밖에 있던 지침 색인은, 스킬로 옮겼으면 에이전트가 스킬 설명을 직접 보므로 지운다. AGENTS.md에 합쳤으면 그 위치를 가리키게 고친다.
 5. 설계의 `sources`에서 `- id: I-…` 항목을 지운다. 옮긴 지침은 Gitifact 문서가 아니므로 ID로 가리킬 수 없다(`MISSING_REFERENCE`). 근거를 남겨야 하면 설계 본문에 그 스킬의 경로를 적는다.
-6. `gitifact check`로 문제가 없는지 확인한다. 옮긴 사실을 결정기록 하나로 남긴다. `docs`에는 지운 지침의 I-와 `sources`를 고친 설계를 적는다(`gitifact guide show records`). 지운 지침 파일, 새 스킬 파일, 고친 설계와 AGENTS.md, 결정기록을 함께 커밋한다(`gitifact guide show commit`). 한 커밋은 경로 128개까지이므로 넘으면 나눈다.
+6. `gitifact check`로 문제가 없는지 확인한다. 옮긴 사실을 결정기록 하나로 남긴다. `docs`에는 지운 지침의 I-와 `sources`를 고친 설계를 적는다(`gitifact guide show records`). 지운 지침 파일, 새 스킬 파일, 고친 설계와 AGENTS.md, 결정기록을 함께 커밋한다(`gitifact guide show commit`). 한 커밋은 `.gitifact/` 아래 경로를 128개까지 받으므로 넘으면 나눈다(스킬 파일 등 `.gitifact/` 밖 경로는 세지 않는다).
 
 옛 지침(I-)은 0.9.0 이전 커밋에 남아 이력(`records list --doc`, 브라우저)에서 읽힌다. 그 커밋의 원문은 `gitifact specs show <I-ID> --ref <커밋>`으로 본다.

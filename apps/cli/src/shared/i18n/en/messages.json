@@ -200,6 +200,7 @@
   "changes.committed": "Committed {commit} {message}",
   "changes.dryRun": "Preview: no files were written and nothing was committed.",
   "changes.summary": "{paths} file(s), {changes} changed document(s), {records} record(s)",
+  "commit.tooManyStorePaths": "This commit has {count} paths under .gitifact. One commit takes up to {limit} documents, records and assets; split the commits by decision (code paths do not count toward this limit).",
   "commit.migrationFlag": "migration must be true or absent.",
   "commit.checkFailed": "The document check found {count} problems; nothing was committed.",
   "commit.unknownDocument": "A record names documents that do not exist: {ids}",

@@ -19,8 +19,9 @@ const fields = ['paths', 'message', 'authorization', 'migration'];
 const integration = ['MERGE_HEAD', 'CHERRY_PICK_HEAD', 'REVERT_HEAD', 'rebase-merge', 'rebase-apply'];
 /** The format version a migration commit moves to; `changes commit` puts it in the migration trailer. */
 const MIGRATION_TARGET = '0.8.0';
-/** How many paths one commit takes; a migration moves a whole project in one commit, so it takes more. */
-const PATH_LIMIT = 128; const MIGRATION_PATH_LIMIT = 5000;
+/** How many paths one commit takes. Code is not limited by decision, so only the paths under `.gitifact/` keep the
+ * smaller bound that catches a selection made too wide; a migration moves a whole project in one commit, so it takes more. */
+const PATH_LIMIT = 5000; const STORE_PATH_LIMIT = 128;
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 const problemLines = (problems: DocProblem[]) => problems.map(p => '  ' + p.code + ' ' + p.message);
 /** Old files a migration removes (0.7 requirements.md, design.md, per-folder history.jsonl, the wiki, the reason file): deletions there may be committed. */
@@ -105,7 +106,9 @@ export const runChangesCommit = (options: { format: Format; file: string; dryRun
 export async function commitChanges(cwd: string, input: unknown, dryRun: boolean) {
   const request = object(input);
   if (Object.keys(request).some(k => !fields.includes(k))) fail(t('commit.unknownField'));
-  const selected = paths(request.paths, request.migration === true ? MIGRATION_PATH_LIMIT : PATH_LIMIT); const authorization = object(request.authorization);
+  const selected = paths(request.paths, PATH_LIMIT); const authorization = object(request.authorization);
+  const storePaths = selected.filter(p => p.startsWith('.gitifact/')).length;
+  if (request.migration !== true && storePaths > STORE_PATH_LIMIT) fail(t('commit.tooManyStorePaths', { count: storePaths, limit: STORE_PATH_LIMIT }));
   if (Object.keys(authorization).sort().join(',') !== 'basis,evidence' || !['user-request', 'project-policy'].includes(String(authorization.basis))) fail(t('commit.authorizationRequired'));
   bounded(authorization.evidence, 2000);
   const message = bounded(request.message, 4000); if (/^[ \t]*Gitifact-[A-Za-z0-9-]+[ \t]*:/im.test(message)) fail(t('commit.trailerInMessage'));
